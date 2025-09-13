@@ -4,9 +4,7 @@
 
 **Version**: 1.2
 **Date**: 12 September 2025
-**Author**: James Jackson [Real/Virtual World Integration WG Co-chair, MSF]
-
-*Note: Individual contribution, does not represent views of MSF or other entities.*
+**Author**: James Jackson [Open AR Cloud, Metaverse Standards Forum - Real/Virtual World Integration WG Co-chair]
 
 ## Contents
 1. [Introduction](sections/01-introduction.md)
