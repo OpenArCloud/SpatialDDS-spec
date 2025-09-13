@@ -41,8 +41,7 @@ module spatial {
     @appendable struct CoverageHint {
       @key string service_id;
       sequence<string,64> geohash;
-      double min_lat; double min_lon;
-      double max_lat; double max_lon;
+      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
       double center_lat; double center_lon; double radius_m;
       Time stamp;
       uint32 ttl_sec;
