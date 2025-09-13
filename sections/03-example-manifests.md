@@ -22,9 +22,7 @@ See [`manifests/content_experience_manifest.json`](../manifests/content_experien
 
 ### **D) Anchors Manifest**
 
-*This manifest lists durable localization anchors for a zone and points to feature or geometry assets used for relocalization or scene alignment.* Each anchor is identified by an `anchor_id` and includes a simplified GeoPose with `lat_deg`, `lon_deg`, `alt_m`, and quaternion fields ordered `(qw,qx,qy,qz)`.
-`frame_kind` defaults to `ECEF`, `frame_ref` is omitted, and no covariance matrix is supplied.
-Consumers needing the full `GeoPose` from `idl/core.idl` should populate missing fields accordingly.
+*This manifest lists durable localization anchors for a zone and points to feature or geometry assets used for relocalization or scene alignment.* Each anchor is identified by an `anchor_id` and includes a simplified GeoPose with `lat_deg`, `lon_deg`, `alt_m`, and quaternion fields ordered `(qw,qx,qy,qz)`. A `stamp` field on each anchor records its last update time. The manifest itself also carries a top-level `stamp` denoting when the set was generated; this maps to the `stamp` field of the `AnchorSet` IDL structure. `frame_kind` defaults to `ECEF`, `frame_ref` is omitted, and no covariance matrix is supplied. Consumers needing the full `GeoPose` from `idl/core.idl` should populate missing fields accordingly.
 
 See [`manifests/anchors_manifest.json`](../manifests/anchors_manifest.json).
 
