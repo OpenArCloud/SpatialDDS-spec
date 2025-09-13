@@ -1,6 +1,6 @@
 ## **2\. IDL Profiles**
 
-The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatial data over DDS. It is organized into complementary profiles: **Core**, which provides the backbone for pose graphs, geometry, and geo-anchoring; **Discovery**, which enables lightweight announcements of services, coverage, and content; and **Anchors**, which adds support for publishing and updating sets of durable world-locked anchors. Together, these profiles give devices, services, and applications a common language for building, sharing, and aligning live world models—while staying codec-agnostic, forward-compatible, and simple enough to extend for domains such as robotics, AR/XR, IoT, and smart cities.
+The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatial data over DDS. It is organized into complementary profiles: **Core**, which provides the backbone for pose graphs, geometry, and geo-anchoring; **Discovery**, which enables lightweight announcements of services, coverage, anchors, and content; and **Anchors**, which adds support for publishing and updating sets of durable world-locked anchors. Together, these profiles give devices, services, and applications a common language for building, sharing, and aligning live world models—while staying codec-agnostic, forward-compatible, and simple enough to extend for domains such as robotics, AR/XR, IoT, and smart cities.
 
 ### **2.1 Core SpatialDDS**
 
@@ -8,7 +8,7 @@ The Core profile defines the essential building blocks for representing and shar
 
 ### **2.2 Discovery**
 
-The Discovery profile adds a minimal, lightweight way to announce services, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or bounding box), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, semantics, or AR content providers without requiring heavy registries or complex protocols.
+The Discovery profile adds a minimal, lightweight way to announce services, anchors, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or bounding box), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, anchor registries, semantics, or AR content providers without requiring heavy registries or complex protocols.
 
 ### **2.3 Anchors**
 
@@ -23,7 +23,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 * **Core Profile**  
   Fundamental building blocks: pose graphs, geometry tiles, anchors, transforms, and blob transport.  
 * **Discovery Profile**  
-  Lightweight announce messages and manifests for services, coverage areas, and spatial content or experiences.  
+   Lightweight announce messages and manifests for services, coverage areas, anchors, and spatial content or experiences.
 * **Anchors Profile**  
   Durable anchors and the Anchor Registry, enabling persistent world-locked reference points.
 
