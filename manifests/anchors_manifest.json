@@ -4,7 +4,12 @@
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
     "geohash": ["sv8wkf", "sv8wkg"],
-    "bbox": [25.1608, 35.2965, 25.1665, 35.3002]
+    "bbox": [
+      25.1608,
+      35.2965,
+      25.1665,
+      35.3002
+    ]
   },
   "anchors": [
     {
