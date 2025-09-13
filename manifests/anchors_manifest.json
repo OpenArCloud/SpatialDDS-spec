@@ -1,0 +1,73 @@
+{
+  "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
+  "zone_id": "knossos:palace",
+  "zone_title": "Knossos Palace Archaeological Site",
+  "coverage": {
+    "geohash": ["sv8wkf", "sv8wkg"],
+    "bbox": [25.1608, 35.2965, 25.1665, 35.3002]
+  },
+  "anchors": [
+    {
+      "id": "square:statue-east",
+      "geopose": {
+        "lat": 35.29802,
+        "lon": 25.16305,
+        "alt": 110.2,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0,
+        "qw": 1
+      },
+      "assets": [
+        {
+          "kind": "features:ORB:v1",
+          "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
+          "count": 2048,
+          "descriptor_bytes": 32,
+          "patch_frame": "anchor-local",
+          "hash": "sha256:placeholder...",
+          "bytes": 65536
+        },
+        {
+          "kind": "geom:pcd:lod1",
+          "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
+          "points": 12000,
+          "hash": "sha256:placeholder...",
+          "bytes": 480000
+        }
+      ],
+      "updated": "2025-09-07T15:45:00Z"
+    },
+    {
+      "id": "central-court:north",
+      "geopose": {
+        "lat": 35.29761,
+        "lon": 25.16391,
+        "alt": 109.8,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0.707,
+        "qw": 0.707
+      },
+      "assets": [
+        {
+          "kind": "features:SuperPoint:v1",
+          "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
+          "count": 1500,
+          "descriptor_bytes": 256,
+          "hash": "sha256:placeholder...",
+          "bytes": 220000
+        },
+        {
+          "kind": "geom:mesh:lod0",
+          "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
+          "triangles": 8000,
+          "hash": "sha256:placeholder...",
+          "bytes": 350000
+        }
+      ],
+      "updated": "2025-09-08T11:12:13Z"
+    }
+  ],
+  "generated": "2025-09-12T22:55:00Z"
+}

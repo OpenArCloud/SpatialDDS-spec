@@ -5,7 +5,7 @@ SpatialDDS is a lightweight, standards-based protocol for real-time exchange of 
 At its core, SpatialDDS is defined through **IDL profiles** that partition functionality into clean modules:
 
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
-* **Discovery**: lightweight announce messages and manifests for services, coverage, and content.  
+* **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
 * **Extensions**: optional domain-specific profiles including VIO sensors, SLAM frontend features, semantic detections, AR+Geo, and provisional Neural/Agent profiles.
 
@@ -40,8 +40,8 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.  
 * **Anchors as first-class citizens**  
   Anchors provide durable, shared reference points that bridge positioning, mapping, and content attachment. The Anchor Registry makes them discoverable and persistent across sessions.  
-* **Discovery without heaviness**  
-  Lightweight announce messages plus JSON manifests allow services (like VPS or mapping) and content/experiences to be discovered at runtime without centralized registries.  
+* **Discovery without heaviness**
+  Lightweight announce messages plus JSON manifests allow services (like VPS, mapping, or anchor registries) and content/experiences to be discovered at runtime without centralized registries.
 * **Interoperability with existing standards**  
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
 
