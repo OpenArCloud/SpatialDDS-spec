@@ -1,6 +1,3 @@
-# Simple Pandoc build for SpatialDDS spec
-# Requires: pandoc (https://pandoc.org/) and a LaTeX engine for PDF (e.g., TeX Live / MacTeX)
-
 SOURCES := $(shell ls spec/*.md | sort)
 TITLE   := SpatialDDS: A Protocol for Real-World Spatial Computing
 VERSION := 1.1
@@ -14,30 +11,30 @@ HTML := SpatialDDS-$(VERSION).html
 all: pdf
 
 pdf:
-\tpandoc $(SOURCES) \\\
-\t  --metadata title="$(TITLE)" \\\
-\t  --metadata author="$(AUTHOR)" \\\
-\t  --metadata date="$(DATE)" \\\
-\t  --standalone --toc \\\
-\t  --pdf-engine=xelatex \\\
-\t  -V geometry:margin=1in \\\
-\t  -o $(PDF)
+	pandoc $(SOURCES) \
+	  --metadata title="$(TITLE)" \
+	  --metadata author="$(AUTHOR)" \
+	  --metadata date="$(DATE)" \
+	  --standalone --toc \
+	  --pdf-engine=xelatex \
+	  -V geometry:margin=1in \
+	  -o $(PDF)
 
 docx:
-\tpandoc $(SOURCES) \\\
-\t  --metadata title="$(TITLE)" \\\
-\t  --metadata author="$(AUTHOR)" \\\
-\t  --metadata date="$(DATE)" \\\
-\t  --standalone --toc \\\
-\t  -o $(DOCX)
+	pandoc $(SOURCES) \
+	  --metadata title="$(TITLE)" \
+	  --metadata author="$(AUTHOR)" \
+	  --metadata date="$(DATE)" \
+	  --standalone --toc \
+	  -o $(DOCX)
 
 html:
-\tpandoc $(SOURCES) \\\
-\t  --metadata title="$(TITLE)" \\\
-\t  --metadata author="$(AUTHOR)" \\\
-\t  --metadata date="$(DATE)" \\\
-\t  --standalone --toc \\\
-\t  -o $(HTML)
+	pandoc $(SOURCES) \
+	  --metadata title="$(TITLE)" \
+	  --metadata author="$(AUTHOR)" \
+	  --metadata date="$(DATE)" \
+	  --standalone --toc \
+	  -o $(HTML)
 
 clean:
-\trm -f $(PDF) $(DOCX) $(HTML)
+	rm -f $(PDF) $(DOCX) $(HTML)

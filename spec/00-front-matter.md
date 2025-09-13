@@ -1,4 +1,4 @@
-## SpatialDDS: A Protocol for Real-World Spatial Computing
+# SpatialDDS: A Protocol for Real-World Spatial Computing
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
