@@ -10,13 +10,13 @@
     {
       "id": "square:statue-east",
       "geopose": {
-        "lat": 35.29802,
-        "lon": 25.16305,
-        "alt": 110.2,
+        "lat_deg": 35.29802,
+        "lon_deg": 25.16305,
+        "alt_m": 110.2,
+        "qw": 1,
         "qx": 0,
         "qy": 0,
-        "qz": 0,
-        "qw": 1
+        "qz": 0
       },
       "assets": [
         {
@@ -41,13 +41,13 @@
     {
       "id": "central-court:north",
       "geopose": {
-        "lat": 35.29761,
-        "lon": 25.16391,
-        "alt": 109.8,
+        "lat_deg": 35.29761,
+        "lon_deg": 25.16391,
+        "alt_m": 109.8,
+        "qw": 0.707,
         "qx": 0,
         "qy": 0,
-        "qz": 0.707,
-        "qw": 0.707
+        "qz": 0.707
       },
       "assets": [
         {
