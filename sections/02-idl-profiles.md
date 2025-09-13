@@ -14,8 +14,6 @@ The Discovery profile adds a minimal, lightweight way to announce services, anch
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
 
-### 
-
 ### **2.4 Profiles Summary**
 
 The complete SpatialDDS IDL bundle is organized into the following profiles:

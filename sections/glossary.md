@@ -1,4 +1,4 @@
-## **Glossary of Acronyms**
+## **7. Glossary of Acronyms**
 
 **AI** – Artificial Intelligence
 
