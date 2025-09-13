@@ -8,7 +8,7 @@
   },
   "anchors": [
     {
-      "id": "square:statue-east",
+      "anchor_id": "square:statue-east",
       "geopose": {
         "lat_deg": 35.29802,
         "lon_deg": 25.16305,
@@ -39,7 +39,7 @@
       "updated": "2025-09-07T15:45:00Z"
     },
     {
-      "id": "central-court:north",
+      "anchor_id": "central-court:north",
       "geopose": {
         "lat_deg": 35.29761,
         "lon_deg": 25.16391,
