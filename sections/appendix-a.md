@@ -2,5 +2,146 @@
 
 *The Core profile defines the fundamental data structures for SpatialDDS. It includes pose graphs, 3D geometry tiles, anchors, transforms, and generic blob transport. This is the minimal interoperable baseline for exchanging world models across devices and services.*
 
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Core 1.2
 
-See [`../idl/core.idl`](../idl/core.idl).
+module spatial {
+  module core {
+
+    // ---------- Utility ----------
+    struct Time {
+      int32  sec;     // seconds since UNIX epoch (UTC)
+      uint32 nsec;    // nanoseconds [0..1e9)
+    };
+
+    struct PoseSE3 {
+      double t[3];    // translation (x,y,z)
+      double q[4];    // quaternion (w,x,y,z)
+    };
+
+    @appendable struct TileKey {
+      @key uint32 x;     // tile coordinate (quadtree/3D grid)
+      @key uint32 y;
+      @key uint32 z;     // use 0 for 2D schemes
+      @key uint8  level; // LOD level
+    };
+
+    // ---------- Geometry ----------
+    enum PatchOp { ADD = 0, REPLACE = 1, REMOVE = 2 };
+
+    @appendable struct BlobRef {
+      string blob_id;   // UUID or content-address
+      string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
+      string checksum;  // SHA-256 (hex)
+    };
+
+    @appendable struct TileMeta {
+      @key TileKey key;              // unique tile key
+      string tile_id_compat;         // optional human-readable id
+      double min_xyz[3];             // AABB min (local frame)
+      double max_xyz[3];             // AABB max (local frame)
+      uint32 lod;                    // may mirror key.level
+      uint64 version;                // monotonic full-state version
+      string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
+      string checksum;               // checksum of composed tile
+      sequence<string, 32> blob_ids; // blobs composing this tile
+      // optional geo hints
+      double centroid_llh[3];        // lat,lon,alt (deg,deg,m) or NaN
+      double radius_m;               // rough extent (m) or NaN
+    };
+
+    @appendable struct TilePatch {
+      @key TileKey key;              // which tile
+      uint64 revision;               // monotonic per-tile
+      PatchOp op;                    // ADD/REPLACE/REMOVE
+      string target;                 // submesh/attr/"all"
+      sequence<BlobRef, 8> blobs;    // payload refs
+      string post_checksum;          // checksum after apply
+      Time   stamp;                  // production time
+    };
+
+    @appendable struct BlobChunk {
+      @key string blob_id;               // which blob
+      uint32 index;                      // chunk index (0..N-1)
+      sequence<uint8, 262144> data;      // ≤256 KiB per sample
+      boolean last;                      // true on final chunk
+    };
+
+    // ---------- Pose Graph (minimal) ----------
+    enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
+
+    @appendable struct Node {
+      string map_id;
+      @key string node_id;     // unique keyframe id
+      PoseSE3 pose;            // pose in frame_id
+      double  cov[36];         // 6x6 covariance (row-major); NaN if unknown
+      Time    stamp;
+      string  frame_id;        // e.g., "map"
+      string  source_id;
+      uint64  seq;             // per-source monotonic
+      uint64  graph_epoch;     // for major rebases/merges
+    };
+
+    @appendable struct Edge {
+      string map_id;
+      @key string edge_id;     // unique edge id
+      string from_id;          // source node
+      string to_id;            // target node
+      EdgeTypeCore type;       // ODOM or LOOP
+      double information[36];  // 6x6 info matrix (row-major)
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+      uint64 graph_epoch;
+    };
+
+    // ---------- Geo anchoring ----------
+    enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
+
+    @appendable struct GeoPose {
+      double lat_deg;
+      double lon_deg;
+      double alt_m;            // ellipsoidal meters
+      double q[4];             // orientation (w,x,y,z)
+      GeoFrameKind frame_kind; // ECEF/ENU/NED
+      string frame_ref;        // for ENU/NED: "@lat,lon,alt"
+      Time   stamp;
+      double cov[9];           // 3x3 pos covariance (m^2), row-major; NaN if unknown
+    };
+
+    @appendable struct GeoAnchor {
+      @key string anchor_id;   // e.g., "anchor/4th-and-main"
+      string map_id;
+      string frame_id;         // local frame (e.g., "map")
+      GeoPose geopose;         // global pose
+      string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
+      double  confidence;      // 0..1
+      string  checksum;        // integrity/versioning
+    };
+
+    @appendable struct FrameTransform {
+      @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
+      string parent_frame;      // global frame (ENU@..., ECEF, ...)
+      string child_frame;       // local frame ("map")
+      PoseSE3 T_parent_child;   // transform parent->child
+      Time    stamp;
+      double  cov[36];          // 6x6 covariance; NaN if unknown
+    };
+
+    // ---------- Snapshot / Catch-up ----------
+    @appendable struct SnapshotRequest {
+      @key TileKey key;        // which tile
+      uint64 up_to_revision;   // 0 = latest
+    };
+
+    @appendable struct SnapshotResponse {
+      @key TileKey key;                 // tile key
+      uint64 revision;                  // snapshot revision served
+      sequence<string, 64> blob_ids;    // composing blobs
+      string checksum;                  // composed state checksum
+    };
+
+  }; // module core
+};   // module spatial
+```
