@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.0
+// SpatialDDS Semantics 1.2
 
 module spatial {
   module semantics {
