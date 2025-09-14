@@ -27,5 +27,6 @@ Issues and pull requests are welcome. Please open an issue to discuss large chan
 
 ## License
 
-No license has been specified for this repository.
+This work is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+See the [LICENSE](LICENSE) file for details.
 
