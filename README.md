@@ -1,4 +1,4 @@
-# SpatialDDS Specification
+# SpatialDDS Specification (Concept)
 
 SpatialDDS is a protocol for real-world spatial computing that defines a shared bus for spatial data, AI world models, and digital twins. This repository hosts version 1.2 of the specification along with related assets.
 
