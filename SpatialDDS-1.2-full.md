@@ -119,26 +119,174 @@ While SpatialDDS keeps its on-bus messages small and generic, richer details abo
 
 *This manifest describes a Visual Positioning Service (VPS). It specifies the service identifier, version, coverage area, and the topics used for queries and responses. It also lists supported input encodings and response types, allowing clients to determine compatibility before interacting with the service.*
 
-See [`manifests/vps_manifest.json`](../manifests/vps_manifest.json).
+```json
+{
+  "service_id": "svc:vps:acme/sf-downtown",
+  "profiles": ["Core", "SLAM Frontend", "AR+Geo"],
+  "request": {
+    "features_topic": "feat.keyframe",
+    "image_blob_role": "image/jpeg",
+    "prior_topic": "geo.fix"
+  },
+  "response": {
+    "rich": "pg.nodegeo",
+    "minimal": "geo.fix"
+  },
+  "limits": { "max_fps": 10, "max_image_px": 1920 },
+  "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
+  "coverage": { "geohash": ["9q8y","9q8z"] }
+}
+```
 
 ### **B) Mapping Service Manifest**
 
 *This manifest describes a Mapping service that publishes geometry tiles for a given coverage area. It defines the service identifier, version, supported encodings, and the DDS topics used for requesting and receiving tile data. It enables clients to subscribe to live or cached geometry without ambiguity about formats or endpoints.*
 
-See [`manifests/mapping_service_manifest.json`](../manifests/mapping_service_manifest.json).
+```json
+{
+  "service_id": "svc:mapping:acme/sf-downtown",
+  "version": "1.0.0",
+  "provider": { "id": "acme-maps", "org": "Acme Maps Inc." },
+  "title": "Acme Downtown Map Service",
+  "summary": "Tiled 3D meshes for SF downtown area",
+  "profiles": ["Core"],
+  "topics": {
+    "meta": "geom.tile.meta",
+    "patch": "geom.tile.patch",
+    "blob": "geom.tile.blob"
+  },
+  "tile_scheme": "quadtree",
+  "encodings": ["glTF+Draco", "LASzip"],
+  "lod_range": [12, 18],
+  "coverage": {
+    "geohash": ["9q8y","9q8z"],
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson"
+  },
+  "auth": { "scheme": "none" },
+  "terms": { "license": "CC-BY-4.0" }
+}
+```
 
 ### **C) Content/Experience Manifest**
 
 *This manifest describes a spatial content or experience service. It declares a content identifier, version, anchor bindings, and optional dependencies on other manifests. This allows AR applications to discover and attach experiences to shared anchors while keeping the actual content assets (e.g., 3D models, media) external to DDS.*
 
-See [`manifests/content_experience_manifest.json`](../manifests/content_experience_manifest.json).
+```json
+{
+  "content_id": "xp:sculpture-walk:met-foyer",
+  "version": "1.0.2",
+  "provider": { "id": "svc:content:museum-inc", "org": "Museum Inc." },
+  "title": "AR Sculpture Walk",
+  "summary": "Guided AR overlays for five sculptures in the main foyer.",
+  "tags": ["ar", "museum", "tour"],
+  "profiles_required": ["Core", "AR+Geo"],
+  "availability": {
+    "from": "2025-09-01T09:00:00Z",
+    "until": "2025-12-31T23:59:59Z",
+    "local_tz": "America/New_York"
+  },
+  "coverage": { "geohash": ["dr5ru9","dr5rua"], "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson" },
+  "entrypoints": {
+    "anchors": [
+      { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
+      { "anchor_id": "anchor/met-foyer/central", "hint": "Checkpoint 2" }
+    ]
+  },
+  "runtime_topics": {
+    "subscribe": ["geo.tf", "geo.anchor", "geom.tile.meta", "geom.tile.patch"],
+    "optional": ["semantics.det.3d.set"]
+  },
+  "assets": [
+    { "type": "image", "role": "poster", "uri": "https://cdn.museum.example/img/poster.jpg" },
+    { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
+  ]
+}
+```
 
 ### **D) Anchors Manifest**
 
 *This manifest lists durable localization anchors for a zone and points to feature or geometry assets used for relocalization or scene alignment.* Each anchor is identified by an `anchor_id` and includes a simplified GeoPose with `lat_deg`, `lon_deg`, `alt_m`, and quaternion fields ordered `(qw,qx,qy,qz)`. A `stamp` field on each anchor records its last update time. The manifest itself also carries a top-level `stamp` denoting when the set was generated; this maps to the `stamp` field of the `AnchorSet` IDL structure. `frame_kind` defaults to `ECEF`, `frame_ref` is omitted, and no covariance matrix is supplied. Consumers needing the full `GeoPose` from `idl/core.idl` should populate missing fields accordingly.
 
-See [`manifests/anchors_manifest.json`](../manifests/anchors_manifest.json).
-
+```json
+{
+  "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
+  "zone_id": "knossos:palace",
+  "zone_title": "Knossos Palace Archaeological Site",
+  "coverage": {
+    "geohash": ["sv8wkf", "sv8wkg"],
+    "bbox": [
+      25.1608,
+      35.2965,
+      25.1665,
+      35.3002
+    ]
+  },
+  "anchors": [
+    {
+      "anchor_id": "square:statue-east",
+      "geopose": {
+        "lat_deg": 35.29802,
+        "lon_deg": 25.16305,
+        "alt_m": 110.2,
+        "qw": 1,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0
+      },
+      "assets": [
+        {
+          "kind": "features:ORB:v1",
+          "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
+          "count": 2048,
+          "descriptor_bytes": 32,
+          "patch_frame": "anchor-local",
+          "hash": "sha256:placeholder...",
+          "bytes": 65536
+        },
+        {
+          "kind": "geom:pcd:lod1",
+          "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
+          "points": 12000,
+          "hash": "sha256:placeholder...",
+          "bytes": 480000
+        }
+      ],
+      "stamp": "2025-09-07T15:45:00Z"
+    },
+    {
+      "anchor_id": "central-court:north",
+      "geopose": {
+        "lat_deg": 35.29761,
+        "lon_deg": 25.16391,
+        "alt_m": 109.8,
+        "qw": 0.707,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0.707
+      },
+      "assets": [
+        {
+          "kind": "features:SuperPoint:v1",
+          "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
+          "count": 1500,
+          "descriptor_bytes": 256,
+          "hash": "sha256:placeholder...",
+          "bytes": 220000
+        },
+        {
+          "kind": "geom:mesh:lod0",
+          "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
+          "triangles": 8000,
+          "hash": "sha256:placeholder...",
+          "bytes": 350000
+        }
+      ],
+      "stamp": "2025-09-08T11:12:13Z"
+    }
+  ],
+  "stamp": "2025-09-12T22:55:00Z"
+}
+```
 
 ## **4\. Operational Scenarios: From SLAM to AI World Models**
 
@@ -420,22 +568,285 @@ We invite implementers, researchers, and standards bodies to explore SpatialDDS,
 
 *The Core profile defines the fundamental data structures for SpatialDDS. It includes pose graphs, 3D geometry tiles, anchors, transforms, and generic blob transport. This is the minimal interoperable baseline for exchanging world models across devices and services.*
 
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Core 1.2
 
-See [`../idl/core.idl`](../idl/core.idl).
+module spatial {
+  module core {
+
+    // ---------- Utility ----------
+    struct Time {
+      int32  sec;     // seconds since UNIX epoch (UTC)
+      uint32 nsec;    // nanoseconds [0..1e9)
+    };
+
+    struct PoseSE3 {
+      double t[3];    // translation (x,y,z)
+      double q[4];    // quaternion (w,x,y,z)
+    };
+
+    @appendable struct TileKey {
+      @key uint32 x;     // tile coordinate (quadtree/3D grid)
+      @key uint32 y;
+      @key uint32 z;     // use 0 for 2D schemes
+      @key uint8  level; // LOD level
+    };
+
+    // ---------- Geometry ----------
+    enum PatchOp { ADD = 0, REPLACE = 1, REMOVE = 2 };
+
+    @appendable struct BlobRef {
+      string blob_id;   // UUID or content-address
+      string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
+      string checksum;  // SHA-256 (hex)
+    };
+
+    @appendable struct TileMeta {
+      @key TileKey key;              // unique tile key
+      string tile_id_compat;         // optional human-readable id
+      double min_xyz[3];             // AABB min (local frame)
+      double max_xyz[3];             // AABB max (local frame)
+      uint32 lod;                    // may mirror key.level
+      uint64 version;                // monotonic full-state version
+      string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
+      string checksum;               // checksum of composed tile
+      sequence<string, 32> blob_ids; // blobs composing this tile
+      // optional geo hints
+      double centroid_llh[3];        // lat,lon,alt (deg,deg,m) or NaN
+      double radius_m;               // rough extent (m) or NaN
+    };
+
+    @appendable struct TilePatch {
+      @key TileKey key;              // which tile
+      uint64 revision;               // monotonic per-tile
+      PatchOp op;                    // ADD/REPLACE/REMOVE
+      string target;                 // submesh/attr/"all"
+      sequence<BlobRef, 8> blobs;    // payload refs
+      string post_checksum;          // checksum after apply
+      Time   stamp;                  // production time
+    };
+
+    @appendable struct BlobChunk {
+      @key string blob_id;               // which blob
+      uint32 index;                      // chunk index (0..N-1)
+      sequence<uint8, 262144> data;      // ≤256 KiB per sample
+      boolean last;                      // true on final chunk
+    };
+
+    // ---------- Pose Graph (minimal) ----------
+    enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
+
+    @appendable struct Node {
+      string map_id;
+      @key string node_id;     // unique keyframe id
+      PoseSE3 pose;            // pose in frame_id
+      double  cov[36];         // 6x6 covariance (row-major); NaN if unknown
+      Time    stamp;
+      string  frame_id;        // e.g., "map"
+      string  source_id;
+      uint64  seq;             // per-source monotonic
+      uint64  graph_epoch;     // for major rebases/merges
+    };
+
+    @appendable struct Edge {
+      string map_id;
+      @key string edge_id;     // unique edge id
+      string from_id;          // source node
+      string to_id;            // target node
+      EdgeTypeCore type;       // ODOM or LOOP
+      double information[36];  // 6x6 info matrix (row-major)
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+      uint64 graph_epoch;
+    };
+
+    // ---------- Geo anchoring ----------
+    enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
+
+    @appendable struct GeoPose {
+      double lat_deg;
+      double lon_deg;
+      double alt_m;            // ellipsoidal meters
+      double q[4];             // orientation (w,x,y,z)
+      GeoFrameKind frame_kind; // ECEF/ENU/NED
+      string frame_ref;        // for ENU/NED: "@lat,lon,alt"
+      Time   stamp;
+      double cov[9];           // 3x3 pos covariance (m^2), row-major; NaN if unknown
+    };
+
+    @appendable struct GeoAnchor {
+      @key string anchor_id;   // e.g., "anchor/4th-and-main"
+      string map_id;
+      string frame_id;         // local frame (e.g., "map")
+      GeoPose geopose;         // global pose
+      string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
+      double  confidence;      // 0..1
+      string  checksum;        // integrity/versioning
+    };
+
+    @appendable struct FrameTransform {
+      @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
+      string parent_frame;      // global frame (ENU@..., ECEF, ...)
+      string child_frame;       // local frame ("map")
+      PoseSE3 T_parent_child;   // transform parent->child
+      Time    stamp;
+      double  cov[36];          // 6x6 covariance; NaN if unknown
+    };
+
+    // ---------- Snapshot / Catch-up ----------
+    @appendable struct SnapshotRequest {
+      @key TileKey key;        // which tile
+      uint64 up_to_revision;   // 0 = latest
+    };
+
+    @appendable struct SnapshotResponse {
+      @key TileKey key;                 // tile key
+      uint64 revision;                  // snapshot revision served
+      sequence<string, 64> blob_ids;    // composing blobs
+      string checksum;                  // composed state checksum
+    };
+
+  }; // module core
+};   // module spatial
+```
 
 ## **Appendix B: Discovery Profile 1.0**
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Discovery 1.2
+// Lightweight announces for services, coverage, and content
 
-See [`../idl/discovery.idl`](../idl/discovery.idl).
+module spatial {
+  module disco {
+
+    typedef spatial::core::Time Time;
+
+    enum ServiceKind {
+      VPS = 0,
+      MAPPING = 1,
+      RELOCAL = 2,
+      SEMANTICS = 3,
+      STORAGE = 4,
+      CONTENT = 5,
+      ANCHOR_REGISTRY = 6,
+      OTHER = 255
+    };
+
+    @appendable struct KV {
+      string key;
+      string value;
+    };
+
+    @appendable struct ServiceAnnounce {
+      @key string service_id;
+      string name;
+      ServiceKind kind;
+      string version;
+      string org;
+      sequence<string,16> rx_topics;
+      sequence<string,16> tx_topics;
+      sequence<KV,32> hints;
+      string manifest_uri;
+      string auth_hint;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @appendable struct CoverageHint {
+      @key string service_id;
+      sequence<string,64> geohash;
+      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
+      double center_lat; double center_lon; double radius_m;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @appendable struct ContentAnnounce {
+      @key string content_id;
+      string provider_id;
+      string title;
+      string summary;
+      sequence<string,16> tags;
+      string class_id;
+      string manifest_uri;
+      double center_lat; double center_lon; double radius_m;
+      Time available_from;
+      Time available_until;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+  }; // module disco
+};
+```
 
 ## **Appendix C: Anchor Registry Profile 1.0**
 
 *The Anchors profile defines durable GeoAnchors and the Anchor Registry. Anchors act as persistent world-locked reference points, while the registry makes them discoverable and maintainable across sessions, devices, and services.*
 
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Anchors 1.2
+// Bundles and updates for anchor registries
 
-See [`../idl/anchors.idl`](../idl/anchors.idl).
+module spatial {
+  module anchors {
+    typedef spatial::core::Time Time;
+    typedef spatial::core::GeoPose GeoPose;
+
+    @appendable struct AnchorEntry {
+      @key string anchor_id;
+      string name;
+      GeoPose geopose;
+      double confidence;
+      sequence<string,8> tags;
+      Time stamp;
+      string checksum;
+    };
+
+    @appendable struct AnchorSet {
+      @key string set_id;
+      string title;
+      string provider_id;
+      string map_frame;
+      string version;
+      sequence<string,16> tags;
+      double center_lat; double center_lon; double radius_m;
+      sequence<AnchorEntry,256> anchors;
+      Time stamp;
+      string checksum;
+    };
+
+    enum AnchorOp { ADD=0, UPDATE=1, REMOVE=2 };
+
+    @appendable struct AnchorDelta {
+      @key string set_id;
+      AnchorOp op;
+      AnchorEntry entry;
+      uint64 revision;
+      Time stamp;
+      string post_checksum;
+    };
+
+    @appendable struct AnchorSetRequest {
+      @key string set_id;
+      uint64 up_to_revision;
+    };
+
+    @appendable struct AnchorSetResponse {
+      @key string set_id;
+      uint64 revision;
+      AnchorSet set;
+    };
+
+  }; // module anchors
+};
+```
 
 ## **Appendix D: Extension Profiles**
 
@@ -445,26 +856,291 @@ See [`../idl/anchors.idl`](../idl/anchors.idl).
 
 *Raw IMU/mag samples, 9-DoF bundles, and fused state outputs.*
 
-See [`../idl/vio.idl`](../idl/vio.idl).
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS VIO/Inertial 1.2
+
+module spatial {
+  module vio {
+
+    typedef spatial::core::Time Time;
+
+    // IMU calibration
+    @appendable struct ImuInfo {
+      @key string imu_id;
+      string frame_id;
+      double accel_noise_density;    // (m/s^2)/√Hz
+      double gyro_noise_density;     // (rad/s)/√Hz
+      double accel_random_walk;      // (m/s^3)/√Hz
+      double gyro_random_walk;       // (rad/s^2)/√Hz
+      Time   stamp;
+    };
+
+    // Raw IMU sample
+    @appendable struct ImuSample {
+      @key string imu_id;
+      double accel[3];               // m/s^2
+      double gyro[3];                // rad/s
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Magnetometer
+    @appendable struct MagnetometerSample {
+      @key string mag_id;
+      double mag[3];                 // microtesla
+      Time   stamp;
+      string frame_id;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Convenience raw 9-DoF bundle
+    @appendable struct SensorFusionSample {
+      @key string fusion_id;         // e.g., device id
+      double accel[3];               // m/s^2
+      double gyro[3];                // rad/s
+      double mag[3];                 // microtesla
+      Time   stamp;
+      string frame_id;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Fused state (orientation ± position)
+    enum FusionMode { ORIENTATION_3DOF = 0, ORIENTATION_6DOF = 1, POSE_6DOF = 2 };
+    enum FusionSourceKind { EKF = 0, AHRS = 1, VIO = 2, IMU_ONLY = 3, MAG_AIDED = 4, AR_PLATFORM = 5 };
+
+    @appendable struct FusedState {
+      @key string fusion_id;
+      FusionMode       mode;
+      FusionSourceKind source_kind;
+
+      double q[4];                   // quaternion (w,x,y,z)
+      boolean has_position;
+      double t[3];                   // meters, in frame_id
+
+      double gravity[3];             // m/s^2 (NaN if unknown)
+      double lin_accel[3];           // m/s^2 (NaN if unknown)
+      double gyro_bias[3];           // rad/s (NaN if unknown)
+      double accel_bias[3];          // m/s^2 (NaN if unknown)
+
+      double cov_orient[9];          // 3x3 covariance (NaN if unknown)
+      double cov_pos[9];             // 3x3 covariance (NaN if unknown)
+
+      Time   stamp;
+      string frame_id;
+      string source_id;
+      uint64 seq;
+      double quality;                // 0..1
+    };
+
+  }; // module vio
+};
+```
 
 ### **SLAM Frontend Extension 1.0**
 
 *Per-keyframe features, matches, landmarks, tracks, and camera calibration.*
 
-See [`../idl/slam_frontend.idl`](../idl/slam_frontend.idl).
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS SLAM Frontend 1.2
+
+module spatial {
+  module slam_frontend {
+
+    // Reuse core: Time, etc.
+    typedef spatial::core::Time Time;
+
+    // Camera calibration
+    enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
+
+    @appendable struct CameraInfo {
+      @key string camera_id;
+      uint32 width;  uint32 height;   // pixels
+      double fx; double fy;           // focal (px)
+      double cx; double cy;           // principal point (px)
+      DistortionModelKind dist_kind;
+      sequence<double, 8> dist;       // model params (bounded)
+      string frame_id;                // camera frame
+      Time   stamp;                   // calib time (or 0 if static)
+    };
+
+    // 2D features & descriptors per keyframe
+    @appendable struct Feature2D {
+      double u; double v;     // pixel coords
+      float  scale;           // px
+      float  angle;           // rad [0,2π)
+      float  score;           // detector response
+    };
+
+    @appendable struct KeyframeFeatures {
+      @key string node_id;                  // keyframe id
+      string camera_id;
+      string desc_type;                     // "ORB32","BRISK64","SPT256Q",...
+      uint32 desc_len;                      // bytes per descriptor
+      boolean row_major;                    // layout hint
+      sequence<Feature2D, 4096> keypoints;  // ≤4096
+      sequence<uint8, 1048576> descriptors; // ≤1 MiB packed bytes
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Optional cross-frame matches
+    @appendable struct FeatureMatch {
+      string node_id_a;  uint32 idx_a;
+      string node_id_b;  uint32 idx_b;
+      float  score;      // similarity or distance
+    };
+
+    @appendable struct MatchSet {
+      @key string match_id;                // e.g., "kf_12<->kf_18"
+      sequence<FeatureMatch, 8192> matches;
+      Time   stamp;
+      string source_id;
+    };
+
+    // Sparse 3D landmarks & tracks (optional)
+    @appendable struct Landmark {
+      @key string lm_id;
+      string map_id;
+      double p[3];
+      double cov[9];                       // 3x3 pos covariance; NaN if unknown
+      sequence<uint8, 4096> desc;          // descriptor bytes
+      string desc_type;
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+    @appendable struct TrackObs {
+      string node_id;                      // observing keyframe
+      double u; double v;                  // pixel coords
+    };
+
+    @appendable struct Tracklet {
+      @key string track_id;
+      string lm_id;                        // optional link to Landmark
+      sequence<TrackObs, 64> obs;          // ≤64 obs
+      string source_id;
+      Time   stamp;
+    };
+
+  }; // module slam_frontend
+};
+```
 
 ### **Semantics / Perception Extension 1.0**
 
-*2D detections tied to keyframes; 3D oriented boxes in world frames (optionally tiled).* 
+*2D detections tied to keyframes; 3D oriented boxes in world frames (optionally tiled).*
 
-See [`../idl/semantics.idl`](../idl/semantics.idl).
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Semantics 1.2
+
+module spatial {
+  module semantics {
+
+    typedef spatial::core::Time Time;
+    typedef spatial::core::TileKey TileKey;
+
+    // 2D detections per keyframe (image space)
+    @appendable struct Detection2D {
+      @key string det_id;       // unique per publisher
+      string node_id;           // keyframe id
+      string camera_id;         // camera
+      string class_id;          // ontology label
+      float  score;             // [0..1]
+      float  bbox[4];           // [u_min,v_min,u_max,v_max] (px)
+      boolean has_mask;         // if a pixel mask exists
+      string  mask_blob_id;     // BlobChunk ref (role="mask")
+      Time   stamp;
+      string source_id;
+    };
+
+    @appendable struct Detection2DSet {
+      @key string set_id;                 // batch id (e.g., node_id + seq)
+      string node_id;
+      string camera_id;
+      sequence<Detection2D, 256> dets;    // ≤256
+      Time   stamp;
+      string source_id;
+    };
+
+    // 3D detections in world/local frame (scene space)
+    @appendable struct Detection3D {
+      @key string det_id;
+      string frame_id;           // e.g., "map" (pose known elsewhere)
+      boolean has_tile;
+      TileKey tile_key;          // valid when has_tile = true
+
+      string class_id;           // semantic label
+      float  score;              // [0..1]
+
+      // Oriented bounding box in frame_id
+      double center[3];          // m
+      double size[3];            // width,height,depth (m)
+      double q[4];               // orientation (w,x,y,z)
+
+      // Uncertainty (optional; NaN if unknown)
+      double cov_pos[9];         // 3x3 position covariance
+      double cov_rot[9];         // 3x3 rotation covariance
+
+      // Optional instance tracking
+      string track_id;
+
+      Time   stamp;
+      string source_id;
+    };
+
+    @appendable struct Detection3DSet {
+      @key string set_id;                 // batch id
+      string frame_id;                    // common frame for the set
+      boolean has_tile;
+      TileKey tile_key;                   // valid when has_tile = true
+      sequence<Detection3D, 128> dets;    // ≤128
+      Time   stamp;
+      string source_id;
+    };
+
+  }; // module semantics
+};
+```
 
 ### **AR + Geo Extension 1.0**
 
 *Geo-fixed nodes for easy consumption by AR clients & multi-agent alignment.*
 
-See [`../idl/argeo.idl`](../idl/argeo.idl).
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS AR+Geo 1.2
 
+module spatial {
+  module argeo {
+
+    typedef spatial::core::Time Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::GeoPose GeoPose;
+
+    @appendable struct NodeGeo {
+      string map_id;
+      @key string node_id;      // same id as core::Node
+      PoseSE3 pose;             // local pose in map frame
+      GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
+      double  cov[36];          // 6x6 covariance in local frame; NaN if unknown
+      Time    stamp;
+      string  frame_id;         // local frame
+      string  source_id;
+      uint64  seq;
+      uint64  graph_epoch;
+    };
+
+  }; // module argeo
+};
+```
 
 ## **Appendix E: Provisional Extension Examples**
 
@@ -474,11 +1150,40 @@ The following examples illustrate how provisional extensions might be used in pr
 
 *This example shows how a service might publish metadata for a Gaussian splat field covering part of a city block.*
 
-See [`../idl/examples/neural_example.idl`](../idl/examples/neural_example.idl).
+```idl
+neural::NeuralFieldMeta {
+  field_id = "sf-market-01";
+  kind = GAUSSIANS;
+  encoding = "gsplat-2024";
+  min_x = -50; min_y = -20; min_z = 0;
+  max_x = 80;  max_y = 40;  max_z = 60;
+  base_res_x = 0; base_res_y = 0; base_res_z = 0; // not applicable
+  channels = 4; // RGBA
+  blob_ids = ["blob:shard01", "blob:shard02"];
+  revision = 12;
+  stamp = { sec=1700000000, nsec=0 };
+}
+```
 
 ### **Example: Agent Extension (Provisional)**
 
 *This example shows how an AI planner could issue a navigation task and later update its status.*
 
-See [`../idl/examples/agent_example.idl`](../idl/examples/agent_example.idl).
+```idl
+agent::Task {
+  task_id = "route-2025-001";
+  kind = "navigate";
+  subject_id = "robot-42";
+  inputs = ["geo.anchor:main-entrance"];
+  due = { sec=1700000500, nsec=0 };
+  notes = "Deliver package to lobby.";
+}
 
+agent::TaskStatus {
+  task_id = "route-2025-001";
+  status = RUNNING;
+  result_uri = "";
+  log = "En route, ETA 3 min.";
+  stamp = { sec=1700000520, nsec=0 };
+}
+```
