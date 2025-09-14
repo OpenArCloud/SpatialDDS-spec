@@ -6,23 +6,42 @@ OUTPUT="$ROOT_DIR/SpatialDDS-1.2-full.md"
 MAIN="$ROOT_DIR/SpatialDDS-1.2.md"
 SECTIONS_DIR="$ROOT_DIR/sections"
 
+inject() {
+  local file="$1"
+  python3 - "$file" "$ROOT_DIR" <<'PY'
+import sys, pathlib, re
+file_path = pathlib.Path(sys.argv[1])
+root = pathlib.Path(sys.argv[2])
+text = file_path.read_text()
+
+def repl(match):
+    path = root / match.group(1)
+    return path.read_text()
+
+print(re.sub(r'{{include:([^}]+)}}', repl, text), end='')
+PY
+}
+
 # Start with the main specification file
-cat "$MAIN" > "$OUTPUT"
+inject "$MAIN" > "$OUTPUT"
 
 # Append numbered sections in order
 find "$SECTIONS_DIR" -maxdepth 1 -name '[0-9][0-9]-*.md' | sort | while read -r file; do
   printf '\n' >> "$OUTPUT"
-  cat "$file" >> "$OUTPUT"
+  inject "$file" >> "$OUTPUT"
+
 done
 
 # Append the remaining core sections
 for base in conclusion future-directions glossary references; do
   printf '\n' >> "$OUTPUT"
-  cat "$SECTIONS_DIR/$base.md" >> "$OUTPUT"
+  inject "$SECTIONS_DIR/$base.md" >> "$OUTPUT"
+
 done
 
 # Append appendices
 find "$SECTIONS_DIR" -maxdepth 1 -name 'appendix-*.md' | sort | while read -r file; do
   printf '\n' >> "$OUTPUT"
-  cat "$file" >> "$OUTPUT"
+  inject "$file" >> "$OUTPUT"
+
 done

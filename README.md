@@ -13,13 +13,13 @@ SpatialDDS is a protocol for real-world spatial computing that defines a shared 
 
 ## Building the full specification
 
-Generate a single-file version of the specification by running:
+All IDL files in `idl/` and manifest examples in `manifests/` are treated as canonical. Markdown sections reference them with `{{include:...}}` placeholders. Regenerate the combined specification after modifying any of those files by running:
 
 ```bash
 ./scripts/build-spec.sh
 ```
 
-This writes `SpatialDDS-1.2-full.md` to the repository root, providing a convenient reference to the complete spec.
+The script injects the referenced IDL and manifest sources and writes `SpatialDDS-1.2-full.md` to the repository root, providing a convenient reference to the complete spec.
 
 ## Contributing
 

@@ -136,6 +136,7 @@ While SpatialDDS keeps its on-bus messages small and generic, richer details abo
   "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
   "coverage": { "geohash": ["9q8y","9q8z"] }
 }
+
 ```
 
 ### **B) Mapping Service Manifest**
@@ -165,6 +166,7 @@ While SpatialDDS keeps its on-bus messages small and generic, richer details abo
   "auth": { "scheme": "none" },
   "terms": { "license": "CC-BY-4.0" }
 }
+
 ```
 
 ### **C) Content/Experience Manifest**
@@ -201,6 +203,7 @@ While SpatialDDS keeps its on-bus messages small and generic, richer details abo
     { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
   ]
 }
+
 ```
 
 ### **D) Anchors Manifest**
@@ -286,6 +289,7 @@ While SpatialDDS keeps its on-bus messages small and generic, richer details abo
   ],
   "stamp": "2025-09-12T22:55:00Z"
 }
+
 ```
 
 ## **4\. Operational Scenarios: From SLAM to AI World Models**
@@ -710,6 +714,7 @@ module spatial {
 
   }; // module core
 };   // module spatial
+
 ```
 
 ## **Appendix B: Discovery Profile 1.0**
@@ -783,6 +788,7 @@ module spatial {
 
   }; // module disco
 };
+
 ```
 
 ## **Appendix C: Anchor Registry Profile 1.0**
@@ -846,6 +852,7 @@ module spatial {
 
   }; // module anchors
 };
+
 ```
 
 ## **Appendix D: Extension Profiles**
@@ -938,6 +945,7 @@ module spatial {
 
   }; // module vio
 };
+
 ```
 
 ### **SLAM Frontend Extension 1.0**
@@ -1031,6 +1039,7 @@ module spatial {
 
   }; // module slam_frontend
 };
+
 ```
 
 ### **Semantics / Perception Extension 1.0**
@@ -1108,6 +1117,7 @@ module spatial {
 
   }; // module semantics
 };
+
 ```
 
 ### **AR + Geo Extension 1.0**
@@ -1140,6 +1150,7 @@ module spatial {
 
   }; // module argeo
 };
+
 ```
 
 ## **Appendix E: Provisional Extension Examples**
@@ -1163,6 +1174,7 @@ neural::NeuralFieldMeta {
   revision = 12;
   stamp = { sec=1700000000, nsec=0 };
 }
+
 ```
 
 ### **Example: Agent Extension (Provisional)**
@@ -1186,4 +1198,5 @@ agent::TaskStatus {
   log = "En route, ETA 3 min.";
   stamp = { sec=1700000520, nsec=0 };
 }
+
 ```
