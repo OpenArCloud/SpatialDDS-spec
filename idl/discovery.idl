@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.0
+// SpatialDDS Discovery 1.2
 // Lightweight announces for services, coverage, and content
 
 module spatial {
