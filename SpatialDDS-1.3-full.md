@@ -66,8 +66,26 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
   Anchors provide durable, shared reference points that bridge positioning, mapping, and content attachment. The Anchor Registry makes them discoverable and persistent across sessions.  
 * **Discovery without heaviness**
   Lightweight announce messages plus JSON manifests allow services (like VPS, mapping, or anchor registries) and content/experiences to be discovered at runtime without centralized registries.
-* **Interoperability with existing standards**  
+* **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
+
+### **SpatialDDS URIs**
+
+SpatialDDS uses URIs to provide stable, global identifiers for anchors, content, and services. URIs are short handles that applications can share across devices, clouds, and transports, and they can be dereferenced to retrieve a manifest with more details.
+
+**Syntax**
+
+```
+spatialdds://<authority>/<zone>/<type>/<id>[;v=<version>]
+```
+
+**Example**
+
+```
+spatialdds://museum.example.org/hall1/anchor/01J8QDFQX3W9X4CEX39M9ZP6TQ;v=3
+```
+
+To use a URI, a client asks the authority (e.g., `museum.example.org`) for the corresponding manifest. A manifest is a JSON document that describes the object (pose, coverage, endpoints, etc.). The URI is just the pointer; the manifest carries the details.
 
 
 ## **2\. IDL Profiles**
