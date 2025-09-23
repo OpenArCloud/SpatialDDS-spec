@@ -1,4 +1,4 @@
-## **6. Future Directions**
+## **7. Future Directions**
 
 While SpatialDDS establishes a practical baseline for real-time spatial computing, several areas invite further exploration:
 
