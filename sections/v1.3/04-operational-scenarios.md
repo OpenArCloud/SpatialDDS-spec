@@ -1,4 +1,4 @@
-## **4\. Operational Scenarios: From SLAM to AI World Models**
+## **5\. Operational Scenarios: From SLAM to AI World Models**
 
 SpatialDDS is designed to be practical and flexible across real-world deployments. The following scenarios illustrate how the Core, Discovery, Anchors, and Extension profiles can be combined in different ways to support robotics, AR/XR, smart city, IoT, and AI-driven applications. Each scenario lists the profiles involved and the key DDS topics flowing in and out, showing how the schema maps onto actual use cases. Optional profiles such as Neural and Agent are marked clearly, allowing implementers to see future directions without requiring them in the baseline.
 
