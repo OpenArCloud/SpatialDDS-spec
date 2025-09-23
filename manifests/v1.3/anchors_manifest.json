@@ -1,0 +1,78 @@
+{
+  "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
+  "zone_id": "knossos:palace",
+  "zone_title": "Knossos Palace Archaeological Site",
+  "coverage": {
+    "geohash": ["sv8wkf", "sv8wkg"],
+    "bbox": [
+      25.1608,
+      35.2965,
+      25.1665,
+      35.3002
+    ]
+  },
+  "anchors": [
+    {
+      "anchor_id": "square:statue-east",
+      "geopose": {
+        "lat_deg": 35.29802,
+        "lon_deg": 25.16305,
+        "alt_m": 110.2,
+        "qw": 1,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0
+      },
+      "assets": [
+        {
+          "kind": "features:ORB:v1",
+          "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
+          "count": 2048,
+          "descriptor_bytes": 32,
+          "patch_frame": "anchor-local",
+          "hash": "sha256:placeholder...",
+          "bytes": 65536
+        },
+        {
+          "kind": "geom:pcd:lod1",
+          "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
+          "points": 12000,
+          "hash": "sha256:placeholder...",
+          "bytes": 480000
+        }
+      ],
+      "stamp": "2025-09-07T15:45:00Z"
+    },
+    {
+      "anchor_id": "central-court:north",
+      "geopose": {
+        "lat_deg": 35.29761,
+        "lon_deg": 25.16391,
+        "alt_m": 109.8,
+        "qw": 0.707,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0.707
+      },
+      "assets": [
+        {
+          "kind": "features:SuperPoint:v1",
+          "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
+          "count": 1500,
+          "descriptor_bytes": 256,
+          "hash": "sha256:placeholder...",
+          "bytes": 220000
+        },
+        {
+          "kind": "geom:mesh:lod0",
+          "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
+          "triangles": 8000,
+          "hash": "sha256:placeholder...",
+          "bytes": 350000
+        }
+      ],
+      "stamp": "2025-09-08T11:12:13Z"
+    }
+  ],
+  "stamp": "2025-09-12T22:55:00Z"
+}

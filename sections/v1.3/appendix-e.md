@@ -7,7 +7,7 @@ The following examples illustrate how provisional extensions might be used in pr
 *This example shows how a service might publish metadata for a Gaussian splat field covering part of a city block.*
 
 ```idl
-{{include:idl/examples/neural_example.idl}}
+{{include:idl/v1.3/examples/neural_example.idl}}
 ```
 
 ### **Example: Agent Extension (Provisional)**
@@ -15,5 +15,5 @@ The following examples illustrate how provisional extensions might be used in pr
 *This example shows how an AI planner could issue a navigation task and later update its status.*
 
 ```idl
-{{include:idl/examples/agent_example.idl}}
+{{include:idl/v1.3/examples/agent_example.idl}}
 ```
