@@ -6,6 +6,8 @@ module spatial {
   module disco {
 
     typedef spatial::core::Time Time;
+    // Canonical manifest references use the spatialdds:// URI scheme.
+    typedef string SpatialUri;
 
     enum ServiceKind {
       VPS = 0,
@@ -32,7 +34,7 @@ module spatial {
       sequence<string,16> rx_topics;
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
-      string manifest_uri;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
       string auth_hint;
       Time stamp;
       uint32 ttl_sec;
@@ -54,7 +56,7 @@ module spatial {
       string summary;
       sequence<string,16> tags;
       string class_id;
-      string manifest_uri;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
       double center_lat; double center_lon; double radius_m;
       Time available_from;
       Time available_until;
