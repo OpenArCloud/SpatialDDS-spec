@@ -1,0 +1,29 @@
+{
+  "content_id": "xp:sculpture-walk:met-foyer",
+  "version": "1.0.2",
+  "provider": { "id": "svc:content:museum-inc", "org": "Museum Inc." },
+  "title": "AR Sculpture Walk",
+  "summary": "Guided AR overlays for five sculptures in the main foyer.",
+  "tags": ["ar", "museum", "tour"],
+  "profiles_required": ["Core", "AR+Geo"],
+  "availability": {
+    "from": "2025-09-01T09:00:00Z",
+    "until": "2025-12-31T23:59:59Z",
+    "local_tz": "America/New_York"
+  },
+  "coverage": { "geohash": ["dr5ru9","dr5rua"], "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson" },
+  "entrypoints": {
+    "anchors": [
+      { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
+      { "anchor_id": "anchor/met-foyer/central", "hint": "Checkpoint 2" }
+    ]
+  },
+  "runtime_topics": {
+    "subscribe": ["geo.tf", "geo.anchor", "geom.tile.meta", "geom.tile.patch"],
+    "optional": ["semantics.det.3d.set"]
+  },
+  "assets": [
+    { "type": "image", "role": "poster", "uri": "https://cdn.museum.example/img/poster.jpg" },
+    { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
+  ]
+}

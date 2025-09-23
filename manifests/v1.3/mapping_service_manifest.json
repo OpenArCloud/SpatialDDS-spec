@@ -1,0 +1,22 @@
+{
+  "service_id": "svc:mapping:acme/sf-downtown",
+  "version": "1.0.0",
+  "provider": { "id": "acme-maps", "org": "Acme Maps Inc." },
+  "title": "Acme Downtown Map Service",
+  "summary": "Tiled 3D meshes for SF downtown area",
+  "profiles": ["Core"],
+  "topics": {
+    "meta": "geom.tile.meta",
+    "patch": "geom.tile.patch",
+    "blob": "geom.tile.blob"
+  },
+  "tile_scheme": "quadtree",
+  "encodings": ["glTF+Draco", "LASzip"],
+  "lod_range": [12, 18],
+  "coverage": {
+    "geohash": ["9q8y","9q8z"],
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson"
+  },
+  "auth": { "scheme": "none" },
+  "terms": { "license": "CC-BY-4.0" }
+}

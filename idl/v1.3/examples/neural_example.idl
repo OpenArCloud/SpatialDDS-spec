@@ -1,0 +1,12 @@
+neural::NeuralFieldMeta {
+  field_id = "sf-market-01";
+  kind = GAUSSIANS;
+  encoding = "gsplat-2024";
+  min_x = -50; min_y = -20; min_z = 0;
+  max_x = 80;  max_y = 40;  max_z = 60;
+  base_res_x = 0; base_res_y = 0; base_res_z = 0; // not applicable
+  channels = 4; // RGBA
+  blob_ids = ["blob:shard01", "blob:shard02"];
+  revision = 12;
+  stamp = { sec=1700000000, nsec=0 };
+}

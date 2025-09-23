@@ -2,9 +2,20 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUTPUT="$ROOT_DIR/SpatialDDS-1.2-full.md"
-MAIN="$ROOT_DIR/SpatialDDS-1.2.md"
-SECTIONS_DIR="$ROOT_DIR/sections"
+VERSION="${1:-1.2}"
+OUTPUT="$ROOT_DIR/SpatialDDS-$VERSION-full.md"
+MAIN="$ROOT_DIR/SpatialDDS-$VERSION.md"
+SECTIONS_DIR="$ROOT_DIR/sections/v$VERSION"
+
+if [[ ! -f "$MAIN" ]]; then
+  echo "Main specification file '$MAIN' not found" >&2
+  exit 1
+fi
+
+if [[ ! -d "$SECTIONS_DIR" ]]; then
+  echo "Sections directory '$SECTIONS_DIR' not found" >&2
+  exit 1
+fi
 
 inject() {
   local file="$1"
