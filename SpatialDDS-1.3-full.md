@@ -79,6 +79,25 @@ SpatialDDS uses URIs to provide stable, global identifiers for anchors, content,
 spatialdds://<authority>/<zone>/<type>/<id>[;v=<version>]
 ```
 
+**Components**
+
+* `<authority>` identifies the organization responsible for issuing the URI. It **MUST** be a DNS hostname or delegated subdomain that the issuer controls. Only lowercase ASCII letters (`a–z`), digits (`0–9`), and hyphen (`-`) are permitted within a label, and labels **MUST** be separated by dots (`.`). Comparison of `<authority>` values is case-insensitive, but URIs **SHOULD** be serialized in lowercase to avoid ambiguity.
+* `<zone>` scopes identifiers within an authority (for example, a facility, campus, or logical shard). It **MUST** be a single path segment composed of 1–64 characters from the set `[a-z0-9_-]` and **MUST NOT** begin or end with `-` or `_`. `<zone>` values are case-sensitive, and authorities are responsible for guaranteeing uniqueness within each zone.
+* `<type>` selects the semantic kind of resource being referenced. It **MUST** exactly match one of the allowed values listed below and is case-sensitive.
+* `<id>` is the stable identifier assigned to the resource of the given `<type>`. It **MUST** be a 26-character Crockford Base32 ULID rendered in uppercase ASCII (`0–9`, `A–Z`, excluding `I`, `L`, `O`, and `U`). Implementations **MUST** treat `<id>` values as case-sensitive.
+* `;v=<version>` is an optional semicolon-delimited parameter that advertises a specific manifest revision. When present, the `v` key **MUST** be lowercase and the `<version>` value **MUST** be 1–32 characters drawn from `[A-Za-z0-9._-]`. Authorities **MAY** use this parameter to differentiate immutable snapshots or schema-compatible updates; consumers **MUST** ignore unknown parameters.
+
+**Allowed `<type>` values**
+
+| `<type>` | IDL mapping | Description |
+| --- | --- | --- |
+| `anchor` | `spatial::anchors::AnchorEntry.anchor_id` | Durable localization anchor identifiers published through the Anchors profile. |
+| `anchor-set` | `spatial::anchors::AnchorSet.set_id` | Anchor set bundles and registry revisions available through the Anchors profile. |
+| `content` | `spatial::disco::ContentAnnounce.content_id` | Spatial content or experience manifests announced via the Discovery profile. |
+| `service` | `spatial::disco::ServiceAnnounce.service_id` | Service manifests (e.g., VPS, mapping, relocalization) announced via the Discovery profile. |
+
+Authorities **MUST** only issue URIs with `<type>` values from this table and **MUST** ensure that the `<id>` corresponds to the referenced IDL field. Additional types require an extension to this specification.
+
 **Example**
 
 ```
