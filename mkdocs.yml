@@ -28,7 +28,11 @@ markdown_extensions:
       permalink: true
   - pymdownx.highlight
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - docs
+        - .
+      check_paths: true
   - pymdownx.superfences
 
 plugins:
