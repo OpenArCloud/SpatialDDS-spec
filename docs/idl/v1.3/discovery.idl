@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Discovery 1.2
+// Lightweight announces for services, coverage, and content
+
+module spatial {
+  module disco {
+
+    typedef spatial::core::Time Time;
+    // Canonical manifest references use the spatialdds:// URI scheme.
+    typedef string SpatialUri;
+
+    enum ServiceKind {
+      VPS = 0,
+      MAPPING = 1,
+      RELOCAL = 2,
+      SEMANTICS = 3,
+      STORAGE = 4,
+      CONTENT = 5,
+      ANCHOR_REGISTRY = 6,
+      OTHER = 255
+    };
+
+    @appendable struct KV {
+      string key;
+      string value;
+    };
+
+    @appendable struct ServiceAnnounce {
+      @key string service_id;
+      string name;
+      ServiceKind kind;
+      string version;
+      string org;
+      sequence<string,16> rx_topics;
+      sequence<string,16> tx_topics;
+      sequence<KV,32> hints;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
+      string auth_hint;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @appendable struct CoverageHint {
+      @key string service_id;
+      sequence<string,64> geohash;
+      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
+      double center_lat; double center_lon; double radius_m;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @appendable struct ContentAnnounce {
+      @key string content_id;
+      string provider_id;
+      string title;
+      string summary;
+      sequence<string,16> tags;
+      string class_id;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
+      double center_lat; double center_lon; double radius_m;
+      Time available_from;
+      Time available_until;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+  }; // module disco
+};
