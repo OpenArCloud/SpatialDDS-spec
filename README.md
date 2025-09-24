@@ -35,7 +35,6 @@ The documentation site is generated with [MkDocs](https://www.mkdocs.org/). To p
 pip install -r requirements.txt
 ./scripts/build-spec.sh 1.2
 ./scripts/build-spec.sh 1.3
-./scripts/sync_static_assets.py
 mkdocs serve
 ```
 
