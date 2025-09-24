@@ -9,9 +9,6 @@ nav:
   - Specifications:
       - "Version 1.3 (Draft)": specification-v1-3.md
       - "Version 1.2": specification-v1-2.md
-  - Downloads:
-      - IDL Profiles: downloads/idl.md
-      - Manifest Examples: downloads/manifests.md
 
 theme:
   name: material
