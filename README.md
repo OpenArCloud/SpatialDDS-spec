@@ -6,7 +6,6 @@ It's released to spark discussion—explore the spec, experiment, and join the c
 
 This repository hosts the published 1.2 specification alongside a work-in-progress 1.3 draft. See the [CHANGELOG](CHANGELOG.md) for version history. The rendered documentation is published at [openarcloud.github.io/SpatialDDS-spec](https://openarcloud.github.io/SpatialDDS-spec/).
 
-
 ## Repository structure
 
 - `SpatialDDS-1.2.md` / `SpatialDDS-1.3.md` – entry points that link to the specification's sections for each release.
