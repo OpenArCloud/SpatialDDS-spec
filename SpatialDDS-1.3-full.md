@@ -3,25 +3,35 @@
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
 **Version**: 1.3 (Draft)
+
 **Date**: TBD
+
 **Author**: James Jackson [Open AR Cloud, Metaverse Standards Forum - Real/Virtual World Integration WG Co-chair]
 
 ## Contents
+
+### Part I – Overview
+*Get oriented with the motivation, core building blocks, practical scenarios, and forward-looking roadmap before diving into the normative material.*
+
 1. [Introduction](sections/v1.3/01-introduction.md)
 2. [IDL Profiles](sections/v1.3/02-idl-profiles.md)
-3. [SpatialDDS URIs](sections/v1.3/02a-spatialdds-uris.md)
-4. [Example Manifests](sections/v1.3/03-example-manifests.md)
-5. [Operational Scenarios](sections/v1.3/04-operational-scenarios.md)
-6. [Conclusion](sections/v1.3/conclusion.md)
-7. [Future Directions](sections/v1.3/future-directions.md)
+3. [Operational Scenarios](sections/v1.3/04-operational-scenarios.md)
+4. [Conclusion](sections/v1.3/conclusion.md)
+5. [Future Directions](sections/v1.3/future-directions.md)
+
+### Part II – Reference
+*Specifications, identifiers, supporting glossaries, and appendices that implementers can consult while building SpatialDDS solutions.*
+
+6. [SpatialDDS URIs](sections/v1.3/02a-spatialdds-uris.md)
+7. [Example Manifests](sections/v1.3/03-example-manifests.md)
 8. [Glossary of Acronyms](sections/v1.3/glossary.md)
 9. [References](sections/v1.3/references.md)
 10. Appendices
-   - [Appendix A: Core Profile 1.0](sections/v1.3/appendix-a.md)
-   - [Appendix B: Discovery Profile 1.0](sections/v1.3/appendix-b.md)
-   - [Appendix C: Anchor Registry Profile 1.0](sections/v1.3/appendix-c.md)
-   - [Appendix D: Extension Profiles](sections/v1.3/appendix-d.md)
-   - [Appendix E: Provisional Extension Examples](sections/v1.3/appendix-e.md)
+    - [Appendix A: Core Profile 1.0](sections/v1.3/appendix-a.md)
+    - [Appendix B: Discovery Profile 1.0](sections/v1.3/appendix-b.md)
+    - [Appendix C: Anchor Registry Profile 1.0](sections/v1.3/appendix-c.md)
+    - [Appendix D: Extension Profiles](sections/v1.3/appendix-d.md)
+    - [Appendix E: Provisional Extension Examples](sections/v1.3/appendix-e.md)
 
 ## **1\. Introduction**
 
@@ -72,7 +82,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 
 ### **SpatialDDS URIs**
 
-SpatialDDS URIs give every anchor, service, and content bundle a stable handle that can be shared across devices and transports while still resolving to rich manifest metadata. They are the glue between lightweight on-bus messages and descriptive out-of-band manifests, ensuring that discovery pointers stay durable even as infrastructure moves. Section 3 (SpatialDDS URIs) defines the precise syntax, allowed types, and resolver requirements for these identifiers.
+SpatialDDS URIs give every anchor, service, and content bundle a stable handle that can be shared across devices and transports while still resolving to rich manifest metadata. They are the glue between lightweight on-bus messages and descriptive out-of-band manifests, ensuring that discovery pointers stay durable even as infrastructure moves. Section 6 (SpatialDDS URIs) defines the precise syntax, allowed types, and resolver requirements for these identifiers.
 
 
 ## **2\. IDL Profiles**
@@ -116,9 +126,13 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
 
-## **3. SpatialDDS URIs**
+## **6. SpatialDDS URIs**
 
-SpatialDDS uses URIs to provide stable, global identifiers for anchors, content, and services. URIs are short handles that applications can share across devices, clouds, and transports, and they can be dereferenced to retrieve a manifest with more details. Example manifests illustrating these identifiers are provided in Section 4 (Example Manifests).
+### 6.1 Conceptual overview
+
+SpatialDDS URIs provide stable, globally unique handles for anchors, content, and services. They let humans refer to "the anchor in Hall 1" or "the Midtown localization service" while giving software the exact manifest to retrieve. Every URI carries just enough structure for clients to discover the owning authority, identify the resource, and fetch the manifest that unlocks the full technical description elsewhere in the stack.
+
+### 6.2 URI components
 
 **Syntax**
 
@@ -126,60 +140,66 @@ SpatialDDS uses URIs to provide stable, global identifiers for anchors, content,
 spatialdds://<authority>/<zone>/<type>/<id>[;v=<version>]
 ```
 
-**Components**
+**Component requirements**
 
-* `<authority>` identifies the organization responsible for issuing the URI. It **MUST** be a DNS hostname or delegated subdomain that the issuer controls. Only lowercase ASCII letters (`a–z`), digits (`0–9`), and hyphen (`-`) are permitted within a label, and labels **MUST** be separated by dots (`.`). Comparison of `<authority>` values is case-insensitive, but URIs **SHOULD** be serialized in lowercase to avoid ambiguity.
-* `<zone>` scopes identifiers within an authority (for example, a facility, campus, or logical shard). It **MUST** be a single path segment composed of 1–64 characters from the set `[a-z0-9_-]` and **MUST NOT** begin or end with `-` or `_`. `<zone>` values are case-sensitive, and authorities are responsible for guaranteeing uniqueness within each zone.
-* `<type>` selects the semantic kind of resource being referenced. It **MUST** exactly match one of the allowed values listed below and is case-sensitive.
-* `<id>` is the stable identifier assigned to the resource of the given `<type>`. It **MUST** be a 26-character Crockford Base32 ULID rendered in uppercase ASCII (`0–9`, `A–Z`, excluding `I`, `L`, `O`, and `U`). Implementations **MUST** treat `<id>` values as case-sensitive.
-* `;v=<version>` is an optional semicolon-delimited parameter that advertises a specific manifest revision. When present, the `v` key **MUST** be lowercase and the `<version>` value **MUST** be 1–32 characters drawn from `[A-Za-z0-9._-]`. Authorities **MAY** use this parameter to differentiate immutable snapshots or schema-compatible updates; consumers **MUST** ignore unknown parameters.
+* `<authority>` identifies the organization that issues the URI. It **MUST** be a DNS hostname or delegated subdomain controlled by the issuer. Only lowercase ASCII letters (`a–z`), digits (`0–9`), and hyphen (`-`) are permitted within a label, and labels **MUST** be separated by dots (`.`). Comparison of `<authority>` values is case-insensitive, but URIs **SHOULD** be serialized in lowercase to avoid ambiguity.
+* `<zone>` scopes identifiers within an authority (for example, a facility, campus, or logical shard). It **MUST** be a single path segment composed of 1–64 characters from the set `[a-z0-9_-]` and **MUST NOT** begin or end with `-` or `_`. `<zone>` values are case-sensitive, and authorities **MUST** guarantee uniqueness within each zone.
+* `<type>` selects the semantic kind of resource. It **MUST** exactly match one of the values in the table below and is case-sensitive.
+* `<id>` is the stable identifier for the resource. It **MUST** be a 26-character Crockford Base32 ULID rendered in uppercase ASCII (`0–9`, `A–Z`, excluding `I`, `L`, `O`, and `U`). Implementations **MUST** treat `<id>` values as case-sensitive.
+* `;v=<version>` is an optional semicolon-delimited parameter that advertises a specific manifest revision. When present, the `v` key **MUST** be lowercase and `<version>` **MUST** be 1–32 characters drawn from `[A-Za-z0-9._-]`. Authorities **MAY** include additional parameters; consumers **MUST** ignore parameters they do not understand.
 
 **Allowed `<type>` values**
 
-| `<type>` | IDL mapping | Description |
-| --- | --- | --- |
-| `anchor` | `spatial::anchors::AnchorEntry.anchor_id` | Durable localization anchor identifiers published through the Anchors profile. |
-| `anchor-set` | `spatial::anchors::AnchorSet.set_id` | Anchor set bundles and registry revisions available through the Anchors profile. |
-| `content` | `spatial::disco::ContentAnnounce.content_id` | Spatial content or experience manifests announced via the Discovery profile. |
-| `service` | `spatial::disco::ServiceAnnounce.service_id` | Service manifests (e.g., VPS, mapping, relocalization) announced via the Discovery profile. |
+| `<type>`    | IDL mapping                                         | Description                                                                 |
+| ----------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
+| `anchor`    | `spatial::anchors::AnchorEntry.anchor_id`           | Durable localization anchor identifiers published through the Anchors profile. |
+| `anchor-set`| `spatial::anchors::AnchorSet.set_id`                | Anchor set bundles and registry revisions available through the Anchors profile. |
+| `content`   | `spatial::disco::ContentAnnounce.content_id`        | Spatial content or experience manifests announced via the Discovery profile. |
+| `service`   | `spatial::disco::ServiceAnnounce.service_id`        | Service manifests (e.g., VPS, mapping, relocalization) announced via the Discovery profile. |
 
 Authorities **MUST** only issue URIs with `<type>` values from this table and **MUST** ensure that the `<id>` corresponds to the referenced IDL field. Additional types require an extension to this specification.
 
-**Example**
+### 6.3 Resolution requirements
 
-```
+Once a URI is known, clients contact the authority to retrieve the manifest it references. Resolution **MUST** follow these rules.
+
+#### 6.3.1 Resolver discovery
+
+* Authorities that support SpatialDDS **MUST** publish a resolver descriptor at `https://<authority>/.well-known/spatialdds`. The document **MUST** be served with `Content-Type: application/json` and **MUST** contain at least a `resolver` member whose value is an absolute HTTPS URL prefix used for manifest lookups (for example, `{ "resolver": "https://api.example.org/spatialdds" }`).
+* The descriptor **MAY** contain an `alt_transports` array advertising additional retrieval mechanisms (e.g., `dds+tcp://…`, `ipfs://…`). Each entry **MUST** be a URI template that describes how to obtain the manifest payload. Clients **MAY** use them according to local policy.
+* Clients **SHOULD** fetch and cache the descriptor for up to 24 hours. If the descriptor is unreachable, clients **MUST** fall back to the default resolver prefix `https://<authority>/.well-known/spatialdds/manifest`.
+
+#### 6.3.2 Manifest request
+
+* Clients **MUST** resolve the URI path to `<resolver>/<zone>/<type>/<id>` using the prefix from the descriptor (or the default prefix when no descriptor is available). When the URI includes `;v=<version>`, the request **MUST** append the query parameter `?v=<version>` to the lookup URL without altering case.
+* Clients **MUST** issue an HTTPS `GET` request using HTTP/1.1 or HTTP/2, validate the server certificate against the `<authority>` hostname, and include the header `Accept: application/spatialdds+json, application/json;q=0.8`. Authorities **MUST NOT** require authentication for public manifests but **MAY** demand HTTP authentication or client certificates for protected manifests; such requirements **MUST** be advertised in the resolver descriptor via an `auth` member.
+* Resolver responses **MUST** return a manifest encoded as UTF-8 JSON with `Content-Type: application/spatialdds+json`. Authorities **MAY** add a `profile` parameter (for example, `application/spatialdds+json;profile="anchor"`) so clients can verify the type before parsing. Section 7 (Example Manifests) shows representative resolver payloads.
+
+#### 6.3.3 Caching and expiry
+
+* Resolver responses **MUST** include either a strong `ETag` or a `Last-Modified` header together with a `Cache-Control` directive. Clients **MUST** honor the provided directives but **MUST NOT** cache a manifest for longer than 7 days without revalidation. Implementations **SHOULD** revalidate with `If-None-Match`/`If-Modified-Since` when a cached entry is older than 1 hour and **MAY** respect shorter `max-age` values supplied by the authority.
+* Authorities **MAY** provide per-version immutable manifests by returning `Cache-Control: max-age=31536000, immutable` when the request specifies `;v=<version>`. Clients **MUST** treat such responses as immutable snapshots and **MUST** continue to revalidate versionless lookups on each use.
+
+#### 6.3.4 Error handling
+
+* `404 Not Found` indicates that the URI is unknown; clients **MUST** stop retrying until new information is available. `410 Gone` signals that the resource has been permanently retired, and clients **MUST** evict cached copies. `451 Unavailable For Legal Reasons` communicates legal withholding and **MUST** be surfaced to users when possible.
+* `429 Too Many Requests` instructs clients to back off according to the `Retry-After` header. Temporary errors (`5xx`) **MAY** be retried with exponential backoff. Authorities **MAY** redirect (`301`/`308`) to another HTTPS origin; clients **MUST** follow redirects limited to the same `<authority>` or to resolver URLs listed in the descriptor.
+
+Authorities that support non-HTTPS transports (for example, DDS-native discovery topics or content-addressed networks) advertise them through the resolver descriptor’s `alt_transports` field. Clients **MAY** use these alternatives when HTTPS is unavailable or policy prefers an on-bus manifest cache, but HTTPS resolution **MUST** remain supported so any SpatialDDS URI can be dereferenced using common web tooling.
+
+### 6.4 Usage examples
+
+```text
 spatialdds://museum.example.org/hall1/anchor/01J8QDFQX3W9X4CEX39M9ZP6TQ;v=3
+spatialdds://city.example.net/downtown/service/01HA7M6XVBTF6RWCGN3X05S0SM;v=2024-q2
+spatialdds://studio.example.com/stage/content/01HCQF7DGKKB3J8F4AR98MJ6EH
 ```
 
-To use a URI, a client asks the authority (e.g., `museum.example.org`) for the corresponding manifest. A manifest is a JSON document that describes the object (pose, coverage, endpoints, etc.). The URI is just the pointer; the manifest carries the details. Section 4 (Example Manifests) links several representative payloads that match the URIs defined here.
+Each of these identifiers expands into a manifest in Section 7 (Example Manifests), illustrating how a URI flows from discovery payloads through manifest retrieval to runtime consumption.
 
-#### Resolving `spatialdds://` URIs
+## **7. Example Manifests**
 
-Clients dereference a SpatialDDS URI by contacting the named `<authority>` over HTTPS and retrieving the manifest that the URI points to. Resolution **MUST** follow these rules:
-
-* **Resolver discovery**
-  * Authorities that support SpatialDDS **MUST** publish a resolver descriptor at `https://<authority>/.well-known/spatialdds`. The document **MUST** be served with `Content-Type: application/json` and **MUST** contain at least a `resolver` member whose value is an absolute HTTPS URL prefix used for manifest lookups (for example, `{ "resolver": "https://api.example.org/spatialdds" }`).
-  * The descriptor **MAY** contain an `alt_transports` array advertising additional retrieval mechanisms (e.g., `dds+tcp://…`, `ipfs://…`). Each entry **MUST** be a URI template describing how to obtain the manifest payload, and clients **MAY** use them according to local policy.
-  * Clients **SHOULD** fetch and cache the descriptor for up to 24 hours. If the descriptor is unreachable, clients **MUST** fall back to the default resolver prefix `https://<authority>/.well-known/spatialdds/manifest`.
-
-* **Manifest request**
-  * Clients **MUST** resolve the URI path to `<resolver>/<zone>/<type>/<id>` using the prefix from the descriptor (or the default prefix when no descriptor is available). When the URI includes `;v=<version>`, the request **MUST** append the query parameter `?v=<version>` to the lookup URL without altering case.
-  * Clients **MUST** issue an HTTPS `GET` request using HTTP/1.1 or HTTP/2, validate the server certificate against the `<authority>` hostname, and include the header `Accept: application/spatialdds+json, application/json;q=0.8`. Authorities **MUST NOT** require authentication for public manifests but **MAY** demand HTTP authentication or client certificates for protected manifests; such requirements **MUST** be advertised in the resolver descriptor via an `auth` member.
-  * Resolver responses **MUST** return a manifest encoded as UTF-8 JSON with `Content-Type: application/spatialdds+json`. Authorities **MAY** add a `profile` parameter (e.g., `application/spatialdds+json;profile="anchor"`) so clients can verify the type before parsing. See Section 4 (Example Manifests) for representative resolver payloads.
-
-* **Caching and expiry**
-  * Resolver responses **MUST** include either a strong `ETag` or a `Last-Modified` header together with a `Cache-Control` directive. Clients **MUST** honor the provided directives but **MUST NOT** cache a manifest for longer than 7 days without revalidation. Implementations **SHOULD** revalidate with `If-None-Match`/`If-Modified-Since` when a cached entry is older than 1 hour and **MAY** respect shorter `max-age` values supplied by the authority.
-  * Authorities **MAY** provide per-version immutable manifests by returning `Cache-Control: max-age=31536000, immutable` when the request specifies `;v=<version>`. Clients **MUST** treat such responses as immutable snapshots and **MUST** continue to revalidate versionless lookups on each use.
-
-* **Error handling**
-  * `404 Not Found` indicates that the URI is unknown; clients **MUST** stop retrying until new information is available. `410 Gone` signals that the resource has been permanently retired, and clients **MUST** evict cached copies. `451 Unavailable For Legal Reasons` communicates legal withholding and **MUST** be surfaced to users when possible.
-  * `429 Too Many Requests` instructs clients to back off according to the `Retry-After` header. Temporary errors (`5xx`) **MAY** be retried with exponential backoff. Authorities **MAY** redirect (`301`/`308`) to another HTTPS origin; clients **MUST** follow redirects limited to the same `<authority>` or to resolver URLs listed in the descriptor.
-
-Authorities that support non-HTTPS transports (for example, DDS-native discovery topics or content-addressed networks) advertise them through the resolver descriptor’s `alt_transports` field. Clients **MAY** use these alternatives when HTTPS is unavailable or policy prefers an on-bus manifest cache, but HTTPS resolution **MUST** remain supported so that any SpatialDDS URI can be dereferenced using common web tooling.
-
-## **4. Example Manifests**
-
-While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 3 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
+While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
 Example discovery announcements would therefore carry manifest URIs such as:
 
@@ -366,7 +386,7 @@ Legacy HTTPS download links can still be advertised inside the manifest body, bu
 
 ```
 
-## **5\. Operational Scenarios: From SLAM to AI World Models**
+## **3\. Operational Scenarios: From SLAM to AI World Models**
 
 SpatialDDS is designed to be practical and flexible across real-world deployments. The following scenarios illustrate how the Core, Discovery, Anchors, and Extension profiles can be combined in different ways to support robotics, AR/XR, smart city, IoT, and AI-driven applications. Each scenario lists the profiles involved and the key DDS topics flowing in and out, showing how the schema maps onto actual use cases. Optional profiles such as Neural and Agent are marked clearly, allowing implementers to see future directions without requiring them in the baseline.
 
@@ -539,12 +559,12 @@ These scenarios extend SpatialDDS beyond SLAM and AR into the realm of AI agents
 Taken together, these scenarios show how SpatialDDS functions as a real-time bus for spatial world models. From raw sensing and SLAM pipelines to AR content, digital twins, and AI-driven perception and planning, the protocol provides a common substrate that lets diverse systems interoperate without heavy gateways or custom formats. This positions SpatialDDS as a practical foundation for AI world models that are grounded in the physical world.
 
 
-## **6. Conclusion**
+## **4. Conclusion**
 
 SpatialDDS provides a lightweight, standards-based framework for exchanging real-world spatial data over DDS. By organizing schemas into modular profiles — with Core, Discovery, and Anchors as the foundation and Extensions adding domain-specific capabilities — it supports everything from SLAM pipelines and AR clients to digital twins, smart city infrastructure, and AI-driven world models. Core elements such as pose graphs, geometry tiles, anchors, and discovery give devices and services a shared language for building and aligning live models of the world, while provisional extensions like Neural and Agent point toward richer semantics and autonomous agents. Taken together, SpatialDDS positions itself as a practical foundation for real-time spatial computing—interoperable, codec-agnostic, and ready to serve as the data bus for AI and human experiences grounded in the physical world.
 
 
-## **7. Future Directions**
+## **5. Future Directions**
 
 While SpatialDDS establishes a practical baseline for real-time spatial computing, several areas invite further exploration:
 

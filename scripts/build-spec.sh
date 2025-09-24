@@ -37,7 +37,7 @@ PY
 inject "$MAIN" > "$OUTPUT"
 
 # Append numbered sections in order
-find "$SECTIONS_DIR" -maxdepth 1 -name '[0-9][0-9]-*.md' | sort | while read -r file; do
+find "$SECTIONS_DIR" -maxdepth 1 -name '[0-9][0-9][a-z-]*.md' | sort | while read -r file; do
   printf '\n' >> "$OUTPUT"
   inject "$file" >> "$OUTPUT"
 
