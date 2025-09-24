@@ -14,8 +14,9 @@ like a traditional research document.
   draft, including appendices and glossary material.
 - Consult the [SpatialDDS v1.2 Specification](specification-v1-2.md) for the
   previous release.
-- Visit the SpatialDDS [IDL](../idl/) and [manifest](../manifests/) directories
-  in this repository for additional example assets.
+- Visit the SpatialDDS [IDL](https://github.com/OpenARCloud/SpatialDDS-spec/tree/main/idl)
+  and [manifest](https://github.com/OpenARCloud/SpatialDDS-spec/tree/main/manifests)
+  directories in this repository for additional example assets.
 
 ## Local development
 
