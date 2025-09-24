@@ -143,178 +143,113 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
 
-## **3\. Operational Scenarios: From SLAM to AI World Models**
+## **3. Operational Scenarios: From SLAM to AI World Models**
 
-SpatialDDS is designed to be practical and flexible across real-world deployments. The following scenarios illustrate how the Core, Discovery, Anchors, and Extension profiles can be combined in different ways to support robotics, AR/XR, smart city, IoT, and AI-driven applications. Each scenario lists the profiles involved and the key DDS topics flowing in and out, showing how the schema maps onto actual use cases. Optional profiles such as Neural and Agent are marked clearly, allowing implementers to see future directions without requiring them in the baseline.
+SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
 
-### **Core SLAM/SfM Scenarios**
+### **Narrative Walkthrough: Local → Shared → Global → AI**
 
-These scenarios cover the foundational use cases for spatial mapping and localization. They show how devices and services exchange features, images, pose graphs, and geometry tiles to support SLAM and structure-from-motion pipelines, either on-device, at the edge, or in multi-agent systems.
+1. **Local SLAM on-device.** A headset, drone, or robot runs visual-inertial SLAM, generating keyframes and odometry updates in its private map frame.
+2. **Sharing a pose graph.** The device publishes `pg.node` and `pg.edge` samples (often as compact PoseGraphDelta bursts) onto the SpatialDDS bus so nearby peers or edge services can extend or optimize the map.
+3. **Anchors stabilize VIO.** By discovering the Anchor Registry, the device resolves durable anchor URIs, retrieves their manifests, and fuses those priors to keep its VIO estimate drift-free.
+4. **VPS provides a GeoPose.** When the device needs a global fix, it queries a Visual Positioning Service (VPS). The VPS uses the shared pose graph plus anchor hints to return a `geo.fix` sample that orients the local map in a world frame.
+5. **Digital twin aggregation.** Twin backends subscribe to the same streams — pose graphs, anchors, geometry, and semantics — to maintain authoritative state for places, assets, and events.
+6. **AI world models consume the twin.** Analytics engines, planning agents, and foundation models read from the digital twin feeds, grounding their predictions and experiences in the synchronized world model.
 
-1. **On-device Visual(-Inertial) SLAM**  
-   A single device runs its own SLAM, fusing camera and IMU, publishing nodes/edges.  
-* **Profiles:** Core (Pose Graph, VIO)  
-* **Topics In:** raw IMU/camera  
-* **Topics Out:** pg.node, pg.edge, geo.tf
+The end result is a continuous chain: local sensing feeds a shared spatial data bus, anchors and VPS lift content into a global frame, digital twins maintain durable state, and AI systems reason over the fused model.
 
-2. **Device → Edge Distributed SLAM**  
-   A mobile device streams features/images to an edge server for map building.  
-* **Profiles:** Core, SLAM Frontend  
-* **Topics In:** feat.keyframe, BlobChunk (images)  
-* **Topics Out:** pg.node, pg.edge, geom.tile.\*
+```mermaid
+sequenceDiagram
+    participant Device
+    participant DDS as SpatialDDS Bus
+    participant VPS
+    participant Anchors as Anchor Registry
+    participant Twin as Digital Twin
+    participant AI as AI Service
+    Device->>DDS: PoseGraphDelta (pg.node/pg.edge)
+    DDS->>Anchors: Anchor manifest request
+    Anchors-->>DDS: anchors.set / anchors.delta
+    Device->>VPS: feat.keyframe / image blob
+    VPS-->>DDS: geo.fix (GeoPose)
+    DDS-->>Twin: PoseGraph, GeoPose, geom.tile.*
+    Twin-->>AI: TwinStateUpdate / analytics feed
+    AI-->>Device: Optional guidance or overlays
+```
 
-3. **Multi-Agent SLAM with Global Alignment**  
-   Multiple devices contribute to a shared map, aligning through anchors.  
-* **Profiles:** Core, Anchors  
-* **Topics In:** pg.node/edge from peers  
-* **Topics Out:** pg.edge (loop closures), geo.tf (frame alignment)
+### **Example 1: Device Localization with SLAM and Anchors**
 
-4. **Offline SfM / Batch Reconstruction**  
-   A service reconstructs geometry from stored images/features.  
-* **Profiles:** Core, SLAM Frontend  
-* **Topics In:** BlobChunk (image sets), feat.keyframe  
-* **Topics Out:** geom.tile.meta/patch/blob
+A field technician’s headset begins indoors with self-contained SLAM. As it walks the “local → shared → global” ladder:
 
-### **Service Scenarios**
+- **Publish local mapping.** Each keyframe produces a PoseGraphDelta that streams to `pg.node` / `pg.edge`. An excerpt looks like:
 
-These scenarios describe how SpatialDDS supports services that go beyond local SLAM, such as Visual Positioning Services (VPS), cooperative relocalization, map delivery, and anchor registries. Discovery messages and manifests play a key role here, allowing clients to find and interact with services dynamically.
+  ```jsonc
+  {
+    "topic": "pg.node",
+    "map_id": "map/facility-west",
+    "node_id": "kf_0120",
+    "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
+    "frame_id": "map",
+    "stamp": { "sec": 1714070452, "nsec": 125000000 },
+    "source_id": "device/headset-17"
+  }
+  ```
 
-5. **Relocalization / Place Recognition**  
-   A service matches incoming features against a prior map for relocalization.  
-* **Profiles:** Core, SLAM Frontend  
-* **Topics In:** feat.keyframe  
-* **Topics Out:** geo.fix, pg.nodegeo
+- **Discover anchors.** Through `disco.service`, the headset resolves `anchor://facility-west/loading-bay`, fetches the manifest (Appendix A.1), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
+- **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
 
+  ```jsonc
+  {
+    "topic": "geo.fix",
+    "anchor_id": "anchor://facility-west/loading-bay",
+    "geopose": {
+      "lat_deg": 37.79341,
+      "lon_deg": -122.39412,
+      "alt_m": 12.6,
+      "q": [0.71, 0.00, 0.70, 0.05],
+      "frame_kind": "ENU",
+      "frame_ref": "@37.79340,-122.39410,5.2"
+    },
+    "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
+  }
+  ```
 
-6. **VPS — Features-only Query**  
-   Client sends features; service returns a pose or node with geo anchor.  
-* **Profiles:** Core, SLAM Frontend  
-* **Topics In:** feat.keyframe  
-* **Topics Out:** geo.fix or pg.nodegeo
+- **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
 
+(See Appendix A.1 for the full anchor and VPS manifests referenced here.)
 
-7. **VPS — Image-only Query**  
-   Client sends an image; service extracts features and returns pose.  
-* **Profiles:** Core  
-* **Topics In:** BlobChunk (role=“image/jpeg”)  
-* **Topics Out:** geo.fix or pg.nodegeo
+### **Example 2: Updating and Using a Digital Twin**
 
+A facilities digital twin service subscribes to the same DDS topics to maintain a live model, while an AI analytics engine consumes the twin stream:
 
-8. **Cooperative VPS / Crowd Relocalization**  
-   Devices share queries and matches to improve coverage.  
-* **Profiles:** Core, Discovery  
-* **Topics In:** feat.keyframe, geo.fix  
-* **Topics Out:** shared pg.edge or consensus geo.fix
+- **Twin ingestion.** The backend listens to `pg.node`, `geo.anchor`, and `geom.tile.*` to reconcile a persistent state for each asset. When a door actuator changes, an operator microservice emits:
 
+  ```jsonc
+  {
+    "topic": "twin.state.update",
+    "uri": "urn:spatial://facility-west/assets/door-17",
+    "anchor_ref": "anchor://facility-west/loading-bay",
+    "state": {
+      "pose_local": {
+        "t": [4.21, -1.02, 0.00],
+        "q": [1, 0, 0, 0]
+      },
+      "door_status": "open",
+      "last_maintenance": "2024-03-22"
+    },
+    "stamp": { "sec": 1714070520, "nsec": 0 }
+  }
+  ```
 
-9. **Mapping Service Consumption (Discovery)**  
-   Clients discover and fetch map tiles for their area of interest.  
-* **Profiles:** Core, Discovery  
-* **Topics In:** disco.service, geom.tile.meta/patch/blob  
-* **Topics Out:** local cache of geometry
+  The twin registry validates the anchor reference, signs a manifest (Appendix A.2), and updates the canonical record.
 
+- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing alerts and AR overlays back through SpatialDDS.
+- **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
 
-10. **Anchor Registry Subscription (Discovery)**  
-    Clients subscribe to a registry of persistent anchors.  
-* **Profiles:** Core, Anchors, Discovery  
-* **Topics In:** anchors.set, anchors.delta  
-* **Topics Out:** geo.tf (local → anchor/world alignment)
+(See Appendix A.2 for extended twin manifests and analytics payloads.)
 
-### **Consumer Scenarios**
+### **Why the Ladder Matters**
 
-These scenarios focus on AR clients and applications that consume maps, anchors, and semantics. They show how SpatialDDS delivers persistent content alignment, semantic overlays, and shared localization for end-user experiences.
-
-11. **AR Client Map Consumption**  
-    An AR headset consumes geometry and anchors to render content.  
-* **Profiles:** Core, Anchors  
-* **Topics In:** geom.tile.\*, geo.anchor, geo.tf  
-* **Topics Out:** none
-
-
-12. **Semantics-Assisted Mapping**  
-    A client enriches tiles with object detections for smarter AR overlays.  
-* **Profiles:** Core, Semantics  
-* **Topics In:** geom.tile.blob  
-* **Topics Out:** semantics.det.3d.set
-
-
-13. **AR Client with VPS \+ Anchor Registry**  
-    A client uses VPS fixes plus anchors for persistent localization.  
-* **Profiles:** Core, Anchors, Discovery  
-* **Topics In:** feat.keyframe or image blobs, anchors.set  
-* **Topics Out:** geo.tf
-
-### **Lifecycle / Recovery Scenario**
-
-This scenario illustrates how a device or client can quickly catch up with the current state of the world after joining late or recovering from a failure. By fetching cached tiles and anchors, clients can synchronize efficiently without disrupting live streams.
-
-14. **Catch-Up & Recovery (Reality Feed Style)**  
-    A late joiner fetches cached tiles/anchors to sync quickly.  
-* **Profiles:** Core, Anchors  
-* **Topics In:** geom.tile.meta/patch/blob, anchors.set  
-* **Topics Out:** resumed pg.node/edge
-
-### **AI & World-Model Extensions**
-
-These scenarios extend SpatialDDS beyond SLAM and AR into the realm of AI agents, neural maps, and digital twins. They demonstrate how AI perception services, planning agents, and predictive twin backends can plug into the same bus, consuming and enriching the shared world model. Neural and Agent profiles are optional extensions, and scenarios that use them are marked accordingly.
-
-15. **VLM/Detector as a Perception Service**  
-    An AI model consumes images and publishes 2D/3D detections.  
-* **Profiles:** Core, Semantics (+ SLAM Frontend if features in)  
-* **Topics In:** geom.tile.blob, optionally feat.keyframe  
-* **Topics Out:** semantics.det.2d.set, semantics.det.3d.set
-
-
-16. **Captioning / Visual QA Agent**  
-    A vision-language model provides captions/labels tied to anchors or tiles.  
-* **Profiles:** Core, Semantics  
-* **Topics In:** geom.tile.blob, geo.anchor  
-* **Topics Out:** semantics.det.2d.set (with captions), agent.answer (optional)
-
-
-17. **Neural Map — Remote View Synthesis** *(optional Neural extension)*  
-    Thin clients request rendered views from a neural map service.  
-* **Profiles:** Core (+ Neural if adopted)  
-* **Topics In:** neural.view.req  
-* **Topics Out:** neural.view.resp with images
-
-
-18. **Neural Map — Asset Streaming** *(optional Neural extension)*  
-    Neural assets (e.g., Gaussian splats) are streamed as blobs for local rendering.  
-* **Profiles:** Core (+ Neural if adopted)  
-* **Topics In:** geom.tile.meta/patch (encoding=“nerf”/“gaussians”)  
-* **Topics Out:** none
-
-
-19. **Digital Twin Ingest (Realtime → Twin Backend)**  
-    A digital twin backend ingests SpatialDDS streams for persistent modeling.  
-* **Profiles:** Core, Semantics, Anchors  
-* **Topics In:** pg.node/edge, geom.tile.\*, geo.anchor, semantics.det.3d.set  
-* **Topics Out:** none
-
-
-20. **Digital Twin → SpatialDDS (Predictive Overlays)**  
-    A twin service publishes predictions or overlays back to clients.  
-* **Profiles:** Core, Semantics  
-* **Topics In:** none (internal twin logic)  
-* **Topics Out:** semantics.det.3d.set, geom.tile.\*
-
-
-21. **Route/Task Planning Agent** *(optional Agent extension)*  
-    An AI agent consumes world state and publishes goals or routes.  
-* **Profiles:** Core (+ Agent if adopted)  
-* **Topics In:** pg.node, geo.tf, semantics.det.3d.set, geo.anchor  
-* **Topics Out:** task.route, task.goal, or agent.task/status
-
-
-22. **Human-in-the-Loop Labeling & Training Data Capture**  
-    Detections are corrected by humans and fed back for model improvement.  
-* **Profiles:** Core, Semantics  
-* **Topics In:** geom.tile.blob, semantics.det.\* (proposals)  
-* **Topics Out:** semantics.det.\* (corrected), data.capture.meta
-
-Taken together, these scenarios show how SpatialDDS functions as a real-time bus for spatial world models. From raw sensing and SLAM pipelines to AR content, digital twins, and AI-driven perception and planning, the protocol provides a common substrate that lets diverse systems interoperate without heavy gateways or custom formats. This positions SpatialDDS as a practical foundation for AI world models that are grounded in the physical world.
-
+This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
 
 ## **4. Conclusion**
 
