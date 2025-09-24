@@ -1,6 +1,6 @@
 # SpatialDDS Specification (Concept)
 
-SpatialDDS is a concept protocol for real-world spatial computing that defines a shared bus for spatial data, AI world models, and digital twins. You can browse the live specification at [openarcloud.github.io/SpatialDDS-spec](https://openarcloud.github.io/SpatialDDS-spec/).
+SpatialDDS is a concept protocol for real-world spatial computing that defines a shared bus for spatial data, AI world models, and digital twins. You can browse the live specification at [spatialdds.org](https://spatialdds.org).
 
 It's released to spark discussion—explore the spec, experiment, and join the conversation through issues or pull requests to help shape future iterations.
 
