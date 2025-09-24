@@ -1,6 +1,6 @@
-## **3. SpatialDDS URIs**
+## **6. SpatialDDS URIs**
 
-SpatialDDS uses URIs to provide stable, global identifiers for anchors, content, and services. URIs are short handles that applications can share across devices, clouds, and transports, and they can be dereferenced to retrieve a manifest with more details. Example manifests illustrating these identifiers are provided in Section 4 (Example Manifests).
+SpatialDDS uses URIs to provide stable, global identifiers for anchors, content, and services. URIs are short handles that applications can share across devices, clouds, and transports, and they can be dereferenced to retrieve a manifest with more details. Example manifests illustrating these identifiers are provided in Section 7 (Example Manifests).
 
 **Syntax**
 
@@ -33,7 +33,7 @@ Authorities **MUST** only issue URIs with `<type>` values from this table and **
 spatialdds://museum.example.org/hall1/anchor/01J8QDFQX3W9X4CEX39M9ZP6TQ;v=3
 ```
 
-To use a URI, a client asks the authority (e.g., `museum.example.org`) for the corresponding manifest. A manifest is a JSON document that describes the object (pose, coverage, endpoints, etc.). The URI is just the pointer; the manifest carries the details. Section 4 (Example Manifests) links several representative payloads that match the URIs defined here.
+To use a URI, a client asks the authority (e.g., `museum.example.org`) for the corresponding manifest. A manifest is a JSON document that describes the object (pose, coverage, endpoints, etc.). The URI is just the pointer; the manifest carries the details. Section 7 (Example Manifests) links several representative payloads that match the URIs defined here.
 
 #### Resolving `spatialdds://` URIs
 
@@ -47,7 +47,7 @@ Clients dereference a SpatialDDS URI by contacting the named `<authority>` over 
 * **Manifest request**
   * Clients **MUST** resolve the URI path to `<resolver>/<zone>/<type>/<id>` using the prefix from the descriptor (or the default prefix when no descriptor is available). When the URI includes `;v=<version>`, the request **MUST** append the query parameter `?v=<version>` to the lookup URL without altering case.
   * Clients **MUST** issue an HTTPS `GET` request using HTTP/1.1 or HTTP/2, validate the server certificate against the `<authority>` hostname, and include the header `Accept: application/spatialdds+json, application/json;q=0.8`. Authorities **MUST NOT** require authentication for public manifests but **MAY** demand HTTP authentication or client certificates for protected manifests; such requirements **MUST** be advertised in the resolver descriptor via an `auth` member.
-  * Resolver responses **MUST** return a manifest encoded as UTF-8 JSON with `Content-Type: application/spatialdds+json`. Authorities **MAY** add a `profile` parameter (e.g., `application/spatialdds+json;profile="anchor"`) so clients can verify the type before parsing. See Section 4 (Example Manifests) for representative resolver payloads.
+  * Resolver responses **MUST** return a manifest encoded as UTF-8 JSON with `Content-Type: application/spatialdds+json`. Authorities **MAY** add a `profile` parameter (e.g., `application/spatialdds+json;profile="anchor"`) so clients can verify the type before parsing. See Section 7 (Example Manifests) for representative resolver payloads.
 
 * **Caching and expiry**
   * Resolver responses **MUST** include either a strong `ETag` or a `Last-Modified` header together with a `Cache-Control` directive. Clients **MUST** honor the provided directives but **MUST NOT** cache a manifest for longer than 7 days without revalidation. Implementations **SHOULD** revalidate with `If-None-Match`/`If-Modified-Since` when a cached entry is older than 1 hour and **MAY** respect shorter `max-age` values supplied by the authority.
