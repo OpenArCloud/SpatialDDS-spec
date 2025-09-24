@@ -27,6 +27,20 @@ All IDL files in `idl/v*/` and manifest examples in `manifests/v*/` are treated 
 
 The script injects the referenced IDL and manifest sources and writes `SpatialDDS-<version>-full.md` to the repository root, providing a convenient reference to the complete spec.
 
+## Browsing the spec locally
+
+The repository includes a lightweight [MkDocs](https://www.mkdocs.org/) configuration so you can explore the spec with built-in navigation and search:
+
+1. Install MkDocs (e.g. `pip install mkdocs`).
+2. Generate the MkDocs sources with `./scripts/prepare_mkdocs.py` (also invoked by `build-spec.sh`). This expands all `{{include:...}}` blocks and writes the result to `mkdocs_docs/`.
+3. Launch a local preview with `mkdocs serve` or render static files with `mkdocs build` (output goes to `site/`).
+
+MkDocs reads from the generated `mkdocs_docs/` tree, so updating any section and re-running the helper script keeps the browsing experience current.
+
+### Automatic publishing
+
+Changes pushed to `main` automatically rebuild and publish the MkDocs site via `.github/workflows/docs.yml`. After the initial deploy, configure GitHub Pages to serve from the `gh-pages` branch to make updates live.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please open an issue to discuss large changes or questions about the specification.
@@ -37,4 +51,3 @@ For a practical illustration of the concepts, explore the companion [SpatialDDS 
 
 This work is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 See the [LICENSE](LICENSE) file for details.
-

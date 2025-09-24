@@ -37,7 +37,10 @@ PY
 inject "$MAIN" > "$OUTPUT"
 
 # Derive the section order from the table of contents in the main file.
-mapfile -t SECTION_FILES < <(
+SECTION_FILES=()
+while IFS= read -r line; do
+  SECTION_FILES+=("$line")
+done < <(
   python3 - "$MAIN" "$VERSION" <<'PY'
 import sys, pathlib, re
 
@@ -68,3 +71,7 @@ for rel in "${SECTION_FILES[@]}"; do
   printf '\n' >> "$OUTPUT"
   inject "$file" >> "$OUTPUT"
 done
+
+if [[ -x "$ROOT_DIR/scripts/prepare_mkdocs.py" ]]; then
+  "$ROOT_DIR/scripts/prepare_mkdocs.py" >/dev/null || echo "Warning: failed to refresh MkDocs copies" >&2
+fi
