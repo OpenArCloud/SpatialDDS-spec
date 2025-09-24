@@ -4,7 +4,7 @@ SpatialDDS is a concept protocol for real-world spatial computing that defines a
 
 It's released to spark discussion—explore the spec, experiment, and join the conversation through issues or pull requests to help shape future iterations.
 
-This repository hosts the published 1.2 specification alongside a work-in-progress 1.3 draft. See the [CHANGELOG](CHANGELOG.md) for version history. The rendered documentation is published at [openarcloud.github.io/SpatialDDS-spec](https://openarcloud.github.io/SpatialDDS-spec/).
+This repository hosts the published 1.2 specification alongside a work-in-progress 1.3 draft. See the [CHANGELOG](CHANGELOG.md) for version history.
 
 
 ## Repository structure
@@ -26,19 +26,6 @@ All IDL files in `idl/v*/` and manifest examples in `manifests/v*/` are treated 
 ```
 
 The script injects the referenced IDL and manifest sources and writes `SpatialDDS-<version>-full.md` to the repository root, providing a convenient reference to the complete spec.
-
-## Documentation site
-
-The documentation site is generated with [MkDocs](https://www.mkdocs.org/). To preview it locally:
-
-```bash
-pip install -r requirements.txt
-./scripts/build-spec.sh 1.2
-./scripts/build-spec.sh 1.3
-mkdocs serve
-```
-
-The GitHub Actions workflow in `.github/workflows/deploy-docs.yml` rebuilds the site and deploys it to GitHub Pages whenever changes land on `main`.
 
 ## Contributing
 
