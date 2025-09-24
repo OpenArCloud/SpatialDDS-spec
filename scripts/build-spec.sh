@@ -36,23 +36,35 @@ PY
 # Start with the main specification file
 inject "$MAIN" > "$OUTPUT"
 
-# Append numbered sections in order
-find "$SECTIONS_DIR" -maxdepth 1 -name '[0-9][0-9]-*.md' | sort | while read -r file; do
+# Derive the section order from the table of contents in the main file.
+mapfile -t SECTION_FILES < <(
+  python3 - "$MAIN" "$VERSION" <<'PY'
+import sys, pathlib, re
+
+main_path = pathlib.Path(sys.argv[1])
+version = sys.argv[2]
+pattern = re.compile(rf"\(sections/v{re.escape(version)}/([^\)]+\.md)\)")
+
+seen = set()
+for match in pattern.finditer(main_path.read_text()):
+    rel_path = match.group(1)
+    if rel_path not in seen:
+        seen.add(rel_path)
+        print(rel_path)
+PY
+)
+
+if [[ "${#SECTION_FILES[@]}" -eq 0 ]]; then
+  echo "No sections referenced in the table of contents for version $VERSION" >&2
+  exit 1
+fi
+
+for rel in "${SECTION_FILES[@]}"; do
+  file="$SECTIONS_DIR/$rel"
+  if [[ ! -f "$file" ]]; then
+    echo "Referenced section '$file' not found" >&2
+    exit 1
+  fi
   printf '\n' >> "$OUTPUT"
   inject "$file" >> "$OUTPUT"
-
-done
-
-# Append the remaining core sections
-for base in conclusion future-directions glossary references; do
-  printf '\n' >> "$OUTPUT"
-  inject "$SECTIONS_DIR/$base.md" >> "$OUTPUT"
-
-done
-
-# Append appendices
-find "$SECTIONS_DIR" -maxdepth 1 -name 'appendix-*.md' | sort | while read -r file; do
-  printf '\n' >> "$OUTPUT"
-  inject "$file" >> "$OUTPUT"
-
 done

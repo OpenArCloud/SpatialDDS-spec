@@ -27,9 +27,9 @@
 8. [Glossary of Acronyms](sections/v1.3/glossary.md)
 9. [References](sections/v1.3/references.md)
 10. Appendices
-    - [Appendix A: Core Profile 1.0](sections/v1.3/appendix-a.md)
-    - [Appendix B: Discovery Profile 1.0](sections/v1.3/appendix-b.md)
-    - [Appendix C: Anchor Registry Profile 1.0](sections/v1.3/appendix-c.md)
+    - [Appendix A: Core Profile](sections/v1.3/appendix-a.md)
+    - [Appendix B: Discovery Profile](sections/v1.3/appendix-b.md)
+    - [Appendix C: Anchor Registry Profile](sections/v1.3/appendix-c.md)
     - [Appendix D: Extension Profiles](sections/v1.3/appendix-d.md)
     - [Appendix E: Provisional Extension Examples](sections/v1.3/appendix-e.md)
 
@@ -125,195 +125,6 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
-
-## **7. Example Manifests**
-
-While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
-
-Example discovery announcements would therefore carry manifest URIs such as:
-
-* `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/vps-main`
-* `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
-* `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
-
-Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
-
-### **A) VPS Manifest**
-
-*This manifest describes a Visual Positioning Service (VPS). It specifies the service identifier, version, coverage area, and the topics used for queries and responses. It also lists supported input encodings and response types, allowing clients to determine compatibility before interacting with the service.*
-
-```json
-{
-  "service_id": "svc:vps:acme/sf-downtown",
-  "profiles": ["Core", "SLAM Frontend", "AR+Geo"],
-  "request": {
-    "features_topic": "feat.keyframe",
-    "image_blob_role": "image/jpeg",
-    "prior_topic": "geo.fix"
-  },
-  "response": {
-    "rich": "pg.nodegeo",
-    "minimal": "geo.fix"
-  },
-  "limits": { "max_fps": 10, "max_image_px": 1920 },
-  "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
-  "coverage": { "geohash": ["9q8y","9q8z"] }
-}
-
-```
-
-### **B) Mapping Service Manifest**
-
-*This manifest describes a Mapping service that publishes geometry tiles for a given coverage area. It defines the service identifier, version, supported encodings, and the DDS topics used for requesting and receiving tile data. It enables clients to subscribe to live or cached geometry without ambiguity about formats or endpoints.*
-
-```json
-{
-  "service_id": "svc:mapping:acme/sf-downtown",
-  "version": "1.0.0",
-  "provider": { "id": "acme-maps", "org": "Acme Maps Inc." },
-  "title": "Acme Downtown Map Service",
-  "summary": "Tiled 3D meshes for SF downtown area",
-  "profiles": ["Core"],
-  "topics": {
-    "meta": "geom.tile.meta",
-    "patch": "geom.tile.patch",
-    "blob": "geom.tile.blob"
-  },
-  "tile_scheme": "quadtree",
-  "encodings": ["glTF+Draco", "LASzip"],
-  "lod_range": [12, 18],
-  "coverage": {
-    "geohash": ["9q8y","9q8z"],
-    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson"
-  },
-  "auth": { "scheme": "none" },
-  "terms": { "license": "CC-BY-4.0" }
-}
-
-```
-
-### **C) Content/Experience Manifest**
-
-*This manifest describes a spatial content or experience service. It declares a content identifier, version, anchor bindings, and optional dependencies on other manifests. This allows AR applications to discover and attach experiences to shared anchors while keeping the actual content assets (e.g., 3D models, media) external to DDS.*
-
-```json
-{
-  "content_id": "xp:sculpture-walk:met-foyer",
-  "version": "1.0.2",
-  "provider": { "id": "svc:content:museum-inc", "org": "Museum Inc." },
-  "title": "AR Sculpture Walk",
-  "summary": "Guided AR overlays for five sculptures in the main foyer.",
-  "tags": ["ar", "museum", "tour"],
-  "profiles_required": ["Core", "AR+Geo"],
-  "availability": {
-    "from": "2025-09-01T09:00:00Z",
-    "until": "2025-12-31T23:59:59Z",
-    "local_tz": "America/New_York"
-  },
-  "coverage": { "geohash": ["dr5ru9","dr5rua"], "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson" },
-  "entrypoints": {
-    "anchors": [
-      { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
-      { "anchor_id": "anchor/met-foyer/central", "hint": "Checkpoint 2" }
-    ]
-  },
-  "runtime_topics": {
-    "subscribe": ["geo.tf", "geo.anchor", "geom.tile.meta", "geom.tile.patch"],
-    "optional": ["semantics.det.3d.set"]
-  },
-  "assets": [
-    { "type": "image", "role": "poster", "uri": "https://cdn.museum.example/img/poster.jpg" },
-    { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
-  ]
-}
-
-```
-
-### **D) Anchors Manifest**
-
-*This manifest lists durable localization anchors for a zone and points to feature or geometry assets used for relocalization or scene alignment.* Each anchor is identified by an `anchor_id` and includes a simplified GeoPose with `lat_deg`, `lon_deg`, `alt_m`, and quaternion fields ordered `(qw,qx,qy,qz)`. A `stamp` field on each anchor records its last update time. The manifest itself also carries a top-level `stamp` denoting when the set was generated; this maps to the `stamp` field of the `AnchorSet` IDL structure. `frame_kind` defaults to `ECEF`, `frame_ref` is omitted, and no covariance matrix is supplied. Consumers needing the full `GeoPose` from `idl/core.idl` should populate missing fields accordingly.
-
-```json
-{
-  "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
-  "zone_id": "knossos:palace",
-  "zone_title": "Knossos Palace Archaeological Site",
-  "coverage": {
-    "geohash": ["sv8wkf", "sv8wkg"],
-    "bbox": [
-      25.1608,
-      35.2965,
-      25.1665,
-      35.3002
-    ]
-  },
-  "anchors": [
-    {
-      "anchor_id": "square:statue-east",
-      "geopose": {
-        "lat_deg": 35.29802,
-        "lon_deg": 25.16305,
-        "alt_m": 110.2,
-        "qw": 1,
-        "qx": 0,
-        "qy": 0,
-        "qz": 0
-      },
-      "assets": [
-        {
-          "kind": "features:ORB:v1",
-          "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
-          "count": 2048,
-          "descriptor_bytes": 32,
-          "patch_frame": "anchor-local",
-          "hash": "sha256:placeholder...",
-          "bytes": 65536
-        },
-        {
-          "kind": "geom:pcd:lod1",
-          "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
-          "points": 12000,
-          "hash": "sha256:placeholder...",
-          "bytes": 480000
-        }
-      ],
-      "stamp": "2025-09-07T15:45:00Z"
-    },
-    {
-      "anchor_id": "central-court:north",
-      "geopose": {
-        "lat_deg": 35.29761,
-        "lon_deg": 25.16391,
-        "alt_m": 109.8,
-        "qw": 0.707,
-        "qx": 0,
-        "qy": 0,
-        "qz": 0.707
-      },
-      "assets": [
-        {
-          "kind": "features:SuperPoint:v1",
-          "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
-          "count": 1500,
-          "descriptor_bytes": 256,
-          "hash": "sha256:placeholder...",
-          "bytes": 220000
-        },
-        {
-          "kind": "geom:mesh:lod0",
-          "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
-          "triangles": 8000,
-          "hash": "sha256:placeholder...",
-          "bytes": 350000
-        }
-      ],
-      "stamp": "2025-09-08T11:12:13Z"
-    }
-  ],
-  "stamp": "2025-09-12T22:55:00Z"
-}
-
-```
 
 ## **3\. Operational Scenarios: From SLAM to AI World Models**
 
@@ -513,6 +324,226 @@ Together, these directions point toward a future where SpatialDDS is not just a 
 We invite implementers, researchers, and standards bodies to explore SpatialDDS, contribute extensions, and help shape it into a shared backbone for real-time spatial computing and AI world models.
 
 
+## **6. SpatialDDS URIs**
+
+### 6.1 Why SpatialDDS URIs matter
+
+SpatialDDS URIs are the shorthand that lets participants talk about anchors, content, and services without exchanging the full manifests up front. They bridge human concepts—"the anchor in Hall 1" or "the localization service for Midtown"—with machine-readable manifests that deliver the precise data, coordinate frames, and capabilities needed later in the flow.
+
+### 6.2 Key ingredients
+
+Every SpatialDDS URI names four ideas:
+
+* **Authority** – who owns the namespace and keeps the identifiers stable.
+* **Zone** – a slice of that authority’s catalog, such as a venue, fleet, or logical shard.
+* **Type** – whether the reference points to an anchor, a bundle of anchors, a piece of content, or a service endpoint.
+* **Identifier (with optional version)** – the specific record the manifest will describe.
+
+The exact tokens and encoding rules are defined by the individual profiles, but at a glance the URIs read like `spatialdds://authority/zone/type/id;v=version`. Readers only need to recognize which part expresses ownership, scope, semantics, and revision so they can reason about the rest of the system.
+
+### 6.3 Working with SpatialDDS URIs
+
+Once a URI is known, clients ask the authority for the manifest it points to—typically via HTTPS, though authorities can advertise other transports if they operate private caches or field buses. The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
+
+### 6.4 Examples
+
+```text
+spatialdds://museum.example.org/hall1/anchor/01J8QDFQX3W9X4CEX39M9ZP6TQ
+spatialdds://city.example.net/downtown/service/01HA7M6XVBTF6RWCGN3X05S0SM;v=2024-q2
+spatialdds://studio.example.com/stage/content/01HCQF7DGKKB3J8F4AR98MJ6EH
+```
+
+In the manifest samples later in this specification, each of these identifiers expands into a full JSON manifest. Reviewing those examples shows how a single URI flows from a discovery payload, through manifest retrieval, to runtime consumption.
+
+## **7. Example Manifests**
+
+While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
+
+Example discovery announcements would therefore carry manifest URIs such as:
+
+* `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/vps-main`
+* `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
+* `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
+
+Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
+
+### **A) VPS Manifest**
+
+*This manifest describes a Visual Positioning Service (VPS). It specifies the service identifier, version, coverage area, and the topics used for queries and responses. It also lists supported input encodings and response types, allowing clients to determine compatibility before interacting with the service.*
+
+```json
+{
+  "service_id": "svc:vps:acme/sf-downtown",
+  "profiles": ["Core", "SLAM Frontend", "AR+Geo"],
+  "request": {
+    "features_topic": "feat.keyframe",
+    "image_blob_role": "image/jpeg",
+    "prior_topic": "geo.fix"
+  },
+  "response": {
+    "rich": "pg.nodegeo",
+    "minimal": "geo.fix"
+  },
+  "limits": { "max_fps": 10, "max_image_px": 1920 },
+  "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
+  "coverage": { "geohash": ["9q8y","9q8z"] }
+}
+
+```
+
+### **B) Mapping Service Manifest**
+
+*This manifest describes a Mapping service that publishes geometry tiles for a given coverage area. It defines the service identifier, version, supported encodings, and the DDS topics used for requesting and receiving tile data. It enables clients to subscribe to live or cached geometry without ambiguity about formats or endpoints.*
+
+```json
+{
+  "service_id": "svc:mapping:acme/sf-downtown",
+  "version": "1.0.0",
+  "provider": { "id": "acme-maps", "org": "Acme Maps Inc." },
+  "title": "Acme Downtown Map Service",
+  "summary": "Tiled 3D meshes for SF downtown area",
+  "profiles": ["Core"],
+  "topics": {
+    "meta": "geom.tile.meta",
+    "patch": "geom.tile.patch",
+    "blob": "geom.tile.blob"
+  },
+  "tile_scheme": "quadtree",
+  "encodings": ["glTF+Draco", "LASzip"],
+  "lod_range": [12, 18],
+  "coverage": {
+    "geohash": ["9q8y","9q8z"],
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson"
+  },
+  "auth": { "scheme": "none" },
+  "terms": { "license": "CC-BY-4.0" }
+}
+
+```
+
+### **C) Content/Experience Manifest**
+
+*This manifest describes a spatial content or experience service. It declares a content identifier, version, anchor bindings, and optional dependencies on other manifests. This allows AR applications to discover and attach experiences to shared anchors while keeping the actual content assets (e.g., 3D models, media) external to DDS.*
+
+```json
+{
+  "content_id": "xp:sculpture-walk:met-foyer",
+  "version": "1.0.2",
+  "provider": { "id": "svc:content:museum-inc", "org": "Museum Inc." },
+  "title": "AR Sculpture Walk",
+  "summary": "Guided AR overlays for five sculptures in the main foyer.",
+  "tags": ["ar", "museum", "tour"],
+  "profiles_required": ["Core", "AR+Geo"],
+  "availability": {
+    "from": "2025-09-01T09:00:00Z",
+    "until": "2025-12-31T23:59:59Z",
+    "local_tz": "America/New_York"
+  },
+  "coverage": { "geohash": ["dr5ru9","dr5rua"], "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson" },
+  "entrypoints": {
+    "anchors": [
+      { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
+      { "anchor_id": "anchor/met-foyer/central", "hint": "Checkpoint 2" }
+    ]
+  },
+  "runtime_topics": {
+    "subscribe": ["geo.tf", "geo.anchor", "geom.tile.meta", "geom.tile.patch"],
+    "optional": ["semantics.det.3d.set"]
+  },
+  "assets": [
+    { "type": "image", "role": "poster", "uri": "https://cdn.museum.example/img/poster.jpg" },
+    { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
+  ]
+}
+
+```
+
+### **D) Anchors Manifest**
+
+*This manifest lists durable localization anchors for a zone and points to feature or geometry assets used for relocalization or scene alignment.* Each anchor is identified by an `anchor_id` and includes a simplified GeoPose with `lat_deg`, `lon_deg`, `alt_m`, and quaternion fields ordered `(qw,qx,qy,qz)`. A `stamp` field on each anchor records its last update time. The manifest itself also carries a top-level `stamp` denoting when the set was generated; this maps to the `stamp` field of the `AnchorSet` IDL structure. `frame_kind` defaults to `ECEF`, `frame_ref` is omitted, and no covariance matrix is supplied. Consumers needing the full `GeoPose` from `idl/core.idl` should populate missing fields accordingly.
+
+```json
+{
+  "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
+  "zone_id": "knossos:palace",
+  "zone_title": "Knossos Palace Archaeological Site",
+  "coverage": {
+    "geohash": ["sv8wkf", "sv8wkg"],
+    "bbox": [
+      25.1608,
+      35.2965,
+      25.1665,
+      35.3002
+    ]
+  },
+  "anchors": [
+    {
+      "anchor_id": "square:statue-east",
+      "geopose": {
+        "lat_deg": 35.29802,
+        "lon_deg": 25.16305,
+        "alt_m": 110.2,
+        "qw": 1,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0
+      },
+      "assets": [
+        {
+          "kind": "features:ORB:v1",
+          "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
+          "count": 2048,
+          "descriptor_bytes": 32,
+          "patch_frame": "anchor-local",
+          "hash": "sha256:placeholder...",
+          "bytes": 65536
+        },
+        {
+          "kind": "geom:pcd:lod1",
+          "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
+          "points": 12000,
+          "hash": "sha256:placeholder...",
+          "bytes": 480000
+        }
+      ],
+      "stamp": "2025-09-07T15:45:00Z"
+    },
+    {
+      "anchor_id": "central-court:north",
+      "geopose": {
+        "lat_deg": 35.29761,
+        "lon_deg": 25.16391,
+        "alt_m": 109.8,
+        "qw": 0.707,
+        "qx": 0,
+        "qy": 0,
+        "qz": 0.707
+      },
+      "assets": [
+        {
+          "kind": "features:SuperPoint:v1",
+          "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
+          "count": 1500,
+          "descriptor_bytes": 256,
+          "hash": "sha256:placeholder...",
+          "bytes": 220000
+        },
+        {
+          "kind": "geom:mesh:lod0",
+          "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
+          "triangles": 8000,
+          "hash": "sha256:placeholder...",
+          "bytes": 350000
+        }
+      ],
+      "stamp": "2025-09-08T11:12:13Z"
+    }
+  ],
+  "stamp": "2025-09-12T22:55:00Z"
+}
+
+```
+
 ## **8. Glossary of Acronyms**
 
 **AI** – Artificial Intelligence
@@ -591,7 +622,7 @@ We invite implementers, researchers, and standards bodies to explore SpatialDDS,
 \[12\] Google Research. *ARCore Geospatial API & Visual Positioning Service.* Developer Documentation. Available: [https://developers.google.com/ar](https://developers.google.com/ar)
 
 
-## **Appendix A: Core Profile 1.0**
+## **Appendix A: Core Profile**
 
 *The Core profile defines the fundamental data structures for SpatialDDS. It includes pose graphs, 3D geometry tiles, anchors, transforms, and generic blob transport. This is the minimal interoperable baseline for exchanging world models across devices and services.*
 
@@ -740,7 +771,7 @@ module spatial {
 
 ```
 
-## **Appendix B: Discovery Profile 1.0**
+## **Appendix B: Discovery Profile**
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
@@ -816,7 +847,7 @@ module spatial {
 
 ```
 
-## **Appendix C: Anchor Registry Profile 1.0**
+## **Appendix C: Anchor Registry Profile**
 
 *The Anchors profile defines durable GeoAnchors and the Anchor Registry. Anchors act as persistent world-locked reference points, while the registry makes them discoverable and maintainable across sessions, devices, and services.*
 
@@ -884,7 +915,7 @@ module spatial {
 
 *These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
-### **VIO / Inertial Extension 1.0**
+### **VIO / Inertial Extension**
 
 *Raw IMU/mag samples, 9-DoF bundles, and fused state outputs.*
 
@@ -973,7 +1004,7 @@ module spatial {
 
 ```
 
-### **SLAM Frontend Extension 1.0**
+### **SLAM Frontend Extension**
 
 *Per-keyframe features, matches, landmarks, tracks, and camera calibration.*
 
@@ -1067,7 +1098,7 @@ module spatial {
 
 ```
 
-### **Semantics / Perception Extension 1.0**
+### **Semantics / Perception Extension**
 
 *2D detections tied to keyframes; 3D oriented boxes in world frames (optionally tiled).*
 
@@ -1145,7 +1176,7 @@ module spatial {
 
 ```
 
-### **AR + Geo Extension 1.0**
+### **AR + Geo Extension**
 
 *Geo-fixed nodes for easy consumption by AR clients & multi-agent alignment.*
 

@@ -18,8 +18,8 @@
 7. [Glossary of Acronyms](sections/v1.2/glossary.md)
 8. [References](sections/v1.2/references.md)
 9. Appendices
-   - [Appendix A: Core Profile 1.0](sections/v1.2/appendix-a.md)
-   - [Appendix B: Discovery Profile 1.0](sections/v1.2/appendix-b.md)
-   - [Appendix C: Anchor Registry Profile 1.0](sections/v1.2/appendix-c.md)
+   - [Appendix A: Core Profile](sections/v1.2/appendix-a.md)
+   - [Appendix B: Discovery Profile](sections/v1.2/appendix-b.md)
+   - [Appendix C: Anchor Registry Profile](sections/v1.2/appendix-c.md)
    - [Appendix D: Extension Profiles](sections/v1.2/appendix-d.md)
    - [Appendix E: Provisional Extension Examples](sections/v1.2/appendix-e.md)
