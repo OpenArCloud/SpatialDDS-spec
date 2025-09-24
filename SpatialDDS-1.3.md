@@ -3,7 +3,9 @@
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
 **Version**: 1.3 (Draft)
+
 **Date**: TBD
+
 **Author**: James Jackson [Open AR Cloud, Metaverse Standards Forum - Real/Virtual World Integration WG Co-chair]
 
 ## Contents
