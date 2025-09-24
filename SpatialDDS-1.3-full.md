@@ -6,7 +6,7 @@
 
 **Date**: TBD
 
-**Author**: James Jackson [Open AR Cloud, Metaverse Standards Forum - Real/Virtual World Integration WG Co-chair]
+**Author**: James Jackson [Open AR Cloud]
 
 ## Contents
 
