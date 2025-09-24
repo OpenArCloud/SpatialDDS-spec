@@ -18,9 +18,9 @@
 7. [Glossary of Acronyms](sections/v1.2/glossary.md)
 8. [References](sections/v1.2/references.md)
 9. Appendices
-   - [Appendix A: Core Profile 1.0](sections/v1.2/appendix-a.md)
-   - [Appendix B: Discovery Profile 1.0](sections/v1.2/appendix-b.md)
-   - [Appendix C: Anchor Registry Profile 1.0](sections/v1.2/appendix-c.md)
+   - [Appendix A: Core Profile](sections/v1.2/appendix-a.md)
+   - [Appendix B: Discovery Profile](sections/v1.2/appendix-b.md)
+   - [Appendix C: Anchor Registry Profile](sections/v1.2/appendix-c.md)
    - [Appendix D: Extension Profiles](sections/v1.2/appendix-d.md)
    - [Appendix E: Provisional Extension Examples](sections/v1.2/appendix-e.md)
 
@@ -570,7 +570,7 @@ We invite implementers, researchers, and standards bodies to explore SpatialDDS,
 \[12\] Google Research. *ARCore Geospatial API & Visual Positioning Service.* Developer Documentation. Available: [https://developers.google.com/ar](https://developers.google.com/ar)
 
 
-## **Appendix A: Core Profile 1.0**
+## **Appendix A: Core Profile**
 
 *The Core profile defines the fundamental data structures for SpatialDDS. It includes pose graphs, 3D geometry tiles, anchors, transforms, and generic blob transport. This is the minimal interoperable baseline for exchanging world models across devices and services.*
 
@@ -719,7 +719,7 @@ module spatial {
 
 ```
 
-## **Appendix B: Discovery Profile 1.0**
+## **Appendix B: Discovery Profile**
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
@@ -793,7 +793,7 @@ module spatial {
 
 ```
 
-## **Appendix C: Anchor Registry Profile 1.0**
+## **Appendix C: Anchor Registry Profile**
 
 *The Anchors profile defines durable GeoAnchors and the Anchor Registry. Anchors act as persistent world-locked reference points, while the registry makes them discoverable and maintainable across sessions, devices, and services.*
 
@@ -861,7 +861,7 @@ module spatial {
 
 *These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
-### **VIO / Inertial Extension 1.0**
+### **VIO / Inertial Extension**
 
 *Raw IMU/mag samples, 9-DoF bundles, and fused state outputs.*
 
@@ -950,7 +950,7 @@ module spatial {
 
 ```
 
-### **SLAM Frontend Extension 1.0**
+### **SLAM Frontend Extension**
 
 *Per-keyframe features, matches, landmarks, tracks, and camera calibration.*
 
@@ -1044,7 +1044,7 @@ module spatial {
 
 ```
 
-### **Semantics / Perception Extension 1.0**
+### **Semantics / Perception Extension**
 
 *2D detections tied to keyframes; 3D oriented boxes in world frames (optionally tiled).*
 
@@ -1122,7 +1122,7 @@ module spatial {
 
 ```
 
-### **AR + Geo Extension 1.0**
+### **AR + Geo Extension**
 
 *Geo-fixed nodes for easy consumption by AR clients & multi-agent alignment.*
 
