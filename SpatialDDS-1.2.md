@@ -6,7 +6,7 @@
 
 **Date**: 12 September 2025
 
-**Author**: James Jackson [Open AR Cloud, Metaverse Standards Forum - Real/Virtual World Integration WG Co-chair]
+**Author**: James Jackson [Open AR Cloud]
 
 ## Contents
 1. [Introduction](sections/v1.2/01-introduction.md)
