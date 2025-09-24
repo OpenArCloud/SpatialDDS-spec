@@ -8,6 +8,5 @@ The Markdown sources in this repository remain the canonical reference for each 
 
 - [SpatialDDS 1.3 (single page)](SpatialDDS-1.3-full.md)
 - [SpatialDDS 1.2 (single page)](SpatialDDS-1.2-full.md)
-- [IDL bundle](https://github.com/OpenArCloud/SpatialDDS-spec/tree/main/idl)
-- [Manifest examples](https://github.com/OpenArCloud/SpatialDDS-spec/tree/main/manifests)
+- [SpatialDDS spec repo](https://github.com/OpenArCloud/SpatialDDS-spec)
 - [SpatialDDS demo repo](https://github.com/OpenArCloud/SpatialDDS-demo)

@@ -37,36 +37,36 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
 
 - **Publish local mapping.** Each keyframe produces a PoseGraphDelta that streams to `pg.node` / `pg.edge`. An excerpt looks like:
 
-  ```jsonc
-  {
-    "topic": "pg.node",
-    "map_id": "map/facility-west",
-    "node_id": "kf_0120",
-    "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
-    "frame_id": "map",
-    "stamp": { "sec": 1714070452, "nsec": 125000000 },
-    "source_id": "device/headset-17"
-  }
-  ```
+    ```json
+    {
+      "topic": "pg.node",
+      "map_id": "map/facility-west",
+      "node_id": "kf_0120",
+      "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
+      "frame_id": "map",
+      "stamp": { "sec": 1714070452, "nsec": 125000000 },
+      "source_id": "device/headset-17"
+    }
+    ```
 
 - **Discover anchors.** Through `disco.service`, the headset resolves `anchor://facility-west/loading-bay`, fetches the manifest (Appendix A.1), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
 - **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
 
-  ```jsonc
-  {
-    "topic": "geo.fix",
-    "anchor_id": "anchor://facility-west/loading-bay",
-    "geopose": {
-      "lat_deg": 37.79341,
-      "lon_deg": -122.39412,
-      "alt_m": 12.6,
-      "q": [0.71, 0.00, 0.70, 0.05],
-      "frame_kind": "ENU",
-      "frame_ref": "@37.79340,-122.39410,5.2"
-    },
-    "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
-  }
-  ```
+    ```json
+    {
+      "topic": "geo.fix",
+      "anchor_id": "anchor://facility-west/loading-bay",
+      "geopose": {
+        "lat_deg": 37.79341,
+        "lon_deg": -122.39412,
+        "alt_m": 12.6,
+        "q": [0.71, 0.00, 0.70, 0.05],
+        "frame_kind": "ENU",
+        "frame_ref": "@37.79340,-122.39410,5.2"
+      },
+      "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
+    }
+    ```
 
 - **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
 
@@ -78,22 +78,22 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 
 - **Twin ingestion.** The backend listens to `pg.node`, `geo.anchor`, and `geom.tile.*` to reconcile a persistent state for each asset. When a door actuator changes, an operator microservice emits:
 
-  ```jsonc
-  {
-    "topic": "twin.state.update",
-    "uri": "urn:spatial://facility-west/assets/door-17",
-    "anchor_ref": "anchor://facility-west/loading-bay",
-    "state": {
-      "pose_local": {
-        "t": [4.21, -1.02, 0.00],
-        "q": [1, 0, 0, 0]
+    ```json
+    {
+      "topic": "twin.state.update",
+      "uri": "urn:spatial://facility-west/assets/door-17",
+      "anchor_ref": "anchor://facility-west/loading-bay",
+      "state": {
+        "pose_local": {
+          "t": [4.21, -1.02, 0.00],
+          "q": [1, 0, 0, 0]
+        },
+        "door_status": "open",
+        "last_maintenance": "2024-03-22"
       },
-      "door_status": "open",
-      "last_maintenance": "2024-03-22"
-    },
-    "stamp": { "sec": 1714070520, "nsec": 0 }
-  }
-  ```
+      "stamp": { "sec": 1714070520, "nsec": 0 }
+    }
+    ```
 
   The twin registry validates the anchor reference, signs a manifest (Appendix A.2), and updates the canonical record.
 

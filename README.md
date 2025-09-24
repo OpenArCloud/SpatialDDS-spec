@@ -31,7 +31,7 @@ The script injects the referenced IDL and manifest sources and writes `SpatialDD
 
 The repository includes a lightweight [MkDocs](https://www.mkdocs.org/) configuration so you can explore the spec with built-in navigation and search:
 
-1. Install MkDocs (e.g. `pip install mkdocs`).
+1. Install MkDocs and the required extensions (e.g. `pip install mkdocs mkdocs-mermaid2-plugin pymdown-extensions`).
 2. Generate the MkDocs sources with `./scripts/prepare_mkdocs.py` (also invoked by `build-spec.sh`). This expands all `{{include:...}}` blocks and writes the result to `mkdocs_docs/`.
 3. Launch a local preview with `mkdocs serve` or render static files with `mkdocs build` (output goes to `site/`).
 
