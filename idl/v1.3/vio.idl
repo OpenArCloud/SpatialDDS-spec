@@ -58,7 +58,7 @@ module spatial {
       FusionMode       mode;
       FusionSourceKind source_kind;
 
-      double q[4];                   // quaternion (w,x,y,z)
+      double q[4];                   // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
       double t[3];                   // meters, in frame_id
 

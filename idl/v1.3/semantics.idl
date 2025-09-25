@@ -43,7 +43,7 @@ module spatial {
       // Oriented bounding box in frame_id
       double center[3];          // m
       double size[3];            // width,height,depth (m)
-      double q[4];               // orientation (w,x,y,z)
+      double q[4];               // orientation (x,y,z,w) in GeoPose order
 
       // Uncertainty (optional; NaN if unknown)
       double cov_pos[9];         // 3x3 position covariance

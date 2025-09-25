@@ -108,7 +108,7 @@ The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatia
 
 ### **2.1 Core SpatialDDS**
 
-The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
+The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
 ### **2.2 Discovery**
 
@@ -319,9 +319,9 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
 
-Version 1.3 also gives manifests a lighter way to talk about where a service operates. Providers may name the frame they use for coverage, list a few transforms back to `"earth-fixed"`, and optionally add coarse `coverage.volumes[]` boxes. Those hints let a client glance at the manifest and decide whether to keep loading richer assets.
+Version 1.3 also gives manifests a lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
 
-Discovery gains matching, optional fields: services can attach `CoverageVolume` hints to their announces, and volume-aware devices may send a `CoverageQuery` to ask for help inside a 3D region. Participants that do not understand the extra fields continue operating unchanged.
+Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
 
 ### **A) VPS Manifest**
 
@@ -657,7 +657,7 @@ module spatial {
 
     struct PoseSE3 {
       double t[3];    // translation (x,y,z)
-      double q[4];    // quaternion (w,x,y,z)
+      double q[4];    // quaternion (x,y,z,w) in GeoPose order
     };
 
     @appendable struct TileKey {
@@ -743,7 +743,7 @@ module spatial {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
-      double q[4];             // orientation (w,x,y,z)
+      double q[4];             // orientation (x,y,z,w) in GeoPose order
       GeoFrameKind frame_kind; // ECEF/ENU/NED
       string frame_ref;        // for ENU/NED: "@lat,lon,alt"
       Time   stamp;
@@ -1010,7 +1010,7 @@ module spatial {
       FusionMode       mode;
       FusionSourceKind source_kind;
 
-      double q[4];                   // quaternion (w,x,y,z)
+      double q[4];                   // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
       double t[3];                   // meters, in frame_id
 
@@ -1178,7 +1178,7 @@ module spatial {
       // Oriented bounding box in frame_id
       double center[3];          // m
       double size[3];            // width,height,depth (m)
-      double q[4];               // orientation (w,x,y,z)
+      double q[4];               // orientation (x,y,z,w) in GeoPose order
 
       // Uncertainty (optional; NaN if unknown)
       double cov_pos[9];         // 3x3 position covariance
