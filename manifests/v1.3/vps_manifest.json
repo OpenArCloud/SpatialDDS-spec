@@ -12,5 +12,34 @@
   },
   "limits": { "max_fps": 10, "max_image_px": 1920 },
   "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
-  "coverage": { "geohash": ["9q8y","9q8z"] }
+  "coverage": {
+    "frame": "ship-fixed",
+    "geohash": ["9q8y", "9q8z"],
+    "bbox": [
+      -122.4186,
+      37.7931,
+      -122.4123,
+      37.7982
+    ]
+  },
+  "transforms": [
+    {
+      "from": "ship-fixed",
+      "to": "earth-fixed",
+      "stamp": "2025-05-01T12:00:00Z",
+      "pose": {
+        "t_m": [-2650.4, 15.2, 8.6],
+        "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
+      },
+      "valid_for_s": 5,
+      "covariance": [
+        0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.25, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 1e-6, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 1e-6, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 1e-6
+      ]
+    }
+  ]
 }
