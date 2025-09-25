@@ -10,7 +10,9 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
 
-Version 1.3 also expands how manifests describe coverage. A new optional `coverage.frame` string lets providers declare the coordinate frame used for their coverage geometry, and a companion `transforms[]` array carries timestamped poses that relate local frames back to `"earth-fixed"` or other global references. This allows vehicle- or vessel-mounted services to keep AR experiences stable in a local frame while still exposing global alignment for analytics, logging, or shared content.
+Version 1.3 also gives manifests a lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+
+Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
 
 ### **A) VPS Manifest**
 

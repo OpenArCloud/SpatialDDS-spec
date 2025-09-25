@@ -11,6 +11,7 @@
 - Created isolated directories for 1.3 documentation, IDL files, and manifests to enable parallel iteration.
 - Documented SpatialDDS URIs for stable identification and manifest discovery.
 - Added optional `coverage.frame` metadata and manifest `transforms[]` guidance for mobile services (tracked in issue #30).
+- Added optional 3D coverage volumes in manifests plus matching Discovery hints/queries for active volumetric filtering (issue #29).
 
 ## Version 1.2 - 2025-09-14
 

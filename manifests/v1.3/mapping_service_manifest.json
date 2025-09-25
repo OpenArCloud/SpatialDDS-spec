@@ -15,7 +15,14 @@
   "lod_range": [12, 18],
   "coverage": {
     "geohash": ["9q8y","9q8z"],
-    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson"
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
+    "volumes": [
+      {
+        "frame": "earth-fixed",
+        "min_xyz": [-122.4195, 37.7925, -10.0],
+        "max_xyz": [-122.4115, 37.7990, 250.0]
+      }
+    ]
   },
   "auth": { "scheme": "none" },
   "terms": { "license": "CC-BY-4.0" }

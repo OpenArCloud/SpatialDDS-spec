@@ -319,7 +319,9 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
 
-Version 1.3 also expands how manifests describe coverage. A new optional `coverage.frame` string lets providers declare the coordinate frame used for their coverage geometry, and a companion `transforms[]` array carries timestamped poses that relate local frames back to `"earth-fixed"` or other global references. This allows vehicle- or vessel-mounted services to keep AR experiences stable in a local frame while still exposing global alignment for analytics, logging, or shared content.
+Version 1.3 also gives manifests a lighter way to talk about where a service operates. Providers may name the frame they use for coverage, list a few transforms back to `"earth-fixed"`, and optionally add coarse `coverage.volumes[]` boxes. Those hints let a client glance at the manifest and decide whether to keep loading richer assets.
+
+Discovery gains matching, optional fields: services can attach `CoverageVolume` hints to their announces, and volume-aware devices may send a `CoverageQuery` to ask for help inside a 3D region. Participants that do not understand the extra fields continue operating unchanged.
 
 ### **A) VPS Manifest**
 
@@ -348,6 +350,13 @@ Version 1.3 also expands how manifests describe coverage. A new optional `covera
       37.7931,
       -122.4123,
       37.7982
+    ],
+    "volumes": [
+      {
+        "frame": "ship-fixed",
+        "min_xyz": [-25.0, -30.0, -5.0],
+        "max_xyz": [25.0, 30.0, 20.0]
+      }
     ]
   },
   "transforms": [
@@ -396,7 +405,14 @@ Version 1.3 also expands how manifests describe coverage. A new optional `covera
   "lod_range": [12, 18],
   "coverage": {
     "geohash": ["9q8y","9q8z"],
-    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson"
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
+    "volumes": [
+      {
+        "frame": "earth-fixed",
+        "min_xyz": [-122.4195, 37.7925, -10.0],
+        "max_xyz": [-122.4115, 37.7990, 250.0]
+      }
+    ]
   },
   "auth": { "scheme": "none" },
   "terms": { "license": "CC-BY-4.0" }
@@ -422,7 +438,17 @@ Version 1.3 also expands how manifests describe coverage. A new optional `covera
     "until": "2025-12-31T23:59:59Z",
     "local_tz": "America/New_York"
   },
-  "coverage": { "geohash": ["dr5ru9","dr5rua"], "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson" },
+  "coverage": {
+    "geohash": ["dr5ru9","dr5rua"],
+    "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson",
+    "volumes": [
+      {
+        "frame": "earth-fixed",
+        "min_xyz": [-73.9635, 40.7793, 20.0],
+        "max_xyz": [-73.9631, 40.7796, 35.0]
+      }
+    ]
+  },
   "entrypoints": {
     "anchors": [
       { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
@@ -457,6 +483,13 @@ Version 1.3 also expands how manifests describe coverage. A new optional `covera
       35.2965,
       25.1665,
       35.3002
+    ],
+    "volumes": [
+      {
+        "frame": "earth-fixed",
+        "min_xyz": [25.1600, 35.2960, 100.0],
+        "max_xyz": [25.1670, 35.3010, 130.0]
+      }
     ]
   },
   "anchors": [
@@ -786,6 +819,12 @@ module spatial {
       string value;
     };
 
+    @appendable struct CoverageVolume {
+      string frame;             // coordinate frame for this volume (defaults to "earth-fixed" when empty)
+      double min_xyz[3];        // axis-aligned min corner in the declared frame (meters for linear frames, lon/lat/alt for earth-fixed)
+      double max_xyz[3];        // axis-aligned max corner in the declared frame
+    };
+
     @appendable struct ServiceAnnounce {
       @key string service_id;
       string name;
@@ -806,6 +845,14 @@ module spatial {
       sequence<string,64> geohash;
       double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
       double center_lat; double center_lon; double radius_m;
+      sequence<CoverageVolume,8> volumes;  // optional precise 3D volumes covered by this service
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @appendable struct CoverageQuery {
+      @key string query_id;
+      CoverageVolume volume;    // requested 3D volume of interest
       Time stamp;
       uint32 ttl_sec;
     };
