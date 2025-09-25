@@ -25,6 +25,12 @@ module spatial {
       string value;
     };
 
+    @appendable struct CoverageVolume {
+      string frame;             // coordinate frame for this volume (defaults to "earth-fixed" when empty)
+      double min_xyz[3];        // axis-aligned min corner in the declared frame (meters for linear frames, lon/lat/alt for earth-fixed)
+      double max_xyz[3];        // axis-aligned max corner in the declared frame
+    };
+
     @appendable struct ServiceAnnounce {
       @key string service_id;
       string name;
@@ -45,6 +51,14 @@ module spatial {
       sequence<string,64> geohash;
       double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
       double center_lat; double center_lon; double radius_m;
+      sequence<CoverageVolume,8> volumes;  // optional precise 3D volumes covered by this service
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @appendable struct CoverageQuery {
+      @key string query_id;
+      CoverageVolume volume;    // requested 3D volume of interest
       Time stamp;
       uint32 ttl_sec;
     };
