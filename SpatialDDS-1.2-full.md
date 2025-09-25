@@ -78,7 +78,7 @@ The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatia
 
 ### **2.1 Core SpatialDDS**
 
-The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
+The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
 ### **2.2 Discovery**
 
@@ -589,7 +589,7 @@ module spatial {
 
     struct PoseSE3 {
       double t[3];    // translation (x,y,z)
-      double q[4];    // quaternion (w,x,y,z)
+      double q[4];    // quaternion (x,y,z,w) in GeoPose order
     };
 
     @appendable struct TileKey {
@@ -675,7 +675,7 @@ module spatial {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
-      double q[4];             // orientation (w,x,y,z)
+      double q[4];             // orientation (x,y,z,w) in GeoPose order
       GeoFrameKind frame_kind; // ECEF/ENU/NED
       string frame_ref;        // for ENU/NED: "@lat,lon,alt"
       Time   stamp;
@@ -926,7 +926,7 @@ module spatial {
       FusionMode       mode;
       FusionSourceKind source_kind;
 
-      double q[4];                   // quaternion (w,x,y,z)
+      double q[4];                   // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
       double t[3];                   // meters, in frame_id
 
@@ -1094,7 +1094,7 @@ module spatial {
       // Oriented bounding box in frame_id
       double center[3];          // m
       double size[3];            // width,height,depth (m)
-      double q[4];               // orientation (w,x,y,z)
+      double q[4];               // orientation (x,y,z,w) in GeoPose order
 
       // Uncertainty (optional; NaN if unknown)
       double cov_pos[9];         // 3x3 position covariance
