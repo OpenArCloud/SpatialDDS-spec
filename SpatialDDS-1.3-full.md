@@ -319,6 +319,8 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
 
+Version 1.3 also expands how manifests describe coverage. A new optional `coverage.frame` string lets providers declare the coordinate frame used for their coverage geometry, and a companion `transforms[]` array carries timestamped poses that relate local frames back to `"earth-fixed"` or other global references. This allows vehicle- or vessel-mounted services to keep AR experiences stable in a local frame while still exposing global alignment for analytics, logging, or shared content.
+
 ### **A) VPS Manifest**
 
 *This manifest describes a Visual Positioning Service (VPS). It specifies the service identifier, version, coverage area, and the topics used for queries and responses. It also lists supported input encodings and response types, allowing clients to determine compatibility before interacting with the service.*
@@ -338,7 +340,36 @@ Legacy HTTPS download links can still be advertised inside the manifest body, bu
   },
   "limits": { "max_fps": 10, "max_image_px": 1920 },
   "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
-  "coverage": { "geohash": ["9q8y","9q8z"] }
+  "coverage": {
+    "frame": "ship-fixed",
+    "geohash": ["9q8y", "9q8z"],
+    "bbox": [
+      -122.4186,
+      37.7931,
+      -122.4123,
+      37.7982
+    ]
+  },
+  "transforms": [
+    {
+      "from": "ship-fixed",
+      "to": "earth-fixed",
+      "stamp": "2025-05-01T12:00:00Z",
+      "pose": {
+        "t_m": [-2650.4, 15.2, 8.6],
+        "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
+      },
+      "valid_for_s": 5,
+      "covariance": [
+        0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.25, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 1e-6, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 1e-6, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 1e-6
+      ]
+    }
+  ]
 }
 
 ```
