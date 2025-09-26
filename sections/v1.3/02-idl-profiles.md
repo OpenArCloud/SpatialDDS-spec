@@ -10,6 +10,50 @@ The Core profile defines the essential building blocks for representing and shar
 
 The Discovery profile adds a minimal, lightweight way to announce services, anchors, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or a bounding-box array `[min_lon, min_lat, max_lon, max_lat]`), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, anchor registries, semantics, or AR content providers without requiring heavy registries or complex protocols.
 
+SpatialDDS augments these announcements with an active discovery model so clients can query for relevant resources instead of waiting passively. Deployments can expose this discovery interface using either an **HTTP binding**—where a resolver serves a well-known endpoint that accepts queries and returns filtered results—or a **DDS binding**, which maps the same query/announce pattern onto well-known topics for low-latency, distributed environments. Installations may adopt either approach or both; HTTP resolvers may also act as gateways to a DDS bus without changing the client-facing contract.
+
+Both bindings share a common message model. A **query** identifies the resource type (for example, `tileset` or `anchor`) and an area of interest expressed as a coverage element. **Announcements** respond with matching resources, providing the resource identity, coverage, and the endpoint clients should use. For now the spatial predicate is simply *intersects*: a resource is relevant if its coverage overlaps the requested volume. The same request/response shape means applications can switch transports—or operate across mixed deployments—without rewriting discovery logic.
+
+#### Example: HTTP resolver
+
+An HTTP client searching for tilesets that intersect a bounding box in San Francisco would issue:
+
+```http
+POST /.well-known/spatialdds/search
+Content-Type: application/json
+
+{
+  "rtype": "tileset",
+  "volume": {
+    "type": "bbox",
+    "frame": "earth-fixed",
+    "crs": "EPSG:4979",
+    "bbox": [-122.42, 37.79, -122.40, 37.80]
+  }
+}
+```
+
+A matching response could be:
+
+```json
+[
+  {
+    "self_uri": "spatialdds://openarcloud.org/zone:sf/service/tileset:city3d",
+    "rtype": "tileset",
+    "bounds": {
+      "type": "bbox",
+      "frame": "earth-fixed",
+      "crs": "EPSG:4979",
+      "bbox": [-122.42, 37.79, -122.40, 37.80]
+    },
+    "endpoint": "https://example.org/tiles/city3d.json",
+    "mime": "application/vnd.ogc.3dtiles+json"
+  }
+]
+```
+
+The DDS binding mirrors this interaction with query and announce topics, letting edge deployments deliver the same discovery experience without leaving the data bus.
+
 ### **2.3 Anchors**
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
@@ -20,8 +64,8 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 
 * **Core Profile**  
   Fundamental building blocks: pose graphs, geometry tiles, anchors, transforms, and blob transport.  
-* **Discovery Profile**  
-   Lightweight announce messages and manifests for services, coverage areas, anchors, and spatial content or experiences.
+* **Discovery Profile**
+   Lightweight announce messages plus active query/response bindings for services, coverage areas, anchors, and spatial content or experiences.
 * **Anchors Profile**  
   Durable anchors and the Anchor Registry, enabling persistent world-locked reference points.
 
