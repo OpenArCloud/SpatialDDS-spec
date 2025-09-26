@@ -32,3 +32,4 @@
     - [Appendix C: Anchor Registry Profile](sections/v1.3/appendix-c.md)
     - [Appendix D: Extension Profiles](sections/v1.3/appendix-d.md)
     - [Appendix E: Provisional Extension Examples](sections/v1.3/appendix-e.md)
+    - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.3/appendix-f.md)
