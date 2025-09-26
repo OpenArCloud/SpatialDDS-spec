@@ -10,3 +10,7 @@ The Markdown sources in this repository remain the canonical reference for each 
 - [SpatialDDS 1.2 (single page)](SpatialDDS-1.2-full.md)
 - [SpatialDDS spec repo](https://github.com/OpenArCloud/SpatialDDS-spec)
 - [SpatialDDS demo repo](https://github.com/OpenArCloud/SpatialDDS-demo)
+
+## Contact
+
+For questions or collaboration opportunities, reach out to James Jackson (Open AR Cloud) at james.jackson [at] openarcloud [dot] org.
