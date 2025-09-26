@@ -15,6 +15,11 @@ module spatial {
       double q[4];    // quaternion (x,y,z,w) in GeoPose order
     };
 
+    struct Aabb3 {
+      double min_xyz[3];
+      double max_xyz[3];
+    };
+
     @appendable struct TileKey {
       @key uint32 x;     // tile coordinate (quadtree/3D grid)
       @key uint32 y;

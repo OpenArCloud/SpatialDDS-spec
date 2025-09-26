@@ -319,9 +319,9 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
 
-Version 1.3 also gives manifests a lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+Version 1.3 also gives manifests a flexible way to explain where a service operates. Publishers can describe one or more `coverage.elements[]`, where each element declares its `type` (`"bbox"` or `"volume"`), the coordinate `frame` it lives in (local or global), an optional `crs`, and either a `bbox` (`[min_lon, min_lat, max_lon, max_lat]`) or an `aabb` (`min_xyz`/`max_xyz`). Any `geohash` hints remain tied to `"earth-fixed"`. Publishers may pair those elements with `transforms[]` back to `"earth-fixed"` so clients can connect local frames to global ones. Taken together, those hints let clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
 
-Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
+Discovery mirrors that upgrade with optional `CoverageElement` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
 
 ### **A) VPS Manifest**
 
@@ -343,19 +343,26 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
   "limits": { "max_fps": 10, "max_image_px": 1920 },
   "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
   "coverage": {
-    "frame": "ship-fixed",
     "geohash": ["9q8y", "9q8z"],
-    "bbox": [
-      -122.4186,
-      37.7931,
-      -122.4123,
-      37.7982
-    ],
-    "volumes": [
+    "elements": [
       {
+        "type": "bbox",
+        "frame": "earth-fixed",
+        "crs": "EPSG:4979",
+        "bbox": [
+          -122.4186,
+          37.7931,
+          -122.4123,
+          37.7982
+        ]
+      },
+      {
+        "type": "volume",
         "frame": "ship-fixed",
-        "min_xyz": [-25.0, -30.0, -5.0],
-        "max_xyz": [25.0, 30.0, 20.0]
+        "aabb": {
+          "min_xyz": [-25.0, -30.0, -5.0],
+          "max_xyz": [25.0, 30.0, 20.0]
+        }
       }
     ]
   },
@@ -364,19 +371,11 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
       "from": "ship-fixed",
       "to": "earth-fixed",
       "stamp": "2025-05-01T12:00:00Z",
+      "valid_for_s": 5,
       "pose": {
         "t_m": [-2650.4, 15.2, 8.6],
         "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
-      },
-      "valid_for_s": 5,
-      "covariance": [
-        0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.25, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 1e-6, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 1e-6, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 1e-6
-      ]
+      }
     }
   ]
 }
@@ -404,13 +403,26 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
   "encodings": ["glTF+Draco", "LASzip"],
   "lod_range": [12, 18],
   "coverage": {
-    "geohash": ["9q8y","9q8z"],
+    "geohash": ["9q8y", "9q8z"],
     "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
-    "volumes": [
+    "elements": [
       {
+        "type": "bbox",
         "frame": "earth-fixed",
-        "min_xyz": [-122.4195, 37.7925, -10.0],
-        "max_xyz": [-122.4115, 37.7990, 250.0]
+        "bbox": [
+          -122.4195,
+          37.7925,
+          -122.4115,
+          37.7990
+        ]
+      },
+      {
+        "type": "volume",
+        "frame": "earth-fixed",
+        "aabb": {
+          "min_xyz": [-122.4195, 37.7925, -10.0],
+          "max_xyz": [-122.4115, 37.7990, 250.0]
+        }
       }
     ]
   },
@@ -439,16 +451,41 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
     "local_tz": "America/New_York"
   },
   "coverage": {
-    "geohash": ["dr5ru9","dr5rua"],
+    "geohash": ["dr5ru9", "dr5rua"],
     "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson",
-    "volumes": [
+    "elements": [
       {
+        "type": "bbox",
         "frame": "earth-fixed",
-        "min_xyz": [-73.9635, 40.7793, 20.0],
-        "max_xyz": [-73.9631, 40.7796, 35.0]
+        "bbox": [
+          -73.9635,
+          40.7793,
+          -73.9631,
+          40.7796
+        ]
+      },
+      {
+        "type": "volume",
+        "frame": "foyer-local",
+        "aabb": {
+          "min_xyz": [-8.0, -12.0, 0.0],
+          "max_xyz": [8.0, 12.0, 5.0]
+        }
       }
     ]
   },
+  "transforms": [
+    {
+      "from": "foyer-local",
+      "to": "earth-fixed",
+      "stamp": "2025-09-01T09:00:00Z",
+      "valid_for_s": 3600,
+      "pose": {
+        "t_m": [-73.9633, 40.7794, 25.5],
+        "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
+      }
+    }
+  ],
   "entrypoints": {
     "anchors": [
       { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
@@ -478,20 +515,39 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
     "geohash": ["sv8wkf", "sv8wkg"],
-    "bbox": [
-      25.1608,
-      35.2965,
-      25.1665,
-      35.3002
-    ],
-    "volumes": [
+    "elements": [
       {
+        "type": "volume",
+        "frame": "gallery-local",
+        "aabb": {
+          "min_xyz": [-15.0, -20.0, -2.0],
+          "max_xyz": [15.0, 20.0, 6.0]
+        }
+      },
+      {
+        "type": "bbox",
         "frame": "earth-fixed",
-        "min_xyz": [25.1600, 35.2960, 100.0],
-        "max_xyz": [25.1670, 35.3010, 130.0]
+        "bbox": [
+          25.1608,
+          35.2965,
+          25.1665,
+          35.3002
+        ]
       }
     ]
   },
+  "transforms": [
+    {
+      "from": "gallery-local",
+      "to": "earth-fixed",
+      "stamp": "2025-02-18T08:00:00Z",
+      "valid_for_s": 600,
+      "pose": {
+        "t_m": [25.1635, 35.2980, 112.0],
+        "q_wxyz": [0.9659, 0.0, 0.2588, 0.0]
+      }
+    }
+  ],
   "anchors": [
     {
       "anchor_id": "square:statue-east",
@@ -660,6 +716,11 @@ module spatial {
       double q[4];    // quaternion (x,y,z,w) in GeoPose order
     };
 
+    struct Aabb3 {
+      double min_xyz[3];
+      double max_xyz[3];
+    };
+
     @appendable struct TileKey {
       @key uint32 x;     // tile coordinate (quadtree/3D grid)
       @key uint32 y;
@@ -800,6 +861,7 @@ module spatial {
   module disco {
 
     typedef spatial::core::Time Time;
+    typedef spatial::core::Aabb3 Aabb3;
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
 
@@ -819,10 +881,21 @@ module spatial {
       string value;
     };
 
-    @appendable struct CoverageVolume {
-      string frame;             // coordinate frame for this volume (defaults to "earth-fixed" when empty)
-      double min_xyz[3];        // axis-aligned min corner in the declared frame (meters for linear frames, lon/lat/alt for earth-fixed)
-      double max_xyz[3];        // axis-aligned max corner in the declared frame
+    @appendable struct CoverageElement {
+      string type;              // "bbox" | "volume"
+      string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
+      string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
+      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat] when type == "bbox"
+      Aabb3 aabb;               // axis-aligned bounds when type == "volume"
+    };
+
+    @appendable struct Transform {
+      string from;              // source frame (e.g., "map")
+      string to;                // target frame (e.g., "earth-fixed")
+      string stamp;             // ISO-8601 timestamp for this transform
+      uint32 valid_for_s;       // validity horizon in seconds
+      double t_m[3];            // translation in meters
+      double q_wxyz[4];         // quaternion (w,x,y,z)
     };
 
     @appendable struct ServiceAnnounce {
@@ -834,6 +907,8 @@ module spatial {
       sequence<string,16> rx_topics;
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
+      sequence<CoverageElement,16> coverage;
+      sequence<Transform,8> transforms;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
       string auth_hint;
       Time stamp;
@@ -842,17 +917,15 @@ module spatial {
 
     @appendable struct CoverageHint {
       @key string service_id;
-      sequence<string,64> geohash;
-      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
-      double center_lat; double center_lon; double radius_m;
-      sequence<CoverageVolume,8> volumes;  // optional precise 3D volumes covered by this service
+      sequence<CoverageElement,16> coverage;
+      sequence<Transform,8> transforms;
       Time stamp;
       uint32 ttl_sec;
     };
 
     @appendable struct CoverageQuery {
       @key string query_id;
-      CoverageVolume volume;    // requested 3D volume of interest
+      sequence<CoverageElement,4> coverage;  // requested regions of interest
       Time stamp;
       uint32 ttl_sec;
     };
@@ -865,7 +938,8 @@ module spatial {
       sequence<string,16> tags;
       string class_id;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
-      double center_lat; double center_lon; double radius_m;
+      sequence<CoverageElement,16> coverage;
+      sequence<Transform,8> transforms;
       Time available_from;
       Time available_until;
       Time stamp;
