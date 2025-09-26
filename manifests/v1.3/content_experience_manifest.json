@@ -1,39 +1,116 @@
 {
   "content_id": "xp:sculpture-walk:met-foyer",
   "version": "1.0.2",
-  "provider": { "id": "svc:content:museum-inc", "org": "Museum Inc." },
+  "provider": {
+    "id": "svc:content:museum-inc",
+    "org": "Museum Inc."
+  },
   "title": "AR Sculpture Walk",
   "summary": "Guided AR overlays for five sculptures in the main foyer.",
-  "tags": ["ar", "museum", "tour"],
-  "profiles_required": ["Core", "AR+Geo"],
+  "tags": [
+    "ar",
+    "museum",
+    "tour"
+  ],
+  "profiles_required": [
+    "Core",
+    "AR+Geo"
+  ],
   "availability": {
     "from": "2025-09-01T09:00:00Z",
     "until": "2025-12-31T23:59:59Z",
     "local_tz": "America/New_York"
   },
   "coverage": {
-    "geohash": ["dr5ru9","dr5rua"],
+    "geohash": [
+      "dr5ru9",
+      "dr5rua"
+    ],
     "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson",
-    "volumes": [
+    "elements": [
       {
+        "type": "bbox",
         "frame": "earth-fixed",
-        "min_xyz": [-73.9635, 40.7793, 20.0],
-        "max_xyz": [-73.9631, 40.7796, 35.0]
+        "bbox": [
+          -73.9635,
+          40.7793,
+          -73.9631,
+          40.7796
+        ]
+      },
+      {
+        "type": "volume",
+        "frame": "foyer-local",
+        "aabb": {
+          "min_xyz": [
+            -8.0,
+            -12.0,
+            0.0
+          ],
+          "max_xyz": [
+            8.0,
+            12.0,
+            5.0
+          ]
+        }
       }
     ]
   },
+  "transforms": [
+    {
+      "from": "foyer-local",
+      "to": "earth-fixed",
+      "stamp": "2025-09-01T09:00:00Z",
+      "valid_for_s": 3600,
+      "pose": {
+        "t_m": [
+          -73.9633,
+          40.7794,
+          25.5
+        ],
+        "q_wxyz": [
+          0.9239,
+          0.0,
+          0.3827,
+          0.0
+        ]
+      }
+    }
+  ],
   "entrypoints": {
     "anchors": [
-      { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
-      { "anchor_id": "anchor/met-foyer/central", "hint": "Checkpoint 2" }
+      {
+        "anchor_id": "anchor/met-foyer/north-plinth",
+        "hint": "Start here"
+      },
+      {
+        "anchor_id": "anchor/met-foyer/central",
+        "hint": "Checkpoint 2"
+      }
     ]
   },
   "runtime_topics": {
-    "subscribe": ["geo.tf", "geo.anchor", "geom.tile.meta", "geom.tile.patch"],
-    "optional": ["semantics.det.3d.set"]
+    "subscribe": [
+      "geo.tf",
+      "geo.anchor",
+      "geom.tile.meta",
+      "geom.tile.patch"
+    ],
+    "optional": [
+      "semantics.det.3d.set"
+    ]
   },
   "assets": [
-    { "type": "image", "role": "poster", "uri": "https://cdn.museum.example/img/poster.jpg" },
-    { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
+    {
+      "type": "image",
+      "role": "poster",
+      "uri": "https://cdn.museum.example/img/poster.jpg"
+    },
+    {
+      "type": "audio",
+      "role": "narration",
+      "uri": "https://cdn.museum.example/audio/room_intro.mp3",
+      "lang": "en"
+    }
   ]
 }

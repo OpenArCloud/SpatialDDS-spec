@@ -3,21 +3,60 @@
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
-    "geohash": ["sv8wkf", "sv8wkg"],
-    "bbox": [
-      25.1608,
-      35.2965,
-      25.1665,
-      35.3002
+    "geohash": [
+      "sv8wkf",
+      "sv8wkg"
     ],
-    "volumes": [
+    "elements": [
       {
+        "type": "volume",
+        "frame": "gallery-local",
+        "aabb": {
+          "min_xyz": [
+            -15.0,
+            -20.0,
+            -2.0
+          ],
+          "max_xyz": [
+            15.0,
+            20.0,
+            6.0
+          ]
+        }
+      },
+      {
+        "type": "bbox",
         "frame": "earth-fixed",
-        "min_xyz": [25.1600, 35.2960, 100.0],
-        "max_xyz": [25.1670, 35.3010, 130.0]
+        "bbox": [
+          25.1608,
+          35.2965,
+          25.1665,
+          35.3002
+        ]
       }
     ]
   },
+  "transforms": [
+    {
+      "from": "gallery-local",
+      "to": "earth-fixed",
+      "stamp": "2025-02-18T08:00:00Z",
+      "valid_for_s": 600,
+      "pose": {
+        "t_m": [
+          25.1635,
+          35.298,
+          112.0
+        ],
+        "q_wxyz": [
+          0.9659,
+          0.0,
+          0.2588,
+          0.0
+        ]
+      }
+    }
+  ],
   "anchors": [
     {
       "anchor_id": "square:statue-east",

@@ -1,6 +1,10 @@
 {
   "service_id": "svc:vps:acme/sf-downtown",
-  "profiles": ["Core", "SLAM Frontend", "AR+Geo"],
+  "profiles": [
+    "Core",
+    "SLAM Frontend",
+    "AR+Geo"
+  ],
   "request": {
     "features_topic": "feat.keyframe",
     "image_blob_role": "image/jpeg",
@@ -10,22 +14,46 @@
     "rich": "pg.nodegeo",
     "minimal": "geo.fix"
   },
-  "limits": { "max_fps": 10, "max_image_px": 1920 },
-  "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
+  "limits": {
+    "max_fps": 10,
+    "max_image_px": 1920
+  },
+  "auth": {
+    "scheme": "oauth2",
+    "issuer": "https://auth.acme.com"
+  },
   "coverage": {
-    "frame": "ship-fixed",
-    "geohash": ["9q8y", "9q8z"],
-    "bbox": [
-      -122.4186,
-      37.7931,
-      -122.4123,
-      37.7982
+    "geohash": [
+      "9q8y",
+      "9q8z"
     ],
-    "volumes": [
+    "elements": [
       {
+        "type": "bbox",
+        "frame": "earth-fixed",
+        "crs": "EPSG:4979",
+        "bbox": [
+          -122.4186,
+          37.7931,
+          -122.4123,
+          37.7982
+        ]
+      },
+      {
+        "type": "volume",
         "frame": "ship-fixed",
-        "min_xyz": [-25.0, -30.0, -5.0],
-        "max_xyz": [25.0, 30.0, 20.0]
+        "aabb": {
+          "min_xyz": [
+            -25.0,
+            -30.0,
+            -5.0
+          ],
+          "max_xyz": [
+            25.0,
+            30.0,
+            20.0
+          ]
+        }
       }
     ]
   },
@@ -34,19 +62,20 @@
       "from": "ship-fixed",
       "to": "earth-fixed",
       "stamp": "2025-05-01T12:00:00Z",
-      "pose": {
-        "t_m": [-2650.4, 15.2, 8.6],
-        "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
-      },
       "valid_for_s": 5,
-      "covariance": [
-        0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.25, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 1e-6, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 1e-6, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 1e-6
-      ]
+      "pose": {
+        "t_m": [
+          -2650.4,
+          15.2,
+          8.6
+        ],
+        "q_wxyz": [
+          0.9239,
+          0.0,
+          0.3827,
+          0.0
+        ]
+      }
     }
   ]
 }

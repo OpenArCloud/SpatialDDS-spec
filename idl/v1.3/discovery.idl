@@ -6,6 +6,7 @@ module spatial {
   module disco {
 
     typedef spatial::core::Time Time;
+    typedef spatial::core::Aabb3 Aabb3;
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
 
@@ -25,10 +26,21 @@ module spatial {
       string value;
     };
 
-    @appendable struct CoverageVolume {
-      string frame;             // coordinate frame for this volume (defaults to "earth-fixed" when empty)
-      double min_xyz[3];        // axis-aligned min corner in the declared frame (meters for linear frames, lon/lat/alt for earth-fixed)
-      double max_xyz[3];        // axis-aligned max corner in the declared frame
+    @appendable struct CoverageElement {
+      string type;              // "bbox" | "volume"
+      string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
+      string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
+      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat] when type == "bbox"
+      Aabb3 aabb;               // axis-aligned bounds when type == "volume"
+    };
+
+    @appendable struct Transform {
+      string from;              // source frame (e.g., "map")
+      string to;                // target frame (e.g., "earth-fixed")
+      string stamp;             // ISO-8601 timestamp for this transform
+      uint32 valid_for_s;       // validity horizon in seconds
+      double t_m[3];            // translation in meters
+      double q_wxyz[4];         // quaternion (w,x,y,z)
     };
 
     @appendable struct ServiceAnnounce {
@@ -40,6 +52,8 @@ module spatial {
       sequence<string,16> rx_topics;
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
+      sequence<CoverageElement,16> coverage;
+      sequence<Transform,8> transforms;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
       string auth_hint;
       Time stamp;
@@ -48,17 +62,15 @@ module spatial {
 
     @appendable struct CoverageHint {
       @key string service_id;
-      sequence<string,64> geohash;
-      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat]
-      double center_lat; double center_lon; double radius_m;
-      sequence<CoverageVolume,8> volumes;  // optional precise 3D volumes covered by this service
+      sequence<CoverageElement,16> coverage;
+      sequence<Transform,8> transforms;
       Time stamp;
       uint32 ttl_sec;
     };
 
     @appendable struct CoverageQuery {
       @key string query_id;
-      CoverageVolume volume;    // requested 3D volume of interest
+      sequence<CoverageElement,4> coverage;  // requested regions of interest
       Time stamp;
       uint32 ttl_sec;
     };
@@ -71,7 +83,8 @@ module spatial {
       sequence<string,16> tags;
       string class_id;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
-      double center_lat; double center_lon; double radius_m;
+      sequence<CoverageElement,16> coverage;
+      sequence<Transform,8> transforms;
       Time available_from;
       Time available_until;
       Time stamp;
