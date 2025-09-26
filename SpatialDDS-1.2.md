@@ -6,7 +6,7 @@
 
 **Date**: 12 September 2025
 
-**Author**: James Jackson [Open AR Cloud]
+**Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
 ## Contents
 1. [Introduction](sections/v1.2/01-introduction.md)

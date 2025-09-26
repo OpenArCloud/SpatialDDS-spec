@@ -6,7 +6,7 @@
 
 **Date**: TBD
 
-**Author**: James Jackson [Open AR Cloud]
+**Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
 ## Contents
 
