@@ -9,19 +9,19 @@ nav:
   - SpatialDDS 1.3:
       - 1. Introduction: v1.3/01-introduction.md
       - 2. IDL Profiles: v1.3/02-idl-profiles.md
-      - 2a. SpatialDDS URIs: v1.3/02a-spatialdds-uris.md
-      - 3. Example Manifests: v1.3/03-example-manifests.md
-      - 4. Operational Scenarios: v1.3/04-operational-scenarios.md
+      - 3. Operational Scenarios: v1.3/04-operational-scenarios.md
+      - 4. Conclusion: v1.3/conclusion.md
+      - 5. Future Directions: v1.3/future-directions.md
+      - 6. SpatialDDS URIs: v1.3/02a-spatialdds-uris.md
+      - 7. Example Manifests: v1.3/03-example-manifests.md
+      - 8. Glossary of Acronyms: v1.3/glossary.md
+      - 9. References: v1.3/references.md
       - Appendix A: v1.3/appendix-a.md
       - Appendix B: v1.3/appendix-b.md
       - Appendix C: v1.3/appendix-c.md
       - Appendix D: v1.3/appendix-d.md
       - Appendix E: v1.3/appendix-e.md
       - Appendix F: v1.3/appendix-f.md
-      - Conclusion: v1.3/conclusion.md
-      - Future Directions: v1.3/future-directions.md
-      - Glossary: v1.3/glossary.md
-      - References: v1.3/references.md
       - Full Spec (single page): SpatialDDS-1.3-full.md
   - SpatialDDS 1.2:
       - 1. Introduction: v1.2/01-introduction.md
