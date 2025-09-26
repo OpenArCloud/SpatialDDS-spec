@@ -23,6 +23,7 @@
     "issuer": "https://auth.acme.com"
   },
   "coverage": {
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
     "geohash": [
       "9q8y",
       "9q8z"
@@ -37,7 +38,8 @@
           37.7931,
           -122.4123,
           37.7982
-        ]
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       },
       {
         "type": "volume",
@@ -53,7 +55,8 @@
             30.0,
             20.0
           ]
-        }
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       }
     ]
   },
@@ -75,7 +78,8 @@
           0.3827,
           0.0
         ]
-      }
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ]
 }
