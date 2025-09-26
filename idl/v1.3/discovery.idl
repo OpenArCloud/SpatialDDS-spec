@@ -26,21 +26,24 @@ module spatial {
       string value;
     };
 
+    // CoverageElement: if frame == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
+    // otherwise local meters; volume is AABB in meters.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
       string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
       string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
-      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat] when type == "bbox"
+      double bbox[4];           // [west, south, east, north] when type == "bbox"
       Aabb3 aabb;               // axis-aligned bounds when type == "volume"
     };
 
+    // Quaternion follows GeoPose: unit [w,x,y,z]; pose maps FROM 'from' TO 'to'
     @appendable struct Transform {
       string from;              // source frame (e.g., "map")
       string to;                // target frame (e.g., "earth-fixed")
       string stamp;             // ISO-8601 timestamp for this transform
       uint32 valid_for_s;       // validity horizon in seconds
-      double t_m[3];            // translation in meters
-      double q_wxyz[4];         // quaternion (w,x,y,z)
+      double t_m[3];            // meters in 'from' frame
+      double q_wxyz[4];         // GeoPose order [w,x,y,z]
     };
 
     @appendable struct ServiceAnnounce {

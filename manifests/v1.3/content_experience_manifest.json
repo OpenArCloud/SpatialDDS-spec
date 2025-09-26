@@ -22,6 +22,7 @@
     "local_tz": "America/New_York"
   },
   "coverage": {
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
     "geohash": [
       "dr5ru9",
       "dr5rua"
@@ -36,7 +37,8 @@
           40.7793,
           -73.9631,
           40.7796
-        ]
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       },
       {
         "type": "volume",
@@ -52,7 +54,8 @@
             12.0,
             5.0
           ]
-        }
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       }
     ]
   },
@@ -74,7 +77,8 @@
           0.3827,
           0.0
         ]
-      }
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ],
   "entrypoints": {

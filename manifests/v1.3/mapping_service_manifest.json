@@ -25,6 +25,7 @@
     18
   ],
   "coverage": {
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
     "geohash": [
       "9q8y",
       "9q8z"
@@ -39,7 +40,8 @@
           37.7925,
           -122.4115,
           37.799
-        ]
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       },
       {
         "type": "volume",
@@ -55,7 +57,8 @@
             37.799,
             250.0
           ]
-        }
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       }
     ]
   },
