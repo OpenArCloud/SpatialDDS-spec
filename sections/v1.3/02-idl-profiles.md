@@ -52,6 +52,8 @@ A matching response could be:
 ]
 ```
 
+This is the typical shape of an HTTP discovery response. Each entry corresponds to a `ContentAnnounce` object (the same structure used in the DDS binding), keeping resolver results and bus announcements aligned.
+
 The DDS binding mirrors this interaction with query and announce topics, letting edge deployments deliver the same discovery experience without leaving the data bus.
 
 ### **2.3 Anchors**
