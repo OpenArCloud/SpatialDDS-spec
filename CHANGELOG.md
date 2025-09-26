@@ -2,16 +2,17 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.3     | TBD        | Draft workspace carved out; assets duplicated for isolated editing; documented SpatialDDS URIs. |
+| 1.3     | TBD        | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
 
 ## Version 1.3 - TBD
 
-- Created isolated directories for 1.3 documentation, IDL files, and manifests to enable parallel iteration.
-- Documented SpatialDDS URIs for stable identification and manifest discovery.
-- Added optional `coverage.frame` metadata and manifest `transforms[]` guidance for mobile services (tracked in issue #30).
+- Created isolated directories for 1.3 documentation, IDL files, and manifests to enable parallel iteration and cleanup legacy content.
+- Documented SpatialDDS URIs for stable identification and manifest discovery, including ABNF definitions for parser interoperability.
+- Added optional `coverage.frame` metadata, manifest `transforms[]`, and support for both local and global frames to improve mobility scenarios (issue #30).
 - Added optional 3D coverage volumes in manifests plus matching Discovery hints/queries for active volumetric filtering (issue #29).
+- Introduced a revamped active Discovery model that now supports HTTP in addition to DDS-based transport.
 
 ## Version 1.2 - 2025-09-14
 
