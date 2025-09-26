@@ -115,9 +115,9 @@ The Core profile defines the essential building blocks for representing and shar
 
 The Discovery profile adds a minimal, lightweight way to announce services, anchors, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or a bounding-box array `[min_lon, min_lat, max_lon, max_lat]`), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, anchor registries, semantics, or AR content providers without requiring heavy registries or complex protocols.
 
-SpatialDDS augments these passive announcements with an active discovery model so clients can query for relevant resources. Deployments may expose this interface through an **HTTP binding**, where a resolver hosts a well-known endpoint that accepts queries and returns filtered results, or a **DDS binding** that maps queries and announcements onto well-known topics for low-latency, distributed environments. Either binding (or both) can be offered in a deployment, and HTTP resolvers may front a DDS bus while presenting the same model to clients.
+SpatialDDS augments these announcements with an active discovery model so clients can query for relevant resources instead of waiting passively. Deployments can expose this discovery interface using either an **HTTP binding**—where a resolver serves a well-known endpoint that accepts queries and returns filtered results—or a **DDS binding**, which maps the same query/announce pattern onto well-known topics for low-latency, distributed environments. Installations may adopt either approach or both; HTTP resolvers may also act as gateways to a DDS bus without changing the client-facing contract.
 
-The bindings share a common message shape. A **query** specifies the resource type (such as `tileset` or `anchor`) and an area of interest expressed as a coverage element. **Announcements** respond with the resource identity, the coverage it applies to, and the endpoint clients should use. At this stage the spatial predicate is simply *intersects*: a resource is relevant if its coverage overlaps the requested volume. Because the messages stay consistent across transports, applications can switch bindings or bridge between them without changing discovery logic.
+Both bindings share a common message model. A **query** identifies the resource type (for example, `tileset` or `anchor`) and an area of interest expressed as a coverage element. **Announcements** respond with matching resources, providing the resource identity, coverage, and the endpoint clients should use. For now the spatial predicate is simply *intersects*: a resource is relevant if its coverage overlaps the requested volume. The same request/response shape means applications can switch transports—or operate across mixed deployments—without rewriting discovery logic.
 
 #### Example: HTTP resolver
 
@@ -159,7 +159,7 @@ A matching response could be:
 
 This is the typical shape of an HTTP discovery response. Each entry corresponds to a `ContentAnnounce` object (the same structure used in the DDS binding), keeping resolver results and bus announcements aligned.
 
-The DDS binding mirrors this interaction with query and announce topics so edge deployments can keep discovery on the bus.
+The DDS binding mirrors this interaction with query and announce topics, letting edge deployments deliver the same discovery experience without leaving the data bus.
 
 ### **2.3 Anchors**
 
@@ -340,6 +340,8 @@ Every SpatialDDS URI names four ideas:
 
 The exact tokens and encoding rules are defined by the individual profiles, but at a glance the URIs read like `spatialdds://authority/zone/type/id;v=version`. Readers only need to recognize which part expresses ownership, scope, semantics, and revision so they can reason about the rest of the system.
 
+Formal syntax is given in Appendix F.
+
 ### 6.3 Working with SpatialDDS URIs
 
 Once a URI is known, clients ask the authority for the manifest it points to—typically via HTTPS, though authorities can advertise other transports if they operate private caches or field buses. The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
@@ -366,9 +368,9 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Legacy HTTPS download links can still be advertised inside the manifest body, but the discovery announcements themselves now use the SpatialDDS URI scheme so clients have a consistent, scheme-agnostic handle to resolve.
 
-Version 1.3 also gives manifests a flexible way to explain where a service operates. Publishers can describe one or more `coverage.elements[]`, where each element declares its `type` (`"bbox"` or `"volume"`), the coordinate `frame` it lives in (local or global), an optional `crs`, and either a `bbox` (`[min_lon, min_lat, max_lon, max_lat]`) or an `aabb` (`min_xyz`/`max_xyz`). Any `geohash` hints remain tied to `"earth-fixed"`. Publishers may pair those elements with `transforms[]` back to `"earth-fixed"` so clients can connect local frames to global ones. Taken together, those hints let clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+Version 1.3 also gives manifests a lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
 
-Discovery mirrors that upgrade with optional `CoverageElement` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
+Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
 
 ### **A) VPS Manifest**
 
@@ -377,7 +379,11 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
 ```json
 {
   "service_id": "svc:vps:acme/sf-downtown",
-  "profiles": ["Core", "SLAM Frontend", "AR+Geo"],
+  "profiles": [
+    "Core",
+    "SLAM Frontend",
+    "AR+Geo"
+  ],
   "request": {
     "features_topic": "feat.keyframe",
     "image_blob_role": "image/jpeg",
@@ -387,10 +393,20 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
     "rich": "pg.nodegeo",
     "minimal": "geo.fix"
   },
-  "limits": { "max_fps": 10, "max_image_px": 1920 },
-  "auth": { "scheme": "oauth2", "issuer": "https://auth.acme.com" },
+  "limits": {
+    "max_fps": 10,
+    "max_image_px": 1920
+  },
+  "auth": {
+    "scheme": "oauth2",
+    "issuer": "https://auth.acme.com"
+  },
   "coverage": {
-    "geohash": ["9q8y", "9q8z"],
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "geohash": [
+      "9q8y",
+      "9q8z"
+    ],
     "elements": [
       {
         "type": "bbox",
@@ -401,15 +417,25 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
           37.7931,
           -122.4123,
           37.7982
-        ]
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       },
       {
         "type": "volume",
         "frame": "ship-fixed",
         "aabb": {
-          "min_xyz": [-25.0, -30.0, -5.0],
-          "max_xyz": [25.0, 30.0, 20.0]
-        }
+          "min_xyz": [
+            -25.0,
+            -30.0,
+            -5.0
+          ],
+          "max_xyz": [
+            25.0,
+            30.0,
+            20.0
+          ]
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       }
     ]
   },
@@ -420,9 +446,19 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
       "stamp": "2025-05-01T12:00:00Z",
       "valid_for_s": 5,
       "pose": {
-        "t_m": [-2650.4, 15.2, 8.6],
-        "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
-      }
+        "t_m": [
+          -2650.4,
+          15.2,
+          8.6
+        ],
+        "q_wxyz": [
+          0.9239,
+          0.0,
+          0.3827,
+          0.0
+        ]
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ]
 }
@@ -437,20 +473,35 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
 {
   "service_id": "svc:mapping:acme/sf-downtown",
   "version": "1.0.0",
-  "provider": { "id": "acme-maps", "org": "Acme Maps Inc." },
+  "provider": {
+    "id": "acme-maps",
+    "org": "Acme Maps Inc."
+  },
   "title": "Acme Downtown Map Service",
   "summary": "Tiled 3D meshes for SF downtown area",
-  "profiles": ["Core"],
+  "profiles": [
+    "Core"
+  ],
   "topics": {
     "meta": "geom.tile.meta",
     "patch": "geom.tile.patch",
     "blob": "geom.tile.blob"
   },
   "tile_scheme": "quadtree",
-  "encodings": ["glTF+Draco", "LASzip"],
-  "lod_range": [12, 18],
+  "encodings": [
+    "glTF+Draco",
+    "LASzip"
+  ],
+  "lod_range": [
+    12,
+    18
+  ],
   "coverage": {
-    "geohash": ["9q8y", "9q8z"],
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "geohash": [
+      "9q8y",
+      "9q8z"
+    ],
     "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
     "elements": [
       {
@@ -460,21 +511,35 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
           -122.4195,
           37.7925,
           -122.4115,
-          37.7990
-        ]
+          37.799
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       },
       {
         "type": "volume",
         "frame": "earth-fixed",
         "aabb": {
-          "min_xyz": [-122.4195, 37.7925, -10.0],
-          "max_xyz": [-122.4115, 37.7990, 250.0]
-        }
+          "min_xyz": [
+            -122.4195,
+            37.7925,
+            -10.0
+          ],
+          "max_xyz": [
+            -122.4115,
+            37.799,
+            250.0
+          ]
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       }
     ]
   },
-  "auth": { "scheme": "none" },
-  "terms": { "license": "CC-BY-4.0" }
+  "auth": {
+    "scheme": "none"
+  },
+  "terms": {
+    "license": "CC-BY-4.0"
+  }
 }
 
 ```
@@ -487,18 +552,32 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
 {
   "content_id": "xp:sculpture-walk:met-foyer",
   "version": "1.0.2",
-  "provider": { "id": "svc:content:museum-inc", "org": "Museum Inc." },
+  "provider": {
+    "id": "svc:content:museum-inc",
+    "org": "Museum Inc."
+  },
   "title": "AR Sculpture Walk",
   "summary": "Guided AR overlays for five sculptures in the main foyer.",
-  "tags": ["ar", "museum", "tour"],
-  "profiles_required": ["Core", "AR+Geo"],
+  "tags": [
+    "ar",
+    "museum",
+    "tour"
+  ],
+  "profiles_required": [
+    "Core",
+    "AR+Geo"
+  ],
   "availability": {
     "from": "2025-09-01T09:00:00Z",
     "until": "2025-12-31T23:59:59Z",
     "local_tz": "America/New_York"
   },
   "coverage": {
-    "geohash": ["dr5ru9", "dr5rua"],
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "geohash": [
+      "dr5ru9",
+      "dr5rua"
+    ],
     "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson",
     "elements": [
       {
@@ -509,15 +588,25 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
           40.7793,
           -73.9631,
           40.7796
-        ]
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       },
       {
         "type": "volume",
         "frame": "foyer-local",
         "aabb": {
-          "min_xyz": [-8.0, -12.0, 0.0],
-          "max_xyz": [8.0, 12.0, 5.0]
-        }
+          "min_xyz": [
+            -8.0,
+            -12.0,
+            0.0
+          ],
+          "max_xyz": [
+            8.0,
+            12.0,
+            5.0
+          ]
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       }
     ]
   },
@@ -528,24 +617,56 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
       "stamp": "2025-09-01T09:00:00Z",
       "valid_for_s": 3600,
       "pose": {
-        "t_m": [-73.9633, 40.7794, 25.5],
-        "q_wxyz": [0.9239, 0.0, 0.3827, 0.0]
-      }
+        "t_m": [
+          -73.9633,
+          40.7794,
+          25.5
+        ],
+        "q_wxyz": [
+          0.9239,
+          0.0,
+          0.3827,
+          0.0
+        ]
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ],
   "entrypoints": {
     "anchors": [
-      { "anchor_id": "anchor/met-foyer/north-plinth", "hint": "Start here" },
-      { "anchor_id": "anchor/met-foyer/central", "hint": "Checkpoint 2" }
+      {
+        "anchor_id": "anchor/met-foyer/north-plinth",
+        "hint": "Start here"
+      },
+      {
+        "anchor_id": "anchor/met-foyer/central",
+        "hint": "Checkpoint 2"
+      }
     ]
   },
   "runtime_topics": {
-    "subscribe": ["geo.tf", "geo.anchor", "geom.tile.meta", "geom.tile.patch"],
-    "optional": ["semantics.det.3d.set"]
+    "subscribe": [
+      "geo.tf",
+      "geo.anchor",
+      "geom.tile.meta",
+      "geom.tile.patch"
+    ],
+    "optional": [
+      "semantics.det.3d.set"
+    ]
   },
   "assets": [
-    { "type": "image", "role": "poster", "uri": "https://cdn.museum.example/img/poster.jpg" },
-    { "type": "audio", "role": "narration", "uri": "https://cdn.museum.example/audio/room_intro.mp3", "lang": "en" }
+    {
+      "type": "image",
+      "role": "poster",
+      "uri": "https://cdn.museum.example/img/poster.jpg"
+    },
+    {
+      "type": "audio",
+      "role": "narration",
+      "uri": "https://cdn.museum.example/audio/room_intro.mp3",
+      "lang": "en"
+    }
   ]
 }
 
@@ -561,15 +682,28 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
-    "geohash": ["sv8wkf", "sv8wkg"],
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "geohash": [
+      "sv8wkf",
+      "sv8wkg"
+    ],
     "elements": [
       {
         "type": "volume",
         "frame": "gallery-local",
         "aabb": {
-          "min_xyz": [-15.0, -20.0, -2.0],
-          "max_xyz": [15.0, 20.0, 6.0]
-        }
+          "min_xyz": [
+            -15.0,
+            -20.0,
+            -2.0
+          ],
+          "max_xyz": [
+            15.0,
+            20.0,
+            6.0
+          ]
+        },
+        "$comment": "Local AABB in meters in the declared frame."
       },
       {
         "type": "bbox",
@@ -579,7 +713,8 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
           35.2965,
           25.1665,
           35.3002
-        ]
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
       }
     ]
   },
@@ -590,9 +725,19 @@ Discovery mirrors that upgrade with optional `CoverageElement` hints on announce
       "stamp": "2025-02-18T08:00:00Z",
       "valid_for_s": 600,
       "pose": {
-        "t_m": [25.1635, 35.2980, 112.0],
-        "q_wxyz": [0.9659, 0.0, 0.2588, 0.0]
-      }
+        "t_m": [
+          25.1635,
+          35.298,
+          112.0
+        ],
+        "q_wxyz": [
+          0.9659,
+          0.0,
+          0.2588,
+          0.0
+        ]
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ],
   "anchors": [
@@ -928,21 +1073,24 @@ module spatial {
       string value;
     };
 
+    // CoverageElement: if frame == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
+    // otherwise local meters; volume is AABB in meters.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
       string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
       string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
-      double bbox[4];           // [min_lon, min_lat, max_lon, max_lat] when type == "bbox"
+      double bbox[4];           // [west, south, east, north] when type == "bbox"
       Aabb3 aabb;               // axis-aligned bounds when type == "volume"
     };
 
+    // Quaternion follows GeoPose: unit [w,x,y,z]; pose maps FROM 'from' TO 'to'
     @appendable struct Transform {
       string from;              // source frame (e.g., "map")
       string to;                // target frame (e.g., "earth-fixed")
       string stamp;             // ISO-8601 timestamp for this transform
       uint32 valid_for_s;       // validity horizon in seconds
-      double t_m[3];            // translation in meters
-      double q_wxyz[4];         // quaternion (w,x,y,z)
+      double t_m[3];            // meters in 'from' frame
+      double q_wxyz[4];         // GeoPose order [w,x,y,z]
     };
 
     @appendable struct ServiceAnnounce {
