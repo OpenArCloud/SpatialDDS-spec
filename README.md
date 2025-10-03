@@ -43,7 +43,7 @@ Changes pushed to `main` automatically rebuild and publish the MkDocs site via `
 
 ## Contributing
 
-Issues and pull requests are welcome. Please open an issue to discuss large changes or questions about the specification.
+Issues and pull requests are welcome. Please open an issue to discuss large changes or questions about the specification. See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
 
 For a practical illustration of the concepts, explore the companion [SpatialDDS demo](https://github.com/OpenArCloud/SpatialDDS-demo).
 
