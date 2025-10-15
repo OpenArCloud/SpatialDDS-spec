@@ -60,6 +60,12 @@ theme:
   name: readthedocs
   highlightjs: true
 
+extra_css:
+  - assets/stylesheets/version-nav.css
+
+extra_javascript:
+  - assets/javascripts/version-nav.js
+
 markdown_extensions:
   - admonition
   - attr_list

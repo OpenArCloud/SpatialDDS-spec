@@ -1,0 +1,30 @@
+.version-toggle {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font: inherit;
+  padding: 0;
+}
+
+.version-toggle:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.version-toggle::before {
+  content: '\25B8';
+  display: inline-block;
+  transform-origin: center;
+}
+
+.version-toggle[aria-expanded='true']::before {
+  content: '\25BE';
+}
+
+.wy-menu-vertical ul.version-collapsed {
+  display: none;
+}

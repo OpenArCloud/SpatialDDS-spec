@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SECTIONS_SRC = ROOT / "sections"
 DOCS_DST = ROOT / "mkdocs_docs"
+STATIC_SRC = ROOT / "docs_static"
 
 INCLUDE_RE = re.compile(r"{{include:([^}]+)}}")
 
@@ -47,6 +48,22 @@ def clean_destination() -> None:
     DOCS_DST.mkdir(parents=True)
 
 
+def copy_static_assets() -> None:
+    if not STATIC_SRC.exists():
+        return
+
+    for path in STATIC_SRC.rglob("*"):
+        if path.is_dir():
+            continue
+
+        relative = path.relative_to(STATIC_SRC)
+        dest = DOCS_DST / relative
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, dest)
+        rel = dest.relative_to(ROOT)
+        print(f"Copied {rel}")
+
+
 def main() -> None:
     if not SECTIONS_SRC.exists():
         raise SystemExit("sections/ directory not found")
@@ -80,6 +97,8 @@ def main() -> None:
             continue
         dest = DOCS_DST / f"SpatialDDS-{version}-full.md"
         write_processed(src, dest, rewrite_version=version)
+
+    copy_static_assets()
 
 
 if __name__ == "__main__":
