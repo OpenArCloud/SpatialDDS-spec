@@ -178,11 +178,12 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
-* **Extensions**  
-  * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.  
-  * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.  
-  * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.  
-  * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.  
+* **Extensions**
+  * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
+  * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
+  * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
+  * **Sensing (RAD) Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for RAD sensors.
+  * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
 * **Provisional Extensions (Optional)**  
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.  
   * **Agent Profile**: Generic task and status messages for AI agents and planners.
@@ -1212,7 +1213,7 @@ module spatial {
 
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Sensing (RAD) profile streams radar tensors, derived detections, and optional ROI control. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
 ### **VIO / Inertial Extension**
 
@@ -1473,6 +1474,129 @@ module spatial {
   }; // module semantics
 };
 
+```
+
+### **Sensing (RAD) Extension**
+
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets.*
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Sensing (RAD) 1.0  — extension profile
+
+module spatial {
+  module sensing {
+
+    // Reuse core types per SpatialDDS 1.3
+    typedef spatial::core::Time   Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::BlobRef BlobRef;
+
+    enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
+    enum RadPayloadKind  { DENSE_TILES = 0, SPARSE_COO = 1, LATENT = 2 };
+    enum RadCodec        { CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, FP8Q = 10, FP4Q = 11, AE_V1 = 20 };
+    enum RadSampleType   { CF32 = 0, CF16 = 1, MAG_U8 = 2, MAGPHASE_S8 = 3, MAG_F16 = 4 };
+
+    @appendable struct Axis {
+      string name;                      // "range","azimuth","elevation","doppler"
+      string unit;                      // "m","deg","m/s","Hz"
+      sequence<float, 65535> centers;   // or use start/step
+      float start;
+      float step;
+      boolean has_centers;
+    };
+
+    // Static description (publish INFREQUENTLY) —— transient_local, reliable
+    @appendable struct RadTensorMeta {
+      @key string stream_id;            // stable sensor stream id
+      RadTensorLayout layout;
+      sequence<Axis, 8> axes;           // order matches layout
+      RadSampleType voxel_type;         // pre-compression voxel type
+      string physical_meaning;          // e.g. "post-3D FFT complex baseband"
+      string frame_id;                  // mounting frame name
+      PoseSE3  T_bus_sensor;            // sensor extrinsics in the bus’ canonical frame
+      double nominal_rate_hz;
+
+      // default compression advertised for frames
+      RadPayloadKind payload_kind;
+      RadCodec      codec;
+      float         quant_scale;        // valid if has_quant_scale
+      boolean       has_quant_scale;
+      uint32        tile_size[4];       // for DENSE_TILES; unused dims = 1
+
+      string schema_version;            // "spatial.sensing.rad/1.0"
+    };
+
+    // Frame index: small, frequent — BEST_EFFORT, KEEP_LAST=1
+    // Heavy bytes go via spatial::core::BlobChunk
+    @appendable struct RadTensorFrame {
+      @key string stream_id;
+      uint64 frame_seq;
+      Time   t_acq_start;
+      Time   t_acq_end;
+
+      RadPayloadKind payload_kind;
+      RadCodec      codec;
+      RadSampleType voxel_type_after_decode;
+      float         quant_scale;        // valid if has_quant_scale
+      boolean       has_quant_scale;
+
+      float snr_estimate_db;
+      boolean has_phase;
+      boolean has_magnitude;
+
+      // Where to fetch the bytes (one or more blobs; tiles or sparse blocks inside)
+      sequence<BlobRef, 256> blobs;     // blob_ids announced here; bytes via core::BlobChunk
+
+      // Optional notes for reproducibility/debug
+      string proc_chain;                // e.g. "FFT3D->hann->OS-CFAR"
+    };
+
+    // Optional ROI control-plane (reliable)
+    @appendable struct ROI {
+      // Use physical units; NaN means unset
+      float range_min; float range_max;
+      float az_min;    float az_max;
+      float el_min;    float el_max;
+      float dop_min;   float dop_max;
+    };
+
+    @appendable struct RadROIRequest {
+      @key string stream_id;
+      uint64 request_id;
+      Time   t_start;
+      Time   t_end;
+      ROI    roi;
+      boolean wants_payload_kind;  RadPayloadKind desired_payload_kind;
+      boolean wants_codec;         RadCodec desired_codec;
+      boolean wants_voxel_type;    RadSampleType desired_voxel_type;
+      int32  max_bytes;            // -1 for unlimited
+    };
+
+    @appendable struct RadROIReply {
+      @key string stream_id;
+      uint64 request_id;
+      // Reply with new RadTensorFrame indices whose blobs contain only the ROI
+      sequence<RadTensorFrame, 64> frames;
+    };
+
+    // Lightweight derivative for fusion/tracking (optional)
+    @appendable struct RadDetection {
+      double xyz_m[3];
+      double v_r_mps;       // radial velocity (optional)
+      float  intensity;     // magnitude
+      float  quality;       // 0..1
+    };
+
+    @appendable struct RadDetectionSet {
+      @key string stream_id;
+      uint64 frame_seq;
+      string frame_id;      // same as meta.frame_id unless projected
+      sequence<RadDetection, 32768> dets;
+      Time   stamp;
+    };
+  };
+}
 ```
 
 ### **AR + Geo Extension**
