@@ -1,0 +1,85 @@
+{
+  "service_id": "svc:vps:acme/sf-downtown",
+  "profiles": [
+    "Core",
+    "SLAM Frontend",
+    "AR+Geo"
+  ],
+  "request": {
+    "features_topic": "feat.keyframe",
+    "image_blob_role": "image/jpeg",
+    "prior_topic": "geo.fix"
+  },
+  "response": {
+    "rich": "pg.nodegeo",
+    "minimal": "geo.fix"
+  },
+  "limits": {
+    "max_fps": 10,
+    "max_image_px": 1920
+  },
+  "auth": {
+    "scheme": "oauth2",
+    "issuer": "https://auth.acme.com"
+  },
+  "coverage": {
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "geohash": [
+      "9q8y",
+      "9q8z"
+    ],
+    "elements": [
+      {
+        "type": "bbox",
+        "frame": "earth-fixed",
+        "crs": "EPSG:4979",
+        "bbox": [
+          -122.4186,
+          37.7931,
+          -122.4123,
+          37.7982
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
+      },
+      {
+        "type": "volume",
+        "frame": "ship-fixed",
+        "aabb": {
+          "min_xyz": [
+            -25.0,
+            -30.0,
+            -5.0
+          ],
+          "max_xyz": [
+            25.0,
+            30.0,
+            20.0
+          ]
+        },
+        "$comment": "Local AABB in meters in the declared frame."
+      }
+    ]
+  },
+  "transforms": [
+    {
+      "from": "ship-fixed",
+      "to": "earth-fixed",
+      "stamp": "2025-05-01T12:00:00Z",
+      "valid_for_s": 5,
+      "pose": {
+        "t_m": [
+          -2650.4,
+          15.2,
+          8.6
+        ],
+        "q_wxyz": [
+          0.9239,
+          0.0,
+          0.3827,
+          0.0
+        ]
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
+    }
+  ]
+}
