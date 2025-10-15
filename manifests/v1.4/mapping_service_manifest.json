@@ -1,0 +1,71 @@
+{
+  "service_id": "svc:mapping:acme/sf-downtown",
+  "version": "1.0.0",
+  "provider": {
+    "id": "acme-maps",
+    "org": "Acme Maps Inc."
+  },
+  "title": "Acme Downtown Map Service",
+  "summary": "Tiled 3D meshes for SF downtown area",
+  "profiles": [
+    "Core"
+  ],
+  "topics": {
+    "meta": "geom.tile.meta",
+    "patch": "geom.tile.patch",
+    "blob": "geom.tile.blob"
+  },
+  "tile_scheme": "quadtree",
+  "encodings": [
+    "glTF+Draco",
+    "LASzip"
+  ],
+  "lod_range": [
+    12,
+    18
+  ],
+  "coverage": {
+    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "geohash": [
+      "9q8y",
+      "9q8z"
+    ],
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
+    "elements": [
+      {
+        "type": "bbox",
+        "frame": "earth-fixed",
+        "bbox": [
+          -122.4195,
+          37.7925,
+          -122.4115,
+          37.799
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
+      },
+      {
+        "type": "volume",
+        "frame": "earth-fixed",
+        "aabb": {
+          "min_xyz": [
+            -122.4195,
+            37.7925,
+            -10.0
+          ],
+          "max_xyz": [
+            -122.4115,
+            37.799,
+            250.0
+          ]
+        },
+        "$comment": "Local AABB in meters in the declared frame."
+      }
+    ]
+  },
+  "auth": {
+    "scheme": "none"
+  },
+  "terms": {
+    "license": "CC-BY-4.0"
+  }
+}

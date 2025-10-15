@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Semantics 1.2
+
+module spatial {
+  module semantics {
+
+    typedef spatial::core::Time Time;
+    typedef spatial::core::TileKey TileKey;
+
+    // 2D detections per keyframe (image space)
+    @appendable struct Detection2D {
+      @key string det_id;       // unique per publisher
+      string node_id;           // keyframe id
+      string camera_id;         // camera
+      string class_id;          // ontology label
+      float  score;             // [0..1]
+      float  bbox[4];           // [u_min,v_min,u_max,v_max] (px)
+      boolean has_mask;         // if a pixel mask exists
+      string  mask_blob_id;     // BlobChunk ref (role="mask")
+      Time   stamp;
+      string source_id;
+    };
+
+    @appendable struct Detection2DSet {
+      @key string set_id;                 // batch id (e.g., node_id + seq)
+      string node_id;
+      string camera_id;
+      sequence<Detection2D, 256> dets;    // ≤256
+      Time   stamp;
+      string source_id;
+    };
+
+    // 3D detections in world/local frame (scene space)
+    @appendable struct Detection3D {
+      @key string det_id;
+      string frame_id;           // e.g., "map" (pose known elsewhere)
+      boolean has_tile;
+      TileKey tile_key;          // valid when has_tile = true
+
+      string class_id;           // semantic label
+      float  score;              // [0..1]
+
+      // Oriented bounding box in frame_id
+      double center[3];          // m
+      double size[3];            // width,height,depth (m)
+      double q[4];               // orientation (x,y,z,w) in GeoPose order
+
+      // Uncertainty (optional; NaN if unknown)
+      double cov_pos[9];         // 3x3 position covariance
+      double cov_rot[9];         // 3x3 rotation covariance
+
+      // Optional instance tracking
+      string track_id;
+
+      Time   stamp;
+      string source_id;
+    };
+
+    @appendable struct Detection3DSet {
+      @key string set_id;                 // batch id
+      string frame_id;                    // common frame for the set
+      boolean has_tile;
+      TileKey tile_key;                   // valid when has_tile = true
+      sequence<Detection3D, 128> dets;    // ≤128
+      Time   stamp;
+      string source_id;
+    };
+
+  }; // module semantics
+};

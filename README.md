@@ -4,13 +4,13 @@ SpatialDDS is a concept protocol for real-world spatial computing that defines a
 
 It's released to spark discussion—explore the spec, experiment, and join the conversation through issues or pull requests to help shape future iterations.
 
-This repository hosts the published 1.2 specification alongside a work-in-progress 1.3 draft. See the [CHANGELOG](CHANGELOG.md) for version history.
+This repository hosts the published 1.3 specification alongside a work-in-progress 1.4 draft. See the [CHANGELOG](CHANGELOG.md) for version history.
 
 
 ## Repository structure
 
-- `SpatialDDS-1.2.md` / `SpatialDDS-1.3.md` – entry points that link to the specification's sections for each release.
-- `SpatialDDS-1.2-full.md` / `SpatialDDS-1.3-full.md` – combined specifications generated from all sections.
+- `SpatialDDS-1.2.md` / `SpatialDDS-1.3.md` / `SpatialDDS-1.4.md` – entry points that link to the specification's sections for each release.
+- `SpatialDDS-1.2-full.md` / `SpatialDDS-1.3-full.md` / `SpatialDDS-1.4-full.md` – combined specifications generated from all sections.
 - `sections/v*/` – markdown files containing each section of the specification, appendices, glossary, and references for a given version.
 - `idl/v*/` – Interface Definition Language files for core, discovery, anchors, and other profiles as well as example IDL definitions, versioned with the spec.
 - `manifests/v*/` – example JSON manifests illustrating how services, anchors, and content can advertise themselves within SpatialDDS, versioned alongside the spec.
@@ -21,8 +21,8 @@ This repository hosts the published 1.2 specification alongside a work-in-progre
 All IDL files in `idl/v*/` and manifest examples in `manifests/v*/` are treated as canonical. Markdown sections reference them with `{{include:...}}` placeholders. Regenerate the combined specification after modifying any of those files by running:
 
 ```bash
-./scripts/build-spec.sh            # defaults to version 1.2
-./scripts/build-spec.sh 1.3        # builds the 1.3 draft
+./scripts/build-spec.sh            # defaults to version 1.3
+./scripts/build-spec.sh 1.4        # builds the 1.4 draft
 ```
 
 The script injects the referenced IDL and manifest sources and writes `SpatialDDS-<version>-full.md` to the repository root, providing a convenient reference to the complete spec.

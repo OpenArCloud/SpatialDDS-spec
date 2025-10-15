@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${1:-1.2}"
+VERSION="${1:-1.3}"
 OUTPUT="$ROOT_DIR/SpatialDDS-$VERSION-full.md"
 MAIN="$ROOT_DIR/SpatialDDS-$VERSION.md"
 SECTIONS_DIR="$ROOT_DIR/sections/v$VERSION"
