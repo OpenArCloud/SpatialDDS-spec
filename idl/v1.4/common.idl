@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Sensing Common 1.0 (Extension module)
+
+module spatial { module sensing { module common {
+
+  // Reuse Core primitives (time, pose, blob references)
+  typedef spatial::core::Time    Time;
+  typedef spatial::core::PoseSE3 PoseSE3;
+  typedef spatial::core::BlobRef BlobRef;
+
+  // ---- Axes & Regions (for tensors or scans) ----
+  @appendable struct Axis {
+    string name;                       // "range","azimuth","elevation","doppler","time","channel"
+    string unit;                       // "m","deg","m/s","Hz","s",...
+    sequence<float, 65535> centers;    // optional: bin centers
+    float start; float step;           // optional: uniform grid
+    boolean has_centers;
+  };
+
+  @appendable struct ROI {
+    // Physical-unit gates; NaN = unset
+    float range_min; float range_max;
+    float az_min;    float az_max;
+    float el_min;    float el_max;
+    float dop_min;   float dop_max;
+    // Optional image-plane ROI for vision (pixels)
+    int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+  };
+
+  // ---- Codecs / Payload kinds (shared enums) ----
+  enum Codec {
+    CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, GZIP = 3,
+    DRACO = 10,     // geometry compression
+    JPEG = 20, H264 = 21, H265 = 22, AV1 = 23, // vision
+    FP8Q = 40, FP4Q = 41, AE_V1 = 42          // quant/learned (tensors)
+  };
+
+  enum PayloadKind {
+    DENSE_TILES = 0,    // tiled dense blocks (e.g., tensor tiles)
+    SPARSE_COO = 1,     // sparse indices + values
+    LATENT = 2,         // learned latent vectors
+    BLOB_GEOMETRY = 10, // PCC/PLY/glTF+Draco
+    BLOB_RASTER = 11    // JPEG/GOP chunk(s)
+  };
+
+  enum SampleType {        // post-decode voxel/point sample type
+    U8_MAG = 0, F16_MAG = 1, CF16 = 2, CF32 = 3, MAGPHASE_S8 = 4
+  };
+
+  // ---- Stream identity & calibration header shared by sensors ----
+  @appendable struct StreamMeta {
+    @key string stream_id;        // stable id for this sensor stream
+    string frame_id;              // mounting frame (Core frame naming)
+    PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
+    double   nominal_rate_hz;     // advertised cadence
+    string   schema_version;      // e.g., "spatial.sensing.common/1.0"
+  };
+
+  // ---- Frame index header shared by sensors (small, on-bus) ----
+  @appendable struct FrameHeader {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   t_start;
+    Time   t_end;
+    // optional sensor pose at acquisition (moving platforms)
+    PoseSE3 sensor_pose;
+    boolean has_sensor_pose;
+    // data pointers: heavy bytes referenced as blobs
+    sequence<BlobRef, 256> blobs;
+  };
+
+  // ---- Quality & health (uniform across sensors) ----
+  enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
+
+  @appendable struct FrameQuality {
+    float snr_db;            // NaN if unknown
+    float percent_valid;     // 0..100
+    Health health;
+    string note;             // short diagnostic
+  };
+
+  // ---- ROI request/reply (control-plane pattern) ----
+  @appendable struct ROIRequest {
+    @key string stream_id;
+    uint64 request_id;
+    Time   t_start; Time t_end;
+    ROI    roi;
+    boolean wants_payload_kind; PayloadKind desired_payload_kind;
+    boolean wants_codec;       Codec       desired_codec;
+    boolean wants_sample_type; SampleType  desired_sample_type;
+    int32  max_bytes;          // -1 for unlimited
+  };
+
+  @appendable struct ROIReply {
+    @key string stream_id;
+    uint64 request_id;
+    // Typically returns new frames whose blobs contain only the ROI
+    sequence<spatial::sensing::common::FrameHeader, 64> frames;
+  };
+
+}; }; };
