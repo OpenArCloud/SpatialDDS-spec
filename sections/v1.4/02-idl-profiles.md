@@ -78,6 +78,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
   * **Sensing (RAD) Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for RAD sensors.
+  * **LiDAR Profile**: Sensor metadata, compressed point cloud frames, and optional detections for LiDAR payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
 * **Provisional Extensions (Optional)**  
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.  
