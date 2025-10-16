@@ -74,6 +74,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
+  * **Sensing Common Extension**: Shared enums, region-of-interest requests, frame metadata, and codec descriptors reused by the specialized sensing profiles.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
@@ -81,9 +82,11 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
   * **Lidar Profile**: Sensor metadata, compressed point cloud frames, and optional detections for lidar payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
-* **Provisional Extensions (Optional)**  
-  * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.  
+* **Provisional Extensions (Optional)**
+  * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
   * **Agent Profile**: Generic task and status messages for AI agents and planners.
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
+
+The **Sensing Common** module deserves special mention: it standardizes ROI negotiation, shared enums for codecs and payload kinds, reusable frame metadata, and quality reporting structures. Radar, lidar, vision, and other sensing extensions build on these types so that multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently without redefining the same scaffolding in each profile.
 

@@ -7,7 +7,7 @@ At its core, SpatialDDS is defined through **IDL profiles** that partition funct
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
 * **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
-* **Extensions**: optional domain-specific profiles including VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
+* **Extensions**: optional domain-specific profiles including the shared **Sensing Common** base types plus VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
@@ -35,7 +35,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Keep the wire light**
   SpatialDDS defines compact, typed messages via IDL. Heavy or variable content (meshes, splats, masks, assets) is carried as blobs, referenced by stable IDs. This avoids bloating the bus while keeping payloads flexible.
 * **Profiles, not monoliths**
-  SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
+  SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (Sensing Common, VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
 * **AI-ready, domain-neutral**
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.
 * **Anchors as first-class citizens**
