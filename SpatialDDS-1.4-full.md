@@ -1325,18 +1325,19 @@ module spatial { module sensing { module common {
   @appendable struct Axis {
     string name;                       // "range","azimuth","elevation","doppler","time","channel"
     string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // optional: bin centers
-    float start; float step;           // optional: uniform grid
-    boolean has_centers;
+    sequence<float, 65535> centers;    // tabulated centers
+    float start; float step;           // uniform grid parameters
+    boolean has_centers;               // if true, use centers[]; otherwise start/step apply
   };
 
   @appendable struct ROI {
     // Physical-unit gates; NaN = unset
+    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as open interval.
     float range_min; float range_max;
     float az_min;    float az_max;
     float el_min;    float el_max;
     float dop_min;   float dop_max;
-    // Optional image-plane ROI for vision (pixels)
+    // Image-plane ROI for vision (pixels); -1 if unused
     int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
   };
 
@@ -1408,7 +1409,7 @@ module spatial { module sensing { module common {
     @key string stream_id;
     uint64 request_id;
     // Typically returns new frames whose blobs contain only the ROI
-    sequence<spatial::sensing::common::FrameHeader, 64> frames;
+    sequence<FrameHeader, 64> frames;
   };
 
 }; }; };
@@ -1416,7 +1417,7 @@ module spatial { module sensing { module common {
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and optional keypoints/tracks for perception and analytics pipelines.*
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1431,9 +1432,16 @@ module spatial { module sensing { module vision {
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
   typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
+  typedef spatial::sensing::common::SampleType     SampleType;
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
   typedef spatial::sensing::common::StreamMeta     StreamMeta;
   typedef spatial::sensing::common::FrameHeader    FrameHeader;
   typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
+
+  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
 
   // Camera / imaging specifics
   enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
@@ -1454,10 +1462,11 @@ module spatial { module sensing { module vision {
     string calib_version;               // hash or tag
   };
 
-  // Static description (RELIABLE + TRANSIENT_LOCAL)
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct VisionMeta {
     @key string stream_id;
     StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    string schema_version;              // "spatial.sensing.vision/1.0"
 
     CamIntrinsics K;                    // intrinsics
     RigRole role;                       // for stereo/rigs
@@ -1469,7 +1478,7 @@ module spatial { module sensing { module vision {
     ColorSpace color;
   };
 
-  // Per-frame index (BEST_EFFORT, KEEP_LAST=1) — bytes via FrameHeader.blobs
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
   @appendable struct VisionFrame {
     @key string stream_id;
     uint64 frame_seq;
@@ -1494,6 +1503,7 @@ module spatial { module sensing { module vision {
     sequence<Keypoint2D, 4096> trail;
   };
 
+  // Detections topic — BEST_EFFORT
   @appendable struct VisionDetections {
     @key string stream_id;
     uint64 frame_seq;
@@ -1680,7 +1690,7 @@ module spatial {
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets.*
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1704,13 +1714,16 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
+  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+
   // Layout of the RAD tensor
   enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
 
-  // Static description (publish infrequently; RELIABLE + TRANSIENT_LOCAL)
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
     StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    string schema_version;                 // "spatial.sensing.rad/1.0"
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
@@ -1724,8 +1737,7 @@ module spatial { module sensing { module rad {
     uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
   };
 
-  // Per-frame index (small, frequent; BEST_EFFORT, KEEP_LAST=1)
-  // Heavy bytes ride as blobs referenced here (tensor tiles, sparse blocks, or latent)
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
   @appendable struct RadFrame {
     @key string stream_id;
     uint64 frame_seq;
@@ -1749,6 +1761,7 @@ module spatial { module sensing { module rad {
     float  quality;        // 0..1
   };
 
+  // Detections topic — BEST_EFFORT
   @appendable struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
@@ -1762,7 +1775,7 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and optional detections.*
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1778,19 +1791,26 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::Codec          Codec;
   typedef spatial::sensing::common::PayloadKind    PayloadKind; // use BLOB_GEOMETRY for clouds
   typedef spatial::sensing::common::SampleType     SampleType;  // optional for per-point extras
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
   typedef spatial::sensing::common::StreamMeta     StreamMeta;
   typedef spatial::sensing::common::FrameHeader    FrameHeader;
   typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
+
+  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
 
   // Device + data model
   enum LidarType    { SPINNING_2D=0, MULTI_BEAM_3D=1, SOLID_STATE=2 };
   enum CloudEncoding{ PCD=0, PLY=1, LAS=2, LAZ=3, GLTF_DRACO=10, MPEG_PCC=20, CUSTOM_BIN=255 };
   enum PointLayout  { XYZ_I=0, XYZ_I_R=1, XYZ_I_R_N=2 }; // intensity, ring, normal
 
-  // Static description (RELIABLE + TRANSIENT_LOCAL)
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct LidarMeta {
     @key string stream_id;
     StreamMeta base;                  // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    string schema_version;            // "spatial.sensing.lidar/1.0"
 
     LidarType     type;
     uint16        n_rings;            // 0 if N/A
@@ -1804,7 +1824,7 @@ module spatial { module sensing { module lidar {
     PointLayout   layout;             // expected fields when decoded
   };
 
-  // Per-frame index (BEST_EFFORT, KEEP_LAST=1) — heavy bytes via FrameHeader.blobs
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
   @appendable struct LidarFrame {
     @key string stream_id;
     uint64 frame_seq;
@@ -1828,6 +1848,7 @@ module spatial { module sensing { module lidar {
     float  quality;                   // 0..1
   };
 
+  // Detections topic — BEST_EFFORT
   @appendable struct LidarDetectionSet {
     @key string stream_id;
     uint64 frame_seq;

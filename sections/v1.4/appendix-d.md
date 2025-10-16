@@ -20,7 +20,7 @@
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and optional keypoints/tracks for perception and analytics pipelines.*
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 {{include:idl/v1.4/vision.idl}}
@@ -44,7 +44,7 @@
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets.*
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 {{include:idl/v1.4/rad.idl}}
@@ -52,7 +52,7 @@
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and optional detections.*
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 {{include:idl/v1.4/lidar.idl}}

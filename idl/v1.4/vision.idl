@@ -10,9 +10,16 @@ module spatial { module sensing { module vision {
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
   typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
+  typedef spatial::sensing::common::SampleType     SampleType;
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
   typedef spatial::sensing::common::StreamMeta     StreamMeta;
   typedef spatial::sensing::common::FrameHeader    FrameHeader;
   typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
+
+  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
 
   // Camera / imaging specifics
   enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
@@ -33,10 +40,11 @@ module spatial { module sensing { module vision {
     string calib_version;               // hash or tag
   };
 
-  // Static description (RELIABLE + TRANSIENT_LOCAL)
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct VisionMeta {
     @key string stream_id;
     StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    string schema_version;              // "spatial.sensing.vision/1.0"
 
     CamIntrinsics K;                    // intrinsics
     RigRole role;                       // for stereo/rigs
@@ -48,7 +56,7 @@ module spatial { module sensing { module vision {
     ColorSpace color;
   };
 
-  // Per-frame index (BEST_EFFORT, KEEP_LAST=1) — bytes via FrameHeader.blobs
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
   @appendable struct VisionFrame {
     @key string stream_id;
     uint64 frame_seq;
@@ -73,6 +81,7 @@ module spatial { module sensing { module vision {
     sequence<Keypoint2D, 4096> trail;
   };
 
+  // Detections topic — BEST_EFFORT
   @appendable struct VisionDetections {
     @key string stream_id;
     uint64 frame_seq;
