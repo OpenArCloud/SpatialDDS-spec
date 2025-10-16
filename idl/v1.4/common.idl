@@ -12,14 +12,14 @@ module spatial { module sensing { module common {
   @appendable struct Axis {
     string name;                       // "range","azimuth","elevation","doppler","time","channel"
     string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // tabulated centers
-    float start; float step;           // uniform grid parameters
-    boolean has_centers;               // if true, use centers[]; otherwise start/step apply
+    sequence<float, 65535> centers;    // optional: bin centers
+    float start;
+    float step;
+    boolean has_centers;               // true => use centers[]; false => use start/step
   };
 
   @appendable struct ROI {
-    // Physical-unit gates; NaN = unset
-    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as open interval.
+    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as an open interval (no clipping).
     float range_min; float range_max;
     float az_min;    float az_max;
     float el_min;    float el_max;
