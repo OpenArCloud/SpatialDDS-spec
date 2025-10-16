@@ -75,6 +75,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 * **Extensions**
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
+  * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
   * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.

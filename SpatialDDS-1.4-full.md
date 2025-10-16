@@ -43,7 +43,7 @@ At its core, SpatialDDS is defined through **IDL profiles** that partition funct
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
 * **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
-* **Extensions**: optional domain-specific profiles including VIO sensors, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
+* **Extensions**: optional domain-specific profiles including VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
@@ -71,7 +71,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Keep the wire light**
   SpatialDDS defines compact, typed messages via IDL. Heavy or variable content (meshes, splats, masks, assets) is carried as blobs, referenced by stable IDs. This avoids bloating the bus while keeping payloads flexible.
 * **Profiles, not monoliths**
- SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (VIO, SLAM Frontend, Semantics, radar, lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
+ SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
 * **AI-ready, domain-neutral**
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.
 * **Anchors as first-class citizens**
@@ -180,6 +180,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 * **Extensions**
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
+  * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
   * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
@@ -1214,7 +1215,7 @@ module spatial {
 
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
 ### **VIO / Inertial Extension**
 
@@ -1303,6 +1304,98 @@ module spatial {
   }; // module vio
 };
 
+```
+
+### **Vision Extension**
+
+*Camera intrinsics, video frames, and optional keypoints/tracks for perception and analytics pipelines.*
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Vision 1.0 — extension profile
+
+module spatial {
+  module vision {
+
+    typedef spatial::core::Time    Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::BlobRef BlobRef;
+
+    enum CamModel { PINHOLE = 0, FISHEYE_EQUIDISTANT = 1, KB_4 = 2, OMNI = 3 };
+    enum PixFormat { YUV420 = 0, RGB8 = 1, BGR8 = 2, RGBA8 = 3, RAW10 = 10, RAW12 = 12, RAW16 = 16 };
+    enum ColorSpace { SRGB = 0, REC709 = 1, REC2020 = 2, LINEAR = 10 };
+    enum VideoCodec { CODEC_NONE = 0, JPEG = 1, H264 = 2, H265 = 3, AV1 = 4 };
+    enum DistortionModel { NONE = 0, RADTAN = 1, KANNALA_BRANDT = 2 };
+    enum RigRole { LEFT = 0, RIGHT = 1, CENTER = 2, AUX = 3 };
+
+    @appendable struct CamIntrinsics {
+      CamModel model;
+      uint16 width;
+      uint16 height;
+      float fx;
+      float fy;
+      float cx;
+      float cy;
+      DistortionModel dist_model;
+      sequence<float, 16> dist_params; // k1,k2,p1,p2,k3,... or KB params
+      float shutter_us;                // exposure time
+      float readout_us;                // rolling-shutter line time (0 for global)
+      PixFormat pix_format;
+      ColorSpace color;
+      string calib_version;            // hash or tag of calibration
+    };
+
+    @appendable struct VisionMeta {
+      @key string stream_id;           // per-camera stream
+      string frame_id;                 // mounting frame
+      PoseSE3 T_bus_sensor;            // extrinsics (sensor in bus frame)
+      double nominal_rate_hz;
+      CamIntrinsics K;                 // intrinsics
+      RigRole role;                    // for stereo/rigs
+      string rig_id;                   // same value across a synchronized rig
+      // default transport
+      VideoCodec codec;                // JPEG/H264/H265/AV1 or NONE
+      string schema_version;           // "spatial.vision/1.0"
+    };
+
+    @appendable struct VisionFrame {
+      @key string stream_id;
+      uint64 frame_seq;
+      Time   t_start;                  // first row/GOP start
+      Time   t_end;                    // last row/GOP end
+      PoseSE3 sensor_pose;             // pose during exposure (optional)
+      boolean has_sensor_pose;
+
+      VideoCodec codec;                // may override meta
+      PixFormat  pix_format;           // for RAW frames
+      ColorSpace color;
+
+      sequence<BlobRef, 64> blobs;     // e.g., 1 JPEG or N chunks of a video GOP
+
+      float line_readout_us;           // rolling-shutter timing model (optional)
+      boolean rectified;               // true if already rectified to pinhole
+    };
+
+    @appendable struct Keypoint2D {
+      float u;
+      float v;
+      float score;
+    };
+
+    @appendable struct Track2D {
+      uint64 id;
+      sequence<Keypoint2D, 4096> trail;
+    };
+
+    @appendable struct VisionDetections {
+      @key string stream_id;
+      uint64 frame_seq;
+      Time   stamp;
+      sequence<Keypoint2D, 8192> keypoints;
+      sequence<Track2D, 1024>    tracks;
+    };
+  };
+};
 ```
 
 ### **SLAM Frontend Extension**
