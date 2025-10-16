@@ -12,18 +12,19 @@ module spatial { module sensing { module common {
   @appendable struct Axis {
     string name;                       // "range","azimuth","elevation","doppler","time","channel"
     string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // optional: bin centers
-    float start; float step;           // optional: uniform grid
-    boolean has_centers;
+    sequence<float, 65535> centers;    // tabulated centers
+    float start; float step;           // uniform grid parameters
+    boolean has_centers;               // if true, use centers[]; otherwise start/step apply
   };
 
   @appendable struct ROI {
     // Physical-unit gates; NaN = unset
+    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as open interval.
     float range_min; float range_max;
     float az_min;    float az_max;
     float el_min;    float el_max;
     float dop_min;   float dop_max;
-    // Optional image-plane ROI for vision (pixels)
+    // Image-plane ROI for vision (pixels); -1 if unused
     int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
   };
 
@@ -95,7 +96,7 @@ module spatial { module sensing { module common {
     @key string stream_id;
     uint64 request_id;
     // Typically returns new frames whose blobs contain only the ROI
-    sequence<spatial::sensing::common::FrameHeader, 64> frames;
+    sequence<FrameHeader, 64> frames;
   };
 
 }; }; };

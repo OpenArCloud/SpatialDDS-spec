@@ -19,13 +19,16 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
+  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+
   // Layout of the RAD tensor
   enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
 
-  // Static description (publish infrequently; RELIABLE + TRANSIENT_LOCAL)
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
     StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    string schema_version;                 // "spatial.sensing.rad/1.0"
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
@@ -39,8 +42,7 @@ module spatial { module sensing { module rad {
     uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
   };
 
-  // Per-frame index (small, frequent; BEST_EFFORT, KEEP_LAST=1)
-  // Heavy bytes ride as blobs referenced here (tensor tiles, sparse blocks, or latent)
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
   @appendable struct RadFrame {
     @key string stream_id;
     uint64 frame_seq;
@@ -64,6 +66,7 @@ module spatial { module sensing { module rad {
     float  quality;        // 0..1
   };
 
+  // Detections topic — BEST_EFFORT
   @appendable struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
