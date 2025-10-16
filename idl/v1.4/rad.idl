@@ -1,116 +1,75 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar Extension 1.0  — extension profile
+// SpatialDDS Radar (RAD) 1.0 — Extension profile
 
-module spatial {
-  module sensing {
+module spatial { module sensing { module rad {
 
-    // Reuse core types per SpatialDDS 1.3
-    typedef spatial::core::Time   Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
-    typedef spatial::core::BlobRef BlobRef;
+  // Reuse Core + Sensing Common types
+  typedef spatial::core::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
 
-    enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
-    enum RadPayloadKind  { DENSE_TILES = 0, SPARSE_COO = 1, LATENT = 2 };
-    enum RadCodec        { CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, FP8Q = 10, FP4Q = 11, AE_V1 = 20 };
-    enum RadSampleType   { CF32 = 0, CF16 = 1, MAG_U8 = 2, MAGPHASE_S8 = 3, MAG_F16 = 4 };
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
+  typedef spatial::sensing::common::Codec          Codec;
+  typedef spatial::sensing::common::PayloadKind    PayloadKind;
+  typedef spatial::sensing::common::SampleType     SampleType;
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
 
-    @appendable struct Axis {
-      string name;                      // "range","azimuth","elevation","doppler"
-      string unit;                      // "m","deg","m/s","Hz"
-      sequence<float, 65535> centers;   // or use start/step
-      float start;
-      float step;
-      boolean has_centers;
-    };
+  // Layout of the RAD tensor
+  enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
 
-    // Static description (publish INFREQUENTLY) —— transient_local, reliable
-    @appendable struct RadTensorMeta {
-      @key string stream_id;            // stable sensor stream id
-      RadTensorLayout layout;
-      sequence<Axis, 8> axes;           // order matches layout
-      RadSampleType voxel_type;         // pre-compression voxel type
-      string physical_meaning;          // e.g. "post-3D FFT complex baseband"
-      string frame_id;                  // mounting frame name
-      PoseSE3  T_bus_sensor;            // sensor extrinsics in the bus’ canonical frame
-      double nominal_rate_hz;
+  // Static description (publish infrequently; RELIABLE + TRANSIENT_LOCAL)
+  @appendable struct RadMeta {
+    @key string stream_id;                 // stable id for this radar stream
+    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    RadTensorLayout layout;                // order of axes
+    sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
+    SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
+    string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
 
-      // default compression advertised for frames
-      RadPayloadKind payload_kind;
-      RadCodec      codec;
-      float         quant_scale;        // valid if has_quant_scale
-      boolean       has_quant_scale;
-      uint32        tile_size[4];       // for DENSE_TILES; unused dims = 1
-
-      string schema_version;            // "spatial.sensing.rad/1.0"
-    };
-
-    // Frame index: small, frequent — BEST_EFFORT, KEEP_LAST=1
-    // Heavy bytes go via spatial::core::BlobChunk
-    @appendable struct RadTensorFrame {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   t_acq_start;
-      Time   t_acq_end;
-
-      RadPayloadKind payload_kind;
-      RadCodec      codec;
-      RadSampleType voxel_type_after_decode;
-      float         quant_scale;        // valid if has_quant_scale
-      boolean       has_quant_scale;
-
-      float snr_estimate_db;
-      boolean has_phase;
-      boolean has_magnitude;
-
-      // Where to fetch the bytes (one or more blobs; tiles or sparse blocks inside)
-      sequence<BlobRef, 256> blobs;     // blob_ids announced here; bytes via core::BlobChunk
-
-      // Optional notes for reproducibility/debug
-      string proc_chain;                // e.g. "FFT3D->hann->OS-CFAR"
-    };
-
-    // Optional ROI control-plane (reliable)
-    @appendable struct ROI {
-      // Use physical units; NaN means unset
-      float range_min; float range_max;
-      float az_min;    float az_max;
-      float el_min;    float el_max;
-      float dop_min;   float dop_max;
-    };
-
-    @appendable struct RadROIRequest {
-      @key string stream_id;
-      uint64 request_id;
-      Time   t_start;
-      Time   t_end;
-      ROI    roi;
-      boolean wants_payload_kind;  RadPayloadKind desired_payload_kind;
-      boolean wants_codec;         RadCodec desired_codec;
-      boolean wants_voxel_type;    RadSampleType desired_voxel_type;
-      int32  max_bytes;            // -1 for unlimited
-    };
-
-    @appendable struct RadROIReply {
-      @key string stream_id;
-      uint64 request_id;
-      // Reply with new RadTensorFrame indices whose blobs contain only the ROI
-      sequence<RadTensorFrame, 64> frames;
-    };
-
-    // Lightweight derivative for fusion/tracking (optional)
-    @appendable struct RadDetection {
-      double xyz_m[3];
-      double v_r_mps;       // radial velocity (optional)
-      float  intensity;     // magnitude
-      float  quality;       // 0..1
-    };
-
-    @appendable struct RadDetectionSet {
-      @key string stream_id;
-      uint64 frame_seq;
-      string frame_id;      // same as meta.frame_id unless projected
-      sequence<RadDetection, 32768> dets;
-      Time   stamp;
-    };
+    // Default payload settings for frames
+    PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
+    Codec       codec;                     // LZ4, ZSTD, FP8Q, AE_V1, ...
+    float       quant_scale;               // valid if has_quant_scale
+    boolean     has_quant_scale;
+    uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
   };
-}
+
+  // Per-frame index (small, frequent; BEST_EFFORT, KEEP_LAST=1)
+  // Heavy bytes ride as blobs referenced here (tensor tiles, sparse blocks, or latent)
+  @appendable struct RadFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                       // t_start/t_end, optional sensor_pose, blobs[]
+    PayloadKind payload_kind;              // may override defaults
+    Codec       codec;                     // may override defaults
+    SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF16 → MAG_F16)
+    float       quant_scale;               // valid if has_quant_scale
+    boolean     has_quant_scale;
+
+    FrameQuality quality;                  // SNR/valid%/health note
+    string proc_chain;                     // e.g., "FFT3D->hann->OS-CFAR"
+  };
+
+  // Lightweight derivative for fast fusion/tracking (optional)
+  @appendable struct RadDetection {
+    double xyz_m[3];       // Cartesian point in base.frame_id
+    double v_r_mps;        // radial velocity (optional; NaN if unknown)
+    float  intensity;      // reflectivity/magnitude
+    float  quality;        // 0..1
+  };
+
+  @appendable struct RadDetectionSet {
+    @key string stream_id;
+    uint64 frame_seq;
+    string frame_id;       // coordinate frame of xyz_m
+    sequence<RadDetection, 32768> dets;
+    Time   stamp;
+  };
+
+}; }; };

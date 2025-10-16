@@ -1306,96 +1306,204 @@ module spatial {
 
 ```
 
+### **Sensing Common Extension**
+
+*Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).* 
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Sensing Common 1.0 (Extension module)
+
+module spatial { module sensing { module common {
+
+  // Reuse Core primitives (time, pose, blob references)
+  typedef spatial::core::Time    Time;
+  typedef spatial::core::PoseSE3 PoseSE3;
+  typedef spatial::core::BlobRef BlobRef;
+
+  // ---- Axes & Regions (for tensors or scans) ----
+  @appendable struct Axis {
+    string name;                       // "range","azimuth","elevation","doppler","time","channel"
+    string unit;                       // "m","deg","m/s","Hz","s",...
+    sequence<float, 65535> centers;    // optional: bin centers
+    float start; float step;           // optional: uniform grid
+    boolean has_centers;
+  };
+
+  @appendable struct ROI {
+    // Physical-unit gates; NaN = unset
+    float range_min; float range_max;
+    float az_min;    float az_max;
+    float el_min;    float el_max;
+    float dop_min;   float dop_max;
+    // Optional image-plane ROI for vision (pixels)
+    int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+  };
+
+  // ---- Codecs / Payload kinds (shared enums) ----
+  enum Codec {
+    CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, GZIP = 3,
+    DRACO = 10,     // geometry compression
+    JPEG = 20, H264 = 21, H265 = 22, AV1 = 23, // vision
+    FP8Q = 40, FP4Q = 41, AE_V1 = 42          // quant/learned (tensors)
+  };
+
+  enum PayloadKind {
+    DENSE_TILES = 0,    // tiled dense blocks (e.g., tensor tiles)
+    SPARSE_COO = 1,     // sparse indices + values
+    LATENT = 2,         // learned latent vectors
+    BLOB_GEOMETRY = 10, // PCC/PLY/glTF+Draco
+    BLOB_RASTER = 11    // JPEG/GOP chunk(s)
+  };
+
+  enum SampleType {        // post-decode voxel/point sample type
+    U8_MAG = 0, F16_MAG = 1, CF16 = 2, CF32 = 3, MAGPHASE_S8 = 4
+  };
+
+  // ---- Stream identity & calibration header shared by sensors ----
+  @appendable struct StreamMeta {
+    @key string stream_id;        // stable id for this sensor stream
+    string frame_id;              // mounting frame (Core frame naming)
+    PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
+    double   nominal_rate_hz;     // advertised cadence
+    string   schema_version;      // e.g., "spatial.sensing.common/1.0"
+  };
+
+  // ---- Frame index header shared by sensors (small, on-bus) ----
+  @appendable struct FrameHeader {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   t_start;
+    Time   t_end;
+    // optional sensor pose at acquisition (moving platforms)
+    PoseSE3 sensor_pose;
+    boolean has_sensor_pose;
+    // data pointers: heavy bytes referenced as blobs
+    sequence<BlobRef, 256> blobs;
+  };
+
+  // ---- Quality & health (uniform across sensors) ----
+  enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
+
+  @appendable struct FrameQuality {
+    float snr_db;            // NaN if unknown
+    float percent_valid;     // 0..100
+    Health health;
+    string note;             // short diagnostic
+  };
+
+  // ---- ROI request/reply (control-plane pattern) ----
+  @appendable struct ROIRequest {
+    @key string stream_id;
+    uint64 request_id;
+    Time   t_start; Time t_end;
+    ROI    roi;
+    boolean wants_payload_kind; PayloadKind desired_payload_kind;
+    boolean wants_codec;       Codec       desired_codec;
+    boolean wants_sample_type; SampleType  desired_sample_type;
+    int32  max_bytes;          // -1 for unlimited
+  };
+
+  @appendable struct ROIReply {
+    @key string stream_id;
+    uint64 request_id;
+    // Typically returns new frames whose blobs contain only the ROI
+    sequence<spatial::sensing::common::FrameHeader, 64> frames;
+  };
+
+}; }; };
+```
+
 ### **Vision Extension**
 
 *Camera intrinsics, video frames, and optional keypoints/tracks for perception and analytics pipelines.*
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Vision 1.0 — extension profile
+// SpatialDDS Vision (sensing.vision) 1.0 — Extension profile
 
-module spatial {
-  module vision {
+module spatial { module sensing { module vision {
 
-    typedef spatial::core::Time    Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
-    typedef spatial::core::BlobRef BlobRef;
+  // Reuse Core + Sensing Common
+  typedef spatial::core::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
 
-    enum CamModel { PINHOLE = 0, FISHEYE_EQUIDISTANT = 1, KB_4 = 2, OMNI = 3 };
-    enum PixFormat { YUV420 = 0, RGB8 = 1, BGR8 = 2, RGBA8 = 3, RAW10 = 10, RAW12 = 12, RAW16 = 16 };
-    enum ColorSpace { SRGB = 0, REC709 = 1, REC2020 = 2, LINEAR = 10 };
-    enum VideoCodec { CODEC_NONE = 0, JPEG = 1, H264 = 2, H265 = 3, AV1 = 4 };
-    enum DistortionModel { NONE = 0, RADTAN = 1, KANNALA_BRANDT = 2 };
-    enum RigRole { LEFT = 0, RIGHT = 1, CENTER = 2, AUX = 3 };
+  typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
+  typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
 
-    @appendable struct CamIntrinsics {
-      CamModel model;
-      uint16 width;
-      uint16 height;
-      float fx;
-      float fy;
-      float cx;
-      float cy;
-      DistortionModel dist_model;
-      sequence<float, 16> dist_params; // k1,k2,p1,p2,k3,... or KB params
-      float shutter_us;                // exposure time
-      float readout_us;                // rolling-shutter line time (0 for global)
-      PixFormat pix_format;
-      ColorSpace color;
-      string calib_version;            // hash or tag of calibration
-    };
+  // Camera / imaging specifics
+  enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
+  enum Distortion   { NONE=0, RADTAN=1, KANNALA_BRANDT=2 };
+  enum PixFormat    { UNKNOWN=0, YUV420=1, RGB8=2, BGR8=3, RGBA8=4, RAW10=10, RAW12=12, RAW16=16 };
+  enum ColorSpace   { SRGB=0, REC709=1, REC2020=2, LINEAR=10 };
+  enum RigRole      { LEFT=0, RIGHT=1, CENTER=2, AUX=3 };
 
-    @appendable struct VisionMeta {
-      @key string stream_id;           // per-camera stream
-      string frame_id;                 // mounting frame
-      PoseSE3 T_bus_sensor;            // extrinsics (sensor in bus frame)
-      double nominal_rate_hz;
-      CamIntrinsics K;                 // intrinsics
-      RigRole role;                    // for stereo/rigs
-      string rig_id;                   // same value across a synchronized rig
-      // default transport
-      VideoCodec codec;                // JPEG/H264/H265/AV1 or NONE
-      string schema_version;           // "spatial.vision/1.0"
-    };
-
-    @appendable struct VisionFrame {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   t_start;                  // first row/GOP start
-      Time   t_end;                    // last row/GOP end
-      PoseSE3 sensor_pose;             // pose during exposure (optional)
-      boolean has_sensor_pose;
-
-      VideoCodec codec;                // may override meta
-      PixFormat  pix_format;           // for RAW frames
-      ColorSpace color;
-
-      sequence<BlobRef, 64> blobs;     // e.g., 1 JPEG or N chunks of a video GOP
-
-      float line_readout_us;           // rolling-shutter timing model (optional)
-      boolean rectified;               // true if already rectified to pinhole
-    };
-
-    @appendable struct Keypoint2D {
-      float u;
-      float v;
-      float score;
-    };
-
-    @appendable struct Track2D {
-      uint64 id;
-      sequence<Keypoint2D, 4096> trail;
-    };
-
-    @appendable struct VisionDetections {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   stamp;
-      sequence<Keypoint2D, 8192> keypoints;
-      sequence<Track2D, 1024>    tracks;
-    };
+  @appendable struct CamIntrinsics {
+    CamModel model;
+    uint16 width;  uint16 height;
+    float fx; float fy; float cx; float cy;
+    Distortion dist;
+    sequence<float,16> dist_params;     // k1,k2,p1,p2,k3,... or KB params
+    float shutter_us;                   // exposure time
+    float readout_us;                   // rolling-shutter line time (0=global)
+    PixFormat pix;  ColorSpace color;
+    string calib_version;               // hash or tag
   };
-};
+
+  // Static description (RELIABLE + TRANSIENT_LOCAL)
+  @appendable struct VisionMeta {
+    @key string stream_id;
+    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+
+    CamIntrinsics K;                    // intrinsics
+    RigRole role;                       // for stereo/rigs
+    string rig_id;                      // shared id across synchronized cameras
+
+    // Default payload (frames ride as blobs)
+    Codec codec;                        // JPEG/H264/H265/AV1 or NONE
+    PixFormat pix;                      // for RAW payloads
+    ColorSpace color;
+  };
+
+  // Per-frame index (BEST_EFFORT, KEEP_LAST=1) — bytes via FrameHeader.blobs
+  @appendable struct VisionFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                    // t_start/t_end, optional sensor_pose, blobs[]
+
+    // May override meta per-frame
+    Codec codec;
+    PixFormat pix;
+    ColorSpace color;
+
+    float line_readout_us;              // rolling-shutter timing (0 if unknown)
+    boolean rectified;                  // true if pre-rectified to pinhole
+
+    FrameQuality quality;               // shared health/SNR notes
+  };
+
+  // Optional lightweight derivatives (for VIO/SfM/analytics)
+  @appendable struct Keypoint2D { float u; float v; float score; };
+  @appendable struct Track2D {
+    uint64 id;
+    sequence<Keypoint2D, 4096> trail;
+  };
+
+  @appendable struct VisionDetections {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   stamp;
+    sequence<Keypoint2D, 8192> keypoints;
+    sequence<Track2D, 1024>    tracks;
+    // Masks/boxes can be added in Semantics profile to keep Vision lean
+  };
+
+}; }; };
 ```
 
 ### **SLAM Frontend Extension**
@@ -1576,121 +1684,80 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar Extension 1.0  — extension profile
+// SpatialDDS Radar (RAD) 1.0 — Extension profile
 
-module spatial {
-  module sensing {
+module spatial { module sensing { module rad {
 
-    // Reuse core types per SpatialDDS 1.3
-    typedef spatial::core::Time   Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
-    typedef spatial::core::BlobRef BlobRef;
+  // Reuse Core + Sensing Common types
+  typedef spatial::core::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
 
-    enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
-    enum RadPayloadKind  { DENSE_TILES = 0, SPARSE_COO = 1, LATENT = 2 };
-    enum RadCodec        { CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, FP8Q = 10, FP4Q = 11, AE_V1 = 20 };
-    enum RadSampleType   { CF32 = 0, CF16 = 1, MAG_U8 = 2, MAGPHASE_S8 = 3, MAG_F16 = 4 };
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
+  typedef spatial::sensing::common::Codec          Codec;
+  typedef spatial::sensing::common::PayloadKind    PayloadKind;
+  typedef spatial::sensing::common::SampleType     SampleType;
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
 
-    @appendable struct Axis {
-      string name;                      // "range","azimuth","elevation","doppler"
-      string unit;                      // "m","deg","m/s","Hz"
-      sequence<float, 65535> centers;   // or use start/step
-      float start;
-      float step;
-      boolean has_centers;
-    };
+  // Layout of the RAD tensor
+  enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
 
-    // Static description (publish INFREQUENTLY) —— transient_local, reliable
-    @appendable struct RadTensorMeta {
-      @key string stream_id;            // stable sensor stream id
-      RadTensorLayout layout;
-      sequence<Axis, 8> axes;           // order matches layout
-      RadSampleType voxel_type;         // pre-compression voxel type
-      string physical_meaning;          // e.g. "post-3D FFT complex baseband"
-      string frame_id;                  // mounting frame name
-      PoseSE3  T_bus_sensor;            // sensor extrinsics in the bus’ canonical frame
-      double nominal_rate_hz;
+  // Static description (publish infrequently; RELIABLE + TRANSIENT_LOCAL)
+  @appendable struct RadMeta {
+    @key string stream_id;                 // stable id for this radar stream
+    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+    RadTensorLayout layout;                // order of axes
+    sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
+    SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
+    string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
 
-      // default compression advertised for frames
-      RadPayloadKind payload_kind;
-      RadCodec      codec;
-      float         quant_scale;        // valid if has_quant_scale
-      boolean       has_quant_scale;
-      uint32        tile_size[4];       // for DENSE_TILES; unused dims = 1
-
-      string schema_version;            // "spatial.sensing.rad/1.0"
-    };
-
-    // Frame index: small, frequent — BEST_EFFORT, KEEP_LAST=1
-    // Heavy bytes go via spatial::core::BlobChunk
-    @appendable struct RadTensorFrame {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   t_acq_start;
-      Time   t_acq_end;
-
-      RadPayloadKind payload_kind;
-      RadCodec      codec;
-      RadSampleType voxel_type_after_decode;
-      float         quant_scale;        // valid if has_quant_scale
-      boolean       has_quant_scale;
-
-      float snr_estimate_db;
-      boolean has_phase;
-      boolean has_magnitude;
-
-      // Where to fetch the bytes (one or more blobs; tiles or sparse blocks inside)
-      sequence<BlobRef, 256> blobs;     // blob_ids announced here; bytes via core::BlobChunk
-
-      // Optional notes for reproducibility/debug
-      string proc_chain;                // e.g. "FFT3D->hann->OS-CFAR"
-    };
-
-    // Optional ROI control-plane (reliable)
-    @appendable struct ROI {
-      // Use physical units; NaN means unset
-      float range_min; float range_max;
-      float az_min;    float az_max;
-      float el_min;    float el_max;
-      float dop_min;   float dop_max;
-    };
-
-    @appendable struct RadROIRequest {
-      @key string stream_id;
-      uint64 request_id;
-      Time   t_start;
-      Time   t_end;
-      ROI    roi;
-      boolean wants_payload_kind;  RadPayloadKind desired_payload_kind;
-      boolean wants_codec;         RadCodec desired_codec;
-      boolean wants_voxel_type;    RadSampleType desired_voxel_type;
-      int32  max_bytes;            // -1 for unlimited
-    };
-
-    @appendable struct RadROIReply {
-      @key string stream_id;
-      uint64 request_id;
-      // Reply with new RadTensorFrame indices whose blobs contain only the ROI
-      sequence<RadTensorFrame, 64> frames;
-    };
-
-    // Lightweight derivative for fusion/tracking (optional)
-    @appendable struct RadDetection {
-      double xyz_m[3];
-      double v_r_mps;       // radial velocity (optional)
-      float  intensity;     // magnitude
-      float  quality;       // 0..1
-    };
-
-    @appendable struct RadDetectionSet {
-      @key string stream_id;
-      uint64 frame_seq;
-      string frame_id;      // same as meta.frame_id unless projected
-      sequence<RadDetection, 32768> dets;
-      Time   stamp;
-    };
+    // Default payload settings for frames
+    PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
+    Codec       codec;                     // LZ4, ZSTD, FP8Q, AE_V1, ...
+    float       quant_scale;               // valid if has_quant_scale
+    boolean     has_quant_scale;
+    uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
   };
-}
+
+  // Per-frame index (small, frequent; BEST_EFFORT, KEEP_LAST=1)
+  // Heavy bytes ride as blobs referenced here (tensor tiles, sparse blocks, or latent)
+  @appendable struct RadFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                       // t_start/t_end, optional sensor_pose, blobs[]
+    PayloadKind payload_kind;              // may override defaults
+    Codec       codec;                     // may override defaults
+    SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF16 → MAG_F16)
+    float       quant_scale;               // valid if has_quant_scale
+    boolean     has_quant_scale;
+
+    FrameQuality quality;                  // SNR/valid%/health note
+    string proc_chain;                     // e.g., "FFT3D->hann->OS-CFAR"
+  };
+
+  // Lightweight derivative for fast fusion/tracking (optional)
+  @appendable struct RadDetection {
+    double xyz_m[3];       // Cartesian point in base.frame_id
+    double v_r_mps;        // radial velocity (optional; NaN if unknown)
+    float  intensity;      // reflectivity/magnitude
+    float  quality;        // 0..1
+  };
+
+  @appendable struct RadDetectionSet {
+    @key string stream_id;
+    uint64 frame_seq;
+    string frame_id;       // coordinate frame of xyz_m
+    sequence<RadDetection, 32768> dets;
+    Time   stamp;
+  };
+
+}; }; };
 ```
 
 ### **Lidar Extension**
@@ -1699,77 +1766,77 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Lidar Extension 1.0  — extension profile
+// SpatialDDS LiDAR (sensing.lidar) 1.0 — Extension profile
 
-module spatial {
-  module lidar {
+module spatial { module sensing { module lidar {
 
-    // Reuse Core primitives per SpatialDDS 1.3
-    typedef spatial::core::Time    Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
-    typedef spatial::core::BlobRef BlobRef;
+  // Reuse Core + Sensing Common
+  typedef spatial::core::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
 
-    enum LidarType { SPINNING_2D = 0, MULTI_BEAM_3D = 1, SOLID_STATE = 2 };
-    enum PointLayout { XYZ_I = 0, XYZ_I_R = 1, XYZ_I_R_N = 2 }; // N = normal; R = ring/id
-    enum LidarCodec { CODEC_NONE = 0, ZSTD = 1, LZ4 = 2, DRACO = 10, PCD_ZLIB = 20 };
-    enum CloudEncoding { PCD = 0, PLY = 1, LAS = 2, CUSTOM_BIN = 255 };
+  typedef spatial::sensing::common::Codec          Codec;
+  typedef spatial::sensing::common::PayloadKind    PayloadKind; // use BLOB_GEOMETRY for clouds
+  typedef spatial::sensing::common::SampleType     SampleType;  // optional for per-point extras
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
 
-    @appendable struct LidarMeta {
-      @key string stream_id;          // stable sensor stream id
-      LidarType type;
-      string frame_id;                // mounting frame
-      PoseSE3  T_bus_sensor;          // extrinsics (sensor in bus frame)
-      double nominal_rate_hz;
-      // Intrinsics / geometry
-      uint16 n_rings;                 // 0 if N/A
-      float  min_range_m; float max_range_m;
-      float  horiz_fov_deg_min; float horiz_fov_deg_max;
-      float  vert_fov_deg_min;  float vert_fov_deg_max;
-      // Default wire encoding for frames
-      CloudEncoding encoding;
-      LidarCodec    codec;
-      PointLayout   layout;           // expected point fields when decoded
-      string schema_version;          // "spatial.lidar/1.0"
-    };
+  // Device + data model
+  enum LidarType    { SPINNING_2D=0, MULTI_BEAM_3D=1, SOLID_STATE=2 };
+  enum CloudEncoding{ PCD=0, PLY=1, LAS=2, LAZ=3, GLTF_DRACO=10, MPEG_PCC=20, CUSTOM_BIN=255 };
+  enum PointLayout  { XYZ_I=0, XYZ_I_R=1, XYZ_I_R_N=2 }; // intensity, ring, normal
 
-    @appendable struct LidarFrame {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   stamp;
-      // Optional dynamic pose if the platform moves between frames
-      PoseSE3 sensor_pose;            // pose at acquisition (same frame_id)
-      boolean has_sensor_pose;
+  // Static description (RELIABLE + TRANSIENT_LOCAL)
+  @appendable struct LidarMeta {
+    @key string stream_id;
+    StreamMeta base;                  // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
 
-      // Where to fetch bytes; each blob is a chunk of the same frame
-      sequence<BlobRef, 128> blobs;
+    LidarType     type;
+    uint16        n_rings;            // 0 if N/A
+    float         min_range_m; float max_range_m;
+    float         horiz_fov_deg_min; float horiz_fov_deg_max;
+    float         vert_fov_deg_min;  float vert_fov_deg_max;
 
-      // Post-decode expectations (mirrors meta; allows per-frame overrides)
-      CloudEncoding encoding;
-      LidarCodec    codec;
-      PointLayout   layout;
-
-      // Quality hints
-      float average_range_m;
-      float percent_valid;            // 0..100
-    };
-
-    // Lightweight derivative for immediate fusion/tracking (optional)
-    @appendable struct LidarDetection {
-      double xyz_m[3];
-      float  intensity;
-      uint16 ring;
-      float  quality;                 // 0..1
-    };
-
-    @appendable struct LidarDetectionSet {
-      @key string stream_id;
-      uint64 frame_seq;
-      string frame_id;
-      sequence<LidarDetection, 65536> dets;
-      Time   stamp;
-    };
+    // Default payload for frames (clouds ride as blobs)
+    CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
+    Codec         codec;              // ZSTD/LZ4/DRACO/…
+    PointLayout   layout;             // expected fields when decoded
   };
-}
+
+  // Per-frame index (BEST_EFFORT, KEEP_LAST=1) — heavy bytes via FrameHeader.blobs
+  @appendable struct LidarFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader  hdr;                 // t_start/t_end, optional sensor_pose, blobs[]
+    CloudEncoding encoding;           // may override meta
+    Codec         codec;              // may override meta
+    PointLayout   layout;             // may override meta
+
+    // Optional quick hints (for health/telemetry)
+    float average_range_m;
+    float percent_valid;              // 0..100
+    FrameQuality quality;             // shared SNR/health note
+  };
+
+  // Lightweight derivative for immediate fusion/tracking (optional)
+  @appendable struct LidarDetection {
+    double xyz_m[3];
+    float  intensity;
+    uint16 ring;
+    float  quality;                   // 0..1
+  };
+
+  @appendable struct LidarDetectionSet {
+    @key string stream_id;
+    uint64 frame_seq;
+    string frame_id;                  // coordinate frame of xyz_m
+    sequence<LidarDetection, 65536> dets;
+    Time   stamp;
+  };
+
+}; }; };
 ```
 
 ### **AR + Geo Extension**

@@ -1,85 +1,85 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Vision 1.0 — extension profile
+// SpatialDDS Vision (sensing.vision) 1.0 — Extension profile
 
-module spatial {
-  module vision {
+module spatial { module sensing { module vision {
 
-    typedef spatial::core::Time    Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
-    typedef spatial::core::BlobRef BlobRef;
+  // Reuse Core + Sensing Common
+  typedef spatial::core::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
 
-    enum CamModel { PINHOLE = 0, FISHEYE_EQUIDISTANT = 1, KB_4 = 2, OMNI = 3 };
-    enum PixFormat { YUV420 = 0, RGB8 = 1, BGR8 = 2, RGBA8 = 3, RAW10 = 10, RAW12 = 12, RAW16 = 16 };
-    enum ColorSpace { SRGB = 0, REC709 = 1, REC2020 = 2, LINEAR = 10 };
-    enum VideoCodec { CODEC_NONE = 0, JPEG = 1, H264 = 2, H265 = 3, AV1 = 4 };
-    enum DistortionModel { NONE = 0, RADTAN = 1, KANNALA_BRANDT = 2 };
-    enum RigRole { LEFT = 0, RIGHT = 1, CENTER = 2, AUX = 3 };
+  typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
+  typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
 
-    @appendable struct CamIntrinsics {
-      CamModel model;
-      uint16 width;
-      uint16 height;
-      float fx;
-      float fy;
-      float cx;
-      float cy;
-      DistortionModel dist_model;
-      sequence<float, 16> dist_params; // k1,k2,p1,p2,k3,... or KB params
-      float shutter_us;                // exposure time
-      float readout_us;                // rolling-shutter line time (0 for global)
-      PixFormat pix_format;
-      ColorSpace color;
-      string calib_version;            // hash or tag of calibration
-    };
+  // Camera / imaging specifics
+  enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
+  enum Distortion   { NONE=0, RADTAN=1, KANNALA_BRANDT=2 };
+  enum PixFormat    { UNKNOWN=0, YUV420=1, RGB8=2, BGR8=3, RGBA8=4, RAW10=10, RAW12=12, RAW16=16 };
+  enum ColorSpace   { SRGB=0, REC709=1, REC2020=2, LINEAR=10 };
+  enum RigRole      { LEFT=0, RIGHT=1, CENTER=2, AUX=3 };
 
-    @appendable struct VisionMeta {
-      @key string stream_id;           // per-camera stream
-      string frame_id;                 // mounting frame
-      PoseSE3 T_bus_sensor;            // extrinsics (sensor in bus frame)
-      double nominal_rate_hz;
-      CamIntrinsics K;                 // intrinsics
-      RigRole role;                    // for stereo/rigs
-      string rig_id;                   // same value across a synchronized rig
-      // default transport
-      VideoCodec codec;                // JPEG/H264/H265/AV1 or NONE
-      string schema_version;           // "spatial.vision/1.0"
-    };
-
-    @appendable struct VisionFrame {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   t_start;                  // first row/GOP start
-      Time   t_end;                    // last row/GOP end
-      PoseSE3 sensor_pose;             // pose during exposure (optional)
-      boolean has_sensor_pose;
-
-      VideoCodec codec;                // may override meta
-      PixFormat  pix_format;           // for RAW frames
-      ColorSpace color;
-
-      sequence<BlobRef, 64> blobs;     // e.g., 1 JPEG or N chunks of a video GOP
-
-      float line_readout_us;           // rolling-shutter timing model (optional)
-      boolean rectified;               // true if already rectified to pinhole
-    };
-
-    @appendable struct Keypoint2D {
-      float u;
-      float v;
-      float score;
-    };
-
-    @appendable struct Track2D {
-      uint64 id;
-      sequence<Keypoint2D, 4096> trail;
-    };
-
-    @appendable struct VisionDetections {
-      @key string stream_id;
-      uint64 frame_seq;
-      Time   stamp;
-      sequence<Keypoint2D, 8192> keypoints;
-      sequence<Track2D, 1024>    tracks;
-    };
+  @appendable struct CamIntrinsics {
+    CamModel model;
+    uint16 width;  uint16 height;
+    float fx; float fy; float cx; float cy;
+    Distortion dist;
+    sequence<float,16> dist_params;     // k1,k2,p1,p2,k3,... or KB params
+    float shutter_us;                   // exposure time
+    float readout_us;                   // rolling-shutter line time (0=global)
+    PixFormat pix;  ColorSpace color;
+    string calib_version;               // hash or tag
   };
-};
+
+  // Static description (RELIABLE + TRANSIENT_LOCAL)
+  @appendable struct VisionMeta {
+    @key string stream_id;
+    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
+
+    CamIntrinsics K;                    // intrinsics
+    RigRole role;                       // for stereo/rigs
+    string rig_id;                      // shared id across synchronized cameras
+
+    // Default payload (frames ride as blobs)
+    Codec codec;                        // JPEG/H264/H265/AV1 or NONE
+    PixFormat pix;                      // for RAW payloads
+    ColorSpace color;
+  };
+
+  // Per-frame index (BEST_EFFORT, KEEP_LAST=1) — bytes via FrameHeader.blobs
+  @appendable struct VisionFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                    // t_start/t_end, optional sensor_pose, blobs[]
+
+    // May override meta per-frame
+    Codec codec;
+    PixFormat pix;
+    ColorSpace color;
+
+    float line_readout_us;              // rolling-shutter timing (0 if unknown)
+    boolean rectified;                  // true if pre-rectified to pinhole
+
+    FrameQuality quality;               // shared health/SNR notes
+  };
+
+  // Optional lightweight derivatives (for VIO/SfM/analytics)
+  @appendable struct Keypoint2D { float u; float v; float score; };
+  @appendable struct Track2D {
+    uint64 id;
+    sequence<Keypoint2D, 4096> trail;
+  };
+
+  @appendable struct VisionDetections {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   stamp;
+    sequence<Keypoint2D, 8192> keypoints;
+    sequence<Track2D, 1024>    tracks;
+    // Masks/boxes can be added in Semantics profile to keep Vision lean
+  };
+
+}; }; };
