@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS LiDAR 1.0 (Extension profile)
+// SpatialDDS Lidar Extension 1.0  — extension profile
 
 module spatial {
   module lidar {

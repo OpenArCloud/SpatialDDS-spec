@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing (RAD) 1.0  — extension profile
+// SpatialDDS Radar Extension 1.0  — extension profile
 
 module spatial {
   module sensing {

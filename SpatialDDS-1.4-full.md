@@ -43,7 +43,7 @@ At its core, SpatialDDS is defined through **IDL profiles** that partition funct
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
 * **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
-* **Extensions**: optional domain-specific profiles including VIO sensors, SLAM frontend features, semantic detections, LiDAR streams, AR+Geo, and provisional Neural/Agent profiles.
+* **Extensions**: optional domain-specific profiles including VIO sensors, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
@@ -71,7 +71,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Keep the wire light**
   SpatialDDS defines compact, typed messages via IDL. Heavy or variable content (meshes, splats, masks, assets) is carried as blobs, referenced by stable IDs. This avoids bloating the bus while keeping payloads flexible.
 * **Profiles, not monoliths**
-  SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (VIO, SLAM Frontend, Semantics, LiDAR, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
+ SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (VIO, SLAM Frontend, Semantics, radar, lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
 * **AI-ready, domain-neutral**
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.
 * **Anchors as first-class citizens**
@@ -182,8 +182,8 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
-  * **Sensing (RAD) Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for RAD sensors.
-  * **LiDAR Profile**: Sensor metadata, compressed point cloud frames, and optional detections for LiDAR payloads.
+  * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
+  * **Lidar Profile**: Sensor metadata, compressed point cloud frames, and optional detections for lidar payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
 * **Provisional Extensions (Optional)**  
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.  
@@ -1214,7 +1214,7 @@ module spatial {
 
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Sensing (RAD) profile streams radar tensors, derived detections, and optional ROI control. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
 ### **VIO / Inertial Extension**
 
@@ -1477,13 +1477,13 @@ module spatial {
 
 ```
 
-### **Sensing (RAD) Extension**
+### **Radar Extension**
 
 *Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets.*
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing (RAD) 1.0  — extension profile
+// SpatialDDS Radar Extension 1.0  — extension profile
 
 module spatial {
   module sensing {
@@ -1594,6 +1594,85 @@ module spatial {
       uint64 frame_seq;
       string frame_id;      // same as meta.frame_id unless projected
       sequence<RadDetection, 32768> dets;
+      Time   stamp;
+    };
+  };
+}
+```
+
+### **Lidar Extension**
+
+*Lidar metadata, compressed point cloud frames, and optional detections.*
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Lidar Extension 1.0  — extension profile
+
+module spatial {
+  module lidar {
+
+    // Reuse Core primitives per SpatialDDS 1.3
+    typedef spatial::core::Time    Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::BlobRef BlobRef;
+
+    enum LidarType { SPINNING_2D = 0, MULTI_BEAM_3D = 1, SOLID_STATE = 2 };
+    enum PointLayout { XYZ_I = 0, XYZ_I_R = 1, XYZ_I_R_N = 2 }; // N = normal; R = ring/id
+    enum LidarCodec { CODEC_NONE = 0, ZSTD = 1, LZ4 = 2, DRACO = 10, PCD_ZLIB = 20 };
+    enum CloudEncoding { PCD = 0, PLY = 1, LAS = 2, CUSTOM_BIN = 255 };
+
+    @appendable struct LidarMeta {
+      @key string stream_id;          // stable sensor stream id
+      LidarType type;
+      string frame_id;                // mounting frame
+      PoseSE3  T_bus_sensor;          // extrinsics (sensor in bus frame)
+      double nominal_rate_hz;
+      // Intrinsics / geometry
+      uint16 n_rings;                 // 0 if N/A
+      float  min_range_m; float max_range_m;
+      float  horiz_fov_deg_min; float horiz_fov_deg_max;
+      float  vert_fov_deg_min;  float vert_fov_deg_max;
+      // Default wire encoding for frames
+      CloudEncoding encoding;
+      LidarCodec    codec;
+      PointLayout   layout;           // expected point fields when decoded
+      string schema_version;          // "spatial.lidar/1.0"
+    };
+
+    @appendable struct LidarFrame {
+      @key string stream_id;
+      uint64 frame_seq;
+      Time   stamp;
+      // Optional dynamic pose if the platform moves between frames
+      PoseSE3 sensor_pose;            // pose at acquisition (same frame_id)
+      boolean has_sensor_pose;
+
+      // Where to fetch bytes; each blob is a chunk of the same frame
+      sequence<BlobRef, 128> blobs;
+
+      // Post-decode expectations (mirrors meta; allows per-frame overrides)
+      CloudEncoding encoding;
+      LidarCodec    codec;
+      PointLayout   layout;
+
+      // Quality hints
+      float average_range_m;
+      float percent_valid;            // 0..100
+    };
+
+    // Lightweight derivative for immediate fusion/tracking (optional)
+    @appendable struct LidarDetection {
+      double xyz_m[3];
+      float  intensity;
+      uint16 ring;
+      float  quality;                 // 0..1
+    };
+
+    @appendable struct LidarDetectionSet {
+      @key string stream_id;
+      uint64 frame_seq;
+      string frame_id;
+      sequence<LidarDetection, 65536> dets;
       Time   stamp;
     };
   };

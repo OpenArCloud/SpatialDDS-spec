@@ -1,6 +1,6 @@
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Sensing (RAD) profile streams radar tensors, derived detections, and optional ROI control. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
 ### **VIO / Inertial Extension**
 
@@ -26,7 +26,7 @@
 {{include:idl/v1.4/semantics.idl}}
 ```
 
-### **Sensing (RAD) Extension**
+### **Radar Extension**
 
 *Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets.*
 
@@ -34,9 +34,9 @@
 {{include:idl/v1.4/rad.idl}}
 ```
 
-### **LiDAR Extension**
+### **Lidar Extension**
 
-*LiDAR metadata, compressed point cloud frames, and optional detections.*
+*Lidar metadata, compressed point cloud frames, and optional detections.*
 
 ```idl
 {{include:idl/v1.4/lidar.idl}}
