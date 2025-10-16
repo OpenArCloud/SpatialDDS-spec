@@ -43,9 +43,7 @@ module spatial { module sensing { module vision {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct VisionMeta {
     @key string stream_id;
-    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
-    string schema_version;              // "spatial.sensing.vision/1.0"
-
+    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz
     CamIntrinsics K;                    // intrinsics
     RigRole role;                       // for stereo/rigs
     string rig_id;                      // shared id across synchronized cameras
@@ -54,6 +52,7 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
+    string schema_version;              // "spatial.sensing.vision/1.0"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)

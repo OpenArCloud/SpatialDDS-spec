@@ -183,7 +183,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
-  * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
+  * [Radar (RAD) Profile](#radar-rad-profile): Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
   * **Lidar Profile**: Sensor metadata, compressed point cloud frames, and optional detections for lidar payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
 * **Provisional Extensions (Optional)**  
@@ -1306,9 +1306,13 @@ module spatial {
 
 ```
 
-### **Sensing Common Extension**
+### **Sensing Common Module**
 
-*Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).* 
+*Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).*
+
+**Axis.** Implementations MUST indicate which encoding is used: `has_centers=true` → use `centers[]`; otherwise use `start/step`. Units MUST be SI.
+
+**ROI.** Unset bounds MUST be encoded as NaN. Consumers MUST treat NaN as an open interval (no clipping) for that bound.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1325,14 +1329,14 @@ module spatial { module sensing { module common {
   @appendable struct Axis {
     string name;                       // "range","azimuth","elevation","doppler","time","channel"
     string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // tabulated centers
-    float start; float step;           // uniform grid parameters
-    boolean has_centers;               // if true, use centers[]; otherwise start/step apply
+    sequence<float, 65535> centers;    // optional: bin centers
+    float start;
+    float step;
+    boolean has_centers;               // true => use centers[]; false => use start/step
   };
 
   @appendable struct ROI {
-    // Physical-unit gates; NaN = unset
-    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as open interval.
+    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as an open interval (no clipping).
     float range_min; float range_max;
     float az_min;    float az_max;
     float el_min;    float el_max;
@@ -1417,7 +1421,9 @@ module spatial { module sensing { module common {
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*This vision profile shares camera intrinsics, encoded frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow [Sensing Common](#sensing-common-module) (NaN=open, has_centers selects the encoding).*
+
+**QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1465,9 +1471,7 @@ module spatial { module sensing { module vision {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct VisionMeta {
     @key string stream_id;
-    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
-    string schema_version;              // "spatial.sensing.vision/1.0"
-
+    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz
     CamIntrinsics K;                    // intrinsics
     RigRole role;                       // for stereo/rigs
     string rig_id;                      // shared id across synchronized cameras
@@ -1476,6 +1480,7 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
+    string schema_version;              // "spatial.sensing.vision/1.0"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -1688,9 +1693,11 @@ module spatial {
 
 ```
 
-### **Radar Extension**
+### **Radar (RAD) Profile**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*This radar profile streams radar tensors, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow [Sensing Common](#sensing-common-module) (NaN=open, has_centers selects the encoding).* 
+
+**QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1722,12 +1729,12 @@ module spatial { module sensing { module rad {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
-    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
-    string schema_version;                 // "spatial.sensing.rad/1.0"
+    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
+    string schema_version;                 // "spatial.sensing.rad/1.0"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
@@ -1775,7 +1782,9 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*This lidar profile transports sensor metadata, compressed point cloud frames, and optional detections. ROI semantics follow [Sensing Common](#sensing-common-module) (NaN=open, has_centers selects the encoding).*
+
+**QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1809,9 +1818,7 @@ module spatial { module sensing { module lidar {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct LidarMeta {
     @key string stream_id;
-    StreamMeta base;                  // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
-    string schema_version;            // "spatial.sensing.lidar/1.0"
-
+    StreamMeta base;                  // frame_id, T_bus_sensor, nominal_rate_hz
     LidarType     type;
     uint16        n_rings;            // 0 if N/A
     float         min_range_m; float max_range_m;
@@ -1822,6 +1829,7 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…
     PointLayout   layout;             // expected fields when decoded
+    string schema_version;            // "spatial.sensing.lidar/1.0"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)

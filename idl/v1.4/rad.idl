@@ -27,12 +27,12 @@ module spatial { module sensing { module rad {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
-    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz, schema_version
-    string schema_version;                 // "spatial.sensing.rad/1.0"
+    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
+    string schema_version;                 // "spatial.sensing.rad/1.0"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
