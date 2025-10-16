@@ -34,6 +34,14 @@
 {{include:idl/v1.4/rad.idl}}
 ```
 
+### **LiDAR Extension**
+
+*LiDAR metadata, compressed point cloud frames, and optional detections.*
+
+```idl
+{{include:idl/v1.4/lidar.idl}}
+```
+
 ### **AR + Geo Extension**
 
 *Geo-fixed nodes for easy consumption by AR clients & multi-agent alignment.*
