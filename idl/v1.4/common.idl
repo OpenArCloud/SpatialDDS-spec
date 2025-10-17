@@ -9,6 +9,7 @@ module spatial { module sensing { module common {
   typedef spatial::core::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
   typedef spatial::core::BlobRef BlobRef;
+  typedef spatial::geometry::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
   @appendable struct Axis {
@@ -55,7 +56,7 @@ module spatial { module sensing { module common {
   // ---- Stream identity & calibration header shared by sensors ----
   @appendable struct StreamMeta {
     @key string stream_id;        // stable id for this sensor stream
-    string frame_id;              // mounting frame (Core frame naming)
+    FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
     string   schema_version;      // MUST be "spatial.sensing.common/1.0"

@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Geometry 1.0
+
+module spatial {
+  module geometry {
+
+    // Stable, typo-proof frame identity (breaking change).
+    // Equality is by uuid; fqn is a normalized, human-readable alias.
+    @appendable struct FrameRef {
+      uint8  uuid[16];  // REQUIRED: stable identifier for the frame
+      string fqn;       // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+    };
+
+  }; // module geometry
+};

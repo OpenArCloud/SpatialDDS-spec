@@ -124,6 +124,22 @@ The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatia
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
+#### Frame Identifiers (Normative)
+
+SpatialDDS replaces legacy string frame identifiers with the **FrameRef** structure:
+
+```
+FrameRef {
+  uuid: 16-byte stable identifier (required)
+  fqn:  normalized fully qualified name (required)
+}
+```
+
+- **Equality & identity.** The `uuid` field is authoritative; consumers MUST compare frames by UUID. The `fqn` is a normalized, human-readable alias for logging and debugging.
+- **FQN normalization.** Frame FQNs MUST be lowercase, Unicode NFC-normalized, match `^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$`, and SHOULD follow `<org>/<system>/<frame>` (for example, `oarc/rig01/cam_front`). Reserved roots include: `earth-fixed`, `ecef`, `enu`, `map`, `body`, `sensor`, `ship-fixed`.
+- **Graph rule.** The frame graph MUST remain a DAG. Each transform declares `parent_ref` and `child_ref`; consumers MUST detect cycles and reject invalid graphs.
+- **Manifests.** Producers SHOULD publish a **Frame Manifest** that enumerates `{uuid, fqn, parent_uuid}` tuples and advertise its location via discovery/manifests.
+
 ### **2.2 Discovery**
 
 The Discovery profile adds a minimal, lightweight way to announce services, anchors, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or a bounding-box array), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, anchor registries, semantics, or AR content providers without requiring heavy registries or complex protocols.
@@ -254,7 +270,10 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "map_id": "map/facility-west",
       "node_id": "kf_0120",
       "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
-      "frame_id": "map",
+      "frame_ref": {
+        "uuid": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "fqn": "facility-west/map"
+      },
       "stamp": { "sec": 1714070452, "nsec": 125000000 },
       "source_id": "device/headset-17"
     }
@@ -446,7 +465,7 @@ In the manifest samples later in this specification, each of these identifiers e
 
 ## **7. Example Manifests**
 
-While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
+While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 continues the convention introduced in v1.3: manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
 ### **Assets**
 
@@ -502,7 +521,19 @@ Example discovery announcements would therefore carry manifest URIs such as:
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
 * `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
 
-Version 1.3 also gives manifests a lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+SpatialDDS 1.4 retains the lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+
+### Frame Manifest Reference
+Producers SHOULD include a manifest hint that points to a frame manifest:
+
+```json
+{
+  "frames_uri": "https://example.com/rig01/frames.json",
+  "frames_hash": "sha256:…"
+}
+```
+
+The referenced document enumerates frames as `{uuid, fqn, parent_uuid}` tuples so consumers can validate topology and aliases independently of on-bus samples.
 
 Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. In v1.4 the query now carries a caller-supplied `query_id` plus a `reply_topic` so responders can correlate answers and route them to the right pub/sub path, and a new paged `CoverageResponse` mirrors the `query_id` when returning matching `ContentAnnounce` records. Implementations that ignore the active-query fields continue to interoperate.
 
@@ -1101,6 +1132,8 @@ module spatial {
       string checksum;  // SHA-256 (hex)
     };
 
+    typedef spatial::geometry::FrameRef FrameRef;
+
     @appendable struct TileMeta {
       @key TileKey key;              // unique tile key
       string tile_id_compat;         // optional human-readable id
@@ -1152,10 +1185,10 @@ module spatial {
     @appendable struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id
-      PoseSE3 pose;            // pose in frame_id
+      PoseSE3 pose;            // pose in frame_ref
       double  cov[36];         // 6x6 covariance (row-major); NaN if unknown
       Time    stamp;
-      string  frame_id;        // e.g., "map"
+      FrameRef frame_ref;      // e.g., "map"
       string  source_id;
       uint64  seq;             // per-source monotonic
       uint64  graph_epoch;     // for major rebases/merges
@@ -1205,7 +1238,7 @@ module spatial {
     @appendable struct GeoAnchor {
       @key string anchor_id;   // e.g., "anchor/4th-and-main"
       string map_id;
-      string frame_id;         // local frame (e.g., "map")
+      FrameRef frame_ref;      // local frame (e.g., "map")
       GeoPose geopose;         // global pose
       string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
       double  confidence;      // 0..1
@@ -1214,8 +1247,8 @@ module spatial {
 
     @appendable struct FrameTransform {
       @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
-      string parent_frame;      // global frame (ENU@..., ECEF, ...)
-      string child_frame;       // local frame ("map")
+      FrameRef parent_ref;      // global frame (ENU@..., ECEF, ...)
+      FrameRef child_ref;       // local frame ("map")
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
       double  cov[36];          // 6x6 covariance; NaN if unknown
@@ -1254,6 +1287,7 @@ module spatial {
     const string MODULE_ID = "spatial.discovery/1.0";
 
     typedef spatial::core::Time Time;
+    typedef spatial::geometry::FrameRef FrameRef;
     typedef spatial::core::Aabb3 Aabb3;
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
@@ -1387,6 +1421,7 @@ module spatial {
 
     typedef spatial::core::Time Time;
     typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     @appendable struct AnchorEntry {
       @key string anchor_id;
@@ -1442,6 +1477,29 @@ module spatial {
 
 *These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
+### **Geometry Primitives**
+
+*Stable frame references shared across profiles.*
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Geometry 1.0
+
+module spatial {
+  module geometry {
+
+    // Stable, typo-proof frame identity (breaking change).
+    // Equality is by uuid; fqn is a normalized, human-readable alias.
+    @appendable struct FrameRef {
+      uint8  uuid[16];  // REQUIRED: stable identifier for the frame
+      string fqn;       // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+    };
+
+  }; // module geometry
+};
+
+```
+
 ### **Sensing Common Extension**
 
 *Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).* 
@@ -1458,6 +1516,7 @@ module spatial { module sensing { module common {
   typedef spatial::core::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
   typedef spatial::core::BlobRef BlobRef;
+  typedef spatial::geometry::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
   @appendable struct Axis {
@@ -1504,7 +1563,7 @@ module spatial { module sensing { module common {
   // ---- Stream identity & calibration header shared by sensors ----
   @appendable struct StreamMeta {
     @key string stream_id;        // stable id for this sensor stream
-    string frame_id;              // mounting frame (Core frame naming)
+    FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
     string   schema_version;      // MUST be "spatial.sensing.common/1.0"
@@ -1574,7 +1633,7 @@ module spatial {
     // IMU calibration
     @appendable struct ImuInfo {
       @key string imu_id;
-      string frame_id;
+      FrameRef frame_ref;
       double accel_noise_density;    // (m/s^2)/√Hz
       double gyro_noise_density;     // (rad/s)/√Hz
       double accel_random_walk;      // (m/s^3)/√Hz
@@ -1597,7 +1656,7 @@ module spatial {
       @key string mag_id;
       double mag[3];                 // microtesla
       Time   stamp;
-      string frame_id;
+      FrameRef frame_ref;
       string source_id;
       uint64 seq;
     };
@@ -1609,7 +1668,7 @@ module spatial {
       double gyro[3];                // rad/s
       double mag[3];                 // microtesla
       Time   stamp;
-      string frame_id;
+      FrameRef frame_ref;
       string source_id;
       uint64 seq;
     };
@@ -1625,7 +1684,7 @@ module spatial {
 
       double q[4];                   // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
-      double t[3];                   // meters, in frame_id
+      double t[3];                   // meters, in frame_ref
 
       double gravity[3];             // m/s^2 (NaN if unknown)
       double lin_accel[3];           // m/s^2 (NaN if unknown)
@@ -1636,7 +1695,7 @@ module spatial {
       double cov_pos[9];             // 3x3 covariance (NaN if unknown)
 
       Time   stamp;
-      string frame_id;
+      FrameRef frame_ref;
       string source_id;
       uint64 seq;
       double quality;                // 0..1
@@ -1663,6 +1722,8 @@ module spatial { module sensing { module vision {
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::geometry::FrameRef              FrameRef;
+  typedef spatial::geometry::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
   typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
@@ -1699,7 +1760,7 @@ module spatial { module sensing { module vision {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct VisionMeta {
     @key string stream_id;
-    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz
+    StreamMeta base;                    // frame_ref, T_bus_sensor, nominal_rate_hz
     CamIntrinsics K;                    // intrinsics
     RigRole role;                       // for stereo/rigs
     string rig_id;                      // shared id across synchronized cameras
@@ -1765,6 +1826,7 @@ module spatial {
 
     // Reuse core: Time, etc.
     typedef spatial::core::Time Time;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     // Camera calibration
     enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
@@ -1776,7 +1838,7 @@ module spatial {
       double cx; double cy;           // principal point (px)
       DistortionModelKind dist_kind;
       sequence<double, 8> dist;       // model params (bounded)
-      string frame_id;                // camera frame
+      FrameRef frame_ref;             // camera frame
       Time   stamp;                   // calib time (or 0 if static)
     };
 
@@ -1861,6 +1923,7 @@ module spatial {
 
     typedef spatial::core::Time Time;
     typedef spatial::core::TileKey TileKey;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     // 2D detections per keyframe (image space)
     @appendable struct Detection2D {
@@ -1888,14 +1951,14 @@ module spatial {
     // 3D detections in world/local frame (scene space)
     @appendable struct Detection3D {
       @key string det_id;
-      string frame_id;           // e.g., "map" (pose known elsewhere)
+      FrameRef frame_ref;        // e.g., "map" (pose known elsewhere)
       boolean has_tile;
       TileKey tile_key;          // valid when has_tile = true
 
       string class_id;           // semantic label
       float  score;              // [0..1]
 
-      // Oriented bounding box in frame_id
+      // Oriented bounding box in frame_ref
       double center[3];          // m
       double size[3];            // width,height,depth (m)
       double q[4];               // orientation (x,y,z,w) in GeoPose order
@@ -1913,7 +1976,7 @@ module spatial {
 
     @appendable struct Detection3DSet {
       @key string set_id;                 // batch id
-      string frame_id;                    // common frame for the set
+      FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;
       TileKey tile_key;                   // valid when has_tile = true
       sequence<Detection3D, 128> dets;    // ≤128
@@ -1963,7 +2026,7 @@ module spatial { module sensing { module rad {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
-    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz
+    StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
@@ -1996,7 +2059,7 @@ module spatial { module sensing { module rad {
 
   // Lightweight derivative for fast fusion/tracking (optional)
   @appendable struct RadDetection {
-    double xyz_m[3];       // Cartesian point in base.frame_id
+    double xyz_m[3];       // Cartesian point in base.frame_ref
     double v_r_mps;        // radial velocity (optional; NaN if unknown)
     float  intensity;      // reflectivity/magnitude
     float  quality;        // 0..1
@@ -2006,7 +2069,7 @@ module spatial { module sensing { module rad {
   @appendable struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
-    string frame_id;       // coordinate frame of xyz_m
+    FrameRef frame_ref;    // coordinate frame of xyz_m
     sequence<RadDetection, 32768> dets;
     Time   stamp;
   };
@@ -2053,7 +2116,7 @@ module spatial { module sensing { module lidar {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct LidarMeta {
     @key string stream_id;
-    StreamMeta base;                  // frame_id, T_bus_sensor, nominal_rate_hz
+    StreamMeta base;                  // frame_ref, T_bus_sensor, nominal_rate_hz
     LidarType     type;
     uint16        n_rings;            // 0 if N/A
     float         min_range_m; float max_range_m;
@@ -2095,7 +2158,7 @@ module spatial { module sensing { module lidar {
   @appendable struct LidarDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
-    string frame_id;                  // coordinate frame of xyz_m
+    FrameRef frame_ref;               // coordinate frame of xyz_m
     sequence<LidarDetection, 65536> dets;
     Time   stamp;
   };
@@ -2128,7 +2191,7 @@ module spatial {
       GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
       double  cov[36];          // 6x6 covariance in local frame; NaN if unknown
       Time    stamp;
-      string  frame_id;         // local frame
+      FrameRef frame_ref;       // local frame
       string  source_id;
       uint64  seq;
       uint64  graph_epoch;

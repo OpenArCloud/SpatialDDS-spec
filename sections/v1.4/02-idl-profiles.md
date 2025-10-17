@@ -6,6 +6,22 @@ The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatia
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
+#### Frame Identifiers (Normative)
+
+SpatialDDS replaces legacy string frame identifiers with the **FrameRef** structure:
+
+```
+FrameRef {
+  uuid: 16-byte stable identifier (required)
+  fqn:  normalized fully qualified name (required)
+}
+```
+
+- **Equality & identity.** The `uuid` field is authoritative; consumers MUST compare frames by UUID. The `fqn` is a normalized, human-readable alias for logging and debugging.
+- **FQN normalization.** Frame FQNs MUST be lowercase, Unicode NFC-normalized, match `^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$`, and SHOULD follow `<org>/<system>/<frame>` (for example, `oarc/rig01/cam_front`). Reserved roots include: `earth-fixed`, `ecef`, `enu`, `map`, `body`, `sensor`, `ship-fixed`.
+- **Graph rule.** The frame graph MUST remain a DAG. Each transform declares `parent_ref` and `child_ref`; consumers MUST detect cycles and reject invalid graphs.
+- **Manifests.** Producers SHOULD publish a **Frame Manifest** that enumerates `{uuid, fqn, parent_uuid}` tuples and advertise its location via discovery/manifests.
+
 ### **2.2 Discovery**
 
 The Discovery profile adds a minimal, lightweight way to announce services, anchors, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or a bounding-box array), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, anchor registries, semantics, or AR content providers without requiring heavy registries or complex protocols.

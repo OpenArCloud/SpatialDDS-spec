@@ -60,6 +60,18 @@ SpatialDDS 1.4 retains the lighter way to explain where a service operates. Publ
 
 Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. In v1.4 the query now carries a caller-supplied `query_id` plus a `reply_topic` so responders can correlate answers and route them to the right pub/sub path, and a new paged `CoverageResponse` mirrors the `query_id` when returning matching `ContentAnnounce` records. Implementations that ignore the active-query fields continue to interoperate.
 
+### Frame Manifest Reference
+Producers SHOULD include a manifest hint that points to a frame manifest:
+
+```json
+{
+  "frames_uri": "https://example.com/rig01/frames.json",
+  "frames_hash": "sha256:…"
+}
+```
+
+The referenced document enumerates frames as `{uuid, fqn, parent_uuid}` tuples so consumers can validate topology and aliases independently of on-bus samples.
+
 ### **A) VPS Manifest**
 
 *This manifest describes a Visual Positioning Service (VPS). It specifies the service identifier, version, coverage area, and the topics used for queries and responses. It also lists supported input encodings and response types, allowing clients to determine compatibility before interacting with the service.*

@@ -7,11 +7,12 @@ module spatial {
     const string MODULE_ID = "spatial.vio/1.0";
 
     typedef spatial::core::Time Time;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     // IMU calibration
     @appendable struct ImuInfo {
       @key string imu_id;
-      string frame_id;
+      FrameRef frame_ref;
       double accel_noise_density;    // (m/s^2)/√Hz
       double gyro_noise_density;     // (rad/s)/√Hz
       double accel_random_walk;      // (m/s^3)/√Hz
@@ -34,7 +35,7 @@ module spatial {
       @key string mag_id;
       double mag[3];                 // microtesla
       Time   stamp;
-      string frame_id;
+      FrameRef frame_ref;
       string source_id;
       uint64 seq;
     };
@@ -46,7 +47,7 @@ module spatial {
       double gyro[3];                // rad/s
       double mag[3];                 // microtesla
       Time   stamp;
-      string frame_id;
+      FrameRef frame_ref;
       string source_id;
       uint64 seq;
     };
@@ -62,7 +63,7 @@ module spatial {
 
       double q[4];                   // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
-      double t[3];                   // meters, in frame_id
+      double t[3];                   // meters, in frame_ref
 
       double gravity[3];             // m/s^2 (NaN if unknown)
       double lin_accel[3];           // m/s^2 (NaN if unknown)
@@ -73,7 +74,7 @@ module spatial {
       double cov_pos[9];             // 3x3 covariance (NaN if unknown)
 
       Time   stamp;
-      string frame_id;
+      FrameRef frame_ref;
       string source_id;
       uint64 seq;
       double quality;                // 0..1

@@ -2,6 +2,14 @@
 
 *These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
+### **Geometry Primitives**
+
+*Stable frame references shared across profiles.*
+
+```idl
+{{include:idl/v1.4/geometry.idl}}
+```
+
 ### **Sensing Common Extension**
 
 *Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).* 

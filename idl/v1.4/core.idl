@@ -39,6 +39,8 @@ module spatial {
       string checksum;  // SHA-256 (hex)
     };
 
+    typedef spatial::geometry::FrameRef FrameRef;
+
     @appendable struct TileMeta {
       @key TileKey key;              // unique tile key
       string tile_id_compat;         // optional human-readable id
@@ -90,10 +92,10 @@ module spatial {
     @appendable struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id
-      PoseSE3 pose;            // pose in frame_id
+      PoseSE3 pose;            // pose in frame_ref
       double  cov[36];         // 6x6 covariance (row-major); NaN if unknown
       Time    stamp;
-      string  frame_id;        // e.g., "map"
+      FrameRef frame_ref;      // e.g., "map"
       string  source_id;
       uint64  seq;             // per-source monotonic
       uint64  graph_epoch;     // for major rebases/merges
@@ -143,7 +145,7 @@ module spatial {
     @appendable struct GeoAnchor {
       @key string anchor_id;   // e.g., "anchor/4th-and-main"
       string map_id;
-      string frame_id;         // local frame (e.g., "map")
+      FrameRef frame_ref;      // local frame (e.g., "map")
       GeoPose geopose;         // global pose
       string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
       double  confidence;      // 0..1
@@ -152,8 +154,8 @@ module spatial {
 
     @appendable struct FrameTransform {
       @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
-      string parent_frame;      // global frame (ENU@..., ECEF, ...)
-      string child_frame;       // local frame ("map")
+      FrameRef parent_ref;      // global frame (ENU@..., ECEF, ...)
+      FrameRef child_ref;       // local frame ("map")
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
       double  cov[36];          // 6x6 covariance; NaN if unknown
