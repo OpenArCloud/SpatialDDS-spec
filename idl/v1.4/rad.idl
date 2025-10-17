@@ -3,6 +3,9 @@
 
 module spatial { module sensing { module rad {
 
+  // Profile identity (authoritative string for this profile/version)
+  const string PROFILE_ID = "spatial.sensing.rad/1.0";
+
   // Reuse Core + Sensing Common types
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
@@ -32,7 +35,7 @@ module spatial { module sensing { module rad {
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
-    string schema_version;                 // "spatial.sensing.rad/1.0"
+    string schema_version;                 // MUST be "spatial.sensing.rad/1.0"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT

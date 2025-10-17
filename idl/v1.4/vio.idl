@@ -4,6 +4,8 @@
 module spatial {
   module vio {
 
+    const string MODULE_ID = "spatial.vio/1.0";
+
     typedef spatial::core::Time Time;
 
     // IMU calibration

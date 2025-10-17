@@ -4,6 +4,8 @@
 module spatial {
   module semantics {
 
+    const string MODULE_ID = "spatial.semantics/1.0";
+
     typedef spatial::core::Time Time;
     typedef spatial::core::TileKey TileKey;
 
