@@ -9,6 +9,7 @@ module spatial { module sensing { module vision {
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::geometry::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
   typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
@@ -45,7 +46,7 @@ module spatial { module sensing { module vision {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct VisionMeta {
     @key string stream_id;
-    StreamMeta base;                    // frame_id, T_bus_sensor, nominal_rate_hz
+    StreamMeta base;                    // frame_ref, T_bus_sensor, nominal_rate_hz
     CamIntrinsics K;                    // intrinsics
     RigRole role;                       // for stereo/rigs
     string rig_id;                      // shared id across synchronized cameras

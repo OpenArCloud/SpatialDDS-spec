@@ -8,6 +8,7 @@ module spatial {
 
     typedef spatial::core::Time Time;
     typedef spatial::core::TileKey TileKey;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     // 2D detections per keyframe (image space)
     @appendable struct Detection2D {
@@ -35,14 +36,14 @@ module spatial {
     // 3D detections in world/local frame (scene space)
     @appendable struct Detection3D {
       @key string det_id;
-      string frame_id;           // e.g., "map" (pose known elsewhere)
+      FrameRef frame_ref;        // e.g., "map" (pose known elsewhere)
       boolean has_tile;
       TileKey tile_key;          // valid when has_tile = true
 
       string class_id;           // semantic label
       float  score;              // [0..1]
 
-      // Oriented bounding box in frame_id
+      // Oriented bounding box in frame_ref
       double center[3];          // m
       double size[3];            // width,height,depth (m)
       double q[4];               // orientation (x,y,z,w) in GeoPose order
@@ -60,7 +61,7 @@ module spatial {
 
     @appendable struct Detection3DSet {
       @key string set_id;                 // batch id
-      string frame_id;                    // common frame for the set
+      FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;
       TileKey tile_key;                   // valid when has_tile = true
       sequence<Detection3D, 128> dets;    // ≤128

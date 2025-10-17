@@ -8,6 +8,7 @@ module spatial {
 
     // Reuse core: Time, etc.
     typedef spatial::core::Time Time;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     // Camera calibration
     enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
@@ -19,7 +20,7 @@ module spatial {
       double cx; double cy;           // principal point (px)
       DistortionModelKind dist_kind;
       sequence<double, 8> dist;       // model params (bounded)
-      string frame_id;                // camera frame
+      FrameRef frame_ref;             // camera frame
       Time   stamp;                   // calib time (or 0 if static)
     };
 

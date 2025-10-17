@@ -10,6 +10,7 @@ module spatial { module sensing { module rad {
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::geometry::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Axis           Axis;
   typedef spatial::sensing::common::ROI            ROI;
@@ -30,7 +31,7 @@ module spatial { module sensing { module rad {
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @appendable struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
-    StreamMeta base;                       // frame_id, T_bus_sensor, nominal_rate_hz
+    StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
@@ -63,7 +64,7 @@ module spatial { module sensing { module rad {
 
   // Lightweight derivative for fast fusion/tracking (optional)
   @appendable struct RadDetection {
-    double xyz_m[3];       // Cartesian point in base.frame_id
+    double xyz_m[3];       // Cartesian point in base.frame_ref
     double v_r_mps;        // radial velocity (optional; NaN if unknown)
     float  intensity;      // reflectivity/magnitude
     float  quality;        // 0..1
@@ -73,7 +74,7 @@ module spatial { module sensing { module rad {
   @appendable struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
-    string frame_id;       // coordinate frame of xyz_m
+    FrameRef frame_ref;    // coordinate frame of xyz_m
     sequence<RadDetection, 32768> dets;
     Time   stamp;
   };

@@ -43,7 +43,10 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "map_id": "map/facility-west",
       "node_id": "kf_0120",
       "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
-      "frame_id": "map",
+      "frame_ref": {
+        "uuid": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "fqn": "facility-west/map"
+      },
       "stamp": { "sec": 1714070452, "nsec": 125000000 },
       "source_id": "device/headset-17"
     }
