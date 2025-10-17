@@ -379,6 +379,52 @@ In the manifest samples later in this specification, each of these identifiers e
 
 While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
+### **Assets (middle-ground model)**
+
+Every manifest asset now adheres to a **uniform base contract** with an optional, namespaced metadata bag:
+
+**Base (required for every asset)**
+
+* `uri` — how to retrieve the asset
+* `media_type` — IANA or registry-friendly identifier (parameters allowed)
+* `hash` — content hash, e.g., `sha256:<hex>`
+* `bytes` — content length in bytes
+
+**meta (optional, extensible)**
+
+* `meta` is an object keyed by **namespaces**; each value is a **JSON object** whose schema is owned by that namespace.
+* The base remains stable; metadata can evolve independently without changing the manifest base schema.
+
+**Prohibited**
+
+* Free-form `kind` strings and mixing type-specific fields into the base (for example `count`, `descriptor_bytes`, or `patch_frame`).
+  Put those details under a namespaced `meta` entry instead.
+
+**Example**
+
+```json
+  "assets": [
+    {
+      "uri": "s3://bucket/path/image_001.jpg",
+      "media_type": "image/jpeg",
+      "hash": "sha256:9b0a…",
+      "bytes": 342187
+    },
+    {
+      "uri": "https://cdn.example.com/features/scene123.json",
+      "media_type": "application/vnd.sdds.features+json;algo=orb;v=1",
+      "hash": "sha256:ab12…",
+      "bytes": 65536,
+      "meta": {
+        "sensing.vision.features": {
+          "count": 2048,
+          "descriptor_bytes": 32
+        }
+      }
+    }
+  ]
+```
+
 All manifests in SpatialDDS 1.4 **must** publish quaternions using the canonical GeoPose component order `(x, y, z, w)` inside a single `q_xyzw` array.
 
 Example discovery announcements would therefore carry manifest URIs such as:
@@ -678,15 +724,27 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
   },
   "assets": [
     {
-      "type": "image",
-      "role": "poster",
-      "uri": "https://cdn.museum.example/img/poster.jpg"
+      "uri": "https://cdn.museum.example/img/poster.jpg",
+      "media_type": "image/jpeg",
+      "hash": "sha256:posterplaceholder...",
+      "bytes": 421337,
+      "meta": {
+        "experiences.asset": {
+          "role": "poster"
+        }
+      }
     },
     {
-      "type": "audio",
-      "role": "narration",
       "uri": "https://cdn.museum.example/audio/room_intro.mp3",
-      "lang": "en"
+      "media_type": "audio/mpeg",
+      "hash": "sha256:narrationplaceholder...",
+      "bytes": 1987654,
+      "meta": {
+        "experiences.asset": {
+          "role": "narration",
+          "lang": "en"
+        }
+      }
     }
   ]
 }
@@ -778,20 +836,28 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
       },
       "assets": [
         {
-          "kind": "features:ORB:v1",
           "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
-          "count": 2048,
-          "descriptor_bytes": 32,
-          "patch_frame": "anchor-local",
+          "media_type": "application/vnd.sdds.features+binary;algo=orb;v=1",
           "hash": "sha256:placeholder...",
-          "bytes": 65536
+          "bytes": 65536,
+          "meta": {
+            "sensing.vision.features": {
+              "count": 2048,
+              "descriptor_bytes": 32,
+              "frame": "anchor-local"
+            }
+          }
         },
         {
-          "kind": "geom:pcd:lod1",
           "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
-          "points": 12000,
+          "media_type": "application/vnd.sdds.pointcloud+las;lod=1",
           "hash": "sha256:placeholder...",
-          "bytes": 480000
+          "bytes": 480000,
+          "meta": {
+            "sensing.vision.pointcloud": {
+              "points": 12000
+            }
+          }
         }
       ],
       "stamp": "2025-09-07T15:45:00Z"
@@ -811,19 +877,27 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
       },
       "assets": [
         {
-          "kind": "features:SuperPoint:v1",
           "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
-          "count": 1500,
-          "descriptor_bytes": 256,
+          "media_type": "application/vnd.sdds.features+npz;algo=superpoint;v=1",
           "hash": "sha256:placeholder...",
-          "bytes": 220000
+          "bytes": 220000,
+          "meta": {
+            "sensing.vision.features": {
+              "count": 1500,
+              "descriptor_bytes": 256
+            }
+          }
         },
         {
-          "kind": "geom:mesh:lod0",
           "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
-          "triangles": 8000,
+          "media_type": "model/gltf-binary;lod=0",
           "hash": "sha256:placeholder...",
-          "bytes": 350000
+          "bytes": 350000,
+          "meta": {
+            "sensing.vision.mesh": {
+              "triangles": 8000
+            }
+          }
         }
       ],
       "stamp": "2025-09-08T11:12:13Z"

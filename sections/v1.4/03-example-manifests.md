@@ -2,6 +2,52 @@
 
 While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 continues the convention introduced in v1.3: manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
+### **Assets (middle-ground model)**
+
+Every manifest asset now adheres to a **uniform base contract** with an optional, namespaced metadata bag:
+
+**Base (required for every asset)**
+
+* `uri` — how to retrieve the asset
+* `media_type` — IANA or registry-friendly identifier (parameters allowed)
+* `hash` — content hash, e.g., `sha256:<hex>`
+* `bytes` — content length in bytes
+
+**meta (optional, extensible)**
+
+* `meta` is an object keyed by **namespaces**; each value is a **JSON object** whose schema is owned by that namespace.
+* The base remains stable; metadata can evolve independently without changing the manifest base schema.
+
+**Prohibited**
+
+* Free-form `kind` strings and mixing type-specific fields into the base (for example `count`, `descriptor_bytes`, or `patch_frame`).
+  Put those details under a namespaced `meta` entry instead.
+
+**Example**
+
+```json
+  "assets": [
+    {
+      "uri": "s3://bucket/path/image_001.jpg",
+      "media_type": "image/jpeg",
+      "hash": "sha256:9b0a…",
+      "bytes": 342187
+    },
+    {
+      "uri": "https://cdn.example.com/features/scene123.json",
+      "media_type": "application/vnd.sdds.features+json;algo=orb;v=1",
+      "hash": "sha256:ab12…",
+      "bytes": 65536,
+      "meta": {
+        "sensing.vision.features": {
+          "count": 2048,
+          "descriptor_bytes": 32
+        }
+      }
+    }
+  ]
+```
+
 All manifests in SpatialDDS 1.4 **must** publish quaternions using the canonical GeoPose component order `(x, y, z, w)` inside a single `q_xyzw` array.
 
 Example discovery announcements would therefore carry manifest URIs such as:
