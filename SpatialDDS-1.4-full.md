@@ -1409,19 +1409,19 @@ module spatial { module sensing { module common {
     int32  max_bytes;          // -1 for unlimited
   };
 
-  @appendable struct ROIReply {
-    @key string stream_id;
-    uint64 request_id;
-    // Typically returns new frames whose blobs contain only the ROI
-    sequence<FrameHeader, 64> frames;
-  };
+    @appendable struct ROIReply {
+      @key string stream_id;
+      uint64 request_id;
+      // Typically returns new frames whose blobs contain only the ROI
+      sequence<spatial::sensing::common::FrameHeader, 64> frames;
+    };
 
 }; }; };
 ```
 
 ### **Vision Extension**
 
-*This vision profile shares camera intrinsics, encoded frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow [Sensing Common](#sensing-common-module) (NaN=open, has_centers selects the encoding).*
+*This vision profile shares camera intrinsics, encoded frames, and keypoints/tracks for perception and analytics pipelines. [See Sensing Common](#sensing-common-module) for ROI semantics (NaN=open, has_centers selects the encoding).*
 
 **QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
 
@@ -1695,7 +1695,7 @@ module spatial {
 
 ### **Radar (RAD) Profile**
 
-*This radar profile streams radar tensors, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow [Sensing Common](#sensing-common-module) (NaN=open, has_centers selects the encoding).* 
+*This radar profile streams radar tensors, frame indices, ROI negotiation, and derived detection sets. [See Sensing Common](#sensing-common-module) for ROI semantics (NaN=open, has_centers selects the encoding).*
 
 **QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
 
@@ -1782,7 +1782,7 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*This lidar profile transports sensor metadata, compressed point cloud frames, and optional detections. ROI semantics follow [Sensing Common](#sensing-common-module) (NaN=open, has_centers selects the encoding).*
+*This lidar profile transports sensor metadata, compressed point cloud frames, and optional detections. [See Sensing Common](#sensing-common-module) for ROI semantics (NaN=open, has_centers selects the encoding).*
 
 **QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
 
