@@ -462,6 +462,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
       "from": "ship-fixed",
       "to": "earth-fixed",
       "stamp": "2025-05-01T12:00:00Z",
+      "valid_from": "2025-05-01T12:00:00Z",
       "valid_for_s": 5,
       "pose": {
         "t_m": [
@@ -476,7 +477,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
           0.9239
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Validity window starts at valid_from (default stamp); expiry = valid_from + valid_for_s."
     }
   ]
 }
@@ -633,6 +634,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
       "from": "foyer-local",
       "to": "earth-fixed",
       "stamp": "2025-09-01T09:00:00Z",
+      "valid_from": "2025-09-01T09:00:00Z",
       "valid_for_s": 3600,
       "pose": {
         "t_m": [
@@ -647,7 +649,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
           0.9239
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Validity window starts at valid_from (default stamp); expiry = valid_from + valid_for_s."
     }
   ],
   "entrypoints": {
@@ -741,6 +743,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
       "from": "gallery-local",
       "to": "earth-fixed",
       "stamp": "2025-02-18T08:00:00Z",
+      "valid_from": "2025-02-18T08:00:00Z",
       "valid_for_s": 600,
       "pose": {
         "t_m": [
@@ -755,7 +758,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
           0.9659
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Validity window starts at valid_from (default stamp); expiry = valid_from + valid_for_s."
     }
   ],
   "anchors": [
@@ -1121,6 +1124,9 @@ module spatial {
       string to;                // target frame (e.g., "earth-fixed")
       string stamp;             // ISO-8601 timestamp for this transform
       uint32 valid_for_s;       // validity horizon in seconds
+      // New: explicit origin for validity window. Consumers evaluate expiry at
+      // (valid_from + valid_for_s). If absent, treat valid_from == stamp.
+      Time   valid_from;
       double t_m[3];            // meters in 'from' frame
       double q_xyzw[4];         // GeoPose order [x,y,z,w]
     };
