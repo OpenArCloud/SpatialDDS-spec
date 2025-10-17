@@ -76,7 +76,42 @@ The DDS binding mirrors this interaction with query and announce topics, letting
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
 
-### **2.4 Profiles Summary**
+### **2.4 Canonical Ordering & Identity (Normative)**
+
+This section applies to any message that includes the trio: `Time stamp`, `string source_id`, and `uint64 seq`.
+
+**Field semantics**
+
+* `stamp` — Event time chosen by the producer (may reflect device/measurement time and is not guaranteed globally monotonic across sources).
+* `source_id` — Stable writer identity within a deployment (e.g., a sensor, process, or node).
+* `seq` — Per-`source_id` strictly monotonic unsigned 64-bit counter that increments by 1 for each new sample.
+
+**Identity & idempotency**
+
+* The canonical identity of a sample is the tuple **(`source_id`, `seq`)**.
+* Consumers MUST treat duplicated **(`source_id`, `seq`)** as the same logical sample (idempotent).
+* If `seq` wraps or resets, the producer MUST change `source_id` (or use a profile that defines an explicit writer epoch).
+
+**Ordering rules**
+
+1. **Within a single source (intra-source):** Order by `seq` only.
+   * If two samples share the same `seq`, the later-arriving one supersedes the earlier; implementations SHOULD log a single warning per stream.
+   * Missing `seq` values indicate loss under RELIABLE QoS and MAY trigger application-level recovery.
+2. **Across multiple sources (inter-source merge):** Order by the tuple **(`stamp`, `source_id`, `seq`)** within a bounded reordering window Δ chosen by the consumer (e.g., 100–200 ms).
+   * `stamp` provides the coarse global axis; `source_id` and `seq` disambiguate ties and ensure stability.
+   * Consumers MUST NOT enforce global monotonicity by `stamp` alone; clock skew and late arrivals MUST be tolerated within Δ.
+
+**Clock guidance**
+
+* Producers SHOULD time-sync (NTP/PTP) where feasible.
+* Consumers SHOULD bound out-of-order buffering by Δ and proceed deterministically when the window elapses.
+
+**Notes**
+
+* These rules are additive to transport-level ordering; they define application-level determinism independent of QoS.
+* Profiles MAY further refine recovery behavior on gaps (e.g., retries, hole-filling) without altering this canonical ordering.
+
+### **2.5 Profiles Summary**
 
 The complete SpatialDDS IDL bundle is organized into the following profiles:
 
