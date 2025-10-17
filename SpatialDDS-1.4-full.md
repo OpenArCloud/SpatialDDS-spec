@@ -389,7 +389,7 @@ Example discovery announcements would therefore carry manifest URIs such as:
 
 Version 1.3 also gives manifests a lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
 
-Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. Implementations that ignore the new fields continue to interoperate.
+Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. In v1.4 the query now carries a caller-supplied `query_id` plus a `reply_topic` so responders can correlate answers and route them to the right pub/sub path, and a new paged `CoverageResponse` mirrors the `query_id` when returning matching `ContentAnnounce` records. Implementations that ignore the active-query fields continue to interoperate.
 
 ### **A) VPS Manifest**
 
@@ -1186,12 +1186,24 @@ module spatial {
     };
 
     @appendable struct CoverageQuery {
-      @key string query_id;
+      // Correlates responses to a specific query instance.
+      @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       string coverage_canonical_frame;
       Time coverage_eval_time;
+      // Responders publish CoverageResponse samples to this topic.
+      string reply_topic;
       Time stamp;
       uint32 ttl_sec;
+    };
+
+    @appendable struct CoverageResponse {
+      // Mirrors CoverageQuery.query_id for correlation.
+      uint64 query_id;
+      // Result page.
+      sequence<ContentAnnounce,65535> results;
+      // Empty when no further pages remain.
+      string next_page_token;
     };
 
     @appendable struct ContentAnnounce {

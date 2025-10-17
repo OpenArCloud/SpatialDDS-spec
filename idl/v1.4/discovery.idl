@@ -83,12 +83,24 @@ module spatial {
     };
 
     @appendable struct CoverageQuery {
-      @key string query_id;
+      // Correlates responses to a specific query instance.
+      @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       string coverage_canonical_frame;
       Time coverage_eval_time;
+      // Responders publish CoverageResponse samples to this topic.
+      string reply_topic;
       Time stamp;
       uint32 ttl_sec;
+    };
+
+    @appendable struct CoverageResponse {
+      // Mirrors CoverageQuery.query_id for correlation.
+      uint64 query_id;
+      // Result page.
+      sequence<ContentAnnounce,65535> results;
+      // Empty when no further pages remain.
+      string next_page_token;
     };
 
     @appendable struct ContentAnnounce {
