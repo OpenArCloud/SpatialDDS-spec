@@ -1066,6 +1066,9 @@ module spatial {
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
+Open or global coverage SHOULD be signaled with the explicit `CoverageElement.global` toggle. When `global=true`, consumers MAY ignore the
+numeric bounds. This replaces the earlier convention of leaving bounds as NaN to imply unconstrained coverage.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Discovery 1.2
@@ -1096,13 +1099,15 @@ module spatial {
     };
 
     // CoverageElement: if frame == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
-    // otherwise local meters; volume is AABB in meters.
+    // otherwise local meters; volume is AABB in meters. Set global=true for full-domain coverage.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
       string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
       string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
       double bbox[4];           // [west, south, east, north] when type == "bbox"
       Aabb3 aabb;               // axis-aligned bounds when type == "volume"
+      // Explicit global coverage toggle: when true, bbox and aabb may be ignored by consumers.
+      boolean global;
     };
 
     // Quaternion follows GeoPose: unit [w,x,y,z]; pose maps FROM 'from' TO 'to'
@@ -1335,7 +1340,8 @@ module spatial {
 
 **Axis.** Implementations MUST indicate which encoding is used: `has_centers=true` → use `centers[]`; otherwise use `start/step`. Units MUST be SI.
 
-**ROI.** Unset bounds MUST be encoded as NaN. Consumers MUST treat NaN as an open interval (no clipping) for that bound.
+**ROI.** Unset bounds MUST be encoded as NaN. Consumers MUST treat NaN as an open interval (no clipping) for that bound. When
+`global=true`, the ROI covers the entire valid range of each axis and other numeric bounds may be ignored.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1366,6 +1372,8 @@ module spatial { module sensing { module common {
     float dop_min;   float dop_max;
     // Image-plane ROI for vision (pixels); -1 if unused
     int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+    // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
+    boolean global;
   };
 
   // ---- Codecs / Payload kinds (shared enums) ----
