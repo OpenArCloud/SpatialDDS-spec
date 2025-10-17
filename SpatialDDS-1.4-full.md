@@ -920,7 +920,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.2
+// SpatialDDS Core 1.0
 
 module spatial {
   module core {
@@ -1105,7 +1105,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.2
+// SpatialDDS Discovery 1.0
 // Lightweight announces for services, coverage, and content
 
 module spatial {
@@ -1230,7 +1230,7 @@ Legacy manifest fields named `q_wxyz` and scalar quaternion members (`qw`, `qx`,
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Anchors 1.2
+// SpatialDDS Anchors 1.0
 // Bundles and updates for anchor registries
 
 module spatial {
@@ -1414,7 +1414,7 @@ module spatial { module sensing { module common {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS VIO/Inertial 1.2
+// SpatialDDS VIO/Inertial 1.0
 
 module spatial {
   module vio {
@@ -1608,7 +1608,7 @@ module spatial { module sensing { module vision {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS SLAM Frontend 1.2
+// SpatialDDS SLAM Frontend 1.0
 
 module spatial {
   module slam_frontend {
@@ -1704,7 +1704,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.2
+// SpatialDDS Semantics 1.0
 
 module spatial {
   module semantics {
@@ -1962,7 +1962,7 @@ module spatial { module sensing { module lidar {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.2
+// SpatialDDS AR+Geo 1.0
 
 module spatial {
   module argeo {

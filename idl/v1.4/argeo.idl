@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.2
+// SpatialDDS AR+Geo 1.0
 
 module spatial {
   module argeo {
