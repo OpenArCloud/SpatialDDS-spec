@@ -44,6 +44,7 @@
       "from": "gallery-local",
       "to": "earth-fixed",
       "stamp": "2025-02-18T08:00:00Z",
+      "valid_from": "2025-02-18T08:00:00Z",
       "valid_for_s": 600,
       "pose": {
         "t_m": [
@@ -58,7 +59,7 @@
           0.9659
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Validity window starts at valid_from (default stamp); expiry = valid_from + valid_for_s."
     }
   ],
   "anchors": [
