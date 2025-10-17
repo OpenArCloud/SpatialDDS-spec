@@ -1069,6 +1069,11 @@ module spatial {
 Open or global coverage SHOULD be signaled with the explicit `CoverageElement.global` toggle. When `global=true`, consumers MAY ignore the
 numeric bounds. This replaces the earlier convention of leaving bounds as NaN to imply unconstrained coverage.
 
+When multiple coverage elements are present, producers SHOULD declare a `coverage_canonical_frame` and optional `coverage_eval_time`.
+Consumers transform each element into that canonical frame at the evaluation time before computing unions across elements (and intersections
+within an element when both `bbox` and `geohashes` are supplied). Absent an explicit evaluation time, recipients MAY fall back to the
+message timestamp or receipt time.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Discovery 1.2
@@ -1130,6 +1135,8 @@ module spatial {
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
       sequence<CoverageElement,16> coverage;
+      string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
+      Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
       sequence<Transform,8> transforms;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
       string auth_hint;
@@ -1140,6 +1147,8 @@ module spatial {
     @appendable struct CoverageHint {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
+      string coverage_canonical_frame;
+      Time coverage_eval_time;
       sequence<Transform,8> transforms;
       Time stamp;
       uint32 ttl_sec;
@@ -1148,6 +1157,8 @@ module spatial {
     @appendable struct CoverageQuery {
       @key string query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
+      string coverage_canonical_frame;
+      Time coverage_eval_time;
       Time stamp;
       uint32 ttl_sec;
     };
@@ -1161,6 +1172,8 @@ module spatial {
       string class_id;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
       sequence<CoverageElement,16> coverage;
+      string coverage_canonical_frame;
+      Time coverage_eval_time;
       sequence<Transform,8> transforms;
       Time available_from;
       Time available_until;
