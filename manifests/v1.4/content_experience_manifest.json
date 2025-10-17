@@ -71,14 +71,14 @@
           40.7794,
           25.5
         ],
-        "q_wxyz": [
-          0.9239,
+        "q_xyzw": [
           0.0,
           0.3827,
-          0.0
+          0.0,
+          0.9239
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ],
   "entrypoints": {

@@ -376,6 +376,8 @@ In the manifest samples later in this specification, each of these identifiers e
 
 While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. In v1.3 those manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
+All manifests in SpatialDDS 1.4 **must** publish quaternions using the canonical GeoPose component order `(x, y, z, w)` inside a single `q_xyzw` array. Readers shall continue to accept legacy `q_wxyz` arrays or scalar `qw/qx/qy/qz` fields for one minor release, but they must convert them to canonical order and surface a warning when doing so. If both encodings appear, implementations must prefer `q_xyzw`.
+
 Example discovery announcements would therefore carry manifest URIs such as:
 
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/vps-main`
@@ -467,14 +469,14 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
           15.2,
           8.6
         ],
-        "q_wxyz": [
-          0.9239,
+        "q_xyzw": [
           0.0,
           0.3827,
-          0.0
+          0.0,
+          0.9239
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ]
 }
@@ -638,14 +640,14 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
           40.7794,
           25.5
         ],
-        "q_wxyz": [
-          0.9239,
+        "q_xyzw": [
           0.0,
           0.3827,
-          0.0
+          0.0,
+          0.9239
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ],
   "entrypoints": {
@@ -746,14 +748,14 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
           35.298,
           112.0
         ],
-        "q_wxyz": [
-          0.9659,
+        "q_xyzw": [
           0.0,
           0.2588,
-          0.0
+          0.0,
+          0.9659
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_wxyz follows GeoPose: [w,x,y,z], unit-norm. Use freshest transform with age ≤ valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Use freshest transform with age ≤ valid_for_s."
     }
   ],
   "anchors": [
@@ -763,10 +765,12 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
         "lat_deg": 35.29802,
         "lon_deg": 25.16305,
         "alt_m": 110.2,
-        "qw": 1,
-        "qx": 0,
-        "qy": 0,
-        "qz": 0
+        "q_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ]
       },
       "assets": [
         {
@@ -794,10 +798,12 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
         "lat_deg": 35.29761,
         "lon_deg": 25.16391,
         "alt_m": 109.8,
-        "qw": 0.707,
-        "qx": 0,
-        "qy": 0,
-        "qz": 0.707
+        "q_xyzw": [
+          0,
+          0,
+          0.707,
+          0.707
+        ]
       },
       "assets": [
         {
@@ -1106,7 +1112,7 @@ module spatial {
       string stamp;             // ISO-8601 timestamp for this transform
       uint32 valid_for_s;       // validity horizon in seconds
       double t_m[3];            // meters in 'from' frame
-      double q_wxyz[4];         // GeoPose order [w,x,y,z]
+      double q_xyzw[4];         // GeoPose order [x,y,z,w]
     };
 
     @appendable struct ServiceAnnounce {
@@ -1161,6 +1167,10 @@ module spatial {
 };
 
 ```
+
+### Quaternion field deprecation
+
+Legacy manifest fields named `q_wxyz` and scalar quaternion members (`qw`, `qx`, `qy`, `qz`) are deprecated as of SpatialDDS 1.4. Producers must emit orientations using the canonical GeoPose order `(x, y, z, w)` in a single `q_xyzw` array. Consumers shall continue to accept legacy encodings for the 1.4.x cycle, but they must convert them to canonical order, prefer `q_xyzw` when both are present, and issue a warning once per data stream.
 
 ## **Appendix C: Anchor Registry Profile**
 
