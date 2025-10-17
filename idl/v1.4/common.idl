@@ -96,7 +96,7 @@ module spatial { module sensing { module common {
     @key string stream_id;
     uint64 request_id;
     // Typically returns new frames whose blobs contain only the ROI
-    sequence<FrameHeader, 64> frames;
+    sequence<spatial::sensing::common::FrameHeader, 64> frames;
   };
 
 }; }; };
