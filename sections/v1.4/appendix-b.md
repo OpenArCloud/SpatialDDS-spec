@@ -6,6 +6,3 @@
 {{include:idl/v1.4/discovery.idl}}
 ```
 
-### Quaternion field deprecation
-
-Legacy manifest fields named `q_wxyz` and scalar quaternion members (`qw`, `qx`, `qy`, `qz`) are deprecated as of SpatialDDS 1.4. Producers must emit orientations using the canonical GeoPose order `(x, y, z, w)` in a single `q_xyzw` array. Consumers shall continue to accept legacy encodings for the 1.4.x cycle, but they must convert them to canonical order, prefer `q_xyzw` when both are present, and issue a warning once per data stream.

@@ -69,7 +69,6 @@ module spatial {
       @key string blob_id;               // which blob
       uint32 index;                      // chunk index (0..N-1)
       sequence<uint8, 262144> data;      // ≤256 KiB per sample
-      boolean last;                      // true on final chunk
 
       // --- Additive fields for robust reassembly ---
 
