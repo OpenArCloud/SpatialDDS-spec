@@ -116,6 +116,14 @@ module spatial {
     // ---------- Geo anchoring ----------
     enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
 
+    enum CovarianceType {
+      COV_NONE = 0,   // no covariance provided
+      COV_POS3 = 3,   // 3x3 over (x, y, z)
+      COV_POSE6 = 6   // 6x6 over (x, y, z, roll, pitch, yaw) [radians]
+    };
+    typedef double Mat3x3[9];   // row-major
+    typedef double Mat6x6[36];  // row-major
+
     @appendable struct GeoPose {
       double lat_deg;
       double lon_deg;
@@ -124,7 +132,13 @@ module spatial {
       GeoFrameKind frame_kind; // ECEF/ENU/NED
       string frame_ref;        // for ENU/NED: "@lat,lon,alt"
       Time   stamp;
-      double cov[9];           // 3x3 pos covariance (m^2), row-major; NaN if unknown
+      CovarianceType cov_type; // explicit covariance typing
+      // Exactly one of the following is meaningful based on cov_type:
+      // If cov_type == COV_POS3  → use pos_cov_3x3 (x,y,z)
+      // If cov_type == COV_POSE6 → use pose_cov_6x6 (x,y,z,roll,pitch,yaw)
+      // If cov_type == COV_NONE  → both matrices are ignored.
+      Mat3x3 pos_cov_3x3;
+      Mat6x6 pose_cov_6x6;
     };
 
     @appendable struct GeoAnchor {
