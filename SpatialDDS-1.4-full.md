@@ -43,7 +43,7 @@ At its core, SpatialDDS is defined through **IDL profiles** that partition funct
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
 * **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
-* **Extensions**: optional domain-specific profiles including VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
+* **Extensions**: optional domain-specific profiles including the shared **Sensing Common** base types plus VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
@@ -84,7 +84,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Keep the wire light**
   SpatialDDS defines compact, typed messages via IDL. Heavy or variable content (meshes, splats, masks, assets) is carried as blobs, referenced by stable IDs. This avoids bloating the bus while keeping payloads flexible.
 * **Profiles, not monoliths**
- SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
+ SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (Sensing Common, VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
 * **AI-ready, domain-neutral**
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.
 * **Anchors as first-class citizens**
@@ -192,18 +192,21 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
+  * **Sensing Common Extension**: Shared enums, region-of-interest negotiation, frame metadata, and codec descriptors reused by the specialized sensing profiles.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
-  * [Radar (RAD) Profile](#radar-rad-profile): Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
+  * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
   * **Lidar Profile**: Sensor metadata, compressed point cloud frames, and optional detections for lidar payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
-* **Provisional Extensions (Optional)**  
-  * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.  
+* **Provisional Extensions (Optional)**
+  * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
   * **Agent Profile**: Generic task and status messages for AI agents and planners.
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
+
+The **Sensing Common** module deserves special mention: it standardizes ROI negotiation, shared enums for codecs and payload kinds, reusable frame metadata, and quality reporting structures. Radar, lidar, vision, and other sensing extensions build on these types so multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently without redefining the same scaffolding in each profile.
 
 
 ## **3. Operational Scenarios: From SLAM to AI World Models**
@@ -922,6 +925,9 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
 module spatial {
   module core {
 
+    // Module identity (authoritative string for interop)
+    const string MODULE_ID = "spatial.core/1.0";
+
     // ---------- Utility ----------
     struct Time {
       int32  sec;     // seconds since UNIX epoch (UTC)
@@ -967,6 +973,7 @@ module spatial {
       // optional geo hints
       double centroid_llh[3];        // lat,lon,alt (deg,deg,m) or NaN
       double radius_m;               // rough extent (m) or NaN
+      string schema_version;         // MUST be "spatial.core/1.0"
     };
 
     @appendable struct TilePatch {
@@ -1096,14 +1103,6 @@ module spatial {
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
-Open or global coverage SHOULD be signaled with the explicit `CoverageElement.global` toggle. When `global=true`, consumers MAY ignore the
-numeric bounds. This replaces the earlier convention of leaving bounds as NaN to imply unconstrained coverage.
-
-When multiple coverage elements are present, producers SHOULD declare a `coverage_canonical_frame` and optional `coverage_eval_time`.
-Consumers transform each element into that canonical frame at the evaluation time before computing unions across elements (and intersections
-within an element when both `bbox` and `geohashes` are supplied). Absent an explicit evaluation time, recipients MAY fall back to the
-message timestamp or receipt time.
-
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Discovery 1.2
@@ -1111,6 +1110,8 @@ message timestamp or receipt time.
 
 module spatial {
   module disco {
+
+    const string MODULE_ID = "spatial.discovery/1.0";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
@@ -1134,7 +1135,7 @@ module spatial {
     };
 
     // CoverageElement: if frame == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
-    // otherwise local meters; volume is AABB in meters. Set global=true for full-domain coverage.
+    // otherwise local meters; volume is AABB in meters.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
       string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
@@ -1145,7 +1146,7 @@ module spatial {
       boolean global;
     };
 
-    // Quaternion follows GeoPose: unit [w,x,y,z]; pose maps FROM 'from' TO 'to'
+    // Quaternion follows GeoPose: unit [x,y,z,w]; pose maps FROM 'from' TO 'to'
     @appendable struct Transform {
       string from;              // source frame (e.g., "map")
       string to;                // target frame (e.g., "earth-fixed")
@@ -1234,6 +1235,8 @@ Legacy manifest fields named `q_wxyz` and scalar quaternion members (`qw`, `qx`,
 
 module spatial {
   module anchors {
+    const string MODULE_ID = "spatial.anchors/1.0";
+
     typedef spatial::core::Time Time;
     typedef spatial::core::GeoPose GeoPose;
 
@@ -1289,7 +1292,121 @@ module spatial {
 
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+
+### **Sensing Common Extension**
+
+*Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).* 
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Sensing Common 1.0 (Extension module)
+
+module spatial { module sensing { module common {
+
+  const string MODULE_ID = "spatial.sensing.common/1.0";
+
+  // Reuse Core primitives (time, pose, blob references)
+  typedef spatial::core::Time    Time;
+  typedef spatial::core::PoseSE3 PoseSE3;
+  typedef spatial::core::BlobRef BlobRef;
+
+  // ---- Axes & Regions (for tensors or scans) ----
+  @appendable struct Axis {
+    string name;                       // "range","azimuth","elevation","doppler","time","channel"
+    string unit;                       // "m","deg","m/s","Hz","s",...
+    sequence<float, 65535> centers;    // optional: bin centers
+    float start;
+    float step;
+    boolean has_centers;               // true => use centers[]; false => use start/step
+  };
+
+  @appendable struct ROI {
+    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as an open interval (no clipping).
+    float range_min; float range_max;
+    float az_min;    float az_max;
+    float el_min;    float el_max;
+    float dop_min;   float dop_max;
+    // Image-plane ROI for vision (pixels); -1 if unused
+    int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+    // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
+    boolean global;
+  };
+
+  // ---- Codecs / Payload kinds (shared enums) ----
+  enum Codec {
+    CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, GZIP = 3,
+    DRACO = 10,     // geometry compression
+    JPEG = 20, H264 = 21, H265 = 22, AV1 = 23, // vision
+    FP8Q = 40, FP4Q = 41, AE_V1 = 42          // quant/learned (tensors)
+  };
+
+  enum PayloadKind {
+    DENSE_TILES = 0,    // tiled dense blocks (e.g., tensor tiles)
+    SPARSE_COO = 1,     // sparse indices + values
+    LATENT = 2,         // learned latent vectors
+    BLOB_GEOMETRY = 10, // PCC/PLY/glTF+Draco
+    BLOB_RASTER = 11    // JPEG/GOP chunk(s)
+  };
+
+  enum SampleType {        // post-decode voxel/point sample type
+    U8_MAG = 0, F16_MAG = 1, CF16 = 2, CF32 = 3, MAGPHASE_S8 = 4
+  };
+
+  // ---- Stream identity & calibration header shared by sensors ----
+  @appendable struct StreamMeta {
+    @key string stream_id;        // stable id for this sensor stream
+    string frame_id;              // mounting frame (Core frame naming)
+    PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
+    double   nominal_rate_hz;     // advertised cadence
+    string   schema_version;      // MUST be "spatial.sensing.common/1.0"
+  };
+
+  // ---- Frame index header shared by sensors (small, on-bus) ----
+  @appendable struct FrameHeader {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   t_start;
+    Time   t_end;
+    // optional sensor pose at acquisition (moving platforms)
+    PoseSE3 sensor_pose;
+    boolean has_sensor_pose;
+    // data pointers: heavy bytes referenced as blobs
+    sequence<BlobRef, 256> blobs;
+  };
+
+  // ---- Quality & health (uniform across sensors) ----
+  enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
+
+  @appendable struct FrameQuality {
+    float snr_db;            // NaN if unknown
+    float percent_valid;     // 0..100
+    Health health;
+    string note;             // short diagnostic
+  };
+
+  // ---- ROI request/reply (control-plane pattern) ----
+  @appendable struct ROIRequest {
+    @key string stream_id;
+    uint64 request_id;
+    Time   t_start; Time t_end;
+    ROI    roi;
+    boolean wants_payload_kind; PayloadKind desired_payload_kind;
+    boolean wants_codec;       Codec       desired_codec;
+    boolean wants_sample_type; SampleType  desired_sample_type;
+    int32  max_bytes;          // -1 for unlimited
+  };
+
+  @appendable struct ROIReply {
+    @key string stream_id;
+    uint64 request_id;
+    // Typically returns new frames whose blobs contain only the ROI
+    sequence<spatial::sensing::common::FrameHeader, 64> frames;
+  };
+
+}; }; };
+
+```
 
 ### **VIO / Inertial Extension**
 
@@ -1301,6 +1418,8 @@ module spatial {
 
 module spatial {
   module vio {
+
+    const string MODULE_ID = "spatial.vio/1.0";
 
     typedef spatial::core::Time Time;
 
@@ -1380,133 +1499,17 @@ module spatial {
 
 ```
 
-### **Sensing Common Module**
-
-*Shared base types, enums, and ROI negotiation utilities reused by all sensing profiles (radar, lidar, vision).*
-
-**Axis.** Implementations MUST indicate which encoding is used: `has_centers=true` → use `centers[]`; otherwise use `start/step`. Units MUST be SI.
-
-**ROI.** Unset bounds MUST be encoded as NaN. Consumers MUST treat NaN as an open interval (no clipping) for that bound. When
-`global=true`, the ROI covers the entire valid range of each axis and other numeric bounds may be ignored.
-
-```idl
-// SPDX-License-Identifier: MIT
-// SpatialDDS Sensing Common 1.0 (Extension module)
-
-module spatial { module sensing { module common {
-
-  // Reuse Core primitives (time, pose, blob references)
-  typedef spatial::core::Time    Time;
-  typedef spatial::core::PoseSE3 PoseSE3;
-  typedef spatial::core::BlobRef BlobRef;
-
-  // ---- Axes & Regions (for tensors or scans) ----
-  @appendable struct Axis {
-    string name;                       // "range","azimuth","elevation","doppler","time","channel"
-    string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // optional: bin centers
-    float start;
-    float step;
-    boolean has_centers;               // true => use centers[]; false => use start/step
-  };
-
-  @appendable struct ROI {
-    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as an open interval (no clipping).
-    float range_min; float range_max;
-    float az_min;    float az_max;
-    float el_min;    float el_max;
-    float dop_min;   float dop_max;
-    // Image-plane ROI for vision (pixels); -1 if unused
-    int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
-    // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
-    boolean global;
-  };
-
-  // ---- Codecs / Payload kinds (shared enums) ----
-  enum Codec {
-    CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, GZIP = 3,
-    DRACO = 10,     // geometry compression
-    JPEG = 20, H264 = 21, H265 = 22, AV1 = 23, // vision
-    FP8Q = 40, FP4Q = 41, AE_V1 = 42          // quant/learned (tensors)
-  };
-
-  enum PayloadKind {
-    DENSE_TILES = 0,    // tiled dense blocks (e.g., tensor tiles)
-    SPARSE_COO = 1,     // sparse indices + values
-    LATENT = 2,         // learned latent vectors
-    BLOB_GEOMETRY = 10, // PCC/PLY/glTF+Draco
-    BLOB_RASTER = 11    // JPEG/GOP chunk(s)
-  };
-
-  enum SampleType {        // post-decode voxel/point sample type
-    U8_MAG = 0, F16_MAG = 1, CF16 = 2, CF32 = 3, MAGPHASE_S8 = 4
-  };
-
-  // ---- Stream identity & calibration header shared by sensors ----
-  @appendable struct StreamMeta {
-    @key string stream_id;        // stable id for this sensor stream
-    string frame_id;              // mounting frame (Core frame naming)
-    PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
-    double   nominal_rate_hz;     // advertised cadence
-    string   schema_version;      // e.g., "spatial.sensing.common/1.0"
-  };
-
-  // ---- Frame index header shared by sensors (small, on-bus) ----
-  @appendable struct FrameHeader {
-    @key string stream_id;
-    uint64 frame_seq;
-    Time   t_start;
-    Time   t_end;
-    // optional sensor pose at acquisition (moving platforms)
-    PoseSE3 sensor_pose;
-    boolean has_sensor_pose;
-    // data pointers: heavy bytes referenced as blobs
-    sequence<BlobRef, 256> blobs;
-  };
-
-  // ---- Quality & health (uniform across sensors) ----
-  enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
-
-  @appendable struct FrameQuality {
-    float snr_db;            // NaN if unknown
-    float percent_valid;     // 0..100
-    Health health;
-    string note;             // short diagnostic
-  };
-
-  // ---- ROI request/reply (control-plane pattern) ----
-  @appendable struct ROIRequest {
-    @key string stream_id;
-    uint64 request_id;
-    Time   t_start; Time t_end;
-    ROI    roi;
-    boolean wants_payload_kind; PayloadKind desired_payload_kind;
-    boolean wants_codec;       Codec       desired_codec;
-    boolean wants_sample_type; SampleType  desired_sample_type;
-    int32  max_bytes;          // -1 for unlimited
-  };
-
-    @appendable struct ROIReply {
-      @key string stream_id;
-      uint64 request_id;
-      // Typically returns new frames whose blobs contain only the ROI
-      sequence<spatial::sensing::common::FrameHeader, 64> frames;
-    };
-
-}; }; };
-```
-
 ### **Vision Extension**
 
-*This vision profile shares camera intrinsics, encoded frames, and keypoints/tracks for perception and analytics pipelines. [See Sensing Common](#sensing-common-module) for ROI semantics (NaN=open, has_centers selects the encoding).*
-
-**QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Vision (sensing.vision) 1.0 — Extension profile
 
 module spatial { module sensing { module vision {
+
+  const string PROFILE_ID = "spatial.sensing.vision/1.0";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
@@ -1557,7 +1560,7 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
-    string schema_version;              // "spatial.sensing.vision/1.0"
+    string schema_version;              // MUST be "spatial.sensing.vision/1.0"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -1596,6 +1599,7 @@ module spatial { module sensing { module vision {
   };
 
 }; }; };
+
 ```
 
 ### **SLAM Frontend Extension**
@@ -1608,6 +1612,8 @@ module spatial { module sensing { module vision {
 
 module spatial {
   module slam_frontend {
+
+    const string MODULE_ID = "spatial.slam_frontend/1.0";
 
     // Reuse core: Time, etc.
     typedef spatial::core::Time Time;
@@ -1703,6 +1709,8 @@ module spatial {
 module spatial {
   module semantics {
 
+    const string MODULE_ID = "spatial.semantics/1.0";
+
     typedef spatial::core::Time Time;
     typedef spatial::core::TileKey TileKey;
 
@@ -1770,17 +1778,18 @@ module spatial {
 
 ```
 
-### **Radar (RAD) Profile**
+### **Radar Extension**
 
-*This radar profile streams radar tensors, frame indices, ROI negotiation, and derived detection sets. [See Sensing Common](#sensing-common-module) for ROI semantics (NaN=open, has_centers selects the encoding).*
-
-**QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Radar (RAD) 1.0 — Extension profile
 
 module spatial { module sensing { module rad {
+
+  // Profile identity (authoritative string for this profile/version)
+  const string PROFILE_ID = "spatial.sensing.rad/1.0";
 
   // Reuse Core + Sensing Common types
   typedef spatial::core::Time                      Time;
@@ -1811,7 +1820,7 @@ module spatial { module sensing { module rad {
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
-    string schema_version;                 // "spatial.sensing.rad/1.0"
+    string schema_version;                 // MUST be "spatial.sensing.rad/1.0"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
@@ -1855,19 +1864,20 @@ module spatial { module sensing { module rad {
   };
 
 }; }; };
+
 ```
 
 ### **Lidar Extension**
 
-*This lidar profile transports sensor metadata, compressed point cloud frames, and optional detections. [See Sensing Common](#sensing-common-module) for ROI semantics (NaN=open, has_centers selects the encoding).*
-
-**QoS:** `meta` → **RELIABLE + TRANSIENT_LOCAL**; `frame` → **BEST_EFFORT + KEEP_LAST=1**; `dets` → **BEST_EFFORT**.
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS LiDAR (sensing.lidar) 1.0 — Extension profile
 
 module spatial { module sensing { module lidar {
+
+  const string PROFILE_ID = "spatial.sensing.lidar/1.0";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
@@ -1906,7 +1916,7 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…
     PointLayout   layout;             // expected fields when decoded
-    string schema_version;            // "spatial.sensing.lidar/1.0"
+    string schema_version;            // MUST be "spatial.sensing.lidar/1.0"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -1943,6 +1953,7 @@ module spatial { module sensing { module lidar {
   };
 
 }; }; };
+
 ```
 
 ### **AR + Geo Extension**
@@ -1955,6 +1966,8 @@ module spatial { module sensing { module lidar {
 
 module spatial {
   module argeo {
+
+    const string MODULE_ID = "spatial.argeo/1.0";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -2079,3 +2092,4 @@ pvalue         = 1*( unreserved / pct-encoded / ":" / "@" / "." )
 spatialdds://museum.example.org/hall1/anchor/01J9Q0A6KZ;v=12
 spatialdds://openarcloud.org/zone:sf/tileset/city3d;v=3?lang=en
 ```
+
