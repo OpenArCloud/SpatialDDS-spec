@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.2
+// SpatialDDS Core 1.0
 
 module spatial {
   module core {

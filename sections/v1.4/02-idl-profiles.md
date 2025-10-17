@@ -88,5 +88,19 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
+#### **Profile Matrix (SpatialDDS 1.4)**
+
+- spatial.core/1.0
+- spatial.discovery/1.0
+- spatial.anchors/1.0
+- spatial.argeo/1.0
+- spatial.sensing.common/1.0
+- spatial.sensing.rad/1.0
+- spatial.sensing.lidar/1.0
+- spatial.sensing.vision/1.0
+- spatial.slam_frontend/1.0
+- spatial.vio/1.0
+- spatial.semantics/1.0
+
 The **Sensing Common** module deserves special mention: it standardizes ROI negotiation, shared enums for codecs and payload kinds, reusable frame metadata, and quality reporting structures. Radar, lidar, vision, and other sensing extensions build on these types so that multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently without redefining the same scaffolding in each profile.
 
