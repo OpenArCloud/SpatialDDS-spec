@@ -28,6 +28,8 @@ module spatial { module sensing { module common {
     float dop_min;   float dop_max;
     // Image-plane ROI for vision (pixels); -1 if unused
     int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+    // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
+    boolean global;
   };
 
   // ---- Codecs / Payload kinds (shared enums) ----
