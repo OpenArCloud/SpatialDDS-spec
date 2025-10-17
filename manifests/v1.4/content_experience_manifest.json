@@ -107,15 +107,27 @@
   },
   "assets": [
     {
-      "type": "image",
-      "role": "poster",
-      "uri": "https://cdn.museum.example/img/poster.jpg"
+      "uri": "https://cdn.museum.example/img/poster.jpg",
+      "media_type": "image/jpeg",
+      "hash": "sha256:posterplaceholder...",
+      "bytes": 421337,
+      "meta": {
+        "experiences.asset": {
+          "role": "poster"
+        }
+      }
     },
     {
-      "type": "audio",
-      "role": "narration",
       "uri": "https://cdn.museum.example/audio/room_intro.mp3",
-      "lang": "en"
+      "media_type": "audio/mpeg",
+      "hash": "sha256:narrationplaceholder...",
+      "bytes": 1987654,
+      "meta": {
+        "experiences.asset": {
+          "role": "narration",
+          "lang": "en"
+        }
+      }
     }
   ]
 }

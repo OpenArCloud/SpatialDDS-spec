@@ -78,20 +78,28 @@
       },
       "assets": [
         {
-          "kind": "features:ORB:v1",
           "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
-          "count": 2048,
-          "descriptor_bytes": 32,
-          "patch_frame": "anchor-local",
+          "media_type": "application/vnd.sdds.features+binary;algo=orb;v=1",
           "hash": "sha256:placeholder...",
-          "bytes": 65536
+          "bytes": 65536,
+          "meta": {
+            "sensing.vision.features": {
+              "count": 2048,
+              "descriptor_bytes": 32,
+              "frame": "anchor-local"
+            }
+          }
         },
         {
-          "kind": "geom:pcd:lod1",
           "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
-          "points": 12000,
+          "media_type": "application/vnd.sdds.pointcloud+las;lod=1",
           "hash": "sha256:placeholder...",
-          "bytes": 480000
+          "bytes": 480000,
+          "meta": {
+            "sensing.vision.pointcloud": {
+              "points": 12000
+            }
+          }
         }
       ],
       "stamp": "2025-09-07T15:45:00Z"
@@ -111,19 +119,27 @@
       },
       "assets": [
         {
-          "kind": "features:SuperPoint:v1",
           "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
-          "count": 1500,
-          "descriptor_bytes": 256,
+          "media_type": "application/vnd.sdds.features+npz;algo=superpoint;v=1",
           "hash": "sha256:placeholder...",
-          "bytes": 220000
+          "bytes": 220000,
+          "meta": {
+            "sensing.vision.features": {
+              "count": 1500,
+              "descriptor_bytes": 256
+            }
+          }
         },
         {
-          "kind": "geom:mesh:lod0",
           "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
-          "triangles": 8000,
+          "media_type": "model/gltf-binary;lod=0",
           "hash": "sha256:placeholder...",
-          "bytes": 350000
+          "bytes": 350000,
+          "meta": {
+            "sensing.vision.mesh": {
+              "triangles": 8000
+            }
+          }
         }
       ],
       "stamp": "2025-09-08T11:12:13Z"

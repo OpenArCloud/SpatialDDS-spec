@@ -5,6 +5,33 @@
 module spatial {
   module disco {
 
+    // -----------------------------
+    // Asset references (middle-ground model)
+    // -----------------------------
+    //
+    // Base contract: uniform access + integrity for all assets.
+    // Optional, namespaced metadata bags carry type-specific details
+    // without inflating the base schema.
+    //
+    // Example: media_type could be
+    //   "application/vnd.sdds.features+json;algo=orb;v=1"
+    //
+    // Namespaced metadata uses JSON strings so producers can include
+    // structured details without schema churn.
+    //
+    @appendable struct AssetMetaKV {
+      string namespace;  // e.g., "sensing.vision.features"
+      string json;       // JSON object string; producer-defined for this namespace
+    };
+
+    @appendable struct AssetRef {
+      string uri;          // required: how to fetch
+      string media_type;   // required: IANA or registry-friendly type (with params)
+      string hash;         // required: e.g., "sha256:<hex>"
+      uint64 bytes;        // required: size in bytes
+      sequence<AssetMetaKV, 32> meta;  // optional: zero or more namespaced bags
+    };
+
     const string MODULE_ID = "spatial.discovery/1.0";
 
     typedef spatial::core::Time Time;
