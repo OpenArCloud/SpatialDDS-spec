@@ -5,6 +5,8 @@
 module spatial {
   module disco {
 
+    const string MODULE_ID = "spatial.discovery/1.0";
+
     typedef spatial::core::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
     // Canonical manifest references use the spatialdds:// URI scheme.

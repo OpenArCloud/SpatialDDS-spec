@@ -4,6 +4,9 @@
 module spatial {
   module core {
 
+    // Module identity (authoritative string for interop)
+    const string MODULE_ID = "spatial.core/1.0";
+
     // ---------- Utility ----------
     struct Time {
       int32  sec;     // seconds since UNIX epoch (UTC)
@@ -49,6 +52,7 @@ module spatial {
       // optional geo hints
       double centroid_llh[3];        // lat,lon,alt (deg,deg,m) or NaN
       double radius_m;               // rough extent (m) or NaN
+      string schema_version;         // MUST be "spatial.core/1.0"
     };
 
     @appendable struct TilePatch {

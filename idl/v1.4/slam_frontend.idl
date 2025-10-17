@@ -4,6 +4,8 @@
 module spatial {
   module slam_frontend {
 
+    const string MODULE_ID = "spatial.slam_frontend/1.0";
+
     // Reuse core: Time, etc.
     typedef spatial::core::Time Time;
 
