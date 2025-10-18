@@ -22,7 +22,8 @@ module spatial { module sensing { module vision {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+  // ROI bounds follow Sensing Common (NaN = open interval).
+  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Camera / imaging specifics
   enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
