@@ -759,8 +759,9 @@ module spatial {
     };
 
     @appendable struct BlobChunk {
+      // Composite key: (blob_id, index) uniquely identifies a chunk instance.
       @key string blob_id;               // which blob
-      uint32 index;                      // chunk index (0..N-1)
+      @key uint32 index;                 // chunk index (0..N-1)
       sequence<uint8, 262144> data;      // ≤256 KiB per sample
 
       // --- Additive fields for robust reassembly ---
@@ -769,13 +770,15 @@ module spatial {
       // Enables preallocation and deterministic completion even if 'last' arrives late.
       uint32 total_chunks;
 
-      // Monotonic sequence number within this blob_id.
+      // Monotonic sequence number within this blob_id (non-key).
       // Detects gaps and helps reorder on BEST_EFFORT QoS.
       uint32 seq;
 
       // CRC32 checksum over 'data' for per-chunk integrity verification.
       uint32 crc32;
     };
+
+**BlobChunk Identity.** Each chunk is uniquely identified by the composite key `(blob_id, index)`. The `seq` field is **not** part of the key; it may be used for transport ordering, diagnostics, or gap detection. Readers on BEST_EFFORT transports MUST tolerate out-of-order arrival; keys are used for reassembly, not ordering.
 
     // ---------- Pose Graph (minimal) ----------
     enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
