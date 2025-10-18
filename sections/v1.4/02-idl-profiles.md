@@ -96,7 +96,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
-* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§4.7); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§4.6); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * Queries MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -108,7 +108,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 | `caps.supported_profiles` | Version ranges per profile. Peers select the **highest compatible minor** within a shared major. |
 | `caps.preferred_profiles` | Optional tie-breaker hint (only within a major). |
 | `caps.features` | Optional feature flags (namespaced strings). Unknown flags can be ignored. |
-| `topics[].type` / `version` / `qos_profile` | Typed Topics Registry keys used to filter and match streams. |
+| `topics[].type` / `version` / `qos_profile` | Topic Identity keys used to filter and match streams. |
 | `reply_topic`, `query_id` | Allows asynchronous, paged responses and correlation. |
 
 #### Practical notes

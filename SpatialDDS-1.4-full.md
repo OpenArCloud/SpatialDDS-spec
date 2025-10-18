@@ -222,7 +222,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
-* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§4.7); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§4.6); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * Queries MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -234,7 +234,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 | `caps.supported_profiles` | Version ranges per profile. Peers select the **highest compatible minor** within a shared major. |
 | `caps.preferred_profiles` | Optional tie-breaker hint (only within a major). |
 | `caps.features` | Optional feature flags (namespaced strings). Unknown flags can be ignored. |
-| `topics[].type` / `version` / `qos_profile` | Typed Topics Registry keys used to filter and match streams. |
+| `topics[].type` / `version` / `qos_profile` | Topic Identity keys used to filter and match streams. |
 | `reply_topic`, `query_id` | Allows asynchronous, paged responses and correlation. |
 
 #### Practical notes
@@ -424,58 +424,24 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 
 This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
 
-## 4.6 QoS Profiles
+## 4.6 Topic Identity & QoS (Normative)
 
-Quality of Service (QoS) defines the **timing and reliability** behavior for SpatialDDS topics. Rather than tuning low-level DDS parameters, developers choose from a few **named profiles**.
+SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**.  Together these define both *what* a stream carries and *how* it behaves on the wire.
 
-Each profile is a preset describing how reliably and quickly messages move between nodes.
+### Topic Naming Pattern
 
-## Core Profiles (v1)
-| Name | Reliability | Ordering | Typical Deadline | Use Case |
-|------|--------------|-----------|------------------|-----------|
-| `GEOM_TILE` | Reliable | Ordered | 200 ms | 3D geometry, large tile data |
-| `VIDEO_LIVE` | Best-effort | Ordered | 33 ms | Live camera streams |
-| `VIDEO_ARCHIVE` | Reliable | Ordered | 200 ms | Replay or recorded streams |
-| `RADAR_RT` | Partial | Ordered | 20 ms | Real-time radar tensors |
-| `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
-| `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
-
-### Example (topic metadata)
-```json
-{ "name": "spatialdds/perception/cam_front/video_frame/v1", "type": "video_frame", "version": "v1", "qos_profile": "VIDEO_LIVE" }
-```
-
-## Developer Notes
-* Each topic declares its `qos_profile` directly in discovery metadata.  
-* Profiles express trade-offs between latency, reliability, and throughput.  
-* Applications should avoid mixing unrelated flows (e.g., radar + video) under the same QoS.  
-* Implementations may fine-tune underlying DDS policies, but the **profile name is canonical** for interoperability.
-
-## 4.7 Typed Topics Registry
-
-The Typed Topics Registry prevents overloading one "blob" channel for many kinds of media. Instead, every SpatialDDS stream declares a **type**, **version**, and **QoS profile**. No change to wire framing is required; only metadata differs.
-
-## Naming Pattern
+Each topic follows this pattern:
 ```
 spatialdds/<domain>/<stream>/<type>/<version>
 ```
 | Segment | Meaning | Example |
 |----------|----------|----------|
 | `<domain>` | Logical app domain | `perception` |
-| `<stream>` | Source or sensor id | `cam_front` |
-| `<type>` | Data category | `video_frame` |
-| `<version>` | Schema version | `v1` |
+| `<stream>` | Sensor or stream ID | `cam_front` |
+| `<type>` | Registered data type | `video_frame` |
+| `<version>` | Schema or message version | `v1` |
 
-## Registered Type Values (v1)
-| Type | Typical Payload | Notes |
-|------|------------------|-------|
-| `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Usually reliable, large chunks |
-| `video_frame` | Encoded video/image | High-rate, best-effort or reliable |
-| `radar_tensor` | N-D float/int tensor | Fixed layout radar data |
-| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
-| `desc_array` | Feature descriptor sets | Batches of vectors or embeddings |
-
-### Example (topic URI + metadata)
+#### Example
 ```json
 {
   "name": "spatialdds/perception/radar_1/radar_tensor/v1",
@@ -485,11 +451,53 @@ spatialdds/<domain>/<stream>/<type>/<version>
 }
 ```
 
-## Implementation Tips
-* Each topic advertises its `type`, `version`, and `qos_profile` during discovery.  
-* Consumers can filter or auto-subscribe by type without parsing payloads.  
-* Brokers should route streams by `(topic, stream_id, qos_profile)` to avoid blocking between types.  
-* New data types can be registered without wire changes; add to this registry with brief documentation.
+### Registered Types (v1)
+
+| Type | Typical Payload | Notes |
+|------|------------------|-------|
+| `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Large, reliable transfers |
+| `video_frame` | Encoded video/image | Real-time camera streams |
+| `radar_tensor` | N-D float/int tensor | Structured radar data |
+| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
+| `desc_array` | Feature descriptor sets | Vector or embedding batches |
+
+These registered types ensure consistent topic semantics without altering wire framing.  New types can be registered additively through this table or extensions.
+
+### Standard QoS Profiles (v1)
+
+QoS profiles define delivery guarantees and timing expectations for each topic type.
+
+| Profile | Reliability | Ordering | Typical Deadline | Use Case |
+|----------|--------------|----------|------------------|-----------|
+| `GEOM_TILE` | Reliable | Ordered | 200 ms | 3D geometry, large tile data |
+| `VIDEO_LIVE` | Best-effort | Ordered | 33 ms | Live video feeds |
+| `VIDEO_ARCHIVE` | Reliable | Ordered | 200 ms | Replay or stored media |
+| `RADAR_RT` | Partial | Ordered | 20 ms | Real-time radar tensors |
+| `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
+| `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
+
+#### Notes
+
+* Each topic advertises its `qos_profile` during discovery. 
+* Profiles capture trade-offs between latency, reliability, and throughput. 
+* Implementations may tune low-level DDS settings, but the profile name is canonical. 
+* Mixing unrelated data (e.g., radar + video) in a single QoS lane is discouraged.
+
+### Discovery and Manifest Integration
+
+Every `Announce.topics[]` entry and manifest topic reference SHALL include:
+- `type` — one of the registered type values  
+- `version` — the schema or message version  
+- `qos_profile` — one of the standard or extended QoS names  
+
+Consumers use these three keys to match and filter streams without inspecting payload bytes.  Brokers and routers SHOULD isolate lanes by `(topic, stream_id, qos_profile)` to avoid head-of-line blocking.
+
+### Implementation Guidance (Non-Normative)
+
+* No change to on-wire framing — this metadata lives at the discovery layer.  
+* Named QoS profiles simplify cross-vendor interoperability and diagnostics.  
+* For custom types, follow the same naming pattern and document new QoS presets.  
+* All examples and tables herein are **additive**; legacy 1.3 compatibility language has been removed.
 
 ## **4. Conclusion**
 
