@@ -162,6 +162,34 @@ SpatialDDS augments these announcements with an active discovery model so client
 
 Both bindings share a common message model. A **query** identifies the resource type (for example, `tileset` or `anchor`) and an area of interest expressed as a coverage element. **Announcements** respond with matching resources, providing the resource identity, coverage, and the endpoint clients should use. For now the spatial predicate is simply *intersects*: a resource is relevant if its coverage overlaps the requested volume. The same request/response shape means applications can switch transports—or operate across mixed deployments—without rewriting discovery logic.
 
+#### Capabilities via Discovery (In-Band, Normative)
+
+**Purpose.** Allow dynamic, runtime advertisement of wire capabilities and topic metadata so peers can negotiate versions and select streams without prior manifests.
+
+**Announce fields.**
+* `caps.supported_profiles` — profile ranges per §3 (Highest-Compatible-Minor within a common MAJOR).
+* `caps.preferred_profiles` — optional ordered hints to break ties **within a common MAJOR**.
+* `caps.features` — optional namespaced feature flags; unknown flags MUST be ignored.
+* `topics[]` — list of topics with `{ name, type, version, qos_profile }`; optional `target_rate_hz`, `max_chunk_bytes`.
+
+**Producer requirements.**
+* Announces MUST include `caps.supported_profiles`.
+* Each advertised topic MUST declare `type`, `version`, and `qos_profile` per Typed Topics Registry (§4.7).
+* Producers SHOULD re-announce if capabilities or topics change.
+
+**Consumer behavior.**
+1. Compute the negotiated profile minor via HCM (per §3).
+2. Filter `topics[]` by `type`, `version`, and `qos_profile`.
+3. Optionally require feature flags before binding.
+4. On updated announces, re-evaluate and (if needed) rebind streams.
+
+**Queries.** Discovery queries MAY filter on:
+* `profile=name@MAJOR.*` or `name@MAJOR.MINOR` (version)
+* `type` in the typed-topics registry (§4.7.2)
+* `qos_profile` in the QoS registry (§4.7.3)
+
+**Diagnostics.** On mismatch or failure to bind, implementations SHOULD emit a reason, e.g., `NO_COMMON_MAJOR(name)`, `NEGOTIATION_CHANGED(name)`.
+
 #### Example: HTTP resolver
 
 An HTTP client searching for tilesets that intersect a bounding box in San Francisco would issue:
@@ -661,7 +689,7 @@ Example discovery announcements would therefore carry manifest URIs such as:
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
 * `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
 
-### Example: Discovery announce with capabilities (minimal)
+### Example: In-band capabilities and topics
 
 ```json
 {
@@ -670,8 +698,30 @@ Example discovery announcements would therefore carry manifest URIs such as:
       { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3, "preferred": true  },
       { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2, "preferred": true  },
       { "name": "sensing.common", "major": 1, "min_minor": 0, "max_minor": 1, "preferred": false }
+    ],
+    "preferred_profiles": ["discovery@1.2", "core@1.*"],
+    "features": [
+      { "name": "blob.crc32" },
+      { "name": "rad.tensor.zstd" }
     ]
-  }
+  },
+  "topics": [
+    {
+      "name": "spatialdds/perception/cam_front/video_frame/v1",
+      "type": "video_frame",
+      "version": "v1",
+      "qos_profile": "VIDEO_LIVE",
+      "target_rate_hz": 30.0
+    },
+    {
+      "name": "spatialdds/perception/radar_1/radar_tensor/v1",
+      "type": "radar_tensor",
+      "version": "v1",
+      "qos_profile": "RADAR_RT",
+      "target_rate_hz": 20.0,
+      "max_chunk_bytes": 65536
+    }
+  ]
 }
 ```
 
