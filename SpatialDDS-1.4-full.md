@@ -36,6 +36,7 @@
     - [Appendix D: Extension Profiles](sections/v1.4/appendix-d.md)
     - [Appendix E: Provisional Extension Examples](sections/v1.4/appendix-e.md)
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
+    - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)
 
 ## **1\. Introduction**
 
@@ -144,21 +145,10 @@ Participants advertise supported ranges via `caps.supported_profiles` (discovery
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
-#### Frame Identifiers (Normative)
+#### Frame Identifiers (Reference)
 
-SpatialDDS replaces legacy string frame identifiers with the **FrameRef** structure:
-
-```
-FrameRef {
-  uuid: 16-byte stable identifier (required)
-  fqn:  normalized fully qualified name (required)
-}
-```
-
-- **Equality & identity.** The `uuid` field is authoritative; consumers MUST compare frames by UUID. The `fqn` is a normalized, human-readable alias for logging and debugging.
-- **FQN normalization.** Frame FQNs MUST be lowercase, Unicode NFC-normalized, match `^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$`, and SHOULD follow `<org>/<system>/<frame>` (for example, `oarc/rig01/cam_front`). Reserved roots include: `earth-fixed`, `ecef`, `enu`, `map`, `body`, `sensor`, `ship-fixed`.
-- **Graph rule.** The frame graph MUST remain a DAG. Each transform declares `parent_ref` and `child_ref`; consumers MUST detect cycles and reject invalid graphs.
-- **Manifests.** Producers SHOULD publish a **Frame Manifest** that enumerates `{uuid, fqn, parent_uuid}` tuples and advertise its location via discovery/manifests.
+SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.  
+See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
 
 ### **2.3 Discovery**
 
@@ -1969,4 +1959,33 @@ pvalue         = 1*( unreserved / pct-encoded / ":" / "@" / "." )
 spatialdds://museum.example.org/hall1/anchor/01J9Q0A6KZ;v=12
 spatialdds://openarcloud.org/zone:sf/tileset/city3d;v=3?lang=en
 ```
+
+<a id="g-frame-identifiers"></a>
+
+## **Appendix G: Frame Identifiers (Normative)**
+
+SpatialDDS represents reference frames using the `FrameRef` structure:
+
+```idl
+struct FrameRef {
+  uuid uuid;           // globally unique frame ID
+  string fqn;          // optional fully-qualified name, e.g. "earth-fixed/map/cam_front"
+};
+```
+
+#### UUID Rules
+- `uuid` is authoritative for identity.
+- `fqn` is an optional human-readable alias.
+- Implementations MUST treat `uuid` uniqueness as the identity key.
+
+#### Name and Hierarchy Rules
+- `fqn` components are slash-delimited.
+- Reserved roots include `earth-fixed`, `map`, `body`, `anchor`, `local`.
+- A `FrameRef` DAG MUST be acyclic.
+
+#### Manifest References
+Manifest entries that refer to frames MUST use a `FrameRef` object rather than raw strings. Each manifest MAY define local frame aliases resolvable by `fqn`.
+
+#### Notes
+This appendix defines the authoritative encoding for `FrameRef`. Additional derived schemas (e.g. GeoPose, Anchors) SHALL refer to this definition by reference and MUST NOT re-declare frame semantics.
 
