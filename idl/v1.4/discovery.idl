@@ -50,8 +50,27 @@ module spatial {
       boolean preferred;  // optional tie-breaker hint (usually false)
     };
 
+    // --- Optional feature flags (namespaced strings, e.g., "blob.crc32", "rad.tensor.zstd") ---
+    @appendable struct FeatureFlag {
+      string name;
+    };
+
+    // --- Capabilities advertised in-band on the discovery bus ---
     @appendable struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
+      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.*"]
+      sequence<FeatureFlag, 64>    features;           // optional feature flags
+    };
+
+    // --- Topic metadata to enable selection without parsing payloads ---
+    @appendable struct TopicMeta {
+      string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
+      string type;        // registered type (see Typed Topics Registry §4.7)
+      string version;     // e.g., "v1"
+      string qos_profile; // e.g., "VIDEO_LIVE"
+      // optional advisory hints (topic-level, not per-message)
+      float32 target_rate_hz;
+      uint32  max_chunk_bytes;
     };
 
     enum ServiceKind {
@@ -105,7 +124,8 @@ module spatial {
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
       // New: wire-level capability advertisement for version negotiation.
-      Capabilities caps;
+      Capabilities caps;                 // in-band capabilities (profiles + features)
+      sequence<TopicMeta,128> topics;    // topic list with typed-topic metadata
       sequence<CoverageElement,16> coverage;
       string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
       Time coverage_eval_time;          // optional evaluation time for transforming coverage elements

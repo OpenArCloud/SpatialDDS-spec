@@ -147,7 +147,7 @@ Example discovery announcements would therefore carry manifest URIs such as:
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
 * `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
 
-### Example: Discovery announce with capabilities (minimal)
+### Example: In-band capabilities and topics
 
 ```json
 {
@@ -156,8 +156,30 @@ Example discovery announcements would therefore carry manifest URIs such as:
       { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3, "preferred": true  },
       { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2, "preferred": true  },
       { "name": "sensing.common", "major": 1, "min_minor": 0, "max_minor": 1, "preferred": false }
+    ],
+    "preferred_profiles": ["discovery@1.2", "core@1.*"],
+    "features": [
+      { "name": "blob.crc32" },
+      { "name": "rad.tensor.zstd" }
     ]
-  }
+  },
+  "topics": [
+    {
+      "name": "spatialdds/perception/cam_front/video_frame/v1",
+      "type": "video_frame",
+      "version": "v1",
+      "qos_profile": "VIDEO_LIVE",
+      "target_rate_hz": 30.0
+    },
+    {
+      "name": "spatialdds/perception/radar_1/radar_tensor/v1",
+      "type": "radar_tensor",
+      "version": "v1",
+      "qos_profile": "RADAR_RT",
+      "target_rate_hz": 20.0,
+      "max_chunk_bytes": 65536
+    }
+  ]
 }
 ```
 
