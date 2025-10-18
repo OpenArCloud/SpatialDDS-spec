@@ -56,6 +56,20 @@ Example discovery announcements would therefore carry manifest URIs such as:
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
 * `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
 
+### Example: Discovery announce with capabilities (minimal)
+
+```json
+{
+  "caps": {
+    "supported_profiles": [
+      { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3, "preferred": true  },
+      { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2, "preferred": true  },
+      { "name": "sensing.common", "major": 1, "min_minor": 0, "max_minor": 1, "preferred": false }
+    ]
+  }
+}
+```
+
 SpatialDDS 1.4 retains the lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
 
 Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. In v1.4 the query now carries a caller-supplied `query_id` plus a `reply_topic` so responders can correlate answers and route them to the right pub/sub path, and a new paged `CoverageResponse` mirrors the `query_id` when returning matching `ContentAnnounce` records. Implementations that ignore the active-query fields continue to interoperate.

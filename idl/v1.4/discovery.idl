@@ -39,6 +39,21 @@ module spatial {
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
 
+    // --- Profile version advertisement (additive) ---
+    // Semver per profile: name@MAJOR.MINOR
+    // Each row declares a contiguous range of MINORs within a single MAJOR.
+    @appendable struct ProfileSupport {
+      string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
+      uint32 major;       // compatible major (e.g., 1)
+      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
+      uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
+      boolean preferred;  // optional tie-breaker hint (usually false)
+    };
+
+    @appendable struct Capabilities {
+      sequence<ProfileSupport, 64> supported_profiles;
+    };
+
     enum ServiceKind {
       VPS = 0,
       MAPPING = 1,
@@ -89,6 +104,8 @@ module spatial {
       sequence<string,16> rx_topics;
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
+      // New: wire-level capability advertisement for version negotiation.
+      Capabilities caps;
       sequence<CoverageElement,16> coverage;
       string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
       Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
