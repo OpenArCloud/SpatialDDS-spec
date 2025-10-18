@@ -126,6 +126,13 @@ module spatial {
     typedef double Mat3x3[9];   // row-major
     typedef double Mat6x6[36];  // row-major
 
+    // Discriminated union: exactly one covariance payload (or none) is serialized.
+    @appendable union CovMatrix switch (CovarianceType) {
+      case COV_POS3:  Mat3x3 pos;
+      case COV_POSE6: Mat6x6 pose;
+      case COV_NONE:  // empty
+    };
+
     @appendable struct GeoPose {
       double lat_deg;
       double lon_deg;
@@ -134,13 +141,8 @@ module spatial {
       GeoFrameKind frame_kind; // ECEF/ENU/NED
       string frame_ref;        // for ENU/NED: "@lat,lon,alt"
       Time   stamp;
-      CovarianceType cov_type; // explicit covariance typing
-      // Exactly one of the following is meaningful based on cov_type:
-      // If cov_type == COV_POS3  → use pos_cov_3x3 (x,y,z)
-      // If cov_type == COV_POSE6 → use pose_cov_6x6 (x,y,z,roll,pitch,yaw)
-      // If cov_type == COV_NONE  → both matrices are ignored.
-      Mat3x3 pos_cov_3x3;
-      Mat6x6 pose_cov_6x6;
+      // Exactly one covariance payload will be present based on the discriminator.
+      CovMatrix cov;
     };
 
     @appendable struct GeoAnchor {
