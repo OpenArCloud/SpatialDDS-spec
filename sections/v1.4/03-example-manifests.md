@@ -27,6 +27,72 @@ While SpatialDDS keeps its on-bus messages small and generic, richer details abo
 
 * Each MINOR revision MUST appear in the manifest changelog and SHOULD ship with a JSON Schema (e.g., `schemas/manifest/1.4.schema.json`).
 
+### Capabilities via Manifests (Out-of-Band, Normative)
+
+**Purpose.** Allow consumers to evaluate compatibility and select streams using only a manifest (for example, fetched from the web or bundled with an application) without relying on live discovery.
+
+**Placement.** Capabilities are declared both at the **manifest root** and within each **topic** entry.
+
+#### Root-level capabilities
+Manifests **SHOULD** include a `capabilities` block that advertises supported IDL profile ranges and optional feature flags:
+
+```json
+{
+  "schema_version": "manifest@1.4",
+  "capabilities": {
+    "supported_profiles": [
+      { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3 },
+      { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2 },
+      { "name": "sensing.common", "major": 1, "min_minor": 0, "max_minor": 1 },
+      { "name": "sensing.rad",    "major": 1, "min_minor": 1, "max_minor": 1 }
+    ],
+    "preferred_profiles": [ "discovery@1.2", "core@1.*" ],
+    "features": [ "blob.crc32", "rad.tensor.zstd" ]
+  }
+}
+```
+
+**Semantics.**
+* `supported_profiles` follows the same version model as IDL negotiation: `name@MAJOR.MINOR` with Highest-Compatible-Minor selection within a shared **MAJOR** (see Section 2.0).
+* `preferred_profiles` is an **optional** ordered hint to break ties **within a common MAJOR**.
+* `features` is an **optional** list of vendor- or spec-defined boolean capabilities (namespaced strings recommended, for example `rad.tensor.zstd`). Unknown features MUST be ignored by readers.
+
+#### Topic descriptors (selection hints)
+Each topic entry **SHALL** declare the typed-topic keys so consumers can filter without parsing payloads:
+
+```json
+{
+  "topics": [
+    {
+      "name": "spatialdds/perception/cam_front/video_frame/v1",
+      "type": "video_frame",
+      "version": "v1",
+      "qos_profile": "VIDEO_LIVE"
+    },
+    {
+      "name": "spatialdds/perception/radar_1/radar_tensor/v1",
+      "type": "radar_tensor",
+      "version": "v1",
+      "qos_profile": "RADAR_RT"
+    }
+  ]
+}
+```
+
+**Requirements.**
+* `type`, `version`, and `qos_profile` MUST match the **Typed Topics Registry** (Section 4.7).
+* A topic MUST NOT mix types; the `name` SHOULD follow the canonical path pattern (Section 4.7.1).
+* Readers MAY filter topics by `type`, `version`, and `qos_profile` using only manifest contents.
+
+#### Reader behavior (deterministic, no live discovery)
+Given a manifest, a reader:
+1. Parses `capabilities.supported_profiles` and selects the **Highest-Compatible-Minor** per profile.
+2. Filters `topics[]` by desired `type`/`qos_profile`.
+3. Optionally checks `features[]` for required capabilities.
+4. Proceeds to subscribe/connect using the referenced topic names/URIs.
+
+Unknown fields in the capabilities block MUST be ignored to preserve forward compatibility within the same manifest major.
+
 ### **Assets**
 
 Every manifest asset now adheres to a **uniform base contract** with an optional, namespaced metadata bag:
