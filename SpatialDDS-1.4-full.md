@@ -120,6 +120,20 @@ SpatialDDS URIs give every anchor, service, and content bundle a stable handle t
 
 The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatial data over DDS. It is organized into complementary profiles: **Core**, which provides the backbone for pose graphs, geometry, and geo-anchoring; **Discovery**, which enables lightweight announcements of services, coverage, anchors, and content; and **Anchors**, which adds support for publishing and updating sets of durable world-locked anchors. Together, these profiles give devices, services, and applications a common language for building, sharing, and aligning live world models—while staying codec-agnostic, forward-compatible, and simple enough to extend for domains such as robotics, AR/XR, IoT, and smart cities.
 
+### **2.0 IDL Profile Versioning & Negotiation (Normative)**
+
+**Version model.** Each profile is `name@MAJOR.MINOR`. Breaking changes bump MAJOR; additive changes bump MINOR.
+
+**Advertisement (wire).** Participants publish `disco::ServiceAnnounce.caps.supported_profiles`, where each row is `{ name, major, min_minor, max_minor, preferred }`.
+
+**Selection rule (Highest-Compatible-Minor).** For each profile *name*:
+1. Intersect supported **MAJOR** sets. If none → no match.
+2. Within the common MAJOR, choose the **highest** common **MINOR** (HCM).
+3. If multiple rows per side cover the same MAJOR, union their minor ranges before step 2.
+4. Use `preferred` only to break ties **within a common MAJOR**.
+
+**Identity & observability.** Implementations SHOULD surface the negotiated `{ name, major, minor }` in diagnostics and topic metadata. Discovery queries MAY filter using `name@MAJOR.*` or `name@MAJOR.MINOR`.
+
 ### **2.1 Core SpatialDDS**
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
@@ -555,6 +569,20 @@ Example discovery announcements would therefore carry manifest URIs such as:
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/vps-main`
 * `spatial::disco::ServiceAnnounce.manifest_uri = spatialdds://acme.services/sf/service/mapping-tiles`
 * `spatial::disco::ContentAnnounce.manifest_uri = spatialdds://acme.services/sf/content/market-stroll`
+
+### Example: Discovery announce with capabilities (minimal)
+
+```json
+{
+  "caps": {
+    "supported_profiles": [
+      { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3, "preferred": true  },
+      { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2, "preferred": true  },
+      { "name": "sensing.common", "major": 1, "min_minor": 0, "max_minor": 1, "preferred": false }
+    ]
+  }
+}
+```
 
 SpatialDDS 1.4 retains the lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
 
@@ -1317,15 +1345,30 @@ module spatial {
 // Lightweight announces for services, coverage, and content
 
 module spatial {
-  module disco {
+    module disco {
 
-    const string MODULE_ID = "spatial.discovery/1.0";
+      const string MODULE_ID = "spatial.discovery/1.0";
 
-    typedef spatial::core::Time Time;
-    typedef spatial::geometry::FrameRef FrameRef;
-    typedef spatial::core::Aabb3 Aabb3;
-    // Canonical manifest references use the spatialdds:// URI scheme.
-    typedef string SpatialUri;
+      typedef spatial::core::Time Time;
+      typedef spatial::geometry::FrameRef FrameRef;
+      typedef spatial::core::Aabb3 Aabb3;
+      // Canonical manifest references use the spatialdds:// URI scheme.
+      typedef string SpatialUri;
+
+      // --- Profile version advertisement (additive) ---
+      // Semver per profile: name@MAJOR.MINOR
+      // Each row declares a contiguous range of MINORs within a single MAJOR.
+      @appendable struct ProfileSupport {
+        string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
+        uint32 major;       // compatible major (e.g., 1)
+        uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
+        uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
+        boolean preferred;  // optional tie-breaker hint (usually false)
+      };
+
+      @appendable struct Capabilities {
+        sequence<ProfileSupport, 64> supported_profiles;
+      };
 
     enum ServiceKind {
       VPS = 0,
@@ -1368,23 +1411,25 @@ module spatial {
       double q_xyzw[4];         // GeoPose order [x,y,z,w]
     };
 
-    @appendable struct ServiceAnnounce {
-      @key string service_id;
-      string name;
-      ServiceKind kind;
-      string version;
-      string org;
-      sequence<string,16> rx_topics;
-      sequence<string,16> tx_topics;
-      sequence<KV,32> hints;
-      sequence<CoverageElement,16> coverage;
-      string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
-      Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
-      sequence<Transform,8> transforms;
-      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
-      string auth_hint;
-      Time stamp;
-      uint32 ttl_sec;
+      @appendable struct ServiceAnnounce {
+        @key string service_id;
+        string name;
+        ServiceKind kind;
+        string version;
+        string org;
+        sequence<string,16> rx_topics;
+        sequence<string,16> tx_topics;
+        sequence<KV,32> hints;
+        // New: wire-level capability advertisement for version negotiation.
+        Capabilities caps;
+        sequence<CoverageElement,16> coverage;
+        string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
+        Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
+        sequence<Transform,8> transforms;
+        SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
+        string auth_hint;
+        Time stamp;
+        uint32 ttl_sec;
     };
 
     @appendable struct CoverageHint {
