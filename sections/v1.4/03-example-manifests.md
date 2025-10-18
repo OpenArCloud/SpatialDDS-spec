@@ -2,6 +2,31 @@
 
 While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 continues the convention introduced in v1.3: manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
+### Manifest Versioning (Normative)
+
+**Purpose.** Manifest schema identifiers keep discovery clients and services aligned on layout and semantics.
+
+**Schema identifier.** Every manifest MUST include a top-level field:
+
+```json
+{ "schema_version": "manifest@1.4" }
+```
+
+**Version model.**
+
+* Identifiers follow `name@MAJOR.MINOR` (e.g., `manifest@1.4`).
+* **MAJOR** signals breaking layout or semantics; **MINOR** captures additive, backward-compatible changes.
+
+**Reader behavior.**
+
+* If the manifest MAJOR equals the reader’s supported MAJOR and the manifest MINOR is greater than or equal to the reader’s MINOR, the reader MUST parse the manifest and ignore unknown fields.
+* If the manifest MAJOR exceeds the reader’s supported MAJOR, the reader MUST reject the manifest with a clear error.
+* Producers MUST populate all fields required by the declared MAJOR version.
+
+**Changelog & schema artifacts.**
+
+* Each MINOR revision MUST appear in the manifest changelog and SHOULD ship with a JSON Schema (e.g., `schemas/manifest/1.4.schema.json`).
+
 ### **Assets**
 
 Every manifest asset now adheres to a **uniform base contract** with an optional, namespaced metadata bag:
