@@ -65,7 +65,7 @@ module spatial {
     // --- Topic metadata to enable selection without parsing payloads ---
     @appendable struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // registered type (see Topic Identity & QoS §4.6)
+      string type;        // registered type (see Topic Identity & QoS §2.2.1)
       string version;     // e.g., "v1"
       string qos_profile; // e.g., "VIDEO_LIVE"
       // optional advisory hints (topic-level, not per-message)
