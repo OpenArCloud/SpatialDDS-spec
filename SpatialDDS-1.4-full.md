@@ -159,81 +159,92 @@ FrameRef {
 
 ### **2.2 Discovery**
 
-The Discovery profile adds a minimal, lightweight way to announce services, anchors, content, and registries in the real world. It complements DDS’s built-in participant and topic discovery by describing what a service does, where it operates, and how to learn more. Announcements are deliberately simple—service kind, coarse coverage (via geohash or a bounding-box array), and a pointer to a manifest for richer details. This keeps the bus lean while enabling clients to discover and connect to services such as VPS, mapping, anchor registries, semantics, or AR content providers without requiring heavy registries or complex protocols.
+Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Think of it as a built-in directory that rides the same bus: nodes announce, others filter and subscribe.
 
-SpatialDDS augments these announcements with an active discovery model so clients can query for relevant resources instead of waiting passively. Deployments can expose this discovery interface using either an **HTTP binding**—where a resolver serves a well-known endpoint that accepts queries and returns filtered results—or a **DDS binding**, which maps the same query/announce pattern onto well-known topics for low-latency, distributed environments. Installations may adopt either approach or both; HTTP resolvers may also act as gateways to a DDS bus without changing the client-facing contract.
+#### How it works (at a glance)
+1. **Announce** — each node periodically publishes an announcement with capabilities and topics.
+2. **Query** — clients publish simple filters (by profile version, type, QoS) to narrow results.
+3. **Select** — clients subscribe to chosen topics; negotiation picks the highest compatible minor per profile.
 
-Both bindings share a common message model. A **query** identifies the resource type (for example, `tileset` or `anchor`) and an area of interest expressed as a coverage element. **Announcements** respond with matching resources, providing the resource identity, coverage, and the endpoint clients should use. For now the spatial predicate is simply *intersects*: a resource is relevant if its coverage overlaps the requested volume. The same request/response shape means applications can switch transports—or operate across mixed deployments—without rewriting discovery logic.
+#### Key messages (abridged IDL)
+```idl
+// Message shapes shown for orientation only
+@appendable struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
+@appendable struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
+@appendable struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
 
-#### Capabilities via Discovery (In-Band, Normative)
+@appendable struct Announce {
+  // ... node identity, endpoints ...
+  Capabilities caps;                  // profiles, preferences, features
+  sequence<TopicMeta,128> topics;     // typed topics offered by this node
+}
 
-**Purpose.** Allow dynamic, runtime advertisement of wire capabilities and topic metadata so peers can negotiate versions and select streams without prior manifests.
+@appendable struct CoverageQuery {
+  // minimal illustrative fields
+  string expr;        // e.g., "type==radar_tensor && profile==discovery@1.*"
+  string reply_topic; // topic to receive results
+  string query_id;    // correlate request/response
+}
 
-**Announce fields.**
-* `caps.supported_profiles` — profile ranges per §2.0 (Highest-Compatible-Minor within a common MAJOR).
-* `caps.preferred_profiles` — optional ordered hints to break ties **within a common MAJOR**.
-* `caps.features` — optional namespaced feature flags; unknown flags MUST be ignored.
-* `topics[]` — list of topics with `{ name, type, version, qos_profile }`; optional `target_rate_hz`, `max_chunk_bytes`.
-
-**Producer requirements.**
-* Announces MUST include `caps.supported_profiles`.
-* Each advertised topic MUST declare `type`, `version`, and `qos_profile` per Topic Identity (§4.7).
-* Producers SHOULD re-announce if capabilities or topics change.
-
-**Consumer behavior.**
-1. Compute the negotiated profile minor via HCM (per §2.0).
-2. Filter `topics[]` by `type`, `version`, and `qos_profile`.
-3. Optionally require feature flags before binding.
-4. On updated announces, re-evaluate and (if needed) rebind streams.
-
-**Queries.** Discovery queries MAY filter on:
-* `profile=name@MAJOR.*` or `name@MAJOR.MINOR` (version)
-* `type` tokens defined in Topic Identity (§4.7)
-* `qos_profile` names cataloged in Appendix B
-
-**Diagnostics.** On mismatch or failure to bind, implementations SHOULD emit a reason, e.g., `NO_COMMON_MAJOR(name)`, `NEGOTIATION_CHANGED(name)`.
-
-#### Example: HTTP resolver
-
-An HTTP client searching for tilesets that intersect a bounding box in San Francisco would issue:
-
-```http
-POST /.well-known/spatialdds/search
-Content-Type: application/json
-
-{
-  "rtype": "tileset",
-  "volume": {
-    "type": "bbox",
-    "frame": "earth-fixed",
-    "crs": "EPSG:4979",
-    "bbox": [-122.42, 37.79, -122.40, 37.80]
-  }
+@appendable struct CoverageResponse {
+  string query_id;
+  sequence<Announce,256> results;
+  string next_page_token;
 }
 ```
 
-A matching response could be:
-
+#### Minimal examples (JSON)
+**Announce (capabilities + topics)**
 ```json
-[
-  {
-    "self_uri": "spatialdds://openarcloud.org/zone:sf/service/tileset:city3d",
-    "rtype": "tileset",
-    "bounds": {
-      "type": "bbox",
-      "frame": "earth-fixed",
-      "crs": "EPSG:4979",
-      "bbox": [-122.42, 37.79, -122.40, 37.80]
-    },
-    "endpoint": "https://example.org/tiles/city3d.json",
-    "mime": "application/vnd.ogc.3dtiles+json"
-  }
-]
+{
+  "caps": {
+    "supported_profiles": [
+      { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3 },
+      { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2 }
+    ],
+    "preferred_profiles": ["discovery@1.2"],
+    "features": ["blob.crc32"]
+  },
+  "topics": [
+    { "name": "spatialdds/perception/cam_front/video_frame/v1", "type": "video_frame", "version": "v1", "qos_profile": "VIDEO_LIVE" },
+    { "name": "spatialdds/perception/radar_1/radar_tensor/v1",  "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT"   }
+  ]
+}
 ```
 
-This is the typical shape of an HTTP discovery response. Each entry corresponds to a `ContentAnnounce` object (the same structure used in the DDS binding), keeping resolver results and bus announcements aligned.
+**Query + Response**
+```json
+{ "query_id": "q1", "expr": "type==radar_tensor && profile==discovery@1.*", "reply_topic": "spatialdds/sys/queries/q1" }
+```
+```json
+{ "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
+```
 
-The DDS binding mirrors this interaction with query and announce topics, letting edge deployments deliver the same discovery experience without leaving the data bus.
+#### Norms & filters
+* Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§4.7); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
+* `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
+* Queries MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
+* Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
+
+#### What fields mean (quick reference)
+| Field | Use |
+|------|-----|
+| `caps.supported_profiles` | Version ranges per profile. Peers select the **highest compatible minor** within a shared major. |
+| `caps.preferred_profiles` | Optional tie-breaker hint (only within a major). |
+| `caps.features` | Optional feature flags (namespaced strings). Unknown flags can be ignored. |
+| `topics[].type` / `version` / `qos_profile` | Typed Topics Registry keys used to filter and match streams. |
+| `reply_topic`, `query_id` | Allows asynchronous, paged responses and correlation. |
+
+#### Practical notes
+* Announce messages stay small and periodic; re-announce whenever capabilities, coverage, or topics change.
+* Queries are stateless filters. Responders may page through results; clients track `next_page_token` until empty.
+* Topic names follow `spatialdds/<domain>/<stream>/<type>/<version>`; filter by `type` and `qos_profile` instead of parsing payloads.
+* Negotiation is automatic once peers see each other’s `supported_profiles`; emit diagnostics like `NO_COMMON_MAJOR(name)` when selection fails.
+
+#### Summary
+Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
 ### **2.3 Anchors**
 
