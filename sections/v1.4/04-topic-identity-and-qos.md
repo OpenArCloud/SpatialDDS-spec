@@ -1,4 +1,7 @@
-### **2.2.1 Topic Identity & QoS (Normative)**
+// SPDX-License-Identifier: MIT
+// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
+
+### **2.3.1 Topic Identity & QoS (Normative)**
 
 SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**.  Together these define both *what* a stream carries and *how* it behaves on the wire.
 
