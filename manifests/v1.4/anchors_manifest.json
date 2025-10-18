@@ -4,7 +4,7 @@
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
-    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
     "geohash": [
       "sv8wkf",
       "sv8wkg"

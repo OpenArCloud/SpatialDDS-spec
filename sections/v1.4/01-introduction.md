@@ -45,6 +45,14 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
 
+### **Specification Layers (Informative)**
+
+| Layer | Purpose | Core Artifacts |
+|-------|---------|----------------|
+| **Core Transport** | Pub/Sub framing, QoS, reliability | `core`, `discovery` IDLs |
+| **Spatial Semantics** | Anchors, poses, transforms, manifests | `anchors`, `geo`, `manifests` |
+| **Sensing Extensions** | Radar, LiDAR, Vision modules | `sensing.*` profiles |
+
 ### **Architecture Overview & Data Flow**
 
 Before diving into identifiers and manifests, it helps to see how SpatialDDS components interlock when a client joins the bus. The typical flow looks like:

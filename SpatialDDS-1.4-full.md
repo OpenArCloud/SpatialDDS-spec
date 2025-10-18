@@ -94,6 +94,14 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
 
+### **Specification Layers (Informative)**
+
+| Layer | Purpose | Core Artifacts |
+|-------|---------|----------------|
+| **Core Transport** | Pub/Sub framing, QoS, reliability | `core`, `discovery` IDLs |
+| **Spatial Semantics** | Anchors, poses, transforms, manifests | `anchors`, `geo`, `manifests` |
+| **Sensing Extensions** | Radar, LiDAR, Vision modules | `sensing.*` profiles |
+
 ### **Architecture Overview & Data Flow**
 
 Before diving into identifiers and manifests, it helps to see how SpatialDDS components interlock when a client joins the bus. The typical flow looks like:
@@ -122,17 +130,12 @@ The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatia
 
 ### **2.0 IDL Profile Versioning & Negotiation (Normative)**
 
-**Version model.** Each profile is `name@MAJOR.MINOR`. Breaking changes bump MAJOR; additive changes bump MINOR.
+SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
-**Advertisement (wire).** Participants publish `disco::ServiceAnnounce.caps.supported_profiles`, where each row is `{ name, major, min_minor, max_minor, preferred }`.
+* **MAJOR** increments for breaking schema or wire changes.
+* **MINOR** increments for additive, compatible changes.
 
-**Selection rule (Highest-Compatible-Minor).** For each profile *name*:
-1. Intersect supported **MAJOR** sets. If none → no match.
-2. Within the common MAJOR, choose the **highest** common **MINOR** (HCM).
-3. If multiple rows per side cover the same MAJOR, union their minor ranges before step 2.
-4. Use `preferred` only to break ties **within a common MAJOR**.
-
-**Identity & observability.** Implementations SHOULD surface the negotiated `{ name, major, minor }` in diagnostics and topic metadata. Discovery queries MAY filter using `name@MAJOR.*` or `name@MAJOR.MINOR`.
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **2.1 Core SpatialDDS**
 
@@ -167,26 +170,26 @@ Both bindings share a common message model. A **query** identifies the resource 
 **Purpose.** Allow dynamic, runtime advertisement of wire capabilities and topic metadata so peers can negotiate versions and select streams without prior manifests.
 
 **Announce fields.**
-* `caps.supported_profiles` — profile ranges per §3 (Highest-Compatible-Minor within a common MAJOR).
+* `caps.supported_profiles` — profile ranges per §2.0 (Highest-Compatible-Minor within a common MAJOR).
 * `caps.preferred_profiles` — optional ordered hints to break ties **within a common MAJOR**.
 * `caps.features` — optional namespaced feature flags; unknown flags MUST be ignored.
 * `topics[]` — list of topics with `{ name, type, version, qos_profile }`; optional `target_rate_hz`, `max_chunk_bytes`.
 
 **Producer requirements.**
 * Announces MUST include `caps.supported_profiles`.
-* Each advertised topic MUST declare `type`, `version`, and `qos_profile` per Typed Topics Registry (§4.7).
+* Each advertised topic MUST declare `type`, `version`, and `qos_profile` per Topic Identity (§4.7).
 * Producers SHOULD re-announce if capabilities or topics change.
 
 **Consumer behavior.**
-1. Compute the negotiated profile minor via HCM (per §3).
+1. Compute the negotiated profile minor via HCM (per §2.0).
 2. Filter `topics[]` by `type`, `version`, and `qos_profile`.
 3. Optionally require feature flags before binding.
 4. On updated announces, re-evaluate and (if needed) rebind streams.
 
 **Queries.** Discovery queries MAY filter on:
 * `profile=name@MAJOR.*` or `name@MAJOR.MINOR` (version)
-* `type` in the typed-topics registry (§4.7.2)
-* `qos_profile` in the QoS registry (§4.7.3)
+* `type` tokens defined in Topic Identity (§4.7)
+* `qos_profile` names cataloged in Appendix B
 
 **Diagnostics.** On mismatch or failure to bind, implementations SHOULD emit a reason, e.g., `NO_COMMON_MAJOR(name)`, `NEGOTIATION_CHANGED(name)`.
 
@@ -285,13 +288,10 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Common Extension**: Shared enums, region-of-interest negotiation, frame metadata, and codec descriptors reused by the specialized sensing profiles.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadDetectionSet`/`RadTensor`/`beam_params` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
-  * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
-  * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
-  * **Lidar Profile**: Sensor metadata, compressed point cloud frames, and optional detections for lidar payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
 * **Provisional Extensions (Optional)**
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
@@ -299,7 +299,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
-The **Sensing Common** module deserves special mention: it standardizes ROI negotiation, shared enums for codecs and payload kinds, reusable frame metadata, and quality reporting structures. Radar, lidar, vision, and other sensing extensions build on these types so multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently without redefining the same scaffolding in each profile.
+The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
 
 ## **3. Operational Scenarios: From SLAM to AI World Models**
@@ -413,74 +413,52 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 
 This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
 
-## 4.7 Typed Topics Registry (Normative)
+## 4.7 Topic Identity (Normative)
 
-**Rationale.** To avoid overloading a single “blob” channel with heterogeneous media (e.g., geometry tiles, video frames, radar tensors, segmentation masks, descriptor arrays), SpatialDDS standardizes a small set of **typed topics**. The **on-wire message framing remains unchanged**. Interoperability is achieved via shared **topic naming**, **discovery metadata**, and **QoS profiles**.
+SpatialDDS unifies topic naming, discovery metadata, and QoS registration so implementations can interoperate without reinterpreting payload bytes.
 
-### 4.7.1 Topic Naming
-Topics SHOULD follow:
+### Naming
+Topics follow the canonical path:
 ```
 spatialdds/<domain>/<stream>/<type>/<version>
 ```
-Where:
-- `<domain>` is a logical app domain (e.g., `mapping`, `perception`, `ar`)
-- `<stream>` is a producer-meaningful stream id (e.g., `cam_front`, `radar_1`)
-- `<type>` is one of the registered values in §4.7.2
-- `<version>` is a semantic guard (e.g., `v1`)
 
-**Examples**
-- `spatialdds/perception/cam_front/video_frame/v1`
-- `spatialdds/mapping/tiles/geometry_tile/v1`
+* `<domain>` — logical application domain (for example `perception`, `mapping`, `ar`).
+* `<stream>` — producer-defined stream identifier (for example `cam_front`, `radar_1`).
+* `<type>` — registered topic type token.
+* `<version>` — semantic guard such as `v1`.
 
-> Note: This section does **not** alter message headers or chunk framing. Existing `ChunkHeader + bytes` remains the on-wire format.
+Example: `spatialdds/perception/cam_front/video_frame/v1`.
 
-### 4.7.2 Registered Types (v1)
-A topic MUST carry **exactly one** registered type value from the table below.
+### Metadata
+Each advertised topic **MUST** include, in discovery messages and manifests:
 
-| Type (string)     | Canonical Suffix | Notes (payload examples)                      |
-|-------------------|------------------|-----------------------------------------------|
-| `geometry_tile`   | `geometry_tile`  | 3D tiles, GLB, 3D Tiles content               |
-| `video_frame`     | `video_frame`    | Encoded frames (AV1/H.264/JPEG/etc.)          |
-| `radar_tensor`    | `radar_tensor`   | N-D tensors, fixed/float layouts              |
-| `seg_mask`        | `seg_mask`       | Binary/RLE/PNG masks; frame-aligned           |
-| `desc_array`      | `desc_array`     | Feature descriptors (e.g., ORB/NetVLAD batches)|
+* `type`
+* `version`
+* `qos_profile`
 
-### 4.7.3 QoS Profiles (Normative Names)
-Implementations MUST expose the following **named profiles**, mapped to their underlying transport/DDS QoS. These names are used in discovery (§4.7.4).
+These keys allow consumers to evaluate compatibility without opening payloads.
 
-| Profile         | Reliability | Ordering | Deadline | Reassembly Window | Typical Chunk Size |
-|-----------------|-------------|----------|----------|-------------------|--------------------|
-| `GEOM_TILE`     | Reliable    | Ordered  | 200 ms   | 2 s               | L/XL               |
-| `VIDEO_LIVE`    | Best-effort | Ordered  | 33 ms    | 100 ms            | S/M                |
-| `VIDEO_ARCHIVE` | Reliable    | Ordered  | 200 ms   | 1 s               | M                  |
-| `RADAR_RT`      | Partial     | Ordered  | 20 ms    | 150 ms            | M                  |
-| `SEG_MASK_RT`   | Best-effort | Ordered  | 33 ms    | 150 ms            | S/M                |
-| `DESC_BATCH`    | Reliable    | Ordered  | 100 ms   | 500 ms            | S/M                |
+### QoS
+SpatialDDS defines a compact catalog of named QoS profiles aligned to typical sensor and mapping workloads (for example `VIDEO_LIVE`, `GEOM_TILE`, `RADAR_RT`). Profiles describe **relative** latency/reliability trade-offs and are cataloged in Appendix B. Implementations map the names onto their transport or DDS configuration.
 
-> “Partial” reliability: implementations MAY drop late in-window chunks while acknowledging first/last to meet deadline constraints.
+### Registered Types (Informative extract)
 
-### 4.7.4 Discovery (Required)
-Each producer MUST announce, **per topic**, the following **topic-level** metadata (e.g., via the existing discovery/announce channel):
-- `type` — one of the registered values in §4.7.2 (e.g., `video_frame`)
-- `version` — the type version (e.g., `v1`)
-- `qos_profile` — one of the names in §4.7.3 (e.g., `VIDEO_LIVE`)
+| Type token       | Typical payload                                  |
+|------------------|---------------------------------------------------|
+| `geometry_tile`  | 3D tiles, GLB, 3D Tiles content                   |
+| `video_frame`    | Encoded frames (AV1/H.264/JPEG/etc.)              |
+| `radar_tensor`   | N-D tensors, fixed/float layouts                  |
+| `seg_mask`       | Binary/RLE/PNG segmentation masks                 |
+| `desc_array`     | Feature descriptor batches (e.g., ORB, NetVLAD)   |
 
-This requirement is **topic-level** only; it does **not** introduce per-message fields and does **not** change the on-wire layout.
+Extensions may register additional types using the same pattern.
 
-### 4.7.5 Conformance
-- A topic MUST NOT mix different `type` values.
-- Consumers MAY rely on `qos_profile` to select latency/reliability behavior without parsing payload bytes.
-- Brokers/routers SHOULD isolate lanes by `(topic, stream_id, qos_profile)` to avoid head-of-line blocking across types.
+### Conformance
 
-### 4.7.6 Informative Guidance (non-normative)
-Producers MAY attach **topic-level** metadata to assist subscribers (does not affect wire format):
-- `video_frame`: `codec`, `width`, `height`, `frame_rate_hint`
-- `geometry_tile`: `lod`, `content_type` (e.g., `application/3d-tiles+glb`)
-- `radar_tensor`: `shape`, `dtype`, `layout`
-- `seg_mask`: `width`, `height`, `encoding` (e.g., `rle`, `png`)
-- `desc_array`: `descriptor_type`, `dim`, `count`
-
-These keys are **advisory** and may be extended; normative interoperability derives from `type`, `version`, and `qos_profile`.
+* A topic advertises exactly one registered `type` token.
+* Producers keep `type`, `version`, and `qos_profile` consistent across discovery, manifests, and live transport.
+* Brokers and routers MAY use `(topic, qos_profile)` to segment traffic but no on-wire framing changes are introduced.
 
 ## **4. Conclusion**
 
@@ -542,7 +520,7 @@ In the manifest samples later in this specification, each of these identifiers e
 
 ## **7. Example Manifests**
 
-While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 continues the convention introduced in v1.3: manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
+While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 standardizes canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
 ### Manifest Versioning (Normative)
 
@@ -600,7 +578,7 @@ Manifests **SHOULD** include a `capabilities` block that advertises supported ID
 * `features` is an **optional** list of vendor- or spec-defined boolean capabilities (namespaced strings recommended, for example `rad.tensor.zstd`). Unknown features MUST be ignored by readers.
 
 #### Topic descriptors (selection hints)
-Each topic entry **SHALL** declare the typed-topic keys so consumers can filter without parsing payloads:
+Each topic entry **SHALL** declare the topic-identity keys so consumers can filter without parsing payloads:
 
 ```json
 {
@@ -622,7 +600,7 @@ Each topic entry **SHALL** declare the typed-topic keys so consumers can filter 
 ```
 
 **Requirements.**
-* `type`, `version`, and `qos_profile` MUST match the **Typed Topics Registry** (Section 4.7).
+* `type`, `version`, and `qos_profile` MUST match Topic Identity (Section 4.7).
 * A topic MUST NOT mix types; the `name` SHOULD follow the canonical path pattern (Section 4.7.1).
 * Readers MAY filter topics by `type`, `version`, and `qos_profile` using only manifest contents.
 
@@ -725,7 +703,7 @@ Example discovery announcements would therefore carry manifest URIs such as:
 }
 ```
 
-SpatialDDS 1.4 retains the lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+SpatialDDS 1.4 makes coverage declarations explicit: each coverage block uses a single reference frame, and manifests that need multiple frames treat coverage as approximate rather than geometrically exact. Publishers still name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes so clients can quickly judge relevance before loading heavier details.
 
 ### Frame Manifest Reference
 Producers SHOULD include a manifest hint that points to a frame manifest:
@@ -772,7 +750,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
     "issuer": "https://auth.acme.com"
   },
   "coverage": {
-    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
     "geohash": [
       "9q8y",
       "9q8z"
@@ -869,7 +847,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
     18
   ],
   "coverage": {
-    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
     "geohash": [
       "9q8y",
       "9q8z"
@@ -946,7 +924,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
     "local_tz": "America/New_York"
   },
   "coverage": {
-    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
     "geohash": [
       "dr5ru9",
       "dr5rua"
@@ -1069,7 +1047,7 @@ Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
-    "$comment": "If multiple coverage elements are present, they must bound the same resource. geohash (if used) is always earth-fixed.",
+    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
     "geohash": [
       "sv8wkf",
       "sv8wkg"
