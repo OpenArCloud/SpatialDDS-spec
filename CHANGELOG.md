@@ -10,7 +10,7 @@
 ## Version 1.4 - TBD
 
 - Initialized directories and stub documents for the 1.4 drafting cycle.
-- Added §4.7 “Typed Topics Registry (Normative)” to document registered topic types, QoS profile names, and required discovery metadata without altering on-wire framing.
+- Added §4.6 “Topic Identity & QoS (Normative)” combining registered topic types with named QoS profiles and required discovery metadata.
 
 ## Version 1.3 - 2025-10-03
 

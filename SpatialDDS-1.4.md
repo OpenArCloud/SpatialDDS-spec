@@ -16,8 +16,7 @@
 1. [Introduction](sections/v1.4/01-introduction.md)
 2. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
 3. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
-4.6. [QoS Profiles](sections/v1.4/04b-qos-profiles.md)
-4.7. [Typed Topics Registry (Normative)](sections/v1.4/04a-typed-topics-registry.md)
+4.6. [Topic Identity & QoS (Normative)](sections/v1.4/04-topic-identity-and-qos.md)
 4. [Conclusion](sections/v1.4/conclusion.md)
 5. [Future Directions](sections/v1.4/future-directions.md)
 
