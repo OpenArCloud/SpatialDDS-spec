@@ -23,7 +23,8 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+  // ROI bounds follow Sensing Common (NaN = open interval).
+  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Layout of the RAD tensor
   enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };

@@ -22,7 +22,8 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+  // ROI bounds follow Sensing Common (NaN = open interval).
+  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Device + data model
   enum LidarType    { SPINNING_2D=0, MULTI_BEAM_3D=1, SOLID_STATE=2 };

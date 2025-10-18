@@ -1744,13 +1744,25 @@ module spatial { module sensing { module common {
   typedef spatial::geometry::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
+  enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+
+  // Compact parametric axis definition
+  @appendable struct Linspace {
+    double start;   // first point
+    double step;    // spacing (may be negative for descending axes)
+    uint32 count;   // number of samples (>=1)
+  };
+
+  // Discriminated union: carries only one encoding on wire
+  @appendable union AxisSpec switch (AxisEncoding) {
+    case CENTERS:  sequence<double, 65535> centers;
+    case LINSPACE: Linspace lin;
+  };
+
   @appendable struct Axis {
-    string name;                       // "range","azimuth","elevation","doppler","time","channel"
-    string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // optional: bin centers
-    float start;
-    float step;
-    boolean has_centers;               // true => use centers[]; false => use start/step
+    string   name;    // "range","azimuth","elevation","doppler","time","channel"
+    string   unit;    // "m","deg","m/s","Hz","s",...
+    AxisSpec spec;    // encoding of the axis samples (centers or linspace)
   };
 
   @appendable struct ROI {
@@ -1839,6 +1851,32 @@ module spatial { module sensing { module common {
 }; }; };
 
 ```
+
+### Axis Encoding (Normative)
+
+The `Axis` struct now embeds a discriminated union so that only one encoding is transmitted on the wire.
+
+**Definition**
+```idl
+enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+@appendable struct Linspace { double start; double step; uint32 count; };
+@appendable union AxisSpec switch (AxisEncoding) {
+  case CENTERS:  sequence<double, 65535> centers;
+  case LINSPACE: Linspace lin;
+};
+@appendable struct Axis { string name; string unit; AxisSpec spec; };
+```
+
+**Semantics**
+* `CENTERS` — Explicit sample positions. The `centers` sequence provides all axis values as `double`.
+* `LINSPACE` — Uniform grid defined by `start + i * step` for `i ∈ [0, count‑1]`.
+* Negative `step` indicates descending axes.
+* `count` MUST be ≥ 1.
+* `step * (count – 1) + start` defines the final coordinate when `LINSPACE` is selected.
+
+**Rationale**
+
+Eliminates redundant fields and boolean guards; reduces bandwidth and parsing errors. The legacy `start`, `step`, `centers`, and `has_centers` fields are removed.
 
 ### **VIO / Inertial Extension**
 
@@ -1933,7 +1971,7 @@ module spatial {
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1961,7 +1999,8 @@ module spatial { module sensing { module vision {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+  // ROI bounds follow Sensing Common (NaN = open interval).
+  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Camera / imaging specifics
   enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
@@ -2216,7 +2255,7 @@ module spatial {
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -2243,7 +2282,8 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+  // ROI bounds follow Sensing Common (NaN = open interval).
+  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Layout of the RAD tensor
   enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
@@ -2305,7 +2345,7 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -2331,7 +2371,8 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds and axis semantics follow Sensing Common (NaN = open interval, has_centers selects the encoding).
+  // ROI bounds follow Sensing Common (NaN = open interval).
+  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Device + data model
   enum LidarType    { SPINNING_2D=0, MULTI_BEAM_3D=1, SOLID_STATE=2 };

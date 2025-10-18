@@ -12,13 +12,25 @@ module spatial { module sensing { module common {
   typedef spatial::geometry::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
+  enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+
+  // Compact parametric axis definition
+  @appendable struct Linspace {
+    double start;   // first point
+    double step;    // spacing (may be negative for descending axes)
+    uint32 count;   // number of samples (>=1)
+  };
+
+  // Discriminated union: carries only one encoding on wire
+  @appendable union AxisSpec switch (AxisEncoding) {
+    case CENTERS:  sequence<double, 65535> centers;
+    case LINSPACE: Linspace lin;
+  };
+
   @appendable struct Axis {
-    string name;                       // "range","azimuth","elevation","doppler","time","channel"
-    string unit;                       // "m","deg","m/s","Hz","s",...
-    sequence<float, 65535> centers;    // optional: bin centers
-    float start;
-    float step;
-    boolean has_centers;               // true => use centers[]; false => use start/step
+    string   name;    // "range","azimuth","elevation","doppler","time","channel"
+    string   unit;    // "m","deg","m/s","Hz","s",...
+    AxisSpec spec;    // encoding of the axis samples (centers or linspace)
   };
 
   @appendable struct ROI {

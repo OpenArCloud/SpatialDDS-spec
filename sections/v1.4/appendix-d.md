@@ -18,6 +18,27 @@
 {{include:idl/v1.4/common.idl}}
 ```
 
+#### Axis Encoding (Normative)
+
+The `Axis` struct embeds a discriminated union to ensure only one encoding is transmitted on the wire.
+
+```idl
+enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+@appendable struct Linspace { double start; double step; uint32 count; };
+@appendable union AxisSpec switch (AxisEncoding) {
+  case CENTERS:  sequence<double, 65535> centers;
+  case LINSPACE: Linspace lin;
+};
+@appendable struct Axis { string name; string unit; AxisSpec spec; };
+```
+
+* `CENTERS` — Explicit sample positions carried as `double` values.
+* `LINSPACE` — Uniform grid defined by `start + i * step` for `i ∈ [0, count‑1]`.
+* Negative `step` indicates descending axes.
+* `count` MUST be ≥ 1 and `step * (count – 1) + start` yields the last coordinate.
+
+The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to eliminate ambiguity.
+
 ### **VIO / Inertial Extension**
 
 *Raw IMU/mag samples, 9-DoF bundles, and fused state outputs.*
@@ -28,7 +49,7 @@
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
 
 ```idl
 {{include:idl/v1.4/vision.idl}}
@@ -52,7 +73,7 @@
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
 
 ```idl
 {{include:idl/v1.4/rad.idl}}
@@ -60,7 +81,7 @@
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open, has_centers selects the encoding).*
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
 
 ```idl
 {{include:idl/v1.4/lidar.idl}}
