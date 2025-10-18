@@ -3,8 +3,8 @@
 
 module spatial { module sensing { module rad {
 
-  // Profile identity (authoritative string for this profile/version)
-  const string PROFILE_ID = "spatial.sensing.rad/1.0";
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.rad/1.0";
 
   // Reuse Core + Sensing Common types
   typedef spatial::core::Time                      Time;

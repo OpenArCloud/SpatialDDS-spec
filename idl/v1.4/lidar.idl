@@ -3,7 +3,8 @@
 
 module spatial { module sensing { module lidar {
 
-  const string PROFILE_ID = "spatial.sensing.lidar/1.0";
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.lidar/1.0";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;

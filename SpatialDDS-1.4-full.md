@@ -1372,7 +1372,8 @@ module spatial {
 
 module spatial { module sensing { module vision {
 
-  const string PROFILE_ID = "spatial.sensing.vision/1.0";
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.vision/1.0";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
@@ -1656,8 +1657,8 @@ module spatial {
 
 module spatial { module sensing { module rad {
 
-  // Profile identity (authoritative string for this profile/version)
-  const string PROFILE_ID = "spatial.sensing.rad/1.0";
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.rad/1.0";
 
   // Reuse Core + Sensing Common types
   typedef spatial::core::Time                      Time;
@@ -1746,7 +1747,8 @@ module spatial { module sensing { module rad {
 
 module spatial { module sensing { module lidar {
 
-  const string PROFILE_ID = "spatial.sensing.lidar/1.0";
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.lidar/1.0";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
