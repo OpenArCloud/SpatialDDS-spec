@@ -1,47 +1,39 @@
-## 4.7 Topic Identity (Normative)
+## 4.7 Typed Topics Registry
 
-SpatialDDS unifies topic naming, discovery metadata, and QoS registration so implementations can interoperate without reinterpreting payload bytes.
+The Typed Topics Registry prevents overloading one "blob" channel for many kinds of media. Instead, every SpatialDDS stream declares a **type**, **version**, and **QoS profile**. No change to wire framing is required; only metadata differs.
 
-### Naming
-Topics follow the canonical path:
+## Naming Pattern
 ```
 spatialdds/<domain>/<stream>/<type>/<version>
 ```
+| Segment | Meaning | Example |
+|----------|----------|----------|
+| `<domain>` | Logical app domain | `perception` |
+| `<stream>` | Source or sensor id | `cam_front` |
+| `<type>` | Data category | `video_frame` |
+| `<version>` | Schema version | `v1` |
 
-* `<domain>` — logical application domain (for example `perception`, `mapping`, `ar`).
-* `<stream>` — producer-defined stream identifier (for example `cam_front`, `radar_1`).
-* `<type>` — registered topic type token.
-* `<version>` — semantic guard such as `v1`.
+## Registered Type Values (v1)
+| Type | Typical Payload | Notes |
+|------|------------------|-------|
+| `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Usually reliable, large chunks |
+| `video_frame` | Encoded video/image | High-rate, best-effort or reliable |
+| `radar_tensor` | N-D float/int tensor | Fixed layout radar data |
+| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
+| `desc_array` | Feature descriptor sets | Batches of vectors or embeddings |
 
-Example: `spatialdds/perception/cam_front/video_frame/v1`.
+### Example (topic URI + metadata)
+```json
+{
+  "name": "spatialdds/perception/radar_1/radar_tensor/v1",
+  "type": "radar_tensor",
+  "version": "v1",
+  "qos_profile": "RADAR_RT"
+}
+```
 
-### Metadata
-Each advertised topic **MUST** include, in discovery messages and manifests:
-
-* `type`
-* `version`
-* `qos_profile`
-
-These keys allow consumers to evaluate compatibility without opening payloads.
-
-### QoS
-SpatialDDS defines a compact catalog of named QoS profiles aligned to typical sensor and mapping workloads (for example `VIDEO_LIVE`, `GEOM_TILE`, `RADAR_RT`).
-Profiles describe **relative** latency/reliability trade-offs and are cataloged in Appendix B. Implementations map the names onto their transport or DDS configuration.
-
-### Registered Types (Informative extract)
-
-| Type token       | Typical payload                                  |
-|------------------|---------------------------------------------------|
-| `geometry_tile`  | 3D tiles, GLB, 3D Tiles content                   |
-| `video_frame`    | Encoded frames (AV1/H.264/JPEG/etc.)              |
-| `radar_tensor`   | N-D tensors, fixed/float layouts                  |
-| `seg_mask`       | Binary/RLE/PNG segmentation masks                 |
-| `desc_array`     | Feature descriptor batches (e.g., ORB, NetVLAD)   |
-
-Extensions may register additional types using the same pattern.
-
-### Conformance
-
-* A topic advertises exactly one registered `type` token.
-* Producers keep `type`, `version`, and `qos_profile` consistent across discovery, manifests, and live transport.
-* Brokers and routers MAY use `(topic, qos_profile)` to segment traffic but no on-wire framing changes are introduced.
+## Implementation Tips
+* Each topic advertises its `type`, `version`, and `qos_profile` during discovery.  
+* Consumers can filter or auto-subscribe by type without parsing payloads.  
+* Brokers should route streams by `(topic, stream_id, qos_profile)` to avoid blocking between types.  
+* New data types can be registered without wire changes; add to this registry with brief documentation.
