@@ -1,6 +1,6 @@
 ## **7. Example Manifests**
 
-While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 continues the convention introduced in v1.3: manifest pointers are canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
+While SpatialDDS keeps its on-bus messages small and generic, richer details about services, maps, and experiences are provided out-of-band through manifests. A manifest is a lightweight JSON document referenced by a `manifest_uri` in a discovery announce. SpatialDDS 1.4 standardizes canonical `spatialdds://` URIs (e.g., `spatialdds://acme.services/sf/service/vps-main`) that resolve using the rules described in Section 6 (SpatialDDS URIs), guaranteeing stable identifiers even when manifests are hosted on rotating infrastructure. Manifests let providers describe capabilities, formats, coverage shapes, entry points, and assets without bloating the real-time data stream. The examples here show four common cases: a Visual Positioning Service (VPS) manifest that defines request/response topics and limits, a Mapping Service manifest that specifies tiling scheme and encodings, a Content/Experience manifest that lists anchors, tiles, and media for AR experiences, and an Anchors manifest that enumerates localization anchors with associated assets. Together they illustrate how manifests complement the DDS data plane by carrying descriptive metadata and policy.
 
 ### Manifest Versioning (Normative)
 
@@ -58,7 +58,7 @@ Manifests **SHOULD** include a `capabilities` block that advertises supported ID
 * `features` is an **optional** list of vendor- or spec-defined boolean capabilities (namespaced strings recommended, for example `rad.tensor.zstd`). Unknown features MUST be ignored by readers.
 
 #### Topic descriptors (selection hints)
-Each topic entry **SHALL** declare the typed-topic keys so consumers can filter without parsing payloads:
+Each topic entry **SHALL** declare the topic-identity keys so consumers can filter without parsing payloads:
 
 ```json
 {
@@ -80,7 +80,7 @@ Each topic entry **SHALL** declare the typed-topic keys so consumers can filter 
 ```
 
 **Requirements.**
-* `type`, `version`, and `qos_profile` MUST match the **Typed Topics Registry** (Section 4.7).
+* `type`, `version`, and `qos_profile` MUST match Topic Identity (Section 4.7).
 * A topic MUST NOT mix types; the `name` SHOULD follow the canonical path pattern (Section 4.7.1).
 * Readers MAY filter topics by `type`, `version`, and `qos_profile` using only manifest contents.
 
@@ -183,7 +183,7 @@ Example discovery announcements would therefore carry manifest URIs such as:
 }
 ```
 
-SpatialDDS 1.4 retains the lighter way to explain where a service operates. Publishers can name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes. Those hints help clients decide, at a glance, whether a service overlaps the space they care about before loading heavier details.
+SpatialDDS 1.4 makes coverage declarations explicit: each coverage block uses a single reference frame, and manifests that need multiple frames treat coverage as approximate rather than geometrically exact. Publishers still name the frame for their coverage, add a few transforms back to `"earth-fixed"`, and optionally list coarse `coverage.volumes[]` boxes so clients can quickly judge relevance before loading heavier details.
 
 Discovery mirrors that upgrade with optional `CoverageVolume` hints on announces and an opt-in `CoverageQuery` message for active volume requests. In v1.4 the query now carries a caller-supplied `query_id` plus a `reply_topic` so responders can correlate answers and route them to the right pub/sub path, and a new paged `CoverageResponse` mirrors the `query_id` when returning matching `ContentAnnounce` records. Implementations that ignore the active-query fields continue to interoperate.
 

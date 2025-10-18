@@ -4,17 +4,12 @@ The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatia
 
 ### **2.0 IDL Profile Versioning & Negotiation (Normative)**
 
-**Version model.** Each profile is `name@MAJOR.MINOR`. Breaking changes bump MAJOR; additive changes bump MINOR.
+SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
-**Advertisement (wire).** Participants publish `disco::ServiceAnnounce.caps.supported_profiles`, where each row is `{ name, major, min_minor, max_minor, preferred }`.
+* **MAJOR** increments for breaking schema or wire changes.
+* **MINOR** increments for additive, compatible changes.
 
-**Selection rule (Highest-Compatible-Minor).** For each profile *name*:
-1. Intersect supported **MAJOR** sets. If none → no match.
-2. Within the common MAJOR, choose the **highest** common **MINOR** (HCM).
-3. If multiple rows per side cover the same MAJOR, union their minor ranges before step 2.
-4. Use `preferred` only to break ties **within a common MAJOR**.
-
-**Identity & observability.** Implementations SHOULD surface the negotiated `{ name, major, minor }` in diagnostics and topic metadata. Discovery queries MAY filter using `name@MAJOR.*` or `name@MAJOR.MINOR`.
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **2.1 Core SpatialDDS**
 
@@ -49,26 +44,26 @@ Both bindings share a common message model. A **query** identifies the resource 
 **Purpose.** Allow dynamic, runtime advertisement of wire capabilities and topic metadata so peers can negotiate versions and select streams without prior manifests.
 
 **Announce fields.**
-* `caps.supported_profiles` — profile ranges per §3 (Highest-Compatible-Minor within a common MAJOR).
+* `caps.supported_profiles` — profile ranges per §2.0 (Highest-Compatible-Minor within a common MAJOR).
 * `caps.preferred_profiles` — optional ordered hints to break ties **within a common MAJOR**.
 * `caps.features` — optional namespaced feature flags; unknown flags MUST be ignored.
 * `topics[]` — list of topics with `{ name, type, version, qos_profile }`; optional `target_rate_hz`, `max_chunk_bytes`.
 
 **Producer requirements.**
 * Announces MUST include `caps.supported_profiles`.
-* Each advertised topic MUST declare `type`, `version`, and `qos_profile` per Typed Topics Registry (§4.7).
+* Each advertised topic MUST declare `type`, `version`, and `qos_profile` per Topic Identity (§4.7).
 * Producers SHOULD re-announce if capabilities or topics change.
 
 **Consumer behavior.**
-1. Compute the negotiated profile minor via HCM (per §3).
+1. Compute the negotiated profile minor via HCM (per §2.0).
 2. Filter `topics[]` by `type`, `version`, and `qos_profile`.
 3. Optionally require feature flags before binding.
 4. On updated announces, re-evaluate and (if needed) rebind streams.
 
 **Queries.** Discovery queries MAY filter on:
 * `profile=name@MAJOR.*` or `name@MAJOR.MINOR` (version)
-* `type` in the typed-topics registry (§4.7.2)
-* `qos_profile` in the QoS registry (§4.7.3)
+* `type` tokens defined in Topic Identity (§4.7)
+* `qos_profile` names cataloged in Appendix B
 
 **Diagnostics.** On mismatch or failure to bind, implementations SHOULD emit a reason, e.g., `NO_COMMON_MAJOR(name)`, `NEGOTIATION_CHANGED(name)`.
 
@@ -167,13 +162,10 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Common Extension**: Shared enums, region-of-interest requests, frame metadata, and codec descriptors reused by the specialized sensing profiles.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadDetectionSet`/`RadTensor`/`beam_params` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
-  * **Vision Profile**: Camera intrinsics, encoded frames, and optional keypoint/track outputs for vision sensors.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
-  * **Radar Profile**: Radar tensor metadata, frames, ROI controls, and derived detections for radar sensors.
-  * **Lidar Profile**: Sensor metadata, compressed point cloud frames, and optional detections for lidar payloads.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
 * **Provisional Extensions (Optional)**
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
@@ -195,5 +187,5 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.vio/1.0
 - spatial.semantics/1.0
 
-The **Sensing Common** module deserves special mention: it standardizes ROI negotiation, shared enums for codecs and payload kinds, reusable frame metadata, and quality reporting structures. Radar, lidar, vision, and other sensing extensions build on these types so that multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently without redefining the same scaffolding in each profile.
+The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
