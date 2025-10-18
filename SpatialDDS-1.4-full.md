@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
+
 ## **SpatialDDS: A Protocol for Real-World Spatial Computing**
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
@@ -128,7 +131,7 @@ SpatialDDS URIs give every anchor, service, and content bundle a stable handle t
 
 The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatial data over DDS. It is organized into complementary profiles: **Core**, which provides the backbone for pose graphs, geometry, and geo-anchoring; **Discovery**, which enables lightweight announcements of services, coverage, anchors, and content; and **Anchors**, which adds support for publishing and updating sets of durable world-locked anchors. Together, these profiles give devices, services, and applications a common language for building, sharing, and aligning live world models—while staying codec-agnostic, forward-compatible, and simple enough to extend for domains such as robotics, AR/XR, IoT, and smart cities.
 
-### **2.0 IDL Profile Versioning & Negotiation (Normative)**
+### **2.1 IDL Profile Versioning & Negotiation (Normative)**
 
 SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
@@ -137,7 +140,7 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
-### **2.1 Core SpatialDDS**
+### **2.2 Core SpatialDDS**
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
@@ -157,7 +160,7 @@ FrameRef {
 - **Graph rule.** The frame graph MUST remain a DAG. Each transform declares `parent_ref` and `child_ref`; consumers MUST detect cycles and reject invalid graphs.
 - **Manifests.** Producers SHOULD publish a **Frame Manifest** that enumerates `{uuid, fqn, parent_uuid}` tuples and advertise its location via discovery/manifests.
 
-### **2.2 Discovery**
+### **2.3 Discovery**
 
 Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Think of it as a built-in directory that rides the same bus: nodes announce, others filter and subscribe.
 
@@ -222,7 +225,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
-* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.2.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * Queries MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -243,7 +246,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 * Topic names follow `spatialdds/<domain>/<stream>/<type>/<version>`; filter by `type` and `qos_profile` instead of parsing payloads.
 * Negotiation is automatic once peers see each other’s `supported_profiles`; emit diagnostics like `NO_COMMON_MAJOR(name)` when selection fails.
 
-#### **2.2.1 Topic Identity & QoS (Normative)**
+#### **2.3.1 Topic Identity & QoS (Normative)**
 
 SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**. Together these define both *what* a stream carries and *how* it behaves on the wire.
 
@@ -321,11 +324,11 @@ Consumers use these three keys to match and filter streams without inspecting pa
 #### Summary
 Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
-### **2.3 Anchors**
+### **2.4 Anchors**
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
 
-### **2.4 Canonical Ordering & Identity (Normative)**
+### **2.5 Canonical Ordering & Identity (Normative)**
 
 This section applies to any message that includes the trio: `Time stamp`, `string source_id`, and `uint64 seq`.
 
@@ -360,7 +363,7 @@ This section applies to any message that includes the trio: `Time stamp`, `strin
 * These rules are additive to transport-level ordering; they define application-level determinism independent of QoS.
 * Profiles MAY further refine recovery behavior on gaps (e.g., retries, hole-filling) without altering this canonical ordering.
 
-### **2.5 Profiles Summary**
+### **2.6 Profiles Summary**
 
 The complete SpatialDDS IDL bundle is organized into the following profiles:
 
