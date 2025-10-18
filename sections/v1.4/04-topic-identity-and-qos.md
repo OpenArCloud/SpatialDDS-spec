@@ -1,8 +1,8 @@
-## 4.6 Topic Identity & QoS (Normative)
+### **2.2.1 Topic Identity & QoS (Normative)**
 
 SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**.  Together these define both *what* a stream carries and *how* it behaves on the wire.
 
-### Topic Naming Pattern
+#### Topic Naming Pattern
 
 Each topic follows this pattern:
 ```
@@ -15,7 +15,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `<type>` | Registered data type | `video_frame` |
 | `<version>` | Schema or message version | `v1` |
 
-#### Example
+##### Example
 ```json
 {
   "name": "spatialdds/perception/radar_1/radar_tensor/v1",
@@ -25,7 +25,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 }
 ```
 
-### Registered Types (v1)
+#### Registered Types (v1)
 
 | Type | Typical Payload | Notes |
 |------|------------------|-------|
@@ -37,7 +37,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 
 These registered types ensure consistent topic semantics without altering wire framing.  New types can be registered additively through this table or extensions.
 
-### Standard QoS Profiles (v1)
+#### Standard QoS Profiles (v1)
 
 QoS profiles define delivery guarantees and timing expectations for each topic type.
 
@@ -50,14 +50,14 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
 
-#### Notes
+##### Notes
 
 * Each topic advertises its `qos_profile` during discovery. 
 * Profiles capture trade-offs between latency, reliability, and throughput. 
 * Implementations may tune low-level DDS settings, but the profile name is canonical. 
 * Mixing unrelated data (e.g., radar + video) in a single QoS lane is discouraged.
 
-### Discovery and Manifest Integration
+#### Discovery and Manifest Integration
 
 Every `Announce.topics[]` entry and manifest topic reference SHALL include:
 - `type` — one of the registered type values  
@@ -66,7 +66,7 @@ Every `Announce.topics[]` entry and manifest topic reference SHALL include:
 
 Consumers use these three keys to match and filter streams without inspecting payload bytes.  Brokers and routers SHOULD isolate lanes by `(topic, stream_id, qos_profile)` to avoid head-of-line blocking.
 
-### Implementation Guidance (Non-Normative)
+#### Implementation Guidance (Non-Normative)
 
 * No change to on-wire framing — this metadata lives at the discovery layer.  
 * Named QoS profiles simplify cross-vendor interoperability and diagnostics.  

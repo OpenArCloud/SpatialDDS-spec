@@ -10,7 +10,7 @@
 ## Version 1.4 - TBD
 
 - Initialized directories and stub documents for the 1.4 drafting cycle.
-- Added §4.6 “Topic Identity & QoS (Normative)” combining registered topic types with named QoS profiles and required discovery metadata.
+- Added §2.2.1 “Topic Identity & QoS (Normative)” combining registered topic types with named QoS profiles and required discovery metadata.
 
 ## Version 1.3 - 2025-10-03
 
