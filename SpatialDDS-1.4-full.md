@@ -142,7 +142,20 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
-### **2.2 Core SpatialDDS**
+### **2.2 Optional Fields (Normative)**
+
+SpatialDDS encodes optionality explicitly. To avoid ambiguous parsing and sentinel misuse, producers and consumers SHALL follow these rules across every profile:
+
+* **Presence flags** — For any scalar, struct, or array field that may be absent at runtime, producers SHALL introduce a boolean presence flag immediately before the field (`boolean has_field; Type field;`). Consumers MUST ignore the field when the flag is `false`.
+* **Discriminated unions** — When exactly one of multiple alternatives may appear on the wire, model the choice as a discriminated union (e.g., `CovMatrix`). Do not overload presence flags for mutual exclusivity.
+* **@appendable omission is only for evolution** — Schema omission via `@appendable` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
+* **No NaN sentinels** — Floating-point NaN (or other sentinel values) MUST NOT be used to indicate absence. Presence flags govern field validity.
+
+These conventions apply globally (Core, Discovery, Anchors, and all Sensing extensions) and supersede earlier guidance that relied on NaN or implicit omission semantics.
+
+> **Clarification:** `@appendable` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
+
+### **2.3 Core SpatialDDS**
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
@@ -151,7 +164,7 @@ The Core profile defines the essential building blocks for representing and shar
 SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.  
 See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
 
-### **2.3 Discovery**
+### **2.4 Discovery**
 
 Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Think of it as a built-in directory that rides the same bus: nodes announce, others filter and subscribe.
 
@@ -216,7 +229,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
-* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.4.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -237,7 +250,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 * Topic names follow `spatialdds/<domain>/<stream>/<type>/<version>`; filter by `type` and `qos_profile` instead of parsing payloads.
 * Negotiation is automatic once peers see each other’s `supported_profiles`; emit diagnostics like `NO_COMMON_MAJOR(name)` when selection fails.
 
-#### **2.3.1 Topic Identity & QoS (Normative)**
+#### **2.4.1 Topic Identity & QoS (Normative)**
 
 SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**. Together these define both *what* a stream carries and *how* it behaves on the wire.
 
@@ -315,11 +328,11 @@ Consumers use these three keys to match and filter streams without inspecting pa
 #### Summary
 Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
-### **2.4 Anchors**
+### **2.5 Anchors**
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
 
-### **2.5 Canonical Ordering & Identity (Normative)**
+### **2.6 Canonical Ordering & Identity (Normative)**
 
 This section applies to any message that includes the trio: `Time stamp`, `string source_id`, and `uint64 seq`.
 
@@ -743,7 +756,8 @@ module spatial {
 
     @appendable struct TileMeta {
       @key TileKey key;              // unique tile key
-      string tile_id_compat;         // optional human-readable id
+      boolean has_tile_id_compat;
+      string  tile_id_compat;        // optional human-readable id
       double min_xyz[3];             // AABB min (local frame)
       double max_xyz[3];             // AABB max (local frame)
       uint32 lod;                    // may mirror key.level
@@ -752,8 +766,10 @@ module spatial {
       string checksum;               // checksum of composed tile
       sequence<string, 32> blob_ids; // blobs composing this tile
       // optional geo hints
-      double centroid_llh[3];        // lat,lon,alt (deg,deg,m) or NaN
-      double radius_m;               // rough extent (m) or NaN
+      boolean has_centroid_llh;
+      double  centroid_llh[3];       // lat,lon,alt (deg,deg,m)
+      boolean has_radius_m;
+      double  radius_m;              // rough extent (m)
       string schema_version;         // MUST be "spatial.core/1.0"
     };
 
@@ -796,7 +812,8 @@ module spatial {
       string map_id;
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
-      double  cov[36];         // 6x6 covariance (row-major); NaN if unknown
+      boolean has_cov;
+      double  cov[36];         // 6x6 covariance (row-major)
       Time    stamp;
       FrameRef frame_ref;      // e.g., "map"
       string  source_id;
@@ -863,7 +880,8 @@ module spatial {
       FrameRef child_ref;       // local frame ("map")
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
-      double  cov[36];          // 6x6 covariance; NaN if unknown
+      boolean has_cov;
+      double  cov[36];          // 6x6 covariance
     };
 
     // ---------- Snapshot / Catch-up ----------
@@ -940,7 +958,8 @@ module spatial {
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
       FrameRef frame_ref;       // coordinate frame for this element (e.g., "earth-fixed", "map")
-      string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
+      boolean has_crs;
+      string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
       boolean has_bbox;
@@ -977,32 +996,34 @@ module spatial {
       double q_xyzw[4];         // GeoPose order [x,y,z,w]
     };
 
-      @appendable struct ServiceAnnounce {
-        @key string service_id;
-        string name;
-        ServiceKind kind;
-        string version;
-        string org;
-        sequence<string,16> rx_topics;
-        sequence<string,16> tx_topics;
-        sequence<KV,32> hints;
-        // New: wire-level capability advertisement for version negotiation.
-        Capabilities caps;
-        sequence<CoverageElement,16> coverage;
-        FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
-        Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
-        sequence<Transform,8> transforms;
-        SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
-        string auth_hint;
-        Time stamp;
-        uint32 ttl_sec;
+    @appendable struct ServiceAnnounce {
+      @key string service_id;
+      string name;
+      ServiceKind kind;
+      string version;
+      string org;
+      sequence<string,16> rx_topics;
+      sequence<string,16> tx_topics;
+      sequence<KV,32> hints;
+      // New: wire-level capability advertisement for version negotiation.
+      Capabilities caps;
+      sequence<CoverageElement,16> coverage;
+      FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;       // optional evaluation time for transforming coverage elements
+      sequence<Transform,8> transforms;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
+      string auth_hint;
+      Time stamp;
+      uint32 ttl_sec;
     };
 
     @appendable struct CoverageHint {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
-      Time coverage_eval_time;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
       sequence<Transform,8> transforms;
       Time stamp;
       uint32 ttl_sec;
@@ -1013,7 +1034,8 @@ module spatial {
       @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       FrameRef coverage_frame_ref;
-      Time coverage_eval_time;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
       // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.0\""
       string expr;
@@ -1042,7 +1064,8 @@ module spatial {
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
-      Time coverage_eval_time;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
       sequence<Transform,8> transforms;
       Time available_from;
       Time available_until;
@@ -1198,13 +1221,33 @@ module spatial { module sensing { module common {
   };
 
   @appendable struct ROI {
-    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as an open interval (no clipping).
-    float range_min; float range_max;
-    float az_min;    float az_max;
-    float el_min;    float el_max;
-    float dop_min;   float dop_max;
-    // Image-plane ROI for vision (pixels); -1 if unused
-    int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+    // Range bounds (meters). When has_range == false, consumers MUST ignore range_min/range_max.
+    boolean has_range;
+    float   range_min;
+    float   range_max;
+
+    // Azimuth bounds (degrees). When has_azimuth == false, azimuth bounds are unspecified.
+    boolean has_azimuth;
+    float   az_min;
+    float   az_max;
+
+    // Elevation bounds (degrees). When has_elevation == false, elevation bounds are unspecified.
+    boolean has_elevation;
+    float   el_min;
+    float   el_max;
+
+    // Doppler bounds (m/s). When has_doppler == false, doppler_min/doppler_max are unspecified.
+    boolean has_doppler;
+    float   dop_min;
+    float   dop_max;
+
+    // Image-plane ROI for vision (pixels). When has_image_roi == false, u/v bounds are unspecified.
+    boolean has_image_roi;
+    int32   u_min;
+    int32   v_min;
+    int32   u_max;
+    int32   v_max;
+
     // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
     boolean global;
   };
@@ -1244,9 +1287,9 @@ module spatial { module sensing { module common {
     uint64 frame_seq;
     Time   t_start;
     Time   t_end;
-    // optional sensor pose at acquisition (moving platforms)
-    PoseSE3 sensor_pose;
+    // Optional sensor pose at acquisition (moving platforms)
     boolean has_sensor_pose;
+    PoseSE3 sensor_pose;
     // data pointers: heavy bytes referenced as blobs
     sequence<BlobRef, SZ_SMALL> blobs;
   };
@@ -1255,8 +1298,9 @@ module spatial { module sensing { module common {
   enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
 
   @appendable struct FrameQuality {
-    float snr_db;            // NaN if unknown
-    float percent_valid;     // 0..100
+    boolean has_snr_db;
+    float   snr_db;          // valid when has_snr_db == true
+    float   percent_valid;   // 0..100
     Health health;
     string note;             // short diagnostic
   };
@@ -1392,13 +1436,19 @@ module spatial {
       boolean has_position;
       double t[3];                   // meters, in frame_ref
 
-      double gravity[3];             // m/s^2 (NaN if unknown)
-      double lin_accel[3];           // m/s^2 (NaN if unknown)
-      double gyro_bias[3];           // rad/s (NaN if unknown)
-      double accel_bias[3];          // m/s^2 (NaN if unknown)
+      boolean has_gravity;
+      double  gravity[3];            // m/s^2
+      boolean has_lin_accel;
+      double  lin_accel[3];          // m/s^2
+      boolean has_gyro_bias;
+      double  gyro_bias[3];          // rad/s
+      boolean has_accel_bias;
+      double  accel_bias[3];         // m/s^2
 
-      double cov_orient[9];          // 3x3 covariance (NaN if unknown)
-      double cov_pos[9];             // 3x3 covariance (NaN if unknown)
+      boolean has_cov_orient;
+      double  cov_orient[9];         // 3x3 covariance
+      boolean has_cov_pos;
+      double  cov_pos[9];            // 3x3 covariance
 
       Time   stamp;
       FrameRef frame_ref;
@@ -1414,7 +1464,7 @@ module spatial {
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1443,7 +1493,7 @@ module spatial { module sensing { module vision {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common (NaN = open interval).
+  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Camera / imaging specifics
@@ -1492,7 +1542,8 @@ module spatial { module sensing { module vision {
     PixFormat pix;
     ColorSpace color;
 
-    float line_readout_us;              // rolling-shutter timing (0 if unknown)
+    boolean has_line_readout_us;
+    float   line_readout_us;            // valid when has_line_readout_us == true
     boolean rectified;                  // true if pre-rectified to pinhole
 
     FrameQuality quality;               // shared health/SNR notes
@@ -1590,7 +1641,8 @@ module spatial {
       @key string lm_id;
       string map_id;
       double p[3];
-      double cov[9];                       // 3x3 pos covariance; NaN if unknown
+      boolean has_cov;
+      double  cov[9];                      // 3x3 pos covariance (row-major)
       sequence<uint8, 4096> desc;          // descriptor bytes
       string desc_type;
       Time   stamp;
@@ -1605,7 +1657,8 @@ module spatial {
 
     @appendable struct Tracklet {
       @key string track_id;
-      string lm_id;                        // optional link to Landmark
+      boolean has_lm_id;                   // true when lm_id is populated
+      string  lm_id;                       // link to Landmark when present
       sequence<TrackObs, 64> obs;          // ≤64 obs
       string source_id;
       Time   stamp;
@@ -1671,12 +1724,14 @@ module spatial {
       double size[3];            // width,height,depth (m)
       double q[4];               // orientation (x,y,z,w) in GeoPose order
 
-      // Uncertainty (optional; NaN if unknown)
-      double cov_pos[9];         // 3x3 position covariance
-      double cov_rot[9];         // 3x3 rotation covariance
+      // Uncertainty (optional)
+      boolean has_covariance;
+      double  cov_pos[9];        // 3x3 position covariance (row-major)
+      double  cov_rot[9];        // 3x3 rotation covariance (row-major)
 
       // Optional instance tracking
-      string track_id;
+      boolean has_track_id;
+      string  track_id;
 
       Time   stamp;
       string source_id;
@@ -1699,7 +1754,7 @@ module spatial {
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1726,7 +1781,7 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common (NaN = open interval).
+  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Layout of the RAD tensor
@@ -1745,8 +1800,8 @@ module spatial { module sensing { module rad {
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
     Codec       codec;                     // LZ4, ZSTD, FP8Q, AE_V1, ...
-    float       quant_scale;               // valid if has_quant_scale
     boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
     uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
   };
 
@@ -1759,8 +1814,8 @@ module spatial { module sensing { module rad {
     PayloadKind payload_kind;              // may override defaults
     Codec       codec;                     // may override defaults
     SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF16 → MAG_F16)
-    float       quant_scale;               // valid if has_quant_scale
     boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
 
     FrameQuality quality;                  // SNR/valid%/health note
     string proc_chain;                     // e.g., "FFT3D->hann->OS-CFAR"
@@ -1769,7 +1824,8 @@ module spatial { module sensing { module rad {
   // Lightweight derivative for fast fusion/tracking (optional)
   @appendable struct RadDetection {
     double xyz_m[3];       // Cartesian point in base.frame_ref
-    double v_r_mps;        // radial velocity (optional; NaN if unknown)
+    boolean has_v_r_mps;
+    double  v_r_mps;       // valid when has_v_r_mps == true
     float  intensity;      // reflectivity/magnitude
     float  quality;        // 0..1
   };
@@ -1789,7 +1845,7 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common (NaN=open; axes use the CENTERS/LINSPACE union encoding).*
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1816,7 +1872,7 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common (NaN = open interval).
+  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Device + data model
@@ -1852,9 +1908,12 @@ module spatial { module sensing { module lidar {
     PointLayout   layout;             // may override meta
 
     // Optional quick hints (for health/telemetry)
-    float average_range_m;
-    float percent_valid;              // 0..100
-    FrameQuality quality;             // shared SNR/health note
+    boolean      has_average_range_m;
+    float        average_range_m;     // valid when has_average_range_m == true
+    boolean      has_percent_valid;
+    float        percent_valid;       // valid when has_percent_valid == true (0..100)
+    boolean      has_quality;
+    FrameQuality quality;             // valid when has_quality == true
   };
 
   // Lightweight derivative for immediate fusion/tracking (optional)
@@ -1900,7 +1959,8 @@ module spatial {
       @key string node_id;      // same id as core::Node
       PoseSE3 pose;             // local pose in map frame
       GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
-      double  cov[36];          // 6x6 covariance in local frame; NaN if unknown
+      boolean has_cov;
+      double  cov[36];          // 6x6 covariance in local frame
       Time    stamp;
       FrameRef frame_ref;       // local frame
       string  source_id;

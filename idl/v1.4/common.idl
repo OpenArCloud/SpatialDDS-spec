@@ -42,13 +42,33 @@ module spatial { module sensing { module common {
   };
 
   @appendable struct ROI {
-    // Unset ROI bounds MUST be encoded as NaN; consumers MUST treat NaN as an open interval (no clipping).
-    float range_min; float range_max;
-    float az_min;    float az_max;
-    float el_min;    float el_max;
-    float dop_min;   float dop_max;
-    // Image-plane ROI for vision (pixels); -1 if unused
-    int32 u_min; int32 v_min; int32 u_max; int32 v_max; // -1 if unused
+    // Range bounds (meters). When has_range == false, consumers MUST ignore range_min/range_max.
+    boolean has_range;
+    float   range_min;
+    float   range_max;
+
+    // Azimuth bounds (degrees). When has_azimuth == false, azimuth bounds are unspecified.
+    boolean has_azimuth;
+    float   az_min;
+    float   az_max;
+
+    // Elevation bounds (degrees). When has_elevation == false, elevation bounds are unspecified.
+    boolean has_elevation;
+    float   el_min;
+    float   el_max;
+
+    // Doppler bounds (m/s). When has_doppler == false, doppler_min/doppler_max are unspecified.
+    boolean has_doppler;
+    float   dop_min;
+    float   dop_max;
+
+    // Image-plane ROI for vision (pixels). When has_image_roi == false, u/v bounds are unspecified.
+    boolean has_image_roi;
+    int32   u_min;
+    int32   v_min;
+    int32   u_max;
+    int32   v_max;
+
     // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
     boolean global;
   };
@@ -88,9 +108,9 @@ module spatial { module sensing { module common {
     uint64 frame_seq;
     Time   t_start;
     Time   t_end;
-    // optional sensor pose at acquisition (moving platforms)
-    PoseSE3 sensor_pose;
+    // Optional sensor pose at acquisition (moving platforms)
     boolean has_sensor_pose;
+    PoseSE3 sensor_pose;
     // data pointers: heavy bytes referenced as blobs
     sequence<BlobRef, SZ_SMALL> blobs;
   };
@@ -99,8 +119,9 @@ module spatial { module sensing { module common {
   enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
 
   @appendable struct FrameQuality {
-    float snr_db;            // NaN if unknown
-    float percent_valid;     // 0..100
+    boolean has_snr_db;
+    float   snr_db;          // valid when has_snr_db == true
+    float   percent_valid;   // 0..100
     Health health;
     string note;             // short diagnostic
   };

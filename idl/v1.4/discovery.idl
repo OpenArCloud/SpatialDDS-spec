@@ -95,7 +95,8 @@ module spatial {
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
       FrameRef frame_ref;       // coordinate frame for this element (e.g., "earth-fixed", "map")
-      string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
+      boolean has_crs;
+      string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
       boolean has_bbox;
@@ -146,7 +147,8 @@ module spatial {
       sequence<TopicMeta,128> topics;    // topic list with typed-topic metadata
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
-      Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;       // optional evaluation time for transforming coverage elements
       sequence<Transform,8> transforms;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
       string auth_hint;
@@ -158,7 +160,8 @@ module spatial {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
-      Time coverage_eval_time;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
       sequence<Transform,8> transforms;
       Time stamp;
       uint32 ttl_sec;
@@ -169,7 +172,8 @@ module spatial {
       @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       FrameRef coverage_frame_ref;
-      Time coverage_eval_time;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
       // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.0\""
       string expr;
@@ -198,7 +202,8 @@ module spatial {
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
-      Time coverage_eval_time;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
       sequence<Transform,8> transforms;
       Time available_from;
       Time available_until;

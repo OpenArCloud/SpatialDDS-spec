@@ -65,13 +65,19 @@ module spatial {
       boolean has_position;
       double t[3];                   // meters, in frame_ref
 
-      double gravity[3];             // m/s^2 (NaN if unknown)
-      double lin_accel[3];           // m/s^2 (NaN if unknown)
-      double gyro_bias[3];           // rad/s (NaN if unknown)
-      double accel_bias[3];          // m/s^2 (NaN if unknown)
+      boolean has_gravity;
+      double  gravity[3];            // m/s^2
+      boolean has_lin_accel;
+      double  lin_accel[3];          // m/s^2
+      boolean has_gyro_bias;
+      double  gyro_bias[3];          // rad/s
+      boolean has_accel_bias;
+      double  accel_bias[3];         // m/s^2
 
-      double cov_orient[9];          // 3x3 covariance (NaN if unknown)
-      double cov_pos[9];             // 3x3 covariance (NaN if unknown)
+      boolean has_cov_orient;
+      double  cov_orient[9];         // 3x3 covariance
+      boolean has_cov_pos;
+      double  cov_pos[9];            // 3x3 covariance
 
       Time   stamp;
       FrameRef frame_ref;

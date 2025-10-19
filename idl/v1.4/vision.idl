@@ -23,7 +23,7 @@ module spatial { module sensing { module vision {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common (NaN = open interval).
+  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Camera / imaging specifics
@@ -72,7 +72,8 @@ module spatial { module sensing { module vision {
     PixFormat pix;
     ColorSpace color;
 
-    float line_readout_us;              // rolling-shutter timing (0 if unknown)
+    boolean has_line_readout_us;
+    float   line_readout_us;            // valid when has_line_readout_us == true
     boolean rectified;                  // true if pre-rectified to pinhole
 
     FrameQuality quality;               // shared health/SNR notes

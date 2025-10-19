@@ -48,12 +48,14 @@ module spatial {
       double size[3];            // width,height,depth (m)
       double q[4];               // orientation (x,y,z,w) in GeoPose order
 
-      // Uncertainty (optional; NaN if unknown)
-      double cov_pos[9];         // 3x3 position covariance
-      double cov_rot[9];         // 3x3 rotation covariance
+      // Uncertainty (optional)
+      boolean has_covariance;
+      double  cov_pos[9];        // 3x3 position covariance (row-major)
+      double  cov_rot[9];        // 3x3 rotation covariance (row-major)
 
       // Optional instance tracking
-      string track_id;
+      boolean has_track_id;
+      string  track_id;
 
       Time   stamp;
       string source_id;
