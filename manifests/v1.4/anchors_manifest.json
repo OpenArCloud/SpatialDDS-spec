@@ -5,6 +5,10 @@
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
     "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "frame_ref": {
+      "fqn": "earth-fixed",
+      "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+    },
     "has_bbox": true,
     "bbox": [
       25.1608,
@@ -19,7 +23,10 @@
     "elements": [
       {
         "type": "volume",
-        "frame": "gallery-local",
+        "frame_ref": {
+          "fqn": "gallery-local",
+          "uuid": "2a6d6d61-e3a5-4b37-9ed2-07c0c271e8e1"
+        },
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {
@@ -39,7 +46,10 @@
       },
       {
         "type": "bbox",
-        "frame": "earth-fixed",
+        "frame_ref": {
+          "fqn": "earth-fixed",
+          "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+        },
         "has_bbox": true,
         "has_aabb": false,
         "bbox": [
@@ -104,7 +114,10 @@
             "sensing.vision.features": {
               "count": 2048,
               "descriptor_bytes": 32,
-              "frame": "anchor-local"
+              "frame_ref": {
+                "fqn": "anchor-local",
+                "uuid": "be2cc7a8-9f3a-4591-a1a9-38dfbd52832a"
+              }
             }
           }
         },

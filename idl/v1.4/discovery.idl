@@ -36,6 +36,7 @@ module spatial {
 
     typedef spatial::core::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
+    typedef spatial::core::FrameRef FrameRef;
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
 
@@ -89,11 +90,11 @@ module spatial {
       string value;
     };
 
-    // CoverageElement: if frame == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
+    // CoverageElement: if frame_ref.fqn == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
     // otherwise local meters; volume is AABB in meters.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
-      string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
+      FrameRef frame_ref;       // coordinate frame for this element (e.g., "earth-fixed", "map")
       string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
@@ -144,7 +145,7 @@ module spatial {
       Capabilities caps;                 // in-band capabilities (profiles + features)
       sequence<TopicMeta,128> topics;    // topic list with typed-topic metadata
       sequence<CoverageElement,16> coverage;
-      string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
+      FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
       Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
       sequence<Transform,8> transforms;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
@@ -156,7 +157,7 @@ module spatial {
     @appendable struct CoverageHint {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
-      string coverage_canonical_frame;
+      FrameRef coverage_frame_ref;
       Time coverage_eval_time;
       sequence<Transform,8> transforms;
       Time stamp;
@@ -167,7 +168,7 @@ module spatial {
       // Correlates responses to a specific query instance.
       @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
-      string coverage_canonical_frame;
+      FrameRef coverage_frame_ref;
       Time coverage_eval_time;
       // Responders publish CoverageResponse samples to this topic.
       string reply_topic;
@@ -193,7 +194,7 @@ module spatial {
       string class_id;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
       sequence<CoverageElement,16> coverage;
-      string coverage_canonical_frame;
+      FrameRef coverage_frame_ref;
       Time coverage_eval_time;
       sequence<Transform,8> transforms;
       Time available_from;

@@ -25,6 +25,10 @@
   },
   "coverage": {
     "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "frame_ref": {
+      "fqn": "earth-fixed",
+      "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+    },
     "has_bbox": true,
     "bbox": [
       -122.4186,
@@ -39,7 +43,10 @@
     "elements": [
       {
         "type": "bbox",
-        "frame": "earth-fixed",
+        "frame_ref": {
+          "fqn": "earth-fixed",
+          "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+        },
         "crs": "EPSG:4979",
         "has_bbox": true,
         "has_aabb": false,
@@ -54,7 +61,10 @@
       },
       {
         "type": "volume",
-        "frame": "ship-fixed",
+        "frame_ref": {
+          "fqn": "ship-fixed",
+          "uuid": "0f23c5b8-9d17-4e5f-82cf-596e5f2dfb5f"
+        },
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {
