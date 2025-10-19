@@ -66,8 +66,11 @@
       "from": "ship-fixed",
       "to": "earth-fixed",
       "stamp": "2025-05-01T12:00:00Z",
-      "valid_from": "2025-05-01T12:00:00Z",
-      "valid_for_s": 5,
+      "has_valid": true,
+      "valid": {
+        "start": "2025-05-01T12:00:00Z",
+        "duration_s": 5
+      },
       "pose": {
         "t_m": [
           -2650.4,
@@ -81,7 +84,7 @@
           0.9239
         ]
       },
-      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. Validity window starts at valid_from (default stamp); expiry = valid_from + valid_for_s."
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. When has_valid is true, apply within [valid.start, valid.start + valid.duration_s]; otherwise treat as valid at stamp."
     }
   ]
 }
