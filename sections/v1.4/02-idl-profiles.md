@@ -47,7 +47,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 @appendable struct CoverageQuery {
   // minimal illustrative fields
-  string expr;        // e.g., "type==radar_tensor && profile==discovery@1.*"
+  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.*\""
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
@@ -80,7 +80,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 **Query + Response**
 ```json
-{ "query_id": "q1", "expr": "type==radar_tensor && profile==discovery@1.*", "reply_topic": "spatialdds/sys/queries/q1" }
+{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.*\"", "reply_topic": "spatialdds/sys/queries/q1" }
 ```
 ```json
 { "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
@@ -91,7 +91,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
-* Queries MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
+* `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
 #### What fields mean (quick reference)

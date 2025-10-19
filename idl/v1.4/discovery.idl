@@ -170,6 +170,9 @@ module spatial {
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       FrameRef coverage_frame_ref;
       Time coverage_eval_time;
+      // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
+      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.0\""
+      string expr;
       // Responders publish CoverageResponse samples to this topic.
       string reply_topic;
       Time stamp;

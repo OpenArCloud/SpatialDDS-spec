@@ -34,4 +34,5 @@
     - [Appendix D: Extension Profiles](sections/v1.4/appendix-d.md)
     - [Appendix E: Provisional Extension Examples](sections/v1.4/appendix-e.md)
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
+    - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.4/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)

@@ -76,7 +76,7 @@ module spatial { module sensing { module rad {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;    // coordinate frame of xyz_m
-    sequence<RadDetection, 32768> dets;
+    sequence<RadDetection, spatial::sensing::common::SZ_XL> dets;
     Time   stamp;
   };
 

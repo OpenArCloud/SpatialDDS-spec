@@ -82,7 +82,7 @@ module spatial { module sensing { module vision {
   @appendable struct Keypoint2D { float u; float v; float score; };
   @appendable struct Track2D {
     uint64 id;
-    sequence<Keypoint2D, 4096> trail;
+    sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> trail;
   };
 
   // Detections topic — BEST_EFFORT
@@ -90,8 +90,8 @@ module spatial { module sensing { module vision {
     @key string stream_id;
     uint64 frame_seq;
     Time   stamp;
-    sequence<Keypoint2D, 8192> keypoints;
-    sequence<Track2D, 1024>    tracks;
+    sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> keypoints;
+    sequence<Track2D, spatial::sensing::common::SZ_MEDIUM>    tracks;
     // Masks/boxes can be added in Semantics profile to keep Vision lean
   };
 

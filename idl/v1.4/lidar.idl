@@ -77,7 +77,7 @@ module spatial { module sensing { module lidar {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;               // coordinate frame of xyz_m
-    sequence<LidarDetection, 65536> dets;
+    sequence<LidarDetection, spatial::sensing::common::SZ_SMALL> dets;
     Time   stamp;
   };
 

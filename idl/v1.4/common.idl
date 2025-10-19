@@ -5,6 +5,14 @@ module spatial { module sensing { module common {
 
   const string MODULE_ID = "spatial.sensing.common/1.0";
 
+  // --- Standard sizing tiers ---
+  // Use these to bound sequences for detections and other per-frame arrays.
+  const uint32 SZ_TINY   = 64;
+  const uint32 SZ_SMALL  = 256;
+  const uint32 SZ_MEDIUM = 2048;
+  const uint32 SZ_LARGE  = 8192;
+  const uint32 SZ_XL     = 32768;
+
   // Reuse Core primitives (time, pose, blob references)
   typedef spatial::core::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
@@ -84,7 +92,7 @@ module spatial { module sensing { module common {
     PoseSE3 sensor_pose;
     boolean has_sensor_pose;
     // data pointers: heavy bytes referenced as blobs
-    sequence<BlobRef, 256> blobs;
+    sequence<BlobRef, SZ_SMALL> blobs;
   };
 
   // ---- Quality & health (uniform across sensors) ----
