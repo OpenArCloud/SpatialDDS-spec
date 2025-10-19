@@ -41,7 +41,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
     "kind": "features:ORB:v1",
     "uri": "https://example.org/descriptors/1",
     "mime": "application/x-array",
-    "hash": "sha256:placeholder"
+    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
   }]
 }
 ```
