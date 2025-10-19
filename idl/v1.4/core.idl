@@ -43,7 +43,8 @@ module spatial {
 
     @appendable struct TileMeta {
       @key TileKey key;              // unique tile key
-      string tile_id_compat;         // optional human-readable id
+      boolean has_tile_id_compat;
+      string  tile_id_compat;        // optional human-readable id
       double min_xyz[3];             // AABB min (local frame)
       double max_xyz[3];             // AABB max (local frame)
       uint32 lod;                    // may mirror key.level
@@ -52,8 +53,10 @@ module spatial {
       string checksum;               // checksum of composed tile
       sequence<string, 32> blob_ids; // blobs composing this tile
       // optional geo hints
-      double centroid_llh[3];        // lat,lon,alt (deg,deg,m) or NaN
-      double radius_m;               // rough extent (m) or NaN
+      boolean has_centroid_llh;
+      double  centroid_llh[3];       // lat,lon,alt (deg,deg,m)
+      boolean has_radius_m;
+      double  radius_m;              // rough extent (m)
       string schema_version;         // MUST be "spatial.core/1.0"
     };
 
@@ -94,7 +97,8 @@ module spatial {
       string map_id;
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
-      double  cov[36];         // 6x6 covariance (row-major); NaN if unknown
+      boolean has_cov;
+      double  cov[36];         // 6x6 covariance (row-major)
       Time    stamp;
       FrameRef frame_ref;      // e.g., "map"
       string  source_id;
@@ -161,7 +165,8 @@ module spatial {
       FrameRef child_ref;       // local frame ("map")
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
-      double  cov[36];          // 6x6 covariance; NaN if unknown
+      boolean has_cov;
+      double  cov[36];          // 6x6 covariance
     };
 
     // ---------- Snapshot / Catch-up ----------

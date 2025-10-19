@@ -23,7 +23,7 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common (NaN = open interval).
+  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Device + data model
@@ -59,9 +59,12 @@ module spatial { module sensing { module lidar {
     PointLayout   layout;             // may override meta
 
     // Optional quick hints (for health/telemetry)
-    float average_range_m;
-    float percent_valid;              // 0..100
-    FrameQuality quality;             // shared SNR/health note
+    boolean      has_average_range_m;
+    float        average_range_m;     // valid when has_average_range_m == true
+    boolean      has_percent_valid;
+    float        percent_valid;       // valid when has_percent_valid == true (0..100)
+    boolean      has_quality;
+    FrameQuality quality;             // valid when has_quality == true
   };
 
   // Lightweight derivative for immediate fusion/tracking (optional)

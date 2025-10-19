@@ -23,7 +23,7 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common (NaN = open interval).
+  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Layout of the RAD tensor
@@ -42,8 +42,8 @@ module spatial { module sensing { module rad {
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
     Codec       codec;                     // LZ4, ZSTD, FP8Q, AE_V1, ...
-    float       quant_scale;               // valid if has_quant_scale
     boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
     uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
   };
 
@@ -56,8 +56,8 @@ module spatial { module sensing { module rad {
     PayloadKind payload_kind;              // may override defaults
     Codec       codec;                     // may override defaults
     SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF16 → MAG_F16)
-    float       quant_scale;               // valid if has_quant_scale
     boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
 
     FrameQuality quality;                  // SNR/valid%/health note
     string proc_chain;                     // e.g., "FFT3D->hann->OS-CFAR"
@@ -66,7 +66,8 @@ module spatial { module sensing { module rad {
   // Lightweight derivative for fast fusion/tracking (optional)
   @appendable struct RadDetection {
     double xyz_m[3];       // Cartesian point in base.frame_ref
-    double v_r_mps;        // radial velocity (optional; NaN if unknown)
+    boolean has_v_r_mps;
+    double  v_r_mps;       // valid when has_v_r_mps == true
     float  intensity;      // reflectivity/magnitude
     float  quality;        // 0..1
   };

@@ -14,7 +14,20 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
-### **2.2 Core SpatialDDS**
+### **2.2 Optional Fields (Normative)**
+
+SpatialDDS encodes optionality explicitly. To avoid ambiguous parsing and sentinel misuse, producers and consumers SHALL follow these rules across every profile:
+
+* **Presence flags** — For any scalar, struct, or array field that may be absent at runtime, producers SHALL introduce a boolean presence flag immediately before the field (`boolean has_field; Type field;`). Consumers MUST ignore the field when the flag is `false`.
+* **Discriminated unions** — When exactly one of multiple alternatives may appear on the wire, model the choice as a discriminated union (e.g., `CovMatrix`). Do not overload presence flags for mutual exclusivity.
+* **@appendable omission is only for evolution** — Schema omission via `@appendable` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
+* **No NaN sentinels** — Floating-point NaN (or other sentinel values) MUST NOT be used to indicate absence. Presence flags govern field validity.
+
+These conventions apply globally (Core, Discovery, Anchors, and all Sensing extensions) and supersede earlier guidance that relied on NaN or implicit omission semantics.
+
+> **Clarification:** `@appendable` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
+
+### **2.3 Core SpatialDDS**
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
@@ -23,7 +36,7 @@ The Core profile defines the essential building blocks for representing and shar
 SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.  
 See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
 
-### **2.3 Discovery**
+### **2.4 Discovery**
 
 Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Think of it as a built-in directory that rides the same bus: nodes announce, others filter and subscribe.
 
@@ -88,7 +101,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
-* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.4.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -112,7 +125,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 #### Summary
 Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
-#### **2.3.1 Topic Identity & QoS (Normative)**
+#### **2.4.1 Topic Identity & QoS (Normative)**
 
 SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**. Together these define both *what* a stream carries and *how* it behaves on the wire.
 
@@ -187,11 +200,11 @@ Consumers use these three keys to match and filter streams without inspecting pa
 * For custom types, follow the same naming pattern and document new QoS presets.
 * All examples and tables herein are **additive**; legacy 1.3 compatibility language has been removed.
 
-### **2.4 Anchors**
+### **2.5 Anchors**
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
 
-### **2.5 Canonical Ordering & Identity (Normative)**
+### **2.6 Canonical Ordering & Identity (Normative)**
 
 This section applies to any message that includes the trio: `Time stamp`, `string source_id`, and `uint64 seq`.
 

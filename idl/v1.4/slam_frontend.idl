@@ -64,7 +64,8 @@ module spatial {
       @key string lm_id;
       string map_id;
       double p[3];
-      double cov[9];                       // 3x3 pos covariance; NaN if unknown
+      boolean has_cov;
+      double  cov[9];                      // 3x3 pos covariance (row-major)
       sequence<uint8, 4096> desc;          // descriptor bytes
       string desc_type;
       Time   stamp;
@@ -79,7 +80,8 @@ module spatial {
 
     @appendable struct Tracklet {
       @key string track_id;
-      string lm_id;                        // optional link to Landmark
+      boolean has_lm_id;                   // true when lm_id is populated
+      string  lm_id;                       // link to Landmark when present
       sequence<TrackObs, 64> obs;          // ≤64 obs
       string source_id;
       Time   stamp;
