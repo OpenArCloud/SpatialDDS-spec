@@ -24,6 +24,13 @@
   },
   "coverage": {
     "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "has_bbox": true,
+    "bbox": [
+      -73.9635,
+      40.7793,
+      -73.9631,
+      40.7796
+    ],
     "geohash": [
       "dr5ru9",
       "dr5rua"
@@ -33,17 +40,22 @@
       {
         "type": "bbox",
         "frame": "earth-fixed",
+        "has_bbox": true,
+        "has_aabb": false,
         "bbox": [
           -73.9635,
           40.7793,
           -73.9631,
           40.7796
         ],
-        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east.",
+        "global": false
       },
       {
         "type": "volume",
         "frame": "foyer-local",
+        "has_bbox": false,
+        "has_aabb": true,
         "aabb": {
           "min_xyz": [
             -8.0,
@@ -56,9 +68,11 @@
             5.0
           ]
         },
-        "$comment": "Local AABB in meters in the declared frame."
+        "$comment": "Local AABB in meters in the declared frame.",
+        "global": false
       }
-    ]
+    ],
+    "global": false
   },
   "transforms": [
     {

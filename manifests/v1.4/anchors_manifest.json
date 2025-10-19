@@ -5,6 +5,13 @@
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
     "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "has_bbox": true,
+    "bbox": [
+      25.1608,
+      35.2965,
+      25.1665,
+      35.3002
+    ],
     "geohash": [
       "sv8wkf",
       "sv8wkg"
@@ -13,6 +20,8 @@
       {
         "type": "volume",
         "frame": "gallery-local",
+        "has_bbox": false,
+        "has_aabb": true,
         "aabb": {
           "min_xyz": [
             -15.0,
@@ -25,20 +34,25 @@
             6.0
           ]
         },
-        "$comment": "Local AABB in meters in the declared frame."
+        "$comment": "Local AABB in meters in the declared frame.",
+        "global": false
       },
       {
         "type": "bbox",
         "frame": "earth-fixed",
+        "has_bbox": true,
+        "has_aabb": false,
         "bbox": [
           25.1608,
           35.2965,
           25.1665,
           35.3002
         ],
-        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east."
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east.",
+        "global": false
       }
-    ]
+    ],
+    "global": false
   },
   "transforms": [
     {
