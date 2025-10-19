@@ -23,17 +23,17 @@
     "local_tz": "America/New_York"
   },
   "coverage": {
-    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "$comment": "All coverage shapes are expressed in the canonical frame_ref below. If multiple frames are required, publish separate coverage records; geohash (if used) is always earth-fixed.",
     "frame_ref": {
-      "fqn": "earth-fixed",
-      "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+      "fqn": "foyer-local",
+      "uuid": "5f3f8bb4-2a46-4878-9d80-2c9f71d407bb"
     },
     "has_bbox": true,
     "bbox": [
-      -73.9635,
-      40.7793,
-      -73.9631,
-      40.7796
+      -8.0,
+      -12.0,
+      8.0,
+      12.0
     ],
     "geohash": [
       "dr5ru9",
@@ -43,27 +43,19 @@
     "elements": [
       {
         "type": "bbox",
-        "frame_ref": {
-          "fqn": "earth-fixed",
-          "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
-        },
         "has_bbox": true,
         "has_aabb": false,
         "bbox": [
-          -73.9635,
-          40.7793,
-          -73.9631,
-          40.7796
+          -8.0,
+          -12.0,
+          8.0,
+          12.0
         ],
-        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east.",
+        "$comment": "Local bbox uses canonical frame_ref coordinates [xmin,ymin,xmax,ymax].",
         "global": false
       },
       {
         "type": "volume",
-        "frame_ref": {
-          "fqn": "foyer-local",
-          "uuid": "5f3f8bb4-2a46-4878-9d80-2c9f71d407bb"
-        },
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {
@@ -78,7 +70,7 @@
             5.0
           ]
         },
-        "$comment": "Local AABB in meters in the declared frame.",
+        "$comment": "AABB expressed in coverage.frame_ref coordinates [xmin,ymin,zmin,xmax,ymax,zmax].",
         "global": false
       }
     ],

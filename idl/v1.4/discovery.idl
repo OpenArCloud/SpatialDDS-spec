@@ -90,11 +90,11 @@ module spatial {
       string value;
     };
 
-    // CoverageElement: if frame_ref.fqn == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
-    // otherwise local meters; volume is AABB in meters.
+    // CoverageElement geometry is always expressed in the parent coverage_frame_ref.
+    // If that frame is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
+    // otherwise coordinates are in local meters.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
-      FrameRef frame_ref;       // coordinate frame for this element (e.g., "earth-fixed", "map")
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
@@ -148,7 +148,7 @@ module spatial {
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
       boolean has_coverage_eval_time;
-      Time    coverage_eval_time;       // optional evaluation time for transforming coverage elements
+      Time    coverage_eval_time;       // evaluate time-varying transforms at this instant when interpreting coverage_frame_ref
       sequence<Transform,8> transforms;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
       string auth_hint;
@@ -161,7 +161,7 @@ module spatial {
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
       boolean has_coverage_eval_time;
-      Time    coverage_eval_time;
+      Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
       sequence<Transform,8> transforms;
       Time stamp;
       uint32 ttl_sec;
@@ -173,7 +173,7 @@ module spatial {
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       FrameRef coverage_frame_ref;
       boolean has_coverage_eval_time;
-      Time    coverage_eval_time;
+      Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
       // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.0\""
       string expr;
