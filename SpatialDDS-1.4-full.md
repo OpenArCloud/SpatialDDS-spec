@@ -938,15 +938,25 @@ module spatial {
       boolean global;
     };
 
+    // Validity window for time-bounded transforms.
+    @appendable struct ValidityWindow {
+      Time   start;             // inclusive start
+      uint32 duration_s;        // seconds from start
+    };
+
     // Quaternion follows GeoPose: unit [x,y,z,w]; pose maps FROM 'from' TO 'to'
     @appendable struct Transform {
       string from;              // source frame (e.g., "map")
       string to;                // target frame (e.g., "earth-fixed")
       string stamp;             // ISO-8601 timestamp for this transform
-      uint32 valid_for_s;       // validity horizon in seconds
-      // New: explicit origin for validity window. Consumers evaluate expiry at
-      // (valid_from + valid_for_s). If absent, treat valid_from == stamp.
-      Time   valid_from;
+
+      // Explicit validity window (presence-flag style).
+      // When has_valid == true, the transform is valid in
+      //   [valid.start, valid.start + valid.duration_s].
+      // When has_valid == false, consumers treat the transform as valid at 'stamp'
+      // (or until superseded, per system policy).
+      boolean        has_valid;
+      ValidityWindow valid;
       double t_m[3];            // meters in 'from' frame
       double q_xyzw[4];         // GeoPose order [x,y,z,w]
     };
