@@ -13,6 +13,7 @@ struct FrameRef {
 - `uuid` is authoritative for identity.
 - `fqn` is an optional human-readable alias.
 - Implementations MUST treat `uuid` uniqueness as the identity key.
+- Deployments SHOULD establish well-known UUIDs for standard roots (e.g., `earth-fixed`, `map`, `body`) and document them for participants.
 
 ### Name and Hierarchy Rules
 - `fqn` components are slash-delimited.

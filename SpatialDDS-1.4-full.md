@@ -575,12 +575,13 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
     "features": ["lidar.range", "radar.tensor"]
   },
   "coverage": {
+    "frame_ref": { "fqn": "earth-fixed", "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10" },
     "has_bbox": true,
     "bbox": [-122.420, 37.790, -122.410, 37.800],
     "geohash": ["9q8y"],
     "elements": [{
       "type": "volume",
-      "frame": "earth-fixed",
+      "frame_ref": { "fqn": "earth-fixed", "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10" },
       "has_bbox": false,
       "has_aabb": true,
       "aabb": { "min": [0,0,0], "max": [100,100,50] },
@@ -600,6 +601,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 ## Field Notes
 * **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
 * **Coverage (`coverage`)** — uses explicit presence flags. When `has_bbox` is `true`, `bbox` is authoritative; when `false`, omit it from coverage calculations. Elements use their own `has_bbox`/`has_aabb` flags to gate coordinates. Producers MAY also provide geohashes or detailed `elements`. Set `global = true` for worldwide coverage.
+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs.
 * **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.  
 * All orientation fields use canonical GeoPose order `(x, y, z, w)`; older forms like `q_wxyz` are removed.  
 
@@ -896,7 +898,7 @@ module spatial {
       const string MODULE_ID = "spatial.discovery/1.0";
 
       typedef spatial::core::Time Time;
-      typedef spatial::geometry::FrameRef FrameRef;
+      typedef spatial::core::FrameRef FrameRef;
       typedef spatial::core::Aabb3 Aabb3;
       // Canonical manifest references use the spatialdds:// URI scheme.
       typedef string SpatialUri;
@@ -932,11 +934,11 @@ module spatial {
       string value;
     };
 
-    // CoverageElement: if frame == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
+    // CoverageElement: if frame_ref.fqn == "earth-fixed", bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
     // otherwise local meters; volume is AABB in meters.
     @appendable struct CoverageElement {
       string type;              // "bbox" | "volume"
-      string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
+      FrameRef frame_ref;       // coordinate frame for this element (e.g., "earth-fixed", "map")
       string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
@@ -986,7 +988,7 @@ module spatial {
         // New: wire-level capability advertisement for version negotiation.
         Capabilities caps;
         sequence<CoverageElement,16> coverage;
-        string coverage_canonical_frame;  // canonical frame consumers should use when evaluating coverage
+        FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
         Time coverage_eval_time;          // optional evaluation time for transforming coverage elements
         sequence<Transform,8> transforms;
         SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
@@ -998,7 +1000,7 @@ module spatial {
     @appendable struct CoverageHint {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
-      string coverage_canonical_frame;
+      FrameRef coverage_frame_ref;
       Time coverage_eval_time;
       sequence<Transform,8> transforms;
       Time stamp;
@@ -1009,7 +1011,7 @@ module spatial {
       // Correlates responses to a specific query instance.
       @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
-      string coverage_canonical_frame;
+      FrameRef coverage_frame_ref;
       Time coverage_eval_time;
       // Responders publish CoverageResponse samples to this topic.
       string reply_topic;
@@ -1035,7 +1037,7 @@ module spatial {
       string class_id;
       SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
       sequence<CoverageElement,16> coverage;
-      string coverage_canonical_frame;
+      FrameRef coverage_frame_ref;
       Time coverage_eval_time;
       sequence<Transform,8> transforms;
       Time available_from;
@@ -2007,6 +2009,7 @@ struct FrameRef {
 - `uuid` is authoritative for identity.
 - `fqn` is an optional human-readable alias.
 - Implementations MUST treat `uuid` uniqueness as the identity key.
+- Deployments SHOULD establish well-known UUIDs for standard roots (e.g., `earth-fixed`, `map`, `body`) and document them for participants.
 
 #### Name and Hierarchy Rules
 - `fqn` components are slash-delimited.
