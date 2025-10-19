@@ -18,6 +18,17 @@
 {{include:idl/v1.4/common.idl}}
 ```
 
+### **Standard Sequence Bounds (Normative)**
+
+| Payload                           | Recommended Bound   | Rationale                              |
+|-----------------------------------|---------------------|----------------------------------------|
+| 2D Detections (per frame)         | `SZ_MEDIUM` (2048)  | Typical object detectors               |
+| 3D Detections (LiDAR)             | `SZ_SMALL` (256)    | Clusters/objects, not raw points       |
+| Radar Detections (micro-dets)     | `SZ_XL` (32768)     | Numerous sparse returns per frame      |
+| Keypoints/Tracks (per frame)      | `SZ_LARGE` (8192)   | Feature-rich frames                    |
+
+Producers SHOULD choose the smallest tier that covers real workloads; exceeding these bounds requires a new profile minor.
+
 #### Axis Encoding (Normative)
 
 The `Axis` struct embeds a discriminated union to ensure only one encoding is transmitted on the wire.

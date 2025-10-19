@@ -36,6 +36,7 @@
     - [Appendix D: Extension Profiles](sections/v1.4/appendix-d.md)
     - [Appendix E: Provisional Extension Examples](sections/v1.4/appendix-e.md)
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
+    - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.4/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)
 
 ## **1\. Introduction**
@@ -174,7 +175,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 @appendable struct CoverageQuery {
   // minimal illustrative fields
-  string expr;        // e.g., "type==radar_tensor && profile==discovery@1.*"
+  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.*\""
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
@@ -207,7 +208,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 **Query + Response**
 ```json
-{ "query_id": "q1", "expr": "type==radar_tensor && profile==discovery@1.*", "reply_topic": "spatialdds/sys/queries/q1" }
+{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.*\"", "reply_topic": "spatialdds/sys/queries/q1" }
 ```
 ```json
 { "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
@@ -218,7 +219,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
-* Queries MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
+* `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
 #### What fields mean (quick reference)
@@ -1013,6 +1014,9 @@ module spatial {
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       FrameRef coverage_frame_ref;
       Time coverage_eval_time;
+      // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
+      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.0\""
+      string expr;
       // Responders publish CoverageResponse samples to this topic.
       string reply_topic;
       Time stamp;
@@ -1157,6 +1161,14 @@ module spatial { module sensing { module common {
 
   const string MODULE_ID = "spatial.sensing.common/1.0";
 
+  // --- Standard sizing tiers ---
+  // Use these to bound sequences for detections and other per-frame arrays.
+  const uint32 SZ_TINY   = 64;
+  const uint32 SZ_SMALL  = 256;
+  const uint32 SZ_MEDIUM = 2048;
+  const uint32 SZ_LARGE  = 8192;
+  const uint32 SZ_XL     = 32768;
+
   // Reuse Core primitives (time, pose, blob references)
   typedef spatial::core::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
@@ -1236,7 +1248,7 @@ module spatial { module sensing { module common {
     PoseSE3 sensor_pose;
     boolean has_sensor_pose;
     // data pointers: heavy bytes referenced as blobs
-    sequence<BlobRef, 256> blobs;
+    sequence<BlobRef, SZ_SMALL> blobs;
   };
 
   // ---- Quality & health (uniform across sensors) ----
@@ -1286,6 +1298,17 @@ enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
 };
 @appendable struct Axis { string name; string unit; AxisSpec spec; };
 ```
+
+### **Standard Sequence Bounds (Normative)**
+
+| Payload                           | Recommended Bound   | Rationale                              |
+|-----------------------------------|---------------------|----------------------------------------|
+| 2D Detections (per frame)         | `SZ_MEDIUM` (2048)  | Typical object detectors               |
+| 3D Detections (LiDAR)             | `SZ_SMALL` (256)    | Clusters/objects, not raw points       |
+| Radar Detections (micro-dets)     | `SZ_XL` (32768)     | Numerous sparse returns per frame      |
+| Keypoints/Tracks (per frame)      | `SZ_LARGE` (8192)   | Feature-rich frames                    |
+
+Producers SHOULD choose the smallest tier that covers real workloads; exceeding these bounds requires a new profile minor.
 
 **Semantics**
 * `CENTERS` — Explicit sample positions. The `centers` sequence provides all axis values as `double`.
@@ -1479,7 +1502,7 @@ module spatial { module sensing { module vision {
   @appendable struct Keypoint2D { float u; float v; float score; };
   @appendable struct Track2D {
     uint64 id;
-    sequence<Keypoint2D, 4096> trail;
+    sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> trail;
   };
 
   // Detections topic — BEST_EFFORT
@@ -1487,8 +1510,8 @@ module spatial { module sensing { module vision {
     @key string stream_id;
     uint64 frame_seq;
     Time   stamp;
-    sequence<Keypoint2D, 8192> keypoints;
-    sequence<Track2D, 1024>    tracks;
+    sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> keypoints;
+    sequence<Track2D, spatial::sensing::common::SZ_MEDIUM>    tracks;
     // Masks/boxes can be added in Semantics profile to keep Vision lean
   };
 
@@ -1628,7 +1651,7 @@ module spatial {
       @key string set_id;                 // batch id (e.g., node_id + seq)
       string node_id;
       string camera_id;
-      sequence<Detection2D, 256> dets;    // ≤256
+      sequence<Detection2D, spatial::sensing::common::SZ_SMALL> dets;    // ≤256
       Time   stamp;
       string source_id;
     };
@@ -1664,7 +1687,7 @@ module spatial {
       FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;
       TileKey tile_key;                   // valid when has_tile = true
-      sequence<Detection3D, 128> dets;    // ≤128
+      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤128
       Time   stamp;
       string source_id;
     };
@@ -1756,7 +1779,7 @@ module spatial { module sensing { module rad {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;    // coordinate frame of xyz_m
-    sequence<RadDetection, 32768> dets;
+    sequence<RadDetection, spatial::sensing::common::SZ_XL> dets;
     Time   stamp;
   };
 
@@ -1847,7 +1870,7 @@ module spatial { module sensing { module lidar {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;               // coordinate frame of xyz_m
-    sequence<LidarDetection, 65536> dets;
+    sequence<LidarDetection, spatial::sensing::common::SZ_SMALL> dets;
     Time   stamp;
   };
 
@@ -1990,6 +2013,35 @@ pvalue         = 1*( unreserved / pct-encoded / ":" / "@" / "." )
 ```text
 spatialdds://museum.example.org/hall1/anchor/01J9Q0A6KZ;v=12
 spatialdds://openarcloud.org/zone:sf/tileset/city3d;v=3?lang=en
+```
+
+## **Appendix F.X Discovery Query Expression (Normative)**
+
+This appendix defines the boolean filter grammar used by `disco.CoverageQuery.expr`. The language is case-sensitive,
+UTF-8, and whitespace-tolerant. Identifiers target announced metadata fields (for example `type`, `profile`,
+`module_id`); string literals are double-quoted and use a C-style escape subset.
+
+```abnf
+expr       = or-expr
+or-expr    = and-expr *( WS "||" WS and-expr )
+and-expr   = unary-expr *( WS "&&" WS unary-expr )
+unary-expr = [ "!" WS ] primary
+primary    = comparison / "(" WS expr WS ")"
+comparison = ident WS op WS value
+op         = "==" / "!="
+ident      = 1*( ALPHA / DIGIT / "_" / "." )
+value      = string
+string     = DQUOTE *( string-char ) DQUOTE
+string-char= %x20-21 / %x23-5B / %x5D-10FFFF / escape
+escape     = "\\" ( DQUOTE / "\\" / "n" / "r" / "t" )
+WS         = *( SP / HTAB )
+
+; Notes:
+; - Identifiers address announced metadata fields (e.g., "type", "profile", "module_id").
+; - Values are double-quoted strings; escapes follow C-style subset.
+; - Operators: equality and inequality only. Boolean ops: &&, ||, unary !
+; - Parentheses group precedence; otherwise, ! > && > ||
+; - Unknown identifiers evaluate to false in comparisons.
 ```
 
 <a id="g-frame-identifiers"></a>
