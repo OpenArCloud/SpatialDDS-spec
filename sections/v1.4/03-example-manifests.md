@@ -23,12 +23,18 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
     "features": ["lidar.range", "radar.tensor"]
   },
   "coverage": {
+    "has_bbox": true,
+    "bbox": [-122.420, 37.790, -122.410, 37.800],
     "geohash": ["9q8y"],
     "elements": [{
       "type": "volume",
       "frame": "earth-fixed",
-      "aabb": { "min": [0,0,0], "max": [100,100,50] }
-    }]
+      "has_bbox": false,
+      "has_aabb": true,
+      "aabb": { "min": [0,0,0], "max": [100,100,50] },
+      "global": false
+    }],
+    "global": false
   },
   "assets": [{
     "kind": "features:ORB:v1",
@@ -41,7 +47,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 
 ## Field Notes
 * **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
-* **Coverage (`coverage`)** — bounding box or volume in a known frame; may include multiple regions.  
+* **Coverage (`coverage`)** — uses explicit presence flags. When `has_bbox` is `true`, `bbox` is authoritative; when `false`, omit it from coverage calculations. Elements use their own `has_bbox`/`has_aabb` flags to gate coordinates. Producers MAY also provide geohashes or detailed `elements`. Set `global = true` for worldwide coverage.
 * **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.  
 * All orientation fields use canonical GeoPose order `(x, y, z, w)`; older forms like `q_wxyz` are removed.  
 
@@ -53,3 +59,15 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 
 ## Summary
 Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it* — without version-negotiation clutter or legacy fields.
+### Coverage Semantics (Normative)
+
+* `global == true` means worldwide coverage regardless of any regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
+* When `global == false`, producers MAY supply any combination of `bbox`, `geohash`, and `elements`. Consumers SHOULD treat the union of all provided regions as the effective coverage.
+* Presence flags govern coordinate validity. When a flag is `false`, consumers MUST ignore the associated coordinates. `NaN` has no special meaning in any coverage coordinate; non-finite values MUST be rejected.
+
+### Validation Guidance (Non-normative)
+
+* Reject `has_bbox == true` or `has_aabb == true` when any coordinate is non-finite (`NaN`/`Inf`).
+* Enforce axis ordering: `west ≤ east`, `south ≤ north`, and for AABBs ensure `min ≤ max` per axis.
+* When `global == true`, consumers MAY ignore conflicting regional hints and treat coverage as worldwide.
+

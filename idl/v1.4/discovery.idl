@@ -95,9 +95,16 @@ module spatial {
       string type;              // "bbox" | "volume"
       string frame;             // coordinate frame for this element (e.g., "earth-fixed", "map")
       string crs;               // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
-      double bbox[4];           // [west, south, east, north] when type == "bbox"
-      Aabb3 aabb;               // axis-aligned bounds when type == "volume"
-      // Explicit global coverage toggle: when true, bbox and aabb may be ignored by consumers.
+
+      // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
+      boolean has_bbox;
+      double  bbox[4];          // [west, south, east, north]
+
+      // When has_aabb == true, aabb is authoritative; NaN has no special meaning.
+      boolean has_aabb;
+      Aabb3  aabb;              // axis-aligned bounds in the declared frame
+
+      // Explicit global coverage toggle: when true, bbox/aabb may be ignored by consumers.
       boolean global;
     };
 
