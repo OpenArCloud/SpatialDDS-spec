@@ -24,7 +24,7 @@
     "issuer": "https://auth.acme.com"
   },
   "coverage": {
-    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "$comment": "All coverage shapes are expressed in the canonical frame_ref below. If multiple frames are required, publish separate coverage records; geohash (if used) is always earth-fixed.",
     "frame_ref": {
       "fqn": "earth-fixed",
       "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
@@ -43,10 +43,6 @@
     "elements": [
       {
         "type": "bbox",
-        "frame_ref": {
-          "fqn": "earth-fixed",
-          "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
-        },
         "crs": "EPSG:4979",
         "has_bbox": true,
         "has_aabb": false,
@@ -61,25 +57,21 @@
       },
       {
         "type": "volume",
-        "frame_ref": {
-          "fqn": "ship-fixed",
-          "uuid": "0f23c5b8-9d17-4e5f-82cf-596e5f2dfb5f"
-        },
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {
           "min_xyz": [
-            -25.0,
-            -30.0,
+            -122.4186,
+            37.7931,
             -5.0
           ],
           "max_xyz": [
-            25.0,
-            30.0,
+            -122.4123,
+            37.7982,
             20.0
           ]
         },
-        "$comment": "Local AABB in meters in the declared frame.",
+        "$comment": "AABB expressed in coverage.frame_ref coordinates [xmin,ymin,zmin,xmax,ymax,zmax].",
         "global": false
       }
     ],

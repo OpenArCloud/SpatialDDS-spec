@@ -4,17 +4,17 @@
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",
   "coverage": {
-    "$comment": "Each coverage block SHALL use a single reference frame. If multiple frames are required, treat the coverage as approximate; geohash (if used) is always earth-fixed.",
+    "$comment": "All coverage shapes are expressed in the canonical frame_ref below. If multiple frames are required, publish separate coverage records; geohash (if used) is always earth-fixed.",
     "frame_ref": {
-      "fqn": "earth-fixed",
-      "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+      "fqn": "gallery-local",
+      "uuid": "2a6d6d61-e3a5-4b37-9ed2-07c0c271e8e1"
     },
     "has_bbox": true,
     "bbox": [
-      25.1608,
-      35.2965,
-      25.1665,
-      35.3002
+      -20.0,
+      -20.0,
+      20.0,
+      20.0
     ],
     "geohash": [
       "sv8wkf",
@@ -23,10 +23,6 @@
     "elements": [
       {
         "type": "volume",
-        "frame_ref": {
-          "fqn": "gallery-local",
-          "uuid": "2a6d6d61-e3a5-4b37-9ed2-07c0c271e8e1"
-        },
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {
@@ -41,24 +37,20 @@
             6.0
           ]
         },
-        "$comment": "Local AABB in meters in the declared frame.",
+        "$comment": "AABB expressed in coverage.frame_ref coordinates [xmin,ymin,zmin,xmax,ymax,zmax].",
         "global": false
       },
       {
         "type": "bbox",
-        "frame_ref": {
-          "fqn": "earth-fixed",
-          "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
-        },
         "has_bbox": true,
         "has_aabb": false,
         "bbox": [
-          25.1608,
-          35.2965,
-          25.1665,
-          35.3002
+          -20.0,
+          -20.0,
+          20.0,
+          20.0
         ],
-        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east.",
+        "$comment": "Local bbox uses canonical frame_ref coordinates [xmin,ymin,xmax,ymax].",
         "global": false
       }
     ],
