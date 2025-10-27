@@ -10,7 +10,7 @@ module spatial {
     typedef spatial::geometry::FrameRef FrameRef;
 
     // IMU calibration
-    @appendable struct ImuInfo {
+    @extensibility(APPENDABLE) struct ImuInfo {
       @key string imu_id;
       FrameRef frame_ref;
       double accel_noise_density;    // (m/s^2)/√Hz
@@ -21,7 +21,7 @@ module spatial {
     };
 
     // Raw IMU sample
-    @appendable struct ImuSample {
+    @extensibility(APPENDABLE) struct ImuSample {
       @key string imu_id;
       double accel[3];               // m/s^2
       double gyro[3];                // rad/s
@@ -31,7 +31,7 @@ module spatial {
     };
 
     // Magnetometer
-    @appendable struct MagnetometerSample {
+    @extensibility(APPENDABLE) struct MagnetometerSample {
       @key string mag_id;
       double mag[3];                 // microtesla
       Time   stamp;
@@ -41,7 +41,7 @@ module spatial {
     };
 
     // Convenience raw 9-DoF bundle
-    @appendable struct SensorFusionSample {
+    @extensibility(APPENDABLE) struct SensorFusionSample {
       @key string fusion_id;         // e.g., device id
       double accel[3];               // m/s^2
       double gyro[3];                // rad/s
@@ -56,7 +56,7 @@ module spatial {
     enum FusionMode { ORIENTATION_3DOF = 0, ORIENTATION_6DOF = 1, POSE_6DOF = 2 };
     enum FusionSourceKind { EKF = 0, AHRS = 1, VIO = 2, IMU_ONLY = 3, MAG_AIDED = 4, AR_PLATFORM = 5 };
 
-    @appendable struct FusedState {
+    @extensibility(APPENDABLE) struct FusedState {
       @key string fusion_id;
       FusionMode       mode;
       FusionSourceKind source_kind;

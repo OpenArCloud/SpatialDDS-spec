@@ -11,7 +11,7 @@ module spatial {
     typedef spatial::core::GeoPose GeoPose;
     typedef spatial::geometry::FrameRef FrameRef;
 
-    @appendable struct NodeGeo {
+    @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;
       @key string node_id;      // same id as core::Node
       PoseSE3 pose;             // local pose in map frame

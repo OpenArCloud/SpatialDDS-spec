@@ -33,7 +33,7 @@ module spatial { module sensing { module vision {
   enum ColorSpace   { SRGB=0, REC709=1, REC2020=2, LINEAR=10 };
   enum RigRole      { LEFT=0, RIGHT=1, CENTER=2, AUX=3 };
 
-  @appendable struct CamIntrinsics {
+  @extensibility(APPENDABLE) struct CamIntrinsics {
     CamModel model;
     uint16 width;  uint16 height;
     float fx; float fy; float cx; float cy;
@@ -46,7 +46,7 @@ module spatial { module sensing { module vision {
   };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @appendable struct VisionMeta {
+  @extensibility(APPENDABLE) struct VisionMeta {
     @key string stream_id;
     StreamMeta base;                    // frame_ref, T_bus_sensor, nominal_rate_hz
     CamIntrinsics K;                    // intrinsics
@@ -61,7 +61,7 @@ module spatial { module sensing { module vision {
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @appendable struct VisionFrame {
+  @extensibility(APPENDABLE) struct VisionFrame {
     @key string stream_id;
     uint64 frame_seq;
 
@@ -80,14 +80,14 @@ module spatial { module sensing { module vision {
   };
 
   // Optional lightweight derivatives (for VIO/SfM/analytics)
-  @appendable struct Keypoint2D { float u; float v; float score; };
-  @appendable struct Track2D {
+  @extensibility(APPENDABLE) struct Keypoint2D { float u; float v; float score; };
+  @extensibility(APPENDABLE) struct Track2D {
     uint64 id;
     sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> trail;
   };
 
   // Detections topic — BEST_EFFORT
-  @appendable struct VisionDetections {
+  @extensibility(APPENDABLE) struct VisionDetections {
     @key string stream_id;
     uint64 frame_seq;
     Time   stamp;

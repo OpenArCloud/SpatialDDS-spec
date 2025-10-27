@@ -9,7 +9,7 @@ module spatial {
     typedef spatial::core::Time Time;
     typedef spatial::core::GeoPose GeoPose;
 
-    @appendable struct AnchorEntry {
+    @extensibility(APPENDABLE) struct AnchorEntry {
       @key string anchor_id;
       string name;
       GeoPose geopose;
@@ -19,7 +19,7 @@ module spatial {
       string checksum;
     };
 
-    @appendable struct AnchorSet {
+    @extensibility(APPENDABLE) struct AnchorSet {
       @key string set_id;
       string title;
       string provider_id;
@@ -34,7 +34,7 @@ module spatial {
 
     enum AnchorOp { ADD=0, UPDATE=1, REMOVE=2 };
 
-    @appendable struct AnchorDelta {
+    @extensibility(APPENDABLE) struct AnchorDelta {
       @key string set_id;
       AnchorOp op;
       AnchorEntry entry;
@@ -43,12 +43,12 @@ module spatial {
       string post_checksum;
     };
 
-    @appendable struct AnchorSetRequest {
+    @extensibility(APPENDABLE) struct AnchorSetRequest {
       @key string set_id;
       uint64 up_to_revision;
     };
 
-    @appendable struct AnchorSetResponse {
+    @extensibility(APPENDABLE) struct AnchorSetResponse {
       @key string set_id;
       uint64 revision;
       AnchorSet set;

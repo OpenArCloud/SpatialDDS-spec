@@ -23,25 +23,25 @@ module spatial { module sensing { module common {
   enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
 
   // Compact parametric axis definition
-  @appendable struct Linspace {
+  @extensibility(APPENDABLE) struct Linspace {
     double start;   // first point
     double step;    // spacing (may be negative for descending axes)
     uint32 count;   // number of samples (>=1)
   };
 
   // Discriminated union: carries only one encoding on wire
-  @appendable union AxisSpec switch (AxisEncoding) {
+  @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
     case CENTERS:  sequence<double, 65535> centers;
     case LINSPACE: Linspace lin;
   };
 
-  @appendable struct Axis {
+  @extensibility(APPENDABLE) struct Axis {
     string   name;    // "range","azimuth","elevation","doppler","time","channel"
     string   unit;    // "m","deg","m/s","Hz","s",...
     AxisSpec spec;    // encoding of the axis samples (centers or linspace)
   };
 
-  @appendable struct ROI {
+  @extensibility(APPENDABLE) struct ROI {
     // Range bounds (meters). When has_range == false, consumers MUST ignore range_min/range_max.
     boolean has_range;
     float   range_min;
@@ -94,7 +94,7 @@ module spatial { module sensing { module common {
   };
 
   // ---- Stream identity & calibration header shared by sensors ----
-  @appendable struct StreamMeta {
+  @extensibility(APPENDABLE) struct StreamMeta {
     @key string stream_id;        // stable id for this sensor stream
     FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
@@ -103,7 +103,7 @@ module spatial { module sensing { module common {
   };
 
   // ---- Frame index header shared by sensors (small, on-bus) ----
-  @appendable struct FrameHeader {
+  @extensibility(APPENDABLE) struct FrameHeader {
     @key string stream_id;
     uint64 frame_seq;
     Time   t_start;
@@ -118,7 +118,7 @@ module spatial { module sensing { module common {
   // ---- Quality & health (uniform across sensors) ----
   enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
 
-  @appendable struct FrameQuality {
+  @extensibility(APPENDABLE) struct FrameQuality {
     boolean has_snr_db;
     float   snr_db;          // valid when has_snr_db == true
     float   percent_valid;   // 0..100
@@ -127,7 +127,7 @@ module spatial { module sensing { module common {
   };
 
   // ---- ROI request/reply (control-plane pattern) ----
-  @appendable struct ROIRequest {
+  @extensibility(APPENDABLE) struct ROIRequest {
     @key string stream_id;
     uint64 request_id;
     Time   t_start; Time t_end;
@@ -138,7 +138,7 @@ module spatial { module sensing { module common {
     int32  max_bytes;          // -1 for unlimited
   };
 
-  @appendable struct ROIReply {
+  @extensibility(APPENDABLE) struct ROIReply {
     @key string stream_id;
     uint64 request_id;
     // Typically returns new frames whose blobs contain only the ROI

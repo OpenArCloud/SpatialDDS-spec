@@ -13,7 +13,7 @@ module spatial {
     // Camera calibration
     enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
 
-    @appendable struct CameraInfo {
+    @extensibility(APPENDABLE) struct CameraInfo {
       @key string camera_id;
       uint32 width;  uint32 height;   // pixels
       double fx; double fy;           // focal (px)
@@ -25,14 +25,14 @@ module spatial {
     };
 
     // 2D features & descriptors per keyframe
-    @appendable struct Feature2D {
+    @extensibility(APPENDABLE) struct Feature2D {
       double u; double v;     // pixel coords
       float  scale;           // px
       float  angle;           // rad [0,2π)
       float  score;           // detector response
     };
 
-    @appendable struct KeyframeFeatures {
+    @extensibility(APPENDABLE) struct KeyframeFeatures {
       @key string node_id;                  // keyframe id
       string camera_id;
       string desc_type;                     // "ORB32","BRISK64","SPT256Q",...
@@ -46,13 +46,13 @@ module spatial {
     };
 
     // Optional cross-frame matches
-    @appendable struct FeatureMatch {
+    @extensibility(APPENDABLE) struct FeatureMatch {
       string node_id_a;  uint32 idx_a;
       string node_id_b;  uint32 idx_b;
       float  score;      // similarity or distance
     };
 
-    @appendable struct MatchSet {
+    @extensibility(APPENDABLE) struct MatchSet {
       @key string match_id;                // e.g., "kf_12<->kf_18"
       sequence<FeatureMatch, 8192> matches;
       Time   stamp;
@@ -60,7 +60,7 @@ module spatial {
     };
 
     // Sparse 3D landmarks & tracks (optional)
-    @appendable struct Landmark {
+    @extensibility(APPENDABLE) struct Landmark {
       @key string lm_id;
       string map_id;
       double p[3];
@@ -73,12 +73,12 @@ module spatial {
       uint64 seq;
     };
 
-    @appendable struct TrackObs {
+    @extensibility(APPENDABLE) struct TrackObs {
       string node_id;                      // observing keyframe
       double u; double v;                  // pixel coords
     };
 
-    @appendable struct Tracklet {
+    @extensibility(APPENDABLE) struct Tracklet {
       @key string track_id;
       boolean has_lm_id;                   // true when lm_id is populated
       string  lm_id;                       // link to Landmark when present
