@@ -11,7 +11,7 @@ module spatial {
     typedef spatial::geometry::FrameRef FrameRef;
 
     // 2D detections per keyframe (image space)
-    @appendable struct Detection2D {
+    @extensibility(APPENDABLE) struct Detection2D {
       @key string det_id;       // unique per publisher
       string node_id;           // keyframe id
       string camera_id;         // camera
@@ -24,7 +24,7 @@ module spatial {
       string source_id;
     };
 
-    @appendable struct Detection2DSet {
+    @extensibility(APPENDABLE) struct Detection2DSet {
       @key string set_id;                 // batch id (e.g., node_id + seq)
       string node_id;
       string camera_id;
@@ -34,7 +34,7 @@ module spatial {
     };
 
     // 3D detections in world/local frame (scene space)
-    @appendable struct Detection3D {
+    @extensibility(APPENDABLE) struct Detection3D {
       @key string det_id;
       FrameRef frame_ref;        // e.g., "map" (pose known elsewhere)
       boolean has_tile;
@@ -61,7 +61,7 @@ module spatial {
       string source_id;
     };
 
-    @appendable struct Detection3DSet {
+    @extensibility(APPENDABLE) struct Detection3DSet {
       @key string set_id;                 // batch id
       FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;

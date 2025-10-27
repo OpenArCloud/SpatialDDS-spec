@@ -23,7 +23,7 @@ module spatial {
       double max_xyz[3];
     };
 
-    @appendable struct TileKey {
+    @extensibility(APPENDABLE) struct TileKey {
       @key uint32 x;     // tile coordinate (quadtree/3D grid)
       @key uint32 y;
       @key uint32 z;     // use 0 for 2D schemes
@@ -33,7 +33,7 @@ module spatial {
     // ---------- Geometry ----------
     enum PatchOp { ADD = 0, REPLACE = 1, REMOVE = 2 };
 
-    @appendable struct BlobRef {
+    @extensibility(APPENDABLE) struct BlobRef {
       string blob_id;   // UUID or content-address
       string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
       string checksum;  // SHA-256 (hex)
@@ -41,7 +41,7 @@ module spatial {
 
     typedef spatial::geometry::FrameRef FrameRef;
 
-    @appendable struct TileMeta {
+    @extensibility(APPENDABLE) struct TileMeta {
       @key TileKey key;              // unique tile key
       boolean has_tile_id_compat;
       string  tile_id_compat;        // optional human-readable id
@@ -60,7 +60,7 @@ module spatial {
       string schema_version;         // MUST be "spatial.core/1.0"
     };
 
-    @appendable struct TilePatch {
+    @extensibility(APPENDABLE) struct TilePatch {
       @key TileKey key;              // which tile
       uint64 revision;               // monotonic per-tile
       PatchOp op;                    // ADD/REPLACE/REMOVE
@@ -70,7 +70,7 @@ module spatial {
       Time   stamp;                  // production time
     };
 
-    @appendable struct BlobChunk {
+    @extensibility(APPENDABLE) struct BlobChunk {
       // Composite key: (blob_id, index) uniquely identifies a chunk instance.
       @key string blob_id;               // which blob
       @key uint32 index;                 // chunk index (0..N-1)
@@ -93,7 +93,7 @@ module spatial {
     // ---------- Pose Graph (minimal) ----------
     enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
 
-    @appendable struct Node {
+    @extensibility(APPENDABLE) struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
@@ -106,7 +106,7 @@ module spatial {
       uint64  graph_epoch;     // for major rebases/merges
     };
 
-    @appendable struct Edge {
+    @extensibility(APPENDABLE) struct Edge {
       string map_id;
       @key string edge_id;     // unique edge id
       string from_id;          // source node
@@ -131,13 +131,13 @@ module spatial {
     typedef double Mat6x6[36];  // row-major
 
     // Discriminated union: exactly one covariance payload (or none) is serialized.
-    @appendable union CovMatrix switch (CovarianceType) {
+    @extensibility(APPENDABLE) union CovMatrix switch (CovarianceType) {
       case COV_POS3:  Mat3x3 pos;
       case COV_POSE6: Mat6x6 pose;
       case COV_NONE:  // empty
     };
 
-    @appendable struct GeoPose {
+    @extensibility(APPENDABLE) struct GeoPose {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
@@ -149,7 +149,7 @@ module spatial {
       CovMatrix cov;
     };
 
-    @appendable struct GeoAnchor {
+    @extensibility(APPENDABLE) struct GeoAnchor {
       @key string anchor_id;   // e.g., "anchor/4th-and-main"
       string map_id;
       FrameRef frame_ref;      // local frame (e.g., "map")
@@ -159,7 +159,7 @@ module spatial {
       string  checksum;        // integrity/versioning
     };
 
-    @appendable struct FrameTransform {
+    @extensibility(APPENDABLE) struct FrameTransform {
       @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
       FrameRef parent_ref;      // global frame (ENU@..., ECEF, ...)
       FrameRef child_ref;       // local frame ("map")
@@ -170,12 +170,12 @@ module spatial {
     };
 
     // ---------- Snapshot / Catch-up ----------
-    @appendable struct SnapshotRequest {
+    @extensibility(APPENDABLE) struct SnapshotRequest {
       @key TileKey key;        // which tile
       uint64 up_to_revision;   // 0 = latest
     };
 
-    @appendable struct SnapshotResponse {
+    @extensibility(APPENDABLE) struct SnapshotResponse {
       @key TileKey key;                 // tile key
       uint64 revision;                  // snapshot revision served
       sequence<string, 64> blob_ids;    // composing blobs

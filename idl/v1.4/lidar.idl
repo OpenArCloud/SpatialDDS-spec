@@ -32,7 +32,7 @@ module spatial { module sensing { module lidar {
   enum PointLayout  { XYZ_I=0, XYZ_I_R=1, XYZ_I_R_N=2 }; // intensity, ring, normal
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @appendable struct LidarMeta {
+  @extensibility(APPENDABLE) struct LidarMeta {
     @key string stream_id;
     StreamMeta base;                  // frame_ref, T_bus_sensor, nominal_rate_hz
     LidarType     type;
@@ -49,7 +49,7 @@ module spatial { module sensing { module lidar {
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @appendable struct LidarFrame {
+  @extensibility(APPENDABLE) struct LidarFrame {
     @key string stream_id;
     uint64 frame_seq;
 
@@ -68,7 +68,7 @@ module spatial { module sensing { module lidar {
   };
 
   // Lightweight derivative for immediate fusion/tracking (optional)
-  @appendable struct LidarDetection {
+  @extensibility(APPENDABLE) struct LidarDetection {
     double xyz_m[3];
     float  intensity;
     uint16 ring;
@@ -76,7 +76,7 @@ module spatial { module sensing { module lidar {
   };
 
   // Detections topic — BEST_EFFORT
-  @appendable struct LidarDetectionSet {
+  @extensibility(APPENDABLE) struct LidarDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;               // coordinate frame of xyz_m

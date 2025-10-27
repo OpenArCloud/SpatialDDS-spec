@@ -19,12 +19,12 @@ module spatial {
     // Namespaced metadata uses JSON strings so producers can include
     // structured details without schema churn.
     //
-    @appendable struct AssetMetaKV {
+    @extensibility(APPENDABLE) struct AssetMetaKV {
       string namespace;  // e.g., "sensing.vision.features"
       string json;       // JSON object string; producer-defined for this namespace
     };
 
-    @appendable struct AssetRef {
+    @extensibility(APPENDABLE) struct AssetRef {
       string uri;          // required: how to fetch
       string media_type;   // required: IANA or registry-friendly type (with params)
       string hash;         // required: e.g., "sha256:<hex>"
@@ -43,7 +43,7 @@ module spatial {
     // --- Profile version advertisement (additive) ---
     // Semver per profile: name@MAJOR.MINOR
     // Each row declares a contiguous range of MINORs within a single MAJOR.
-    @appendable struct ProfileSupport {
+    @extensibility(APPENDABLE) struct ProfileSupport {
       string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
       uint32 major;       // compatible major (e.g., 1)
       uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
@@ -52,19 +52,19 @@ module spatial {
     };
 
     // --- Optional feature flags (namespaced strings, e.g., "blob.crc32", "rad.tensor.zstd") ---
-    @appendable struct FeatureFlag {
+    @extensibility(APPENDABLE) struct FeatureFlag {
       string name;
     };
 
     // --- Capabilities advertised in-band on the discovery bus ---
-    @appendable struct Capabilities {
+    @extensibility(APPENDABLE) struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
       sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.*"]
       sequence<FeatureFlag, 64>    features;           // optional feature flags
     };
 
     // --- Topic metadata to enable selection without parsing payloads ---
-    @appendable struct TopicMeta {
+    @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
       string type;        // registered type (see Topic Identity & QoS §2.2.1)
       string version;     // e.g., "v1"
@@ -85,7 +85,7 @@ module spatial {
       OTHER = 255
     };
 
-    @appendable struct KV {
+    @extensibility(APPENDABLE) struct KV {
       string key;
       string value;
     };
@@ -93,7 +93,7 @@ module spatial {
     // CoverageElement geometry is always expressed in the parent coverage_frame_ref.
     // If that frame is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
     // otherwise coordinates are in local meters.
-    @appendable struct CoverageElement {
+    @extensibility(APPENDABLE) struct CoverageElement {
       string type;              // "bbox" | "volume"
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
@@ -111,13 +111,13 @@ module spatial {
     };
 
     // Validity window for time-bounded transforms.
-    @appendable struct ValidityWindow {
+    @extensibility(APPENDABLE) struct ValidityWindow {
       Time   start;             // inclusive start
       uint32 duration_s;        // seconds from start
     };
 
     // Quaternion follows GeoPose: unit [x,y,z,w]; pose maps FROM 'from' TO 'to'
-    @appendable struct Transform {
+    @extensibility(APPENDABLE) struct Transform {
       string from;              // source frame (e.g., "map")
       string to;                // target frame (e.g., "earth-fixed")
       string stamp;             // ISO-8601 timestamp for this transform
@@ -133,7 +133,7 @@ module spatial {
       double q_xyzw[4];         // GeoPose order [x,y,z,w]
     };
 
-    @appendable struct ServiceAnnounce {
+    @extensibility(APPENDABLE) struct ServiceAnnounce {
       @key string service_id;
       string name;
       ServiceKind kind;
@@ -156,7 +156,7 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @appendable struct CoverageHint {
+    @extensibility(APPENDABLE) struct CoverageHint {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
@@ -167,7 +167,7 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @appendable struct CoverageQuery {
+    @extensibility(APPENDABLE) struct CoverageQuery {
       // Correlates responses to a specific query instance.
       @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
@@ -183,7 +183,7 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @appendable struct CoverageResponse {
+    @extensibility(APPENDABLE) struct CoverageResponse {
       // Mirrors CoverageQuery.query_id for correlation.
       uint64 query_id;
       // Result page.
@@ -192,7 +192,7 @@ module spatial {
       string next_page_token;
     };
 
-    @appendable struct ContentAnnounce {
+    @extensibility(APPENDABLE) struct ContentAnnounce {
       @key string content_id;
       string provider_id;
       string title;

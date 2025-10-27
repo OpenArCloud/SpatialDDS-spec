@@ -30,7 +30,7 @@ module spatial { module sensing { module rad {
   enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @appendable struct RadMeta {
+  @extensibility(APPENDABLE) struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
     StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
     RadTensorLayout layout;                // order of axes
@@ -48,7 +48,7 @@ module spatial { module sensing { module rad {
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @appendable struct RadFrame {
+  @extensibility(APPENDABLE) struct RadFrame {
     @key string stream_id;
     uint64 frame_seq;
 
@@ -64,7 +64,7 @@ module spatial { module sensing { module rad {
   };
 
   // Lightweight derivative for fast fusion/tracking (optional)
-  @appendable struct RadDetection {
+  @extensibility(APPENDABLE) struct RadDetection {
     double xyz_m[3];       // Cartesian point in base.frame_ref
     boolean has_v_r_mps;
     double  v_r_mps;       // valid when has_v_r_mps == true
@@ -73,7 +73,7 @@ module spatial { module sensing { module rad {
   };
 
   // Detections topic — BEST_EFFORT
-  @appendable struct RadDetectionSet {
+  @extensibility(APPENDABLE) struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;    // coordinate frame of xyz_m
