@@ -2,6 +2,11 @@
 // SpatialDDS Anchors 1.0
 // Bundles and updates for anchor registries
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module anchors {
     const string MODULE_ID = "spatial.anchors/1.0";

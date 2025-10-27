@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // SpatialDDS Sensing Common 1.0 (Extension module)
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial { module sensing { module common {
 
   const string MODULE_ID = "spatial.sensing.common/1.0";

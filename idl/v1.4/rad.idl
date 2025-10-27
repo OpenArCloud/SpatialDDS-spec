@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // SpatialDDS Radar (RAD) 1.0 — Extension profile
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial { module sensing { module rad {
 
   // Module identifier for discovery and schema registration
