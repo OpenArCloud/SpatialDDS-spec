@@ -849,7 +849,7 @@ module spatial {
     @appendable union CovMatrix switch (CovarianceType) {
       case COV_POS3:  spatial::common::Mat3x3 pos;
       case COV_POSE6: spatial::common::Mat6x6 pose;
-      case COV_NONE:  // empty
+      default: ;
     };
 
     @appendable struct GeoPose {
