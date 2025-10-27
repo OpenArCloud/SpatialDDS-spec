@@ -2,6 +2,11 @@
 // SpatialDDS Discovery 1.0
 // Lightweight announces for services, coverage, and content
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module disco {
 

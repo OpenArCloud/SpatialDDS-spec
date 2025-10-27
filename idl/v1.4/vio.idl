@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // SpatialDDS VIO/Inertial 1.0
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module vio {
 
