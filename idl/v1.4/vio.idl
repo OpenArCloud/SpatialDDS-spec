@@ -28,8 +28,8 @@ module spatial {
     // Raw IMU sample
     @extensibility(APPENDABLE) struct ImuSample {
       @key string imu_id;
-      double accel[3];               // m/s^2
-      double gyro[3];                // rad/s
+      spatial::common::Vec3 accel;   // m/s^2
+      spatial::common::Vec3 gyro;    // rad/s
       Time   stamp;
       string source_id;
       uint64 seq;
@@ -38,7 +38,7 @@ module spatial {
     // Magnetometer
     @extensibility(APPENDABLE) struct MagnetometerSample {
       @key string mag_id;
-      double mag[3];                 // microtesla
+      spatial::common::Vec3 mag;     // microtesla
       Time   stamp;
       FrameRef frame_ref;
       string source_id;
@@ -48,9 +48,9 @@ module spatial {
     // Convenience raw 9-DoF bundle
     @extensibility(APPENDABLE) struct SensorFusionSample {
       @key string fusion_id;         // e.g., device id
-      double accel[3];               // m/s^2
-      double gyro[3];                // rad/s
-      double mag[3];                 // microtesla
+      spatial::common::Vec3 accel;   // m/s^2
+      spatial::common::Vec3 gyro;    // rad/s
+      spatial::common::Vec3 mag;     // microtesla
       Time   stamp;
       FrameRef frame_ref;
       string source_id;
@@ -66,23 +66,23 @@ module spatial {
       FusionMode       mode;
       FusionSourceKind source_kind;
 
-      double q[4];                   // quaternion (x,y,z,w) in GeoPose order
+      spatial::common::QuaternionXYZW q; // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
-      double t[3];                   // meters, in frame_ref
+      spatial::common::Vec3 t;       // meters, in frame_ref
 
       boolean has_gravity;
-      double  gravity[3];            // m/s^2
+      spatial::common::Vec3  gravity;    // m/s^2
       boolean has_lin_accel;
-      double  lin_accel[3];          // m/s^2
+      spatial::common::Vec3  lin_accel;  // m/s^2
       boolean has_gyro_bias;
-      double  gyro_bias[3];          // rad/s
+      spatial::common::Vec3  gyro_bias;  // rad/s
       boolean has_accel_bias;
-      double  accel_bias[3];         // m/s^2
+      spatial::common::Vec3  accel_bias; // m/s^2
 
       boolean has_cov_orient;
-      double  cov_orient[9];         // 3x3 covariance
+      spatial::common::Mat3x3  cov_orient; // 3x3 covariance
       boolean has_cov_pos;
-      double  cov_pos[9];            // 3x3 covariance
+      spatial::common::Mat3x3  cov_pos;    // 3x3 covariance
 
       Time   stamp;
       FrameRef frame_ref;

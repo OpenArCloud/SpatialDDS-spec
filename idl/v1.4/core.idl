@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // SpatialDDS Core 1.0
 
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+
 module spatial {
   module core {
 
@@ -14,13 +18,13 @@ module spatial {
     };
 
     struct PoseSE3 {
-      double t[3];    // translation (x,y,z)
-      double q[4];    // quaternion (x,y,z,w) in GeoPose order
+      spatial::common::Vec3 t;               // translation (x,y,z)
+      spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
     struct Aabb3 {
-      double min_xyz[3];
-      double max_xyz[3];
+      spatial::common::Vec3 min_xyz;
+      spatial::common::Vec3 max_xyz;
     };
 
     @extensibility(APPENDABLE) struct TileKey {
@@ -45,8 +49,8 @@ module spatial {
       @key TileKey key;              // unique tile key
       boolean has_tile_id_compat;
       string  tile_id_compat;        // optional human-readable id
-      double min_xyz[3];             // AABB min (local frame)
-      double max_xyz[3];             // AABB max (local frame)
+      spatial::common::Vec3 min_xyz; // AABB min (local frame)
+      spatial::common::Vec3 max_xyz; // AABB max (local frame)
       uint32 lod;                    // may mirror key.level
       uint64 version;                // monotonic full-state version
       string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
@@ -54,7 +58,7 @@ module spatial {
       sequence<string, 32> blob_ids; // blobs composing this tile
       // optional geo hints
       boolean has_centroid_llh;
-      double  centroid_llh[3];       // lat,lon,alt (deg,deg,m)
+      spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
       string schema_version;         // MUST be "spatial.core/1.0"
@@ -98,7 +102,7 @@ module spatial {
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
       boolean has_cov;
-      double  cov[36];         // 6x6 covariance (row-major)
+      spatial::common::Mat6x6 cov;   // 6x6 covariance (row-major)
       Time    stamp;
       FrameRef frame_ref;      // e.g., "map"
       string  source_id;
@@ -112,7 +116,7 @@ module spatial {
       string from_id;          // source node
       string to_id;            // target node
       EdgeTypeCore type;       // ODOM or LOOP
-      double information[36];  // 6x6 info matrix (row-major)
+      spatial::common::Mat6x6 information; // 6x6 info matrix (row-major)
       Time   stamp;
       string source_id;
       uint64 seq;
@@ -127,13 +131,10 @@ module spatial {
       COV_POS3 = 3,   // 3x3 over (x, y, z)
       COV_POSE6 = 6   // 6x6 over (x, y, z, roll, pitch, yaw) [radians]
     };
-    typedef double Mat3x3[9];   // row-major
-    typedef double Mat6x6[36];  // row-major
-
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @extensibility(APPENDABLE) union CovMatrix switch (CovarianceType) {
-      case COV_POS3:  Mat3x3 pos;
-      case COV_POSE6: Mat6x6 pose;
+      case COV_POS3:  spatial::common::Mat3x3 pos;
+      case COV_POSE6: spatial::common::Mat6x6 pose;
       case COV_NONE:  // empty
     };
 
@@ -141,7 +142,7 @@ module spatial {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
-      double q[4];             // orientation (x,y,z,w) in GeoPose order
+      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
       GeoFrameKind frame_kind; // ECEF/ENU/NED
       string frame_ref;        // for ENU/NED: "@lat,lon,alt"
       Time   stamp;
@@ -166,7 +167,7 @@ module spatial {
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
       boolean has_cov;
-      double  cov[36];          // 6x6 covariance
+      spatial::common::Mat6x6 cov; // 6x6 covariance
     };
 
     // ---------- Snapshot / Catch-up ----------

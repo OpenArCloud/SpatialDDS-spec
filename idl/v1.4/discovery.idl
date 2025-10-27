@@ -105,7 +105,7 @@ module spatial {
 
       // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
       boolean has_bbox;
-      double  bbox[4];          // [west, south, east, north]
+      spatial::common::BBox2D bbox; // [west, south, east, north]
 
       // When has_aabb == true, aabb is authoritative; NaN has no special meaning.
       boolean has_aabb;
@@ -134,8 +134,8 @@ module spatial {
       // (or until superseded, per system policy).
       boolean        has_valid;
       ValidityWindow valid;
-      double t_m[3];            // meters in 'from' frame
-      double q_xyzw[4];         // GeoPose order [x,y,z,w]
+      spatial::common::Vec3 t_m;           // meters in 'from' frame
+      spatial::common::QuaternionXYZW q_xyzw; // GeoPose order [x,y,z,w]
     };
 
     @extensibility(APPENDABLE) struct ServiceAnnounce {

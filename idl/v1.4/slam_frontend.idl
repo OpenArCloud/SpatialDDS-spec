@@ -68,9 +68,9 @@ module spatial {
     @extensibility(APPENDABLE) struct Landmark {
       @key string lm_id;
       string map_id;
-      double p[3];
+      spatial::common::Vec3 p;
       boolean has_cov;
-      double  cov[9];                      // 3x3 pos covariance (row-major)
+      spatial::common::Mat3x3  cov;        // 3x3 pos covariance (row-major)
       sequence<uint8, 4096> desc;          // descriptor bytes
       string desc_type;
       Time   stamp;
