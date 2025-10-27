@@ -713,6 +713,10 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 // SPDX-License-Identifier: MIT
 // SpatialDDS Core 1.0
 
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+
 module spatial {
   module core {
 
@@ -726,13 +730,13 @@ module spatial {
     };
 
     struct PoseSE3 {
-      double t[3];    // translation (x,y,z)
-      double q[4];    // quaternion (x,y,z,w) in GeoPose order
+      spatial::common::Vec3 t;               // translation (x,y,z)
+      spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
     struct Aabb3 {
-      double min_xyz[3];
-      double max_xyz[3];
+      spatial::common::Vec3 min_xyz;
+      spatial::common::Vec3 max_xyz;
     };
 
     @appendable struct TileKey {
@@ -757,8 +761,8 @@ module spatial {
       @key TileKey key;              // unique tile key
       boolean has_tile_id_compat;
       string  tile_id_compat;        // optional human-readable id
-      double min_xyz[3];             // AABB min (local frame)
-      double max_xyz[3];             // AABB max (local frame)
+      spatial::common::Vec3 min_xyz; // AABB min (local frame)
+      spatial::common::Vec3 max_xyz; // AABB max (local frame)
       uint32 lod;                    // may mirror key.level
       uint64 version;                // monotonic full-state version
       string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
@@ -766,7 +770,7 @@ module spatial {
       sequence<string, 32> blob_ids; // blobs composing this tile
       // optional geo hints
       boolean has_centroid_llh;
-      double  centroid_llh[3];       // lat,lon,alt (deg,deg,m)
+      spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
       string schema_version;         // MUST be "spatial.core/1.0"
@@ -812,7 +816,7 @@ module spatial {
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
       boolean has_cov;
-      double  cov[36];         // 6x6 covariance (row-major)
+      spatial::common::Mat6x6 cov;   // 6x6 covariance (row-major)
       Time    stamp;
       FrameRef frame_ref;      // e.g., "map"
       string  source_id;
@@ -826,7 +830,7 @@ module spatial {
       string from_id;          // source node
       string to_id;            // target node
       EdgeTypeCore type;       // ODOM or LOOP
-      double information[36];  // 6x6 info matrix (row-major)
+      spatial::common::Mat6x6 information; // 6x6 info matrix (row-major)
       Time   stamp;
       string source_id;
       uint64 seq;
@@ -841,13 +845,10 @@ module spatial {
       COV_POS3 = 3,   // 3x3 over (x, y, z)
       COV_POSE6 = 6   // 6x6 over (x, y, z, roll, pitch, yaw) [radians]
     };
-    typedef double Mat3x3[9];   // row-major
-    typedef double Mat6x6[36];  // row-major
-
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @appendable union CovMatrix switch (CovarianceType) {
-      case COV_POS3:  Mat3x3 pos;
-      case COV_POSE6: Mat6x6 pose;
+      case COV_POS3:  spatial::common::Mat3x3 pos;
+      case COV_POSE6: spatial::common::Mat6x6 pose;
       case COV_NONE:  // empty
     };
 
@@ -855,7 +856,7 @@ module spatial {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
-      double q[4];             // orientation (x,y,z,w) in GeoPose order
+      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
       GeoFrameKind frame_kind; // ECEF/ENU/NED
       string frame_ref;        // for ENU/NED: "@lat,lon,alt"
       Time   stamp;
@@ -880,7 +881,7 @@ module spatial {
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
       boolean has_cov;
-      double  cov[36];          // 6x6 covariance
+      spatial::common::Mat6x6 cov; // 6x6 covariance
     };
 
     // ---------- Snapshot / Catch-up ----------
@@ -962,7 +963,7 @@ module spatial {
 
       // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
       boolean has_bbox;
-      double  bbox[4];          // [west, south, east, north]
+      spatial::common::BBox2D bbox; // [west, south, east, north]
 
       // When has_aabb == true, aabb is authoritative; NaN has no special meaning.
       boolean has_aabb;
@@ -991,8 +992,8 @@ module spatial {
       // (or until superseded, per system policy).
       boolean        has_valid;
       ValidityWindow valid;
-      double t_m[3];            // meters in 'from' frame
-      double q_xyzw[4];         // GeoPose order [x,y,z,w]
+      spatial::common::Vec3 t_m;           // meters in 'from' frame
+      spatial::common::QuaternionXYZW q_xyzw; // GeoPose order [x,y,z,w]
     };
 
     @appendable struct ServiceAnnounce {
@@ -1147,6 +1148,31 @@ module spatial {
 ## **Appendix D: Extension Profiles**
 
 *These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+
+### **Common Type Aliases**
+
+*Shared numeric array typedefs used across SpatialDDS modules.*
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Common Type Aliases 1.0
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#define SPATIAL_COMMON_TYPES_INCLUDED
+
+module spatial {
+  module common {
+    typedef double BBox2D[4];
+    typedef double Aabb3D[6];
+    typedef double QuaternionXYZW[4]; // (x,y,z,w)
+    typedef double Vec3[3];
+    typedef double Mat3x3[9];
+    typedef double Mat6x6[36];
+  };
+};
+
+#endif // SPATIAL_COMMON_TYPES_INCLUDED
+```
 
 ### **Geometry Primitives**
 
@@ -1393,8 +1419,8 @@ module spatial {
     // Raw IMU sample
     @appendable struct ImuSample {
       @key string imu_id;
-      double accel[3];               // m/s^2
-      double gyro[3];                // rad/s
+      spatial::common::Vec3 accel;   // m/s^2
+      spatial::common::Vec3 gyro;    // rad/s
       Time   stamp;
       string source_id;
       uint64 seq;
@@ -1403,7 +1429,7 @@ module spatial {
     // Magnetometer
     @appendable struct MagnetometerSample {
       @key string mag_id;
-      double mag[3];                 // microtesla
+      spatial::common::Vec3 mag;     // microtesla
       Time   stamp;
       FrameRef frame_ref;
       string source_id;
@@ -1413,9 +1439,9 @@ module spatial {
     // Convenience raw 9-DoF bundle
     @appendable struct SensorFusionSample {
       @key string fusion_id;         // e.g., device id
-      double accel[3];               // m/s^2
-      double gyro[3];                // rad/s
-      double mag[3];                 // microtesla
+      spatial::common::Vec3 accel;   // m/s^2
+      spatial::common::Vec3 gyro;    // rad/s
+      spatial::common::Vec3 mag;     // microtesla
       Time   stamp;
       FrameRef frame_ref;
       string source_id;
@@ -1431,23 +1457,23 @@ module spatial {
       FusionMode       mode;
       FusionSourceKind source_kind;
 
-      double q[4];                   // quaternion (x,y,z,w) in GeoPose order
+      spatial::common::QuaternionXYZW q; // quaternion (x,y,z,w) in GeoPose order
       boolean has_position;
-      double t[3];                   // meters, in frame_ref
+      spatial::common::Vec3 t;       // meters, in frame_ref
 
       boolean has_gravity;
-      double  gravity[3];            // m/s^2
+      spatial::common::Vec3  gravity;    // m/s^2
       boolean has_lin_accel;
-      double  lin_accel[3];          // m/s^2
+      spatial::common::Vec3  lin_accel;  // m/s^2
       boolean has_gyro_bias;
-      double  gyro_bias[3];          // rad/s
+      spatial::common::Vec3  gyro_bias;  // rad/s
       boolean has_accel_bias;
-      double  accel_bias[3];         // m/s^2
+      spatial::common::Vec3  accel_bias; // m/s^2
 
       boolean has_cov_orient;
-      double  cov_orient[9];         // 3x3 covariance
+      spatial::common::Mat3x3  cov_orient; // 3x3 covariance
       boolean has_cov_pos;
-      double  cov_pos[9];            // 3x3 covariance
+      spatial::common::Mat3x3  cov_pos;    // 3x3 covariance
 
       Time   stamp;
       FrameRef frame_ref;
@@ -1639,9 +1665,9 @@ module spatial {
     @appendable struct Landmark {
       @key string lm_id;
       string map_id;
-      double p[3];
+      spatial::common::Vec3 p;
       boolean has_cov;
-      double  cov[9];                      // 3x3 pos covariance (row-major)
+      spatial::common::Mat3x3  cov;        // 3x3 pos covariance (row-major)
       sequence<uint8, 4096> desc;          // descriptor bytes
       string desc_type;
       Time   stamp;
@@ -1719,14 +1745,14 @@ module spatial {
       float  score;              // [0..1]
 
       // Oriented bounding box in frame_ref
-      double center[3];          // m
-      double size[3];            // width,height,depth (m)
-      double q[4];               // orientation (x,y,z,w) in GeoPose order
+      spatial::common::Vec3 center;      // m
+      spatial::common::Vec3 size;        // width,height,depth (m)
+      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
 
       // Uncertainty (optional)
       boolean has_covariance;
-      double  cov_pos[9];        // 3x3 position covariance (row-major)
-      double  cov_rot[9];        // 3x3 rotation covariance (row-major)
+      spatial::common::Mat3x3 cov_pos; // 3x3 position covariance (row-major)
+      spatial::common::Mat3x3 cov_rot; // 3x3 rotation covariance (row-major)
 
       // Optional instance tracking
       boolean has_track_id;
@@ -1822,7 +1848,7 @@ module spatial { module sensing { module rad {
 
   // Lightweight derivative for fast fusion/tracking (optional)
   @appendable struct RadDetection {
-    double xyz_m[3];       // Cartesian point in base.frame_ref
+    spatial::common::Vec3 xyz_m;       // Cartesian point in base.frame_ref
     boolean has_v_r_mps;
     double  v_r_mps;       // valid when has_v_r_mps == true
     float  intensity;      // reflectivity/magnitude
@@ -1917,7 +1943,7 @@ module spatial { module sensing { module lidar {
 
   // Lightweight derivative for immediate fusion/tracking (optional)
   @appendable struct LidarDetection {
-    double xyz_m[3];
+    spatial::common::Vec3 xyz_m;
     float  intensity;
     uint16 ring;
     float  quality;                   // 0..1
@@ -1959,7 +1985,7 @@ module spatial {
       PoseSE3 pose;             // local pose in map frame
       GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
       boolean has_cov;
-      double  cov[36];          // 6x6 covariance in local frame
+      spatial::common::Mat6x6  cov; // 6x6 covariance in local frame
       Time    stamp;
       FrameRef frame_ref;       // local frame
       string  source_id;

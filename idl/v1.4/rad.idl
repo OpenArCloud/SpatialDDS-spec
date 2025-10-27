@@ -70,7 +70,7 @@ module spatial { module sensing { module rad {
 
   // Lightweight derivative for fast fusion/tracking (optional)
   @extensibility(APPENDABLE) struct RadDetection {
-    double xyz_m[3];       // Cartesian point in base.frame_ref
+    spatial::common::Vec3 xyz_m;       // Cartesian point in base.frame_ref
     boolean has_v_r_mps;
     double  v_r_mps;       // valid when has_v_r_mps == true
     float  intensity;      // reflectivity/magnitude

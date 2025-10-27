@@ -74,7 +74,7 @@ module spatial { module sensing { module lidar {
 
   // Lightweight derivative for immediate fusion/tracking (optional)
   @extensibility(APPENDABLE) struct LidarDetection {
-    double xyz_m[3];
+    spatial::common::Vec3 xyz_m;
     float  intensity;
     uint16 ring;
     float  quality;                   // 0..1
