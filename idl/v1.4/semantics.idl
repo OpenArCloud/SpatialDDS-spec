@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.0
+// SpatialDDS Semantics 1.4
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 module spatial {
   module semantics {
 
-    const string MODULE_ID = "spatial.semantics/1.0";
+    const string MODULE_ID = "spatial.semantics/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::TileKey TileKey;
@@ -22,7 +22,7 @@ module spatial {
       string camera_id;         // camera
       string class_id;          // ontology label
       float  score;             // [0..1]
-      float  bbox[4];           // [u_min,v_min,u_max,v_max] (px)
+      spatial::common::BBox2D bbox; // [u_min,v_min,u_max,v_max] (px)
       boolean has_mask;         // if a pixel mask exists
       string  mask_blob_id;     // BlobChunk ref (role="mask")
       Time   stamp;

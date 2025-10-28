@@ -45,6 +45,10 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
 
+### **OMG IDL 4.x Compliance (Normative)**
+
+All SpatialDDS IDLs conform to OMG IDL 4.2 and DDS-XTypes 1.3. Extensibility is declared using `@extensibility(APPENDABLE)`. Compound identity is defined via multiple `@key` annotations. Field initialization is a runtime concern, not declared in IDL.
+
 ### **Specification Layers (Informative)**
 
 | Layer | Purpose | Core Artifacts |

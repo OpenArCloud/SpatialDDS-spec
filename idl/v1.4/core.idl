@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.0
+// SpatialDDS Core 1.4
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
@@ -9,7 +9,7 @@ module spatial {
   module core {
 
     // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.0";
+    const string MODULE_ID = "spatial.core/1.4";
 
     // ---------- Utility ----------
     struct Time {
@@ -61,7 +61,7 @@ module spatial {
       spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.0"
+      string schema_version;         // MUST be "spatial.core/1.4"
     };
 
     @extensibility(APPENDABLE) struct TilePatch {
@@ -76,22 +76,13 @@ module spatial {
 
     @extensibility(APPENDABLE) struct BlobChunk {
       // Composite key: (blob_id, index) uniquely identifies a chunk instance.
-      @key string blob_id;               // which blob
-      @key uint32 index;                 // chunk index (0..N-1)
-      sequence<uint8, 262144> data;      // ≤256 KiB per sample
-
-      // --- Additive fields for robust reassembly ---
-
-      // Total number of chunks expected for this blob_id.
-      // Enables preallocation and deterministic completion even if 'last' arrives late.
-      uint32 total_chunks;
-
-      // Monotonic sequence number within this blob_id (non-key).
-      // Detects gaps and helps reorder on BEST_EFFORT QoS.
-      uint32 seq;
-
-      // CRC32 checksum over 'data' for per-chunk integrity verification.
-      uint32 crc32;
+      @key string blob_id;   // which blob
+      @key uint32 index;     // chunk index (0..N-1)
+      uint32 total_chunks;   // total number of chunks expected for this blob_id
+      uint32 seq;            // monotonic sequence number within this blob_id
+      uint32 crc32;          // CRC32 checksum over 'data'
+      sequence<uint8, 262144> data; // ≤256 KiB per sample
+      boolean last;          // true when this is the final chunk for blob_id
     };
 
     // ---------- Pose Graph (minimal) ----------
@@ -126,15 +117,10 @@ module spatial {
     // ---------- Geo anchoring ----------
     enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
 
-    enum CovarianceType {
-      COV_NONE = 0,   // no covariance provided
-      COV_POS3 = 3,   // 3x3 over (x, y, z)
-      COV_POSE6 = 6   // 6x6 over (x, y, z, roll, pitch, yaw) [radians]
-    };
     // Discriminated union: exactly one covariance payload (or none) is serialized.
-    @extensibility(APPENDABLE) union CovMatrix switch (CovarianceType) {
-      case COV_POS3:  spatial::common::Mat3x3 pos;
-      case COV_POSE6: spatial::common::Mat6x6 pose;
+    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
+      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
       default: ;
     };
 
@@ -144,7 +130,7 @@ module spatial {
       double alt_m;            // ellipsoidal meters
       spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
       GeoFrameKind frame_kind; // ECEF/ENU/NED
-      string frame_ref;        // for ENU/NED: "@lat,lon,alt"
+      FrameRef frame_ref;      // for ENU/NED: canonical frame reference
       Time   stamp;
       // Exactly one covariance payload will be present based on the discriminator.
       CovMatrix cov;
