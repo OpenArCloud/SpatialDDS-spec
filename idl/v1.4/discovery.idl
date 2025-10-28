@@ -103,11 +103,12 @@ module spatial {
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
-      // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
+      // Presence flags indicate which geometry payloads are provided.
+      // When has_bbox == true, bbox is authoritative.
       boolean has_bbox;
       spatial::common::BBox2D bbox; // [west, south, east, north]
 
-      // When has_aabb == true, aabb is authoritative; NaN has no special meaning.
+      // When has_aabb == true, aabb is authoritative.
       boolean has_aabb;
       Aabb3  aabb;              // axis-aligned bounds in the declared frame
 

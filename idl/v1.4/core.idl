@@ -12,10 +12,8 @@ module spatial {
     const string MODULE_ID = "spatial.core/1.4";
 
     // ---------- Utility ----------
-    struct Time {
-      int32  sec;     // seconds since UNIX epoch (UTC)
-      uint32 nsec;    // nanoseconds [0..1e9)
-    };
+    // Expose builtin Time under spatial::core
+    typedef builtin::Time Time;
 
     struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
