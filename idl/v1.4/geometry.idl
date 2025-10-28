@@ -1,3 +1,6 @@
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#define SPATIAL_GEOMETRY_INCLUDED
+
 // SPDX-License-Identifier: MIT
 // SpatialDDS Geometry 1.0
 
@@ -13,3 +16,5 @@ module spatial {
 
   }; // module geometry
 };
+
+#endif // SPATIAL_GEOMETRY_INCLUDED

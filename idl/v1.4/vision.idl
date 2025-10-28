@@ -5,6 +5,10 @@
 #define SPATIAL_CORE_INCLUDED
 #include "core.idl"
 #endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial { module sensing { module vision {
 
@@ -32,11 +36,39 @@ module spatial { module sensing { module vision {
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Camera / imaging specifics
-  enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
-  enum Distortion   { NONE=0, RADTAN=1, KANNALA_BRANDT=2 };
-  enum PixFormat    { UNKNOWN=0, YUV420=1, RGB8=2, BGR8=3, RGBA8=4, RAW10=10, RAW12=12, RAW16=16 };
-  enum ColorSpace   { SRGB=0, REC709=1, REC2020=2, LINEAR=10 };
-  enum RigRole      { LEFT=0, RIGHT=1, CENTER=2, AUX=3 };
+  enum CamModel {
+    @value(0) PINHOLE,
+    @value(1) FISHEYE_EQUIDISTANT,
+    @value(2) KB_4,
+    @value(3) OMNI
+  };
+  enum Distortion {
+    @value(0) NONE,
+    @value(1) RADTAN,
+    @value(2) KANNALA_BRANDT
+  };
+  enum PixFormat {
+    @value(0)  UNKNOWN,
+    @value(1)  YUV420,
+    @value(2)  RGB8,
+    @value(3)  BGR8,
+    @value(4)  RGBA8,
+    @value(10) RAW10,
+    @value(12) RAW12,
+    @value(16) RAW16
+  };
+  enum ColorSpace {
+    @value(0)  SRGB,
+    @value(1)  REC709,
+    @value(2)  REC2020,
+    @value(10) LINEAR
+  };
+  enum RigRole {
+    @value(0) LEFT,
+    @value(1) RIGHT,
+    @value(2) CENTER,
+    @value(3) AUX
+  };
 
   @extensibility(APPENDABLE) struct CamIntrinsics {
     CamModel model;

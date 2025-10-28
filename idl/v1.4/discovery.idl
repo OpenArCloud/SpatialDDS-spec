@@ -75,19 +75,19 @@ module spatial {
       string version;     // e.g., "v1"
       string qos_profile; // e.g., "VIDEO_LIVE"
       // optional advisory hints (topic-level, not per-message)
-      float32 target_rate_hz;
+      float target_rate_hz;
       uint32  max_chunk_bytes;
     };
 
     enum ServiceKind {
-      VPS = 0,
-      MAPPING = 1,
-      RELOCAL = 2,
-      SEMANTICS = 3,
-      STORAGE = 4,
-      CONTENT = 5,
-      ANCHOR_REGISTRY = 6,
-      OTHER = 255
+      @value(0)   VPS,
+      @value(1)   MAPPING,
+      @value(2)   RELOCAL,
+      @value(3)   SEMANTICS,
+      @value(4)   STORAGE,
+      @value(5)   CONTENT,
+      @value(6)   ANCHOR_REGISTRY,
+      @value(255) OTHER
     };
 
     @extensibility(APPENDABLE) struct KV {
@@ -189,15 +189,6 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @extensibility(APPENDABLE) struct CoverageResponse {
-      // Mirrors CoverageQuery.query_id for correlation.
-      uint64 query_id;
-      // Result page.
-      sequence<ContentAnnounce,65535> results;
-      // Empty when no further pages remain.
-      string next_page_token;
-    };
-
     @extensibility(APPENDABLE) struct ContentAnnounce {
       @key string content_id;
       string provider_id;
@@ -215,6 +206,15 @@ module spatial {
       Time available_until;
       Time stamp;
       uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct CoverageResponse {
+      // Mirrors CoverageQuery.query_id for correlation.
+      uint64 query_id;
+      // Result page.
+      sequence<ContentAnnounce,65535> results;
+      // Empty when no further pages remain.
+      string next_page_token;
     };
 
   }; // module disco

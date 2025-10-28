@@ -5,6 +5,10 @@
 #define SPATIAL_CORE_INCLUDED
 #include "core.idl"
 #endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial { module sensing { module rad {
 
@@ -32,7 +36,11 @@ module spatial { module sensing { module rad {
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Layout of the RAD tensor
-  enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
+  enum RadTensorLayout {
+    @value(0)   RA_D,
+    @value(1)   R_AZ_EL_D,
+    @value(255) CUSTOM
+  };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @extensibility(APPENDABLE) struct RadMeta {

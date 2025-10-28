@@ -25,7 +25,10 @@ module spatial { module sensing { module common {
   typedef spatial::geometry::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
-  enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+  enum AxisEncoding {
+    @value(0) CENTERS,
+    @value(1) LINSPACE
+  };
 
   // Compact parametric axis definition
   @extensibility(APPENDABLE) struct Linspace {
@@ -38,7 +41,6 @@ module spatial { module sensing { module common {
   @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
     case CENTERS:  sequence<double, 65535> centers;
     case LINSPACE: Linspace lin;
-    default: ;
   };
 
   @extensibility(APPENDABLE) struct Axis {
@@ -81,22 +83,34 @@ module spatial { module sensing { module common {
 
   // ---- Codecs / Payload kinds (shared enums) ----
   enum Codec {
-    CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, GZIP = 3,
-    DRACO = 10,     // geometry compression
-    JPEG = 20, H264 = 21, H265 = 22, AV1 = 23, // vision
-    FP8Q = 40, FP4Q = 41, AE_V1 = 42          // quant/learned (tensors)
+    @value(0)  CODEC_NONE,
+    @value(1)  LZ4,
+    @value(2)  ZSTD,
+    @value(3)  GZIP,
+    @value(10) DRACO,     // geometry compression
+    @value(20) JPEG,
+    @value(21) H264,
+    @value(22) H265,
+    @value(23) AV1,
+    @value(40) FP8Q,
+    @value(41) FP4Q,
+    @value(42) AE_V1
   };
 
   enum PayloadKind {
-    DENSE_TILES = 0,    // tiled dense blocks (e.g., tensor tiles)
-    SPARSE_COO = 1,     // sparse indices + values
-    LATENT = 2,         // learned latent vectors
-    BLOB_GEOMETRY = 10, // PCC/PLY/glTF+Draco
-    BLOB_RASTER = 11    // JPEG/GOP chunk(s)
+    @value(0)  DENSE_TILES,    // tiled dense blocks (e.g., tensor tiles)
+    @value(1)  SPARSE_COO,     // sparse indices + values
+    @value(2)  LATENT,         // learned latent vectors
+    @value(10) BLOB_GEOMETRY,  // PCC/PLY/glTF+Draco
+    @value(11) BLOB_RASTER     // JPEG/GOP chunk(s)
   };
 
   enum SampleType {        // post-decode voxel/point sample type
-    U8_MAG = 0, F16_MAG = 1, CF16 = 2, CF32 = 3, MAGPHASE_S8 = 4
+    @value(0) U8_MAG,
+    @value(1) F16_MAG,
+    @value(2) CF16,
+    @value(3) CF32,
+    @value(4) MAGPHASE_S8
   };
 
   // ---- Stream identity & calibration header shared by sensors ----
@@ -122,7 +136,11 @@ module spatial { module sensing { module common {
   };
 
   // ---- Quality & health (uniform across sensors) ----
-  enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
+  enum Health {
+    @value(0) OK,
+    @value(1) DEGRADED,
+    @value(2) ERROR
+  };
 
   @extensibility(APPENDABLE) struct FrameQuality {
     boolean has_snr_db;

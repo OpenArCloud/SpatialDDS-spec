@@ -5,6 +5,10 @@
 #define SPATIAL_CORE_INCLUDED
 #include "core.idl"
 #endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial { module sensing { module lidar {
 
@@ -32,9 +36,25 @@ module spatial { module sensing { module lidar {
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Device + data model
-  enum LidarType    { SPINNING_2D=0, MULTI_BEAM_3D=1, SOLID_STATE=2 };
-  enum CloudEncoding{ PCD=0, PLY=1, LAS=2, LAZ=3, GLTF_DRACO=10, MPEG_PCC=20, CUSTOM_BIN=255 };
-  enum PointLayout  { XYZ_I=0, XYZ_I_R=1, XYZ_I_R_N=2 }; // intensity, ring, normal
+  enum LidarType {
+    @value(0) SPINNING_2D,
+    @value(1) MULTI_BEAM_3D,
+    @value(2) SOLID_STATE
+  };
+  enum CloudEncoding {
+    @value(0)   PCD,
+    @value(1)   PLY,
+    @value(2)   LAS,
+    @value(3)   LAZ,
+    @value(10)  GLTF_DRACO,
+    @value(20)  MPEG_PCC,
+    @value(255) CUSTOM_BIN
+  };
+  enum PointLayout { // intensity, ring, normal
+    @value(0) XYZ_I,
+    @value(1) XYZ_I_R,
+    @value(2) XYZ_I_R_N
+  };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @extensibility(APPENDABLE) struct LidarMeta {

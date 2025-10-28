@@ -38,7 +38,11 @@ module spatial {
       string checksum;
     };
 
-    enum AnchorOp { ADD=0, UPDATE=1, REMOVE=2 };
+    enum AnchorOp {
+      @value(0) ADD,
+      @value(1) UPDATE,
+      @value(2) REMOVE
+    };
 
     @extensibility(APPENDABLE) struct AnchorDelta {
       @key string set_id;

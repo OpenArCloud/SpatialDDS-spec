@@ -5,6 +5,10 @@
 #define SPATIAL_CORE_INCLUDED
 #include "core.idl"
 #endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial {
   module semantics {

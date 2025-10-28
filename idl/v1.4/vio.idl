@@ -58,8 +58,19 @@ module spatial {
     };
 
     // Fused state (orientation ± position)
-    enum FusionMode { ORIENTATION_3DOF = 0, ORIENTATION_6DOF = 1, POSE_6DOF = 2 };
-    enum FusionSourceKind { EKF = 0, AHRS = 1, VIO = 2, IMU_ONLY = 3, MAG_AIDED = 4, AR_PLATFORM = 5 };
+    enum FusionMode {
+      @value(0) ORIENTATION_3DOF,
+      @value(1) ORIENTATION_6DOF,
+      @value(2) POSE_6DOF
+    };
+    enum FusionSourceKind {
+      @value(0) EKF,
+      @value(1) AHRS,
+      @value(2) VIO,
+      @value(3) IMU_ONLY,
+      @value(4) MAG_AIDED,
+      @value(5) AR_PLATFORM
+    };
 
     @extensibility(APPENDABLE) struct FusedState {
       @key string fusion_id;

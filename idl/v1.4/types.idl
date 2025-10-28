@@ -4,6 +4,13 @@
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
 
+module builtin {
+  @extensibility(FINAL) struct Time {
+    int32 sec;      // seconds since UNIX epoch (UTC)
+    uint32 nanosec; // nanoseconds [0, 1e9)
+  };
+};
+
 module spatial {
   module common {
     typedef double BBox2D[4];
@@ -14,9 +21,9 @@ module spatial {
     typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
 
     enum CovarianceType {
-      COV_NONE = 0,
-      COV_POS3 = 3,
-      COV_POSE6 = 6
+      @value(0) COV_NONE,
+      @value(3) COV_POS3,
+      @value(6) COV_POSE6
     };
   };
 };

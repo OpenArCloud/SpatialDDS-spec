@@ -16,7 +16,12 @@ module spatial {
     typedef spatial::geometry::FrameRef FrameRef;
 
     // Camera calibration
-    enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
+    enum DistortionModelKind {
+      @value(0) NONE,
+      @value(1) RADTAN,
+      @value(2) EQUIDISTANT,
+      @value(3) KANNALA_BRANDT
+    };
 
     @extensibility(APPENDABLE) struct CameraInfo {
       @key string camera_id;

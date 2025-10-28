@@ -4,6 +4,9 @@
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
 #endif
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#include "geometry.idl"
+#endif
 
 module spatial {
   module core {
@@ -15,12 +18,12 @@ module spatial {
     // Expose builtin Time under spatial::core
     typedef builtin::Time Time;
 
-    struct PoseSE3 {
+    @extensibility(FINAL) struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
       spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
-    struct Aabb3 {
+    @extensibility(FINAL) struct Aabb3 {
       spatial::common::Vec3 min_xyz;
       spatial::common::Vec3 max_xyz;
     };
@@ -33,7 +36,11 @@ module spatial {
     };
 
     // ---------- Geometry ----------
-    enum PatchOp { ADD = 0, REPLACE = 1, REMOVE = 2 };
+    enum PatchOp {
+      @value(0) ADD,
+      @value(1) REPLACE,
+      @value(2) REMOVE
+    };
 
     @extensibility(APPENDABLE) struct BlobRef {
       string blob_id;   // UUID or content-address
@@ -84,7 +91,10 @@ module spatial {
     };
 
     // ---------- Pose Graph (minimal) ----------
-    enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
+    enum EdgeTypeCore {
+      @value(0) ODOM,
+      @value(1) LOOP
+    };
 
     @extensibility(APPENDABLE) struct Node {
       string map_id;
@@ -113,13 +123,17 @@ module spatial {
     };
 
     // ---------- Geo anchoring ----------
-    enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
+    enum GeoFrameKind {
+      @value(0) ECEF,
+      @value(1) ENU,
+      @value(2) NED
+    };
 
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_NONE: octet _unused;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
-      default: ;
     };
 
     @extensibility(APPENDABLE) struct GeoPose {
