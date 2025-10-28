@@ -43,12 +43,13 @@ The `Axis` struct embeds a discriminated union to ensure only one encoding is tr
 
 ```idl
 enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
-@appendable struct Linspace { double start; double step; uint32 count; };
-@appendable union AxisSpec switch (AxisEncoding) {
+@extensibility(APPENDABLE) struct Linspace { double start; double step; uint32 count; };
+@extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
   case CENTERS:  sequence<double, 65535> centers;
   case LINSPACE: Linspace lin;
+  default: ;
 };
-@appendable struct Axis { string name; string unit; AxisSpec spec; };
+@extensibility(APPENDABLE) struct Axis { string name; string unit; AxisSpec spec; };
 ```
 
 * `CENTERS` — Explicit sample positions carried as `double` values.

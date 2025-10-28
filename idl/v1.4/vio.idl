@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS VIO/Inertial 1.0
+// SpatialDDS VIO/Inertial 1.4
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 module spatial {
   module vio {
 
-    const string MODULE_ID = "spatial.vio/1.0";
+    const string MODULE_ID = "spatial.vio/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::geometry::FrameRef FrameRef;

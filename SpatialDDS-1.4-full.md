@@ -53,17 +53,17 @@ At its core, SpatialDDS is defined through **IDL profiles** that partition funct
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
 ### Profile Matrix (SpatialDDS 1.4)
-- spatial.core/1.0
-- spatial.discovery/1.0
-- spatial.anchors/1.0
-- spatial.argeo/1.0
-- spatial.sensing.common/1.0
-- spatial.sensing.rad/1.0
-- spatial.sensing.lidar/1.0
-- spatial.sensing.vision/1.0
-- spatial.slam_frontend/1.0
-- spatial.vio/1.0
-- spatial.semantics/1.0
+- spatial.core/1.4
+- spatial.discovery/1.4
+- spatial.anchors/1.4
+- spatial.argeo/1.4
+- spatial.sensing.common/1.4
+- spatial.sensing.rad/1.4
+- spatial.sensing.lidar/1.4
+- spatial.sensing.vision/1.4
+- spatial.slam_frontend/1.4
+- spatial.vio/1.4
+- spatial.semantics/1.4
 
 ### **Why DDS?**
 
@@ -98,6 +98,10 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
   Lightweight announce messages plus JSON manifests allow services (like VPS, mapping, or anchor registries) and content/experiences to be discovered at runtime without centralized registries.
 * **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
+
+### **OMG IDL 4.x Compliance (Normative)**
+
+All SpatialDDS IDLs conform to OMG IDL 4.2 and DDS-XTypes 1.3. Extensibility is declared using `@extensibility(APPENDABLE)`. Compound identity is defined via multiple `@key` annotations. Field initialization is a runtime concern, not declared in IDL.
 
 ### **Specification Layers (Informative)**
 
@@ -148,12 +152,12 @@ SpatialDDS encodes optionality explicitly. To avoid ambiguous parsing and sentin
 
 * **Presence flags** — For any scalar, struct, or array field that may be absent at runtime, producers SHALL introduce a boolean presence flag immediately before the field (`boolean has_field; Type field;`). Consumers MUST ignore the field when the flag is `false`.
 * **Discriminated unions** — When exactly one of multiple alternatives may appear on the wire, model the choice as a discriminated union (e.g., `CovMatrix`). Do not overload presence flags for mutual exclusivity.
-* **@appendable omission is only for evolution** — Schema omission via `@appendable` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
+* **@extensibility(APPENDABLE) omission is only for evolution** — Schema omission via `@extensibility(APPENDABLE)` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
 * **No NaN sentinels** — Floating-point NaN (or other sentinel values) MUST NOT be used to indicate absence. Presence flags govern field validity.
 
 These conventions apply globally (Core, Discovery, Anchors, and all Sensing extensions) and supersede earlier guidance that relied on NaN or implicit omission semantics.
 
-> **Clarification:** `@appendable` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
+> **Clarification:** `@extensibility(APPENDABLE)` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
 
 ### **2.3 Core SpatialDDS**
 
@@ -176,24 +180,24 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 #### Key messages (abridged IDL)
 ```idl
 // Message shapes shown for orientation only
-@appendable struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
-@appendable struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
-@appendable struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
+@extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
+@extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
+@extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
 
-@appendable struct Announce {
+@extensibility(APPENDABLE) struct Announce {
   // ... node identity, endpoints ...
   Capabilities caps;                  // profiles, preferences, features
   sequence<TopicMeta,128> topics;     // typed topics offered by this node
 }
 
-@appendable struct CoverageQuery {
+@extensibility(APPENDABLE) struct CoverageQuery {
   // minimal illustrative fields
   string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.*\""
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
 
-@appendable struct CoverageResponse {
+@extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
   sequence<Announce,256> results;
   string next_page_token;
@@ -711,7 +715,7 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.0
+// SpatialDDS Core 1.4
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
@@ -721,7 +725,7 @@ module spatial {
   module core {
 
     // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.0";
+    const string MODULE_ID = "spatial.core/1.4";
 
     // ---------- Utility ----------
     struct Time {
@@ -739,7 +743,7 @@ module spatial {
       spatial::common::Vec3 max_xyz;
     };
 
-    @appendable struct TileKey {
+    @extensibility(APPENDABLE) struct TileKey {
       @key uint32 x;     // tile coordinate (quadtree/3D grid)
       @key uint32 y;
       @key uint32 z;     // use 0 for 2D schemes
@@ -749,7 +753,7 @@ module spatial {
     // ---------- Geometry ----------
     enum PatchOp { ADD = 0, REPLACE = 1, REMOVE = 2 };
 
-    @appendable struct BlobRef {
+    @extensibility(APPENDABLE) struct BlobRef {
       string blob_id;   // UUID or content-address
       string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
       string checksum;  // SHA-256 (hex)
@@ -757,7 +761,7 @@ module spatial {
 
     typedef spatial::geometry::FrameRef FrameRef;
 
-    @appendable struct TileMeta {
+    @extensibility(APPENDABLE) struct TileMeta {
       @key TileKey key;              // unique tile key
       boolean has_tile_id_compat;
       string  tile_id_compat;        // optional human-readable id
@@ -773,10 +777,10 @@ module spatial {
       spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.0"
+      string schema_version;         // MUST be "spatial.core/1.4"
     };
 
-    @appendable struct TilePatch {
+    @extensibility(APPENDABLE) struct TilePatch {
       @key TileKey key;              // which tile
       uint64 revision;               // monotonic per-tile
       PatchOp op;                    // ADD/REPLACE/REMOVE
@@ -786,32 +790,23 @@ module spatial {
       Time   stamp;                  // production time
     };
 
-    @appendable struct BlobChunk {
+    @extensibility(APPENDABLE) struct BlobChunk {
       // Composite key: (blob_id, index) uniquely identifies a chunk instance.
-      @key string blob_id;               // which blob
-      @key uint32 index;                 // chunk index (0..N-1)
-      sequence<uint8, 262144> data;      // ≤256 KiB per sample
-
-      // --- Additive fields for robust reassembly ---
-
-      // Total number of chunks expected for this blob_id.
-      // Enables preallocation and deterministic completion even if 'last' arrives late.
-      uint32 total_chunks;
-
-      // Monotonic sequence number within this blob_id (non-key).
-      // Detects gaps and helps reorder on BEST_EFFORT QoS.
-      uint32 seq;
-
-      // CRC32 checksum over 'data' for per-chunk integrity verification.
-      uint32 crc32;
+      @key string blob_id;   // which blob
+      @key uint32 index;     // chunk index (0..N-1)
+      uint32 total_chunks;   // total number of chunks expected for this blob_id
+      uint32 seq;            // monotonic sequence number within this blob_id
+      uint32 crc32;          // CRC32 checksum over 'data'
+      sequence<uint8, 262144> data; // ≤256 KiB per sample
+      boolean last;          // true when this is the final chunk for blob_id
     };
 
-**BlobChunk Identity.** Each chunk is uniquely identified by the composite key `(blob_id, index)`. The `seq` field is **not** part of the key; it may be used for transport ordering, diagnostics, or gap detection. Readers on BEST_EFFORT transports MUST tolerate out-of-order arrival; keys are used for reassembly, not ordering.
+**BlobChunk Identity.** Each chunk is uniquely identified by the composite key `(blob_id, index)`. The `seq` field is **not** part of the key; it may be used for transport ordering, diagnostics, or gap detection. Readers on BEST_EFFORT transports MUST tolerate out-of-order arrival; keys are used for reassembly, not ordering. The `last` flag signals completion for a given blob even if later chunks arrive out of order.
 
     // ---------- Pose Graph (minimal) ----------
     enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
 
-    @appendable struct Node {
+    @extensibility(APPENDABLE) struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
@@ -824,7 +819,7 @@ module spatial {
       uint64  graph_epoch;     // for major rebases/merges
     };
 
-    @appendable struct Edge {
+    @extensibility(APPENDABLE) struct Edge {
       string map_id;
       @key string edge_id;     // unique edge id
       string from_id;          // source node
@@ -840,31 +835,26 @@ module spatial {
     // ---------- Geo anchoring ----------
     enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
 
-    enum CovarianceType {
-      COV_NONE = 0,   // no covariance provided
-      COV_POS3 = 3,   // 3x3 over (x, y, z)
-      COV_POSE6 = 6   // 6x6 over (x, y, z, roll, pitch, yaw) [radians]
-    };
     // Discriminated union: exactly one covariance payload (or none) is serialized.
-    @appendable union CovMatrix switch (CovarianceType) {
-      case COV_POS3:  spatial::common::Mat3x3 pos;
-      case COV_POSE6: spatial::common::Mat6x6 pose;
+    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
+      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
       default: ;
     };
 
-    @appendable struct GeoPose {
+    @extensibility(APPENDABLE) struct GeoPose {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
       spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
       GeoFrameKind frame_kind; // ECEF/ENU/NED
-      string frame_ref;        // for ENU/NED: "@lat,lon,alt"
+      FrameRef frame_ref;      // for ENU/NED: canonical frame reference
       Time   stamp;
       // Exactly one covariance payload will be present based on the discriminator.
       CovMatrix cov;
     };
 
-    @appendable struct GeoAnchor {
+    @extensibility(APPENDABLE) struct GeoAnchor {
       @key string anchor_id;   // e.g., "anchor/4th-and-main"
       string map_id;
       FrameRef frame_ref;      // local frame (e.g., "map")
@@ -874,7 +864,7 @@ module spatial {
       string  checksum;        // integrity/versioning
     };
 
-    @appendable struct FrameTransform {
+    @extensibility(APPENDABLE) struct FrameTransform {
       @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
       FrameRef parent_ref;      // global frame (ENU@..., ECEF, ...)
       FrameRef child_ref;       // local frame ("map")
@@ -885,12 +875,12 @@ module spatial {
     };
 
     // ---------- Snapshot / Catch-up ----------
-    @appendable struct SnapshotRequest {
+    @extensibility(APPENDABLE) struct SnapshotRequest {
       @key TileKey key;        // which tile
       uint64 up_to_revision;   // 0 = latest
     };
 
-    @appendable struct SnapshotResponse {
+    @extensibility(APPENDABLE) struct SnapshotResponse {
       @key TileKey key;                 // tile key
       uint64 revision;                  // snapshot revision served
       sequence<string, 64> blob_ids;    // composing blobs
@@ -908,13 +898,13 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.0
+// SpatialDDS Discovery 1.4
 // Lightweight announces for services, coverage, and content
 
 module spatial {
     module disco {
 
-      const string MODULE_ID = "spatial.discovery/1.0";
+      const string MODULE_ID = "spatial.discovery/1.4";
 
       typedef spatial::core::Time Time;
       typedef spatial::core::FrameRef FrameRef;
@@ -925,7 +915,7 @@ module spatial {
       // --- Profile version advertisement (additive) ---
       // Semver per profile: name@MAJOR.MINOR
       // Each row declares a contiguous range of MINORs within a single MAJOR.
-      @appendable struct ProfileSupport {
+      @extensibility(APPENDABLE) struct ProfileSupport {
         string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
         uint32 major;       // compatible major (e.g., 1)
         uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
@@ -933,7 +923,7 @@ module spatial {
         boolean preferred;  // optional tie-breaker hint (usually false)
       };
 
-      @appendable struct Capabilities {
+      @extensibility(APPENDABLE) struct Capabilities {
         sequence<ProfileSupport, 64> supported_profiles;
       };
 
@@ -948,7 +938,7 @@ module spatial {
       OTHER = 255
     };
 
-    @appendable struct KV {
+    @extensibility(APPENDABLE) struct KV {
       string key;
       string value;
     };
@@ -956,7 +946,7 @@ module spatial {
     // CoverageElement geometry is always expressed in the parent coverage_frame_ref.
     // If that frame is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
     // otherwise coordinates are in local meters.
-    @appendable struct CoverageElement {
+    @extensibility(APPENDABLE) struct CoverageElement {
       string type;              // "bbox" | "volume"
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
@@ -974,15 +964,15 @@ module spatial {
     };
 
     // Validity window for time-bounded transforms.
-    @appendable struct ValidityWindow {
+    @extensibility(APPENDABLE) struct ValidityWindow {
       Time   start;             // inclusive start
       uint32 duration_s;        // seconds from start
     };
 
     // Quaternion follows GeoPose: unit [x,y,z,w]; pose maps FROM 'from' TO 'to'
-    @appendable struct Transform {
-      string from;              // source frame (e.g., "map")
-      string to;                // target frame (e.g., "earth-fixed")
+    @extensibility(APPENDABLE) struct Transform {
+      FrameRef from;            // source frame (e.g., "map")
+      FrameRef to;              // target frame (e.g., "earth-fixed")
       string stamp;             // ISO-8601 timestamp for this transform
 
       // Explicit validity window (presence-flag style).
@@ -996,7 +986,7 @@ module spatial {
       spatial::common::QuaternionXYZW q_xyzw; // GeoPose order [x,y,z,w]
     };
 
-    @appendable struct ServiceAnnounce {
+    @extensibility(APPENDABLE) struct ServiceAnnounce {
       @key string service_id;
       string name;
       ServiceKind kind;
@@ -1018,7 +1008,7 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @appendable struct CoverageHint {
+    @extensibility(APPENDABLE) struct CoverageHint {
       @key string service_id;
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
@@ -1029,7 +1019,7 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @appendable struct CoverageQuery {
+    @extensibility(APPENDABLE) struct CoverageQuery {
       // Correlates responses to a specific query instance.
       @key uint64 query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
@@ -1037,7 +1027,7 @@ module spatial {
       boolean has_coverage_eval_time;
       Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
-      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.0\""
+      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.4\""
       string expr;
       // Responders publish CoverageResponse samples to this topic.
       string reply_topic;
@@ -1045,7 +1035,7 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @appendable struct CoverageResponse {
+    @extensibility(APPENDABLE) struct CoverageResponse {
       // Mirrors CoverageQuery.query_id for correlation.
       uint64 query_id;
       // Result page.
@@ -1054,7 +1044,7 @@ module spatial {
       string next_page_token;
     };
 
-    @appendable struct ContentAnnounce {
+    @extensibility(APPENDABLE) struct ContentAnnounce {
       @key string content_id;
       string provider_id;
       string title;
@@ -1084,18 +1074,18 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Anchors 1.0
+// SpatialDDS Anchors 1.4
 // Bundles and updates for anchor registries
 
 module spatial {
   module anchors {
-    const string MODULE_ID = "spatial.anchors/1.0";
+    const string MODULE_ID = "spatial.anchors/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::GeoPose GeoPose;
     typedef spatial::geometry::FrameRef FrameRef;
 
-    @appendable struct AnchorEntry {
+    @extensibility(APPENDABLE) struct AnchorEntry {
       @key string anchor_id;
       string name;
       GeoPose geopose;
@@ -1105,11 +1095,11 @@ module spatial {
       string checksum;
     };
 
-    @appendable struct AnchorSet {
+    @extensibility(APPENDABLE) struct AnchorSet {
       @key string set_id;
       string title;
       string provider_id;
-      string map_frame;
+      FrameRef map_frame;
       string version;
       sequence<string,16> tags;
       double center_lat; double center_lon; double radius_m;
@@ -1120,7 +1110,7 @@ module spatial {
 
     enum AnchorOp { ADD=0, UPDATE=1, REMOVE=2 };
 
-    @appendable struct AnchorDelta {
+    @extensibility(APPENDABLE) struct AnchorDelta {
       @key string set_id;
       AnchorOp op;
       AnchorEntry entry;
@@ -1129,12 +1119,12 @@ module spatial {
       string post_checksum;
     };
 
-    @appendable struct AnchorSetRequest {
+    @extensibility(APPENDABLE) struct AnchorSetRequest {
       @key string set_id;
       uint64 up_to_revision;
     };
 
-    @appendable struct AnchorSetResponse {
+    @extensibility(APPENDABLE) struct AnchorSetResponse {
       @key string set_id;
       uint64 revision;
       AnchorSet set;
@@ -1155,7 +1145,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Common Type Aliases 1.0
+// SpatialDDS Common Type Aliases 1.4
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
@@ -1164,10 +1154,16 @@ module spatial {
   module common {
     typedef double BBox2D[4];
     typedef double Aabb3D[6];
-    typedef double QuaternionXYZW[4]; // (x,y,z,w)
     typedef double Vec3[3];
     typedef double Mat3x3[9];
     typedef double Mat6x6[36];
+    typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+
+    enum CovarianceType {
+      COV_NONE = 0,
+      COV_POS3 = 3,
+      COV_POSE6 = 6
+    };
   };
 };
 
@@ -1187,7 +1183,7 @@ module spatial {
 
     // Stable, typo-proof frame identity (breaking change).
     // Equality is by uuid; fqn is a normalized, human-readable alias.
-    @appendable struct FrameRef {
+    @extensibility(APPENDABLE) struct FrameRef {
       uint8  uuid[16];  // REQUIRED: stable identifier for the frame
       string fqn;       // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
     };
@@ -1203,11 +1199,11 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing Common 1.0 (Extension module)
+// SpatialDDS Sensing Common 1.4 (Extension module)
 
 module spatial { module sensing { module common {
 
-  const string MODULE_ID = "spatial.sensing.common/1.0";
+  const string MODULE_ID = "spatial.sensing.common/1.4";
 
   // --- Standard sizing tiers ---
   // Use these to bound sequences for detections and other per-frame arrays.
@@ -1227,25 +1223,26 @@ module spatial { module sensing { module common {
   enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
 
   // Compact parametric axis definition
-  @appendable struct Linspace {
+  @extensibility(APPENDABLE) struct Linspace {
     double start;   // first point
     double step;    // spacing (may be negative for descending axes)
     uint32 count;   // number of samples (>=1)
   };
 
   // Discriminated union: carries only one encoding on wire
-  @appendable union AxisSpec switch (AxisEncoding) {
+  @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
     case CENTERS:  sequence<double, 65535> centers;
     case LINSPACE: Linspace lin;
+    default: ;
   };
 
-  @appendable struct Axis {
+  @extensibility(APPENDABLE) struct Axis {
     string   name;    // "range","azimuth","elevation","doppler","time","channel"
     string   unit;    // "m","deg","m/s","Hz","s",...
     AxisSpec spec;    // encoding of the axis samples (centers or linspace)
   };
 
-  @appendable struct ROI {
+  @extensibility(APPENDABLE) struct ROI {
     // Range bounds (meters). When has_range == false, consumers MUST ignore range_min/range_max.
     boolean has_range;
     float   range_min;
@@ -1298,16 +1295,16 @@ module spatial { module sensing { module common {
   };
 
   // ---- Stream identity & calibration header shared by sensors ----
-  @appendable struct StreamMeta {
+  @extensibility(APPENDABLE) struct StreamMeta {
     @key string stream_id;        // stable id for this sensor stream
     FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
-    string   schema_version;      // MUST be "spatial.sensing.common/1.0"
+    string   schema_version;      // MUST be "spatial.sensing.common/1.4"
   };
 
   // ---- Frame index header shared by sensors (small, on-bus) ----
-  @appendable struct FrameHeader {
+  @extensibility(APPENDABLE) struct FrameHeader {
     @key string stream_id;
     uint64 frame_seq;
     Time   t_start;
@@ -1322,7 +1319,7 @@ module spatial { module sensing { module common {
   // ---- Quality & health (uniform across sensors) ----
   enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
 
-  @appendable struct FrameQuality {
+  @extensibility(APPENDABLE) struct FrameQuality {
     boolean has_snr_db;
     float   snr_db;          // valid when has_snr_db == true
     float   percent_valid;   // 0..100
@@ -1331,7 +1328,7 @@ module spatial { module sensing { module common {
   };
 
   // ---- ROI request/reply (control-plane pattern) ----
-  @appendable struct ROIRequest {
+  @extensibility(APPENDABLE) struct ROIRequest {
     @key string stream_id;
     uint64 request_id;
     Time   t_start; Time t_end;
@@ -1342,7 +1339,7 @@ module spatial { module sensing { module common {
     int32  max_bytes;          // -1 for unlimited
   };
 
-  @appendable struct ROIReply {
+  @extensibility(APPENDABLE) struct ROIReply {
     @key string stream_id;
     uint64 request_id;
     // Typically returns new frames whose blobs contain only the ROI
@@ -1360,12 +1357,13 @@ The `Axis` struct now embeds a discriminated union so that only one encoding is 
 **Definition**
 ```idl
 enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
-@appendable struct Linspace { double start; double step; uint32 count; };
-@appendable union AxisSpec switch (AxisEncoding) {
+@extensibility(APPENDABLE) struct Linspace { double start; double step; uint32 count; };
+@extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
   case CENTERS:  sequence<double, 65535> centers;
   case LINSPACE: Linspace lin;
+  default: ;
 };
-@appendable struct Axis { string name; string unit; AxisSpec spec; };
+@extensibility(APPENDABLE) struct Axis { string name; string unit; AxisSpec spec; };
 ```
 
 ### **Standard Sequence Bounds (Normative)**
@@ -1396,17 +1394,17 @@ Eliminates redundant fields and boolean guards; reduces bandwidth and parsing er
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS VIO/Inertial 1.0
+// SpatialDDS VIO/Inertial 1.4
 
 module spatial {
   module vio {
 
-    const string MODULE_ID = "spatial.vio/1.0";
+    const string MODULE_ID = "spatial.vio/1.4";
 
     typedef spatial::core::Time Time;
 
     // IMU calibration
-    @appendable struct ImuInfo {
+    @extensibility(APPENDABLE) struct ImuInfo {
       @key string imu_id;
       FrameRef frame_ref;
       double accel_noise_density;    // (m/s^2)/√Hz
@@ -1417,7 +1415,7 @@ module spatial {
     };
 
     // Raw IMU sample
-    @appendable struct ImuSample {
+    @extensibility(APPENDABLE) struct ImuSample {
       @key string imu_id;
       spatial::common::Vec3 accel;   // m/s^2
       spatial::common::Vec3 gyro;    // rad/s
@@ -1427,7 +1425,7 @@ module spatial {
     };
 
     // Magnetometer
-    @appendable struct MagnetometerSample {
+    @extensibility(APPENDABLE) struct MagnetometerSample {
       @key string mag_id;
       spatial::common::Vec3 mag;     // microtesla
       Time   stamp;
@@ -1437,7 +1435,7 @@ module spatial {
     };
 
     // Convenience raw 9-DoF bundle
-    @appendable struct SensorFusionSample {
+    @extensibility(APPENDABLE) struct SensorFusionSample {
       @key string fusion_id;         // e.g., device id
       spatial::common::Vec3 accel;   // m/s^2
       spatial::common::Vec3 gyro;    // rad/s
@@ -1452,7 +1450,7 @@ module spatial {
     enum FusionMode { ORIENTATION_3DOF = 0, ORIENTATION_6DOF = 1, POSE_6DOF = 2 };
     enum FusionSourceKind { EKF = 0, AHRS = 1, VIO = 2, IMU_ONLY = 3, MAG_AIDED = 4, AR_PLATFORM = 5 };
 
-    @appendable struct FusedState {
+    @extensibility(APPENDABLE) struct FusedState {
       @key string fusion_id;
       FusionMode       mode;
       FusionSourceKind source_kind;
@@ -1493,12 +1491,12 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Vision (sensing.vision) 1.0 — Extension profile
+// SpatialDDS Vision (sensing.vision) 1.4 — Extension profile
 
 module spatial { module sensing { module vision {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.vision/1.0";
+  const string MODULE_ID = "spatial.sensing.vision/1.4";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
@@ -1528,7 +1526,7 @@ module spatial { module sensing { module vision {
   enum ColorSpace   { SRGB=0, REC709=1, REC2020=2, LINEAR=10 };
   enum RigRole      { LEFT=0, RIGHT=1, CENTER=2, AUX=3 };
 
-  @appendable struct CamIntrinsics {
+  @extensibility(APPENDABLE) struct CamIntrinsics {
     CamModel model;
     uint16 width;  uint16 height;
     float fx; float fy; float cx; float cy;
@@ -1541,7 +1539,7 @@ module spatial { module sensing { module vision {
   };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @appendable struct VisionMeta {
+  @extensibility(APPENDABLE) struct VisionMeta {
     @key string stream_id;
     StreamMeta base;                    // frame_ref, T_bus_sensor, nominal_rate_hz
     CamIntrinsics K;                    // intrinsics
@@ -1552,11 +1550,11 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
-    string schema_version;              // MUST be "spatial.sensing.vision/1.0"
+    string schema_version;              // MUST be "spatial.sensing.vision/1.4"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @appendable struct VisionFrame {
+  @extensibility(APPENDABLE) struct VisionFrame {
     @key string stream_id;
     uint64 frame_seq;
 
@@ -1575,14 +1573,14 @@ module spatial { module sensing { module vision {
   };
 
   // Optional lightweight derivatives (for VIO/SfM/analytics)
-  @appendable struct Keypoint2D { float u; float v; float score; };
-  @appendable struct Track2D {
+  @extensibility(APPENDABLE) struct Keypoint2D { float u; float v; float score; };
+  @extensibility(APPENDABLE) struct Track2D {
     uint64 id;
     sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> trail;
   };
 
   // Detections topic — BEST_EFFORT
-  @appendable struct VisionDetections {
+  @extensibility(APPENDABLE) struct VisionDetections {
     @key string stream_id;
     uint64 frame_seq;
     Time   stamp;
@@ -1601,12 +1599,12 @@ module spatial { module sensing { module vision {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS SLAM Frontend 1.0
+// SpatialDDS SLAM Frontend 1.4
 
 module spatial {
   module slam_frontend {
 
-    const string MODULE_ID = "spatial.slam_frontend/1.0";
+    const string MODULE_ID = "spatial.slam_frontend/1.4";
 
     // Reuse core: Time, etc.
     typedef spatial::core::Time Time;
@@ -1615,7 +1613,7 @@ module spatial {
     // Camera calibration
     enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
 
-    @appendable struct CameraInfo {
+    @extensibility(APPENDABLE) struct CameraInfo {
       @key string camera_id;
       uint32 width;  uint32 height;   // pixels
       double fx; double fy;           // focal (px)
@@ -1627,14 +1625,14 @@ module spatial {
     };
 
     // 2D features & descriptors per keyframe
-    @appendable struct Feature2D {
+    @extensibility(APPENDABLE) struct Feature2D {
       double u; double v;     // pixel coords
       float  scale;           // px
       float  angle;           // rad [0,2π)
       float  score;           // detector response
     };
 
-    @appendable struct KeyframeFeatures {
+    @extensibility(APPENDABLE) struct KeyframeFeatures {
       @key string node_id;                  // keyframe id
       string camera_id;
       string desc_type;                     // "ORB32","BRISK64","SPT256Q",...
@@ -1648,13 +1646,13 @@ module spatial {
     };
 
     // Optional cross-frame matches
-    @appendable struct FeatureMatch {
+    @extensibility(APPENDABLE) struct FeatureMatch {
       string node_id_a;  uint32 idx_a;
       string node_id_b;  uint32 idx_b;
       float  score;      // similarity or distance
     };
 
-    @appendable struct MatchSet {
+    @extensibility(APPENDABLE) struct MatchSet {
       @key string match_id;                // e.g., "kf_12<->kf_18"
       sequence<FeatureMatch, 8192> matches;
       Time   stamp;
@@ -1662,7 +1660,7 @@ module spatial {
     };
 
     // Sparse 3D landmarks & tracks (optional)
-    @appendable struct Landmark {
+    @extensibility(APPENDABLE) struct Landmark {
       @key string lm_id;
       string map_id;
       spatial::common::Vec3 p;
@@ -1675,12 +1673,12 @@ module spatial {
       uint64 seq;
     };
 
-    @appendable struct TrackObs {
+    @extensibility(APPENDABLE) struct TrackObs {
       string node_id;                      // observing keyframe
       double u; double v;                  // pixel coords
     };
 
-    @appendable struct Tracklet {
+    @extensibility(APPENDABLE) struct Tracklet {
       @key string track_id;
       boolean has_lm_id;                   // true when lm_id is populated
       string  lm_id;                       // link to Landmark when present
@@ -1700,32 +1698,32 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.0
+// SpatialDDS Semantics 1.4
 
 module spatial {
   module semantics {
 
-    const string MODULE_ID = "spatial.semantics/1.0";
+    const string MODULE_ID = "spatial.semantics/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::TileKey TileKey;
     typedef spatial::geometry::FrameRef FrameRef;
 
     // 2D detections per keyframe (image space)
-    @appendable struct Detection2D {
+    @extensibility(APPENDABLE) struct Detection2D {
       @key string det_id;       // unique per publisher
       string node_id;           // keyframe id
       string camera_id;         // camera
       string class_id;          // ontology label
       float  score;             // [0..1]
-      float  bbox[4];           // [u_min,v_min,u_max,v_max] (px)
+      spatial::common::BBox2D bbox; // [u_min,v_min,u_max,v_max] (px)
       boolean has_mask;         // if a pixel mask exists
       string  mask_blob_id;     // BlobChunk ref (role="mask")
       Time   stamp;
       string source_id;
     };
 
-    @appendable struct Detection2DSet {
+    @extensibility(APPENDABLE) struct Detection2DSet {
       @key string set_id;                 // batch id (e.g., node_id + seq)
       string node_id;
       string camera_id;
@@ -1735,7 +1733,7 @@ module spatial {
     };
 
     // 3D detections in world/local frame (scene space)
-    @appendable struct Detection3D {
+    @extensibility(APPENDABLE) struct Detection3D {
       @key string det_id;
       FrameRef frame_ref;        // e.g., "map" (pose known elsewhere)
       boolean has_tile;
@@ -1762,7 +1760,7 @@ module spatial {
       string source_id;
     };
 
-    @appendable struct Detection3DSet {
+    @extensibility(APPENDABLE) struct Detection3DSet {
       @key string set_id;                 // batch id
       FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;
@@ -1783,12 +1781,12 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar (RAD) 1.0 — Extension profile
+// SpatialDDS Radar (RAD) 1.4 — Extension profile
 
 module spatial { module sensing { module rad {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rad/1.0";
+  const string MODULE_ID = "spatial.sensing.rad/1.4";
 
   // Reuse Core + Sensing Common types
   typedef spatial::core::Time                      Time;
@@ -1813,14 +1811,14 @@ module spatial { module sensing { module rad {
   enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @appendable struct RadMeta {
+  @extensibility(APPENDABLE) struct RadMeta {
     @key string stream_id;                 // stable id for this radar stream
     StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
     RadTensorLayout layout;                // order of axes
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
-    string schema_version;                 // MUST be "spatial.sensing.rad/1.0"
+    string schema_version;                 // MUST be "spatial.sensing.rad/1.4"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
@@ -1831,7 +1829,7 @@ module spatial { module sensing { module rad {
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @appendable struct RadFrame {
+  @extensibility(APPENDABLE) struct RadFrame {
     @key string stream_id;
     uint64 frame_seq;
 
@@ -1847,7 +1845,7 @@ module spatial { module sensing { module rad {
   };
 
   // Lightweight derivative for fast fusion/tracking (optional)
-  @appendable struct RadDetection {
+  @extensibility(APPENDABLE) struct RadDetection {
     spatial::common::Vec3 xyz_m;       // Cartesian point in base.frame_ref
     boolean has_v_r_mps;
     double  v_r_mps;       // valid when has_v_r_mps == true
@@ -1856,7 +1854,7 @@ module spatial { module sensing { module rad {
   };
 
   // Detections topic — BEST_EFFORT
-  @appendable struct RadDetectionSet {
+  @extensibility(APPENDABLE) struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;    // coordinate frame of xyz_m
@@ -1874,12 +1872,12 @@ module spatial { module sensing { module rad {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS LiDAR (sensing.lidar) 1.0 — Extension profile
+// SpatialDDS LiDAR (sensing.lidar) 1.4 — Extension profile
 
 module spatial { module sensing { module lidar {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.lidar/1.0";
+  const string MODULE_ID = "spatial.sensing.lidar/1.4";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
@@ -1906,7 +1904,7 @@ module spatial { module sensing { module lidar {
   enum PointLayout  { XYZ_I=0, XYZ_I_R=1, XYZ_I_R_N=2 }; // intensity, ring, normal
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @appendable struct LidarMeta {
+  @extensibility(APPENDABLE) struct LidarMeta {
     @key string stream_id;
     StreamMeta base;                  // frame_ref, T_bus_sensor, nominal_rate_hz
     LidarType     type;
@@ -1919,11 +1917,11 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…
     PointLayout   layout;             // expected fields when decoded
-    string schema_version;            // MUST be "spatial.sensing.lidar/1.0"
+    string schema_version;            // MUST be "spatial.sensing.lidar/1.4"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @appendable struct LidarFrame {
+  @extensibility(APPENDABLE) struct LidarFrame {
     @key string stream_id;
     uint64 frame_seq;
 
@@ -1942,7 +1940,7 @@ module spatial { module sensing { module lidar {
   };
 
   // Lightweight derivative for immediate fusion/tracking (optional)
-  @appendable struct LidarDetection {
+  @extensibility(APPENDABLE) struct LidarDetection {
     spatial::common::Vec3 xyz_m;
     float  intensity;
     uint16 ring;
@@ -1950,7 +1948,7 @@ module spatial { module sensing { module lidar {
   };
 
   // Detections topic — BEST_EFFORT
-  @appendable struct LidarDetectionSet {
+  @extensibility(APPENDABLE) struct LidarDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
     FrameRef frame_ref;               // coordinate frame of xyz_m
@@ -1968,18 +1966,18 @@ module spatial { module sensing { module lidar {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.0
+// SpatialDDS AR+Geo 1.4
 
 module spatial {
   module argeo {
 
-    const string MODULE_ID = "spatial.argeo/1.0";
+    const string MODULE_ID = "spatial.argeo/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
     typedef spatial::core::GeoPose GeoPose;
 
-    @appendable struct NodeGeo {
+    @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;
       @key string node_id;      // same id as core::Node
       PoseSE3 pose;             // local pose in map frame

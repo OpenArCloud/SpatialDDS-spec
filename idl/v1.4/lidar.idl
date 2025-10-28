@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS LiDAR (sensing.lidar) 1.0 — Extension profile
+// SpatialDDS LiDAR (sensing.lidar) 1.4 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 module spatial { module sensing { module lidar {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.lidar/1.0";
+  const string MODULE_ID = "spatial.sensing.lidar/1.4";
 
   // Reuse Core + Sensing Common
   typedef spatial::core::Time                      Time;
@@ -50,7 +50,7 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…
     PointLayout   layout;             // expected fields when decoded
-    string schema_version;            // MUST be "spatial.sensing.lidar/1.0"
+    string schema_version;            // MUST be "spatial.sensing.lidar/1.4"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)

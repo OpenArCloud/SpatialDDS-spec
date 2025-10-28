@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS SLAM Frontend 1.0
+// SpatialDDS SLAM Frontend 1.4
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 module spatial {
   module slam_frontend {
 
-    const string MODULE_ID = "spatial.slam_frontend/1.0";
+    const string MODULE_ID = "spatial.slam_frontend/1.4";
 
     // Reuse core: Time, etc.
     typedef spatial::core::Time Time;

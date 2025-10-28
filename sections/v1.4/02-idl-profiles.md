@@ -20,12 +20,12 @@ SpatialDDS encodes optionality explicitly. To avoid ambiguous parsing and sentin
 
 * **Presence flags** — For any scalar, struct, or array field that may be absent at runtime, producers SHALL introduce a boolean presence flag immediately before the field (`boolean has_field; Type field;`). Consumers MUST ignore the field when the flag is `false`.
 * **Discriminated unions** — When exactly one of multiple alternatives may appear on the wire, model the choice as a discriminated union (e.g., `CovMatrix`). Do not overload presence flags for mutual exclusivity.
-* **@appendable omission is only for evolution** — Schema omission via `@appendable` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
+* **@extensibility(APPENDABLE) omission is only for evolution** — Schema omission via `@extensibility(APPENDABLE)` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
 * **No NaN sentinels** — Floating-point NaN (or other sentinel values) MUST NOT be used to indicate absence. Presence flags govern field validity.
 
 These conventions apply globally (Core, Discovery, Anchors, and all Sensing extensions) and supersede earlier guidance that relied on NaN or implicit omission semantics.
 
-> **Clarification:** `@appendable` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
+> **Clarification:** `@extensibility(APPENDABLE)` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
 
 ### **2.3 Core SpatialDDS**
 
@@ -48,24 +48,24 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 #### Key messages (abridged IDL)
 ```idl
 // Message shapes shown for orientation only
-@appendable struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
-@appendable struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
-@appendable struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
+@extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
+@extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
+@extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
 
-@appendable struct Announce {
+@extensibility(APPENDABLE) struct Announce {
   // ... node identity, endpoints ...
   Capabilities caps;                  // profiles, preferences, features
   sequence<TopicMeta,128> topics;     // typed topics offered by this node
 }
 
-@appendable struct CoverageQuery {
+@extensibility(APPENDABLE) struct CoverageQuery {
   // minimal illustrative fields
   string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.*\""
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
 
-@appendable struct CoverageResponse {
+@extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
   sequence<Announce,256> results;
   string next_page_token;
@@ -266,17 +266,17 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 
 #### **Profile Matrix (SpatialDDS 1.4)**
 
-- spatial.core/1.0
-- spatial.discovery/1.0
-- spatial.anchors/1.0
-- spatial.argeo/1.0
-- spatial.sensing.common/1.0
-- spatial.sensing.rad/1.0
-- spatial.sensing.lidar/1.0
-- spatial.sensing.vision/1.0
-- spatial.slam_frontend/1.0
-- spatial.vio/1.0
-- spatial.semantics/1.0
+- spatial.core/1.4
+- spatial.discovery/1.4
+- spatial.anchors/1.4
+- spatial.argeo/1.4
+- spatial.sensing.common/1.4
+- spatial.sensing.rad/1.4
+- spatial.sensing.lidar/1.4
+- spatial.sensing.vision/1.4
+- spatial.slam_frontend/1.4
+- spatial.vio/1.4
+- spatial.semantics/1.4
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 

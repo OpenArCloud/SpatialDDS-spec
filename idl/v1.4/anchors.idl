@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Anchors 1.0
+// SpatialDDS Anchors 1.4
 // Bundles and updates for anchor registries
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -9,10 +9,11 @@
 
 module spatial {
   module anchors {
-    const string MODULE_ID = "spatial.anchors/1.0";
+    const string MODULE_ID = "spatial.anchors/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::core::FrameRef FrameRef;
 
     @extensibility(APPENDABLE) struct AnchorEntry {
       @key string anchor_id;
@@ -28,7 +29,7 @@ module spatial {
       @key string set_id;
       string title;
       string provider_id;
-      string map_frame;
+      FrameRef map_frame;
       string version;
       sequence<string,16> tags;
       double center_lat; double center_lon; double radius_m;

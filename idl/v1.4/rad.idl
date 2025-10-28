@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar (RAD) 1.0 — Extension profile
+// SpatialDDS Radar (RAD) 1.4 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 module spatial { module sensing { module rad {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rad/1.0";
+  const string MODULE_ID = "spatial.sensing.rad/1.4";
 
   // Reuse Core + Sensing Common types
   typedef spatial::core::Time                      Time;
@@ -42,7 +42,7 @@ module spatial { module sensing { module rad {
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
-    string schema_version;                 // MUST be "spatial.sensing.rad/1.0"
+    string schema_version;                 // MUST be "spatial.sensing.rad/1.4"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT

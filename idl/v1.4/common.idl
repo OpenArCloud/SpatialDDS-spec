@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing Common 1.0 (Extension module)
+// SpatialDDS Sensing Common 1.4 (Extension module)
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -8,7 +8,7 @@
 
 module spatial { module sensing { module common {
 
-  const string MODULE_ID = "spatial.sensing.common/1.0";
+  const string MODULE_ID = "spatial.sensing.common/1.4";
 
   // --- Standard sizing tiers ---
   // Use these to bound sequences for detections and other per-frame arrays.
@@ -38,6 +38,7 @@ module spatial { module sensing { module common {
   @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
     case CENTERS:  sequence<double, 65535> centers;
     case LINSPACE: Linspace lin;
+    default: ;
   };
 
   @extensibility(APPENDABLE) struct Axis {
@@ -104,7 +105,7 @@ module spatial { module sensing { module common {
     FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
-    string   schema_version;      // MUST be "spatial.sensing.common/1.0"
+    string   schema_version;      // MUST be "spatial.sensing.common/1.4"
   };
 
   // ---- Frame index header shared by sensors (small, on-bus) ----

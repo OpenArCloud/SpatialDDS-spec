@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Common Type Aliases 1.0
+// SpatialDDS Common Type Aliases 1.4
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
@@ -8,10 +8,16 @@ module spatial {
   module common {
     typedef double BBox2D[4];
     typedef double Aabb3D[6];
-    typedef double QuaternionXYZW[4]; // (x,y,z,w)
     typedef double Vec3[3];
     typedef double Mat3x3[9];
     typedef double Mat6x6[36];
+    typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+
+    enum CovarianceType {
+      COV_NONE = 0,
+      COV_POS3 = 3,
+      COV_POSE6 = 6
+    };
   };
 };
 
