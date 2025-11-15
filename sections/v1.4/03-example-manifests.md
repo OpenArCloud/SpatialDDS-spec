@@ -1,4 +1,4 @@
-## 7. Example Manifests
+## 8. Example Manifests
 
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
@@ -47,10 +47,10 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 
 ## Field Notes
 * **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
-* **Coverage (`coverage`)** — uses explicit presence flags. When `has_bbox` is `true`, `bbox` is authoritative; when `false`, omit it from coverage calculations. All shapes share the canonical `frame_ref` declared on the coverage record; producers MUST transform element geometry into this frame ahead of publication. Elements use their own `has_bbox`/`has_aabb` flags to gate coordinates. Producers MAY also provide geohashes or detailed `elements`. Set `global = true` for worldwide coverage.
-* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs.
-* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.  
-* All orientation fields use canonical GeoPose order `(x, y, z, w)`; older forms like `q_wxyz` are removed.  
+* **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
+* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.
+* All orientation fields follow the quaternion order defined in §2.1; older forms like `q_wxyz` are removed.
 
 ## Practical Guidance
 * Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
@@ -60,17 +60,3 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 
 ## Summary
 Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it* — without version-negotiation clutter or legacy fields.
-### Coverage Semantics (Normative)
-
-* `coverage.frame_ref` is canonical. `bbox`, `aabb`, and every `CoverageElement` geometry SHALL be expressed in this frame. Per-element frames are not permitted.
-* When `coverage_eval_time` is present, consumers SHALL evaluate any supplied transforms at that instant before interpreting `coverage.frame_ref`.
-* `global == true` means worldwide coverage regardless of any regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
-* When `global == false`, producers MAY supply any combination of `bbox`, `geohash`, and `elements`. Consumers SHOULD treat the union of all provided regions as the effective coverage.
-* Presence flags govern coordinate validity. When a flag is `false`, consumers MUST ignore the associated coordinates. `NaN` has no special meaning in any coverage coordinate; non-finite values MUST be rejected.
-
-### Validation Guidance (Non-normative)
-
-* Reject `has_bbox == true` or `has_aabb == true` when any coordinate is non-finite (`NaN`/`Inf`).
-* Enforce axis ordering: `west ≤ east`, `south ≤ north`, and for AABBs ensure `min ≤ max` per axis.
-* When `global == true`, consumers MAY ignore conflicting regional hints and treat coverage as worldwide.
-

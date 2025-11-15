@@ -11,6 +11,12 @@ At its core, SpatialDDS is defined through IDL profiles that partition functiona
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
+### **Reading Guide (Informative)**
+
+- **Architects & product planners** — Start with §1 and §2 to internalize the motivation, shared conventions, and global rules before drilling into profiles.
+- **Implementers & SDK authors** — Focus on Part II plus Appendix A (core IDLs), Appendix B (discovery), Appendix C (anchors), and Appendix D (extensions).
+- **Routing, filtering, and coverage developers** — Read §3.3 (Discovery), §3.3.4 (Coverage Model), and Appendix B/F.X for the binding grammars.
+
 ### **Why DDS?**
 
 SpatialDDS builds directly on the OMG Data Distribution Service (DDS), a proven standard for real-time distributed systems. DDS provides:
@@ -45,10 +51,6 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
 
-### **OMG IDL 4.x Compliance (Normative)**
-
-All SpatialDDS IDLs conform to OMG IDL 4.2 and DDS-XTypes 1.3. Extensibility is declared using `@extensibility(APPENDABLE)`. Compound identity is defined via multiple `@key` annotations. Field initialization is a runtime concern, not declared in IDL.
-
 ### **Specification Layers (Informative)**
 
 | Layer | Purpose | Core Artifacts |
@@ -64,7 +66,7 @@ Before diving into identifiers and manifests, it helps to see how SpatialDDS com
 ```
 SpatialDDS URI ──▶ Manifest Resolver ──▶ Discovery Topic ──▶ DDS/Data Streams ──▶ Shared State & Anchors
         │                 │                      │                   │                      │
-   (Section 6)      (Manifests)         (Sections 2.2 & 3)        (Core Profile)         (Anchors & Apps)
+   (§7)             (§8)                (§3.3)                   (§3)                   (§5 & Appendix C)
 ```
 
 1. **URI → Manifest lookup** – Durable SpatialDDS URIs point to JSON manifests that describe services, anchor sets, or content. Clients resolve the URI (often via HTTPS or a local cache) to fetch capabilities, QoS hints, and connection parameters.

@@ -69,7 +69,7 @@ The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to e
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 {{include:idl/v1.4/vision.idl}}
@@ -93,7 +93,7 @@ The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to e
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 {{include:idl/v1.4/rad.idl}}
@@ -101,7 +101,7 @@ The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to e
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 {{include:idl/v1.4/lidar.idl}}

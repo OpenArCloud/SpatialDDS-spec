@@ -1,4 +1,4 @@
-## **3. Operational Scenarios: From SLAM to AI World Models**
+## **4. Operational Scenarios: From SLAM to AI World Models**
 
 SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
 
@@ -44,7 +44,7 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "node_id": "kf_0120",
       "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
       "frame_ref": {
-        "uuid": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
         "fqn": "facility-west/map"
       },
       "stamp": { "sec": 1714070452, "nsec": 125000000 },
@@ -65,7 +65,10 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
         "alt_m": 12.6,
         "q": [0.71, 0.00, 0.70, 0.05],
         "frame_kind": "ENU",
-        "frame_ref": "@37.79340,-122.39410,5.2"
+        "frame_ref": {
+          "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
+          "fqn": "earth-fixed"
+        }
       },
       "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
     }
