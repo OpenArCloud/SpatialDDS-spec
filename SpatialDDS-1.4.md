@@ -14,21 +14,22 @@
 *Get oriented with the motivation, core building blocks, practical scenarios, and forward-looking roadmap before diving into the normative material.*
 
 1. [Introduction](sections/v1.4/01-introduction.md)
-2. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
-   - 2.2 [Optional Fields (Normative)](sections/v1.4/02-idl-profiles.md#22-optional-fields-normative)
-   - 2.4.1 [Topic Identity & QoS (Normative)](sections/v1.4/04-topic-identity-and-qos.md)
-3. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
-4. [Conclusion](sections/v1.4/conclusion.md)
-5. [Future Directions](sections/v1.4/future-directions.md)
+2. [Conventions (Normative)](sections/v1.4/02-conventions.md)
+3. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
+   - 3.3.1 [Topic Naming (Normative)](sections/v1.4/02-idl-profiles.md#331-topic-naming-normative)
+   - 3.3.4 [Coverage Model (Normative)](sections/v1.4/02-idl-profiles.md#334-coverage-model-normative)
+4. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
+5. [Conclusion](sections/v1.4/conclusion.md)
+6. [Future Directions](sections/v1.4/future-directions.md)
 
 ### Part II – Reference
 *Specifications, identifiers, supporting glossaries, and appendices that implementers can consult while building SpatialDDS solutions.*
 
-6. [SpatialDDS URIs](sections/v1.4/02a-spatialdds-uris.md)
-7. [Example Manifests](sections/v1.4/03-example-manifests.md)
-8. [Glossary of Acronyms](sections/v1.4/glossary.md)
-9. [References](sections/v1.4/references.md)
-10. Appendices
+7. [SpatialDDS URIs](sections/v1.4/02a-spatialdds-uris.md)
+8. [Example Manifests](sections/v1.4/03-example-manifests.md)
+9. [Glossary of Acronyms](sections/v1.4/glossary.md)
+10. [References](sections/v1.4/references.md)
+11. Appendices
     - [Appendix A: Core Profile](sections/v1.4/appendix-a.md)
     - [Appendix B: Discovery Profile](sections/v1.4/appendix-b.md)
     - [Appendix C: Anchor Registry Profile](sections/v1.4/appendix-c.md)

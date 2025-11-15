@@ -1,10 +1,10 @@
-## **6. SpatialDDS URIs**
+## **7. SpatialDDS URIs**
 
-### 6.1 Why SpatialDDS URIs matter
+### 7.1 Why SpatialDDS URIs matter
 
 SpatialDDS URIs are the shorthand that lets participants talk about anchors, content, and services without exchanging the full manifests up front. They bridge human concepts—"the anchor in Hall 1" or "the localization service for Midtown"—with machine-readable manifests that deliver the precise data, coordinate frames, and capabilities needed later in the flow.
 
-### 6.2 Key ingredients
+### 7.2 Key ingredients
 
 Every SpatialDDS URI names four ideas:
 
@@ -17,11 +17,11 @@ The exact tokens and encoding rules are defined by the individual profiles, but 
 
 Formal syntax is given in Appendix F.
 
-### 6.3 Working with SpatialDDS URIs
+### 7.3 Working with SpatialDDS URIs
 
 Once a URI is known, clients ask the authority for the manifest it points to—typically via HTTPS, though authorities can advertise other transports if they operate private caches or field buses. The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
 
-### 6.4 Examples
+### 7.4 Examples
 
 ```text
 spatialdds://museum.example.org/hall1/anchor/01J8QDFQX3W9X4CEX39M9ZP6TQ

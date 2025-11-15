@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
-
 ## **SpatialDDS: A Protocol for Real-World Spatial Computing**
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
@@ -17,19 +14,22 @@
 *Get oriented with the motivation, core building blocks, practical scenarios, and forward-looking roadmap before diving into the normative material.*
 
 1. [Introduction](sections/v1.4/01-introduction.md)
-2. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
-3. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
-4. [Conclusion](sections/v1.4/conclusion.md)
-5. [Future Directions](sections/v1.4/future-directions.md)
+2. [Conventions (Normative)](sections/v1.4/02-conventions.md)
+3. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
+   - 3.3.1 [Topic Naming (Normative)](sections/v1.4/02-idl-profiles.md#331-topic-naming-normative)
+   - 3.3.4 [Coverage Model (Normative)](sections/v1.4/02-idl-profiles.md#334-coverage-model-normative)
+4. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
+5. [Conclusion](sections/v1.4/conclusion.md)
+6. [Future Directions](sections/v1.4/future-directions.md)
 
 ### Part II – Reference
 *Specifications, identifiers, supporting glossaries, and appendices that implementers can consult while building SpatialDDS solutions.*
 
-6. [SpatialDDS URIs](sections/v1.4/02a-spatialdds-uris.md)
-7. [Example Manifests](sections/v1.4/03-example-manifests.md)
-8. [Glossary of Acronyms](sections/v1.4/glossary.md)
-9. [References](sections/v1.4/references.md)
-10. Appendices
+7. [SpatialDDS URIs](sections/v1.4/02a-spatialdds-uris.md)
+8. [Example Manifests](sections/v1.4/03-example-manifests.md)
+9. [Glossary of Acronyms](sections/v1.4/glossary.md)
+10. [References](sections/v1.4/references.md)
+11. Appendices
     - [Appendix A: Core Profile](sections/v1.4/appendix-a.md)
     - [Appendix B: Discovery Profile](sections/v1.4/appendix-b.md)
     - [Appendix C: Anchor Registry Profile](sections/v1.4/appendix-c.md)
@@ -52,18 +52,11 @@ At its core, SpatialDDS is defined through IDL profiles that partition functiona
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
-### Profile Matrix (SpatialDDS 1.4)
-- spatial.core/1.4
-- spatial.discovery/1.4
-- spatial.anchors/1.4
-- spatial.argeo/1.4
-- spatial.sensing.common/1.4
-- spatial.sensing.rad/1.4
-- spatial.sensing.lidar/1.4
-- spatial.sensing.vision/1.4
-- spatial.slam_frontend/1.4
-- spatial.vio/1.4
-- spatial.semantics/1.4
+### **Reading Guide (Informative)**
+
+- **Architects & product planners** — Start with §1 and §2 to internalize the motivation, shared conventions, and global rules before drilling into profiles.
+- **Implementers & SDK authors** — Focus on Part II plus Appendix A (core IDLs), Appendix B (discovery), Appendix C (anchors), and Appendix D (extensions).
+- **Routing, filtering, and coverage developers** — Read §3.3 (Discovery), §3.3.4 (Coverage Model), and Appendix B/F.X for the binding grammars.
 
 ### **Why DDS?**
 
@@ -89,7 +82,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Keep the wire light**
   SpatialDDS defines compact, typed messages via IDL. Heavy or variable content (meshes, splats, masks, assets) is carried as blobs, referenced by stable IDs. This avoids bloating the bus while keeping payloads flexible.
 * **Profiles, not monoliths**
- SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (Sensing Common, VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
+  SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (Sensing Common, VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
 * **AI-ready, domain-neutral**
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.
 * **Anchors as first-class citizens**
@@ -98,10 +91,6 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
   Lightweight announce messages plus JSON manifests allow services (like VPS, mapping, or anchor registries) and content/experiences to be discovered at runtime without centralized registries.
 * **Interoperability with existing standards**
   SpatialDDS is designed to align with and complement related standards such as OGC GeoPose, CityGML/3D Tiles, and Khronos OpenXR. This ensures it can plug into existing ecosystems rather than reinvent them.
-
-### **OMG IDL 4.x Compliance (Normative)**
-
-All SpatialDDS IDLs conform to OMG IDL 4.2 and DDS-XTypes 1.3. Extensibility is declared using `@extensibility(APPENDABLE)`. Compound identity is defined via multiple `@key` annotations. Field initialization is a runtime concern, not declared in IDL.
 
 ### **Specification Layers (Informative)**
 
@@ -118,7 +107,7 @@ Before diving into identifiers and manifests, it helps to see how SpatialDDS com
 ```
 SpatialDDS URI ──▶ Manifest Resolver ──▶ Discovery Topic ──▶ DDS/Data Streams ──▶ Shared State & Anchors
         │                 │                      │                   │                      │
-   (Section 6)      (Manifests)         (Sections 2.2 & 3)        (Core Profile)         (Anchors & Apps)
+   (§7)             (§8)                (§3.3)                   (§3)                   (§5 & Appendix C)
 ```
 
 1. **URI → Manifest lookup** – Durable SpatialDDS URIs point to JSON manifests that describe services, anchor sets, or content. Clients resolve the URI (often via HTTPS or a local cache) to fetch capabilities, QoS hints, and connection parameters.
@@ -133,11 +122,73 @@ This loop repeats as participants encounter new SpatialDDS URIs—keeping discov
 SpatialDDS URIs give every anchor, service, and content bundle a stable handle that can be shared across devices and transports while still resolving to rich manifest metadata. They are the glue between lightweight on-bus messages and descriptive out-of-band manifests, ensuring that discovery pointers stay durable even as infrastructure moves. Section 6 (SpatialDDS URIs) defines the precise syntax, allowed types, and resolver requirements for these identifiers.
 
 
-## **2\. IDL Profiles**
+// SPDX-License-Identifier: MIT
+// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
+
+## **2. Conventions (Normative)**
+
+This section centralizes the rules that apply across every SpatialDDS profile. Individual sections reference these shared requirements instead of repeating them. See Appendix A (core), Appendix B (discovery), Appendix C (anchors), and Appendix D (extensions) for the canonical IDL definitions that implement these conventions.
+
+### **2.1 Orientation & Frame References**
+
+- All quaternion fields, manifests, and IDLs SHALL use the `(x, y, z, w)` order that aligns with OGC GeoPose.
+- Frames are represented exclusively with `FrameRef { uuid, fqn }`. The UUID is authoritative; the fully qualified name is a human-readable alias. Appendix G defines the authoritative frame model.
+- Example JSON shape:
+  ```json
+  "frame_ref": { "uuid": "00000000-0000-4000-8000-000000000000", "fqn": "earth-fixed/map/device" }
+  ```
+
+### **2.2 Optional Fields & Discriminated Unions**
+
+- Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field.
+- Mutually exclusive payloads SHALL be modeled as discriminated unions; do not overload presence flags to signal exclusivity.
+- Schema evolution leverages `@extensibility(APPENDABLE)`; omit fields only when the IDL version removes them, never as an on-wire sentinel.
+
+### **2.3 Numeric Validity & NaN Deprecation**
+
+- `NaN`, `Inf`, or other sentinels SHALL NOT signal absence. Presence flags govern validity.
+- Non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, or coverage bounds appear.
+
+### **2.4 Canonical Ordering & Identity**
+
+These rules apply to any message that carries the trio `{ stamp, source_id, seq }`.
+
+**Field semantics**
+
+- `stamp` — Event time chosen by the producer.
+- `source_id` — Stable writer identity within a deployment.
+- `seq` — Per-`source_id` strictly monotonic unsigned 64-bit counter.
+
+**Identity & idempotency**
+
+- The canonical identity of a sample is the tuple (`source_id`, `seq`).
+- Consumers MUST treat duplicate tuples as the same logical sample.
+- If `seq` wraps or resets, the producer MUST change `source_id` (or use a profile with an explicit writer epoch).
+
+**Ordering rules**
+
+1. **Intra-source** — Order solely by `seq`. Missing values under RELIABLE QoS indicate loss.
+2. **Inter-source merge** — Order by (`stamp`, `source_id`, `seq`) within a bounded window selected by the consumer.
+
+### **2.5 DDS / IDL Structure**
+
+- All SpatialDDS modules conform to OMG IDL 4.2 and DDS-XTypes 1.3.
+- Extensibility SHALL be declared via `@extensibility(APPENDABLE)`.
+- Compound identity SHALL be declared with multiple `@key` annotations.
+- Field initialization remains a runtime concern and SHALL NOT be encoded in IDL.
+- Abridged snippets within the main body are informative; the appendices contain the authoritative IDLs listed above.
+
+
+// SPDX-License-Identifier: MIT
+// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
+
+## **3\. IDL Profiles**
 
 The SpatialDDS IDL bundle defines the schemas used to exchange real-world spatial data over DDS. It is organized into complementary profiles: **Core**, which provides the backbone for pose graphs, geometry, and geo-anchoring; **Discovery**, which enables lightweight announcements of services, coverage, anchors, and content; and **Anchors**, which adds support for publishing and updating sets of durable world-locked anchors. Together, these profiles give devices, services, and applications a common language for building, sharing, and aligning live world models—while staying codec-agnostic, forward-compatible, and simple enough to extend for domains such as robotics, AR/XR, IoT, and smart cities.
 
-### **2.1 IDL Profile Versioning & Negotiation (Normative)**
+_See §2 Conventions for global normative rules._
+
+### **3.1 IDL Profile Versioning & Negotiation (Normative)**
 
 SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
@@ -146,20 +197,7 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
-### **2.2 Optional Fields (Normative)**
-
-SpatialDDS encodes optionality explicitly. To avoid ambiguous parsing and sentinel misuse, producers and consumers SHALL follow these rules across every profile:
-
-* **Presence flags** — For any scalar, struct, or array field that may be absent at runtime, producers SHALL introduce a boolean presence flag immediately before the field (`boolean has_field; Type field;`). Consumers MUST ignore the field when the flag is `false`.
-* **Discriminated unions** — When exactly one of multiple alternatives may appear on the wire, model the choice as a discriminated union (e.g., `CovMatrix`). Do not overload presence flags for mutual exclusivity.
-* **@extensibility(APPENDABLE) omission is only for evolution** — Schema omission via `@extensibility(APPENDABLE)` remains reserved for forward/backward compatibility. Producers SHALL NOT omit fields at runtime to signal “missing data.”
-* **No NaN sentinels** — Floating-point NaN (or other sentinel values) MUST NOT be used to indicate absence. Presence flags govern field validity.
-
-These conventions apply globally (Core, Discovery, Anchors, and all Sensing extensions) and supersede earlier guidance that relied on NaN or implicit omission semantics.
-
-> **Clarification:** `@extensibility(APPENDABLE)` omission remains reserved for schema evolution across versions. Runtime optionality SHALL be expressed with presence flags or discriminated unions. NaN sentinels and implicit omissions are deprecated as of SpatialDDS 1.5.
-
-### **2.3 Core SpatialDDS**
+### **3.2 Core SpatialDDS**
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
@@ -168,7 +206,7 @@ The Core profile defines the essential building blocks for representing and shar
 SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.  
 See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
 
-### **2.4 Discovery**
+### **3.3 Discovery**
 
 Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Think of it as a built-in directory that rides the same bus: nodes announce, others filter and subscribe.
 
@@ -178,6 +216,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 3. **Select** — clients subscribe to chosen topics; negotiation picks the highest compatible minor per profile.
 
 #### Key messages (abridged IDL)
+*(Abridged IDL — see Appendix B for full definitions.)*
 ```idl
 // Message shapes shown for orientation only
 @extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
@@ -233,7 +272,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
-* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§2.4.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -251,14 +290,15 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 #### Practical notes
 * Announce messages stay small and periodic; re-announce whenever capabilities, coverage, or topics change.
 * Queries are stateless filters. Responders may page through results; clients track `next_page_token` until empty.
-* Topic names follow `spatialdds/<domain>/<stream>/<type>/<version>`; filter by `type` and `qos_profile` instead of parsing payloads.
+* Topic names follow `spatialdds/<domain>/<stream>/<type>/<version>` per §3.3.1; filter by `type` and `qos_profile` instead of parsing payloads.
 * Negotiation is automatic once peers see each other’s `supported_profiles`; emit diagnostics like `NO_COMMON_MAJOR(name)` when selection fails.
 
-#### **2.4.1 Topic Identity & QoS (Normative)**
+#### Summary
+Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
-SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS) profile**. Together these define both *what* a stream carries and *how* it behaves on the wire.
+#### **3.3.1 Topic Naming (Normative)**
 
-##### Topic Naming Pattern
+SpatialDDS topics are identified by a structured **name**, a **type**, a **version**, and a declared **Quality-of-Service (QoS)** profile. Together these define both *what* a stream carries and *how* it behaves on the wire.
 
 Each topic follows this pattern:
 ```
@@ -281,7 +321,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 }
 ```
 
-##### Registered Types (v1)
+#### **3.3.2 Typed Topics Registry**
 
 | Type | Typical Payload | Notes |
 |------|------------------|-------|
@@ -293,7 +333,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
-##### Standard QoS Profiles (v1)
+#### **3.3.3 QoS Profiles**
 
 QoS profiles define delivery guarantees and timing expectations for each topic type.
 
@@ -322,6 +362,17 @@ Every `Announce.topics[]` entry and manifest topic reference SHALL include:
 
 Consumers use these three keys to match and filter streams without inspecting payload bytes. Brokers and routers SHOULD isolate lanes by `(topic, stream_id, qos_profile)` to avoid head-of-line blocking.
 
+#### **3.3.4 Coverage Model (Normative)**
+
+- `coverage.frame_ref` is canonical. `CoverageElement` geometries SHALL be expressed in that frame; per-element overrides are prohibited.
+- When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage.frame_ref`.
+- `global == true` means worldwide coverage regardless of regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
+- When `global == false`, producers MAY supply any combination of `bbox`, `geohash`, and `elements`. Consumers SHOULD treat the union of all regions as the effective coverage.
+- `has_bbox`/`has_aabb` flags govern coordinate validity. When a flag is `false`, consumers MUST ignore the associated coordinates and SHALL reject non-finite values.
+- Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
+- Discovery announces and manifests share the same structure; `CoverageQuery` responders SHALL apply these rules when filtering or paginating results.
+- See §2 Conventions for global normative rules.
+
 ##### Implementation Guidance (Non-Normative)
 
 * No change to on-wire framing — this metadata lives at the discovery layer.
@@ -329,49 +380,11 @@ Consumers use these three keys to match and filter streams without inspecting pa
 * For custom types, follow the same naming pattern and document new QoS presets.
 * All examples and tables herein are **additive**; legacy 1.3 compatibility language has been removed.
 
-#### Summary
-Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
-
-### **2.5 Anchors**
+### **3.4 Anchors**
 
 The Anchors profile provides a structured way to share and update collections of durable, world-locked anchors. While Core includes individual GeoAnchor messages, this profile introduces constructs such as AnchorSet for publishing bundles (e.g., a venue’s anchor pack) and AnchorDelta for lightweight updates. This makes it easy for clients to fetch a set of anchors on startup, stay synchronized through incremental changes, and request full snapshots when needed. Anchors complement VPS results by providing the persistent landmarks that make AR content and multi-device alignment stable across sessions and users.
 
-### **2.6 Canonical Ordering & Identity (Normative)**
-
-This section applies to any message that includes the trio: `Time stamp`, `string source_id`, and `uint64 seq`.
-
-**Field semantics**
-
-* `stamp` — Event time chosen by the producer (may reflect device/measurement time and is not guaranteed globally monotonic across sources).
-* `source_id` — Stable writer identity within a deployment (e.g., a sensor, process, or node).
-* `seq` — Per-`source_id` strictly monotonic unsigned 64-bit counter that increments by 1 for each new sample.
-
-**Identity & idempotency**
-
-* The canonical identity of a sample is the tuple **(`source_id`, `seq`)**.
-* Consumers MUST treat duplicated **(`source_id`, `seq`)** as the same logical sample (idempotent).
-* If `seq` wraps or resets, the producer MUST change `source_id` (or use a profile that defines an explicit writer epoch).
-
-**Ordering rules**
-
-1. **Within a single source (intra-source):** Order by `seq` only.
-   * If two samples share the same `seq`, the later-arriving one supersedes the earlier; implementations SHOULD log a single warning per stream.
-   * Missing `seq` values indicate loss under RELIABLE QoS and MAY trigger application-level recovery.
-2. **Across multiple sources (inter-source merge):** Order by the tuple **(`stamp`, `source_id`, `seq`)** within a bounded reordering window Δ chosen by the consumer (e.g., 100–200 ms).
-   * `stamp` provides the coarse global axis; `source_id` and `seq` disambiguate ties and ensure stability.
-   * Consumers MUST NOT enforce global monotonicity by `stamp` alone; clock skew and late arrivals MUST be tolerated within Δ.
-
-**Clock guidance**
-
-* Producers SHOULD time-sync (NTP/PTP) where feasible.
-* Consumers SHOULD bound out-of-order buffering by Δ and proceed deterministically when the window elapses.
-
-**Notes**
-
-* These rules are additive to transport-level ordering; they define application-level determinism independent of QoS.
-* Profiles MAY further refine recovery behavior on gaps (e.g., retries, hole-filling) without altering this canonical ordering.
-
-### **2.6 Profiles Summary**
+### **3.5 Profiles Summary**
 
 The complete SpatialDDS IDL bundle is organized into the following profiles:
 
@@ -396,10 +409,24 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
+#### **Profile Matrix (SpatialDDS 1.4)**
+
+- spatial.core/1.4
+- spatial.discovery/1.4
+- spatial.anchors/1.4
+- spatial.argeo/1.4
+- spatial.sensing.common/1.4
+- spatial.sensing.rad/1.4
+- spatial.sensing.lidar/1.4
+- spatial.sensing.vision/1.4
+- spatial.slam_frontend/1.4
+- spatial.vio/1.4
+- spatial.semantics/1.4
+
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
 
-## **3. Operational Scenarios: From SLAM to AI World Models**
+## **4. Operational Scenarios: From SLAM to AI World Models**
 
 SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
 
@@ -445,7 +472,7 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "node_id": "kf_0120",
       "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
       "frame_ref": {
-        "uuid": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
         "fqn": "facility-west/map"
       },
       "stamp": { "sec": 1714070452, "nsec": 125000000 },
@@ -466,7 +493,10 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
         "alt_m": 12.6,
         "q": [0.71, 0.00, 0.70, 0.05],
         "frame_kind": "ENU",
-        "frame_ref": "@37.79340,-122.39410,5.2"
+        "frame_ref": {
+          "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
+          "fqn": "earth-fixed"
+        }
       },
       "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
     }
@@ -510,12 +540,12 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 
 This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
 
-## **4. Conclusion**
+## **5. Conclusion**
 
 SpatialDDS provides a lightweight, standards-based framework for exchanging real-world spatial data over DDS. By organizing schemas into modular profiles — with Core, Discovery, and Anchors as the foundation and Extensions adding domain-specific capabilities — it supports everything from SLAM pipelines and AR clients to digital twins, smart city infrastructure, and AI-driven world models. Core elements such as pose graphs, geometry tiles, anchors, and discovery give devices and services a shared language for building and aligning live models of the world, while provisional extensions like Neural and Agent point toward richer semantics and autonomous agents. Taken together, SpatialDDS positions itself as a practical foundation for real-time spatial computing—interoperable, codec-agnostic, and ready to serve as the data bus for AI and human experiences grounded in the physical world.
 
 
-## **5. Future Directions**
+## **6. Future Directions**
 
 While SpatialDDS establishes a practical baseline for real-time spatial computing, several areas invite further exploration:
 
@@ -535,13 +565,13 @@ Together, these directions point toward a future where SpatialDDS is not just a 
 We invite implementers, researchers, and standards bodies to explore SpatialDDS, contribute extensions, and help shape it into a shared backbone for real-time spatial computing and AI world models.
 
 
-## **6. SpatialDDS URIs**
+## **7. SpatialDDS URIs**
 
-### 6.1 Why SpatialDDS URIs matter
+### 7.1 Why SpatialDDS URIs matter
 
 SpatialDDS URIs are the shorthand that lets participants talk about anchors, content, and services without exchanging the full manifests up front. They bridge human concepts—"the anchor in Hall 1" or "the localization service for Midtown"—with machine-readable manifests that deliver the precise data, coordinate frames, and capabilities needed later in the flow.
 
-### 6.2 Key ingredients
+### 7.2 Key ingredients
 
 Every SpatialDDS URI names four ideas:
 
@@ -554,11 +584,11 @@ The exact tokens and encoding rules are defined by the individual profiles, but 
 
 Formal syntax is given in Appendix F.
 
-### 6.3 Working with SpatialDDS URIs
+### 7.3 Working with SpatialDDS URIs
 
 Once a URI is known, clients ask the authority for the manifest it points to—typically via HTTPS, though authorities can advertise other transports if they operate private caches or field buses. The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
 
-### 6.4 Examples
+### 7.4 Examples
 
 ```text
 spatialdds://museum.example.org/hall1/anchor/01J8QDFQX3W9X4CEX39M9ZP6TQ
@@ -568,7 +598,7 @@ spatialdds://studio.example.com/stage/content/01HCQF7DGKKB3J8F4AR98MJ6EH
 
 In the manifest samples later in this specification, each of these identifiers expands into a full JSON manifest. Reviewing those examples shows how a single URI flows from a discovery payload, through manifest retrieval, to runtime consumption.
 
-## 7. Example Manifests
+## 8. Example Manifests
 
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
@@ -617,10 +647,10 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 
 ## Field Notes
 * **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
-* **Coverage (`coverage`)** — uses explicit presence flags. When `has_bbox` is `true`, `bbox` is authoritative; when `false`, omit it from coverage calculations. All shapes share the canonical `frame_ref` declared on the coverage record; producers MUST transform element geometry into this frame ahead of publication. Elements use their own `has_bbox`/`has_aabb` flags to gate coordinates. Producers MAY also provide geohashes or detailed `elements`. Set `global = true` for worldwide coverage.
-* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs.
-* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.  
-* All orientation fields use canonical GeoPose order `(x, y, z, w)`; older forms like `q_wxyz` are removed.  
+* **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
+* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.
+* All orientation fields follow the quaternion order defined in §2.1; older forms like `q_wxyz` are removed.
 
 ## Practical Guidance
 * Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
@@ -631,7 +661,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 ## Summary
 Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it* — without version-negotiation clutter or legacy fields.
 
-## **8. Glossary of Acronyms**
+## **9. Glossary of Acronyms**
 
 **AI** – Artificial Intelligence
 
@@ -674,7 +704,7 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 **XR** – Extended Reality (umbrella term including AR, VR, MR)
 
 
-## **9. References**
+## **10. References**
 
 ### **DDS & Middleware**
 
@@ -720,6 +750,9 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
 #endif
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#include "geometry.idl"
+#endif
 
 module spatial {
   module core {
@@ -728,17 +761,15 @@ module spatial {
     const string MODULE_ID = "spatial.core/1.4";
 
     // ---------- Utility ----------
-    struct Time {
-      int32  sec;     // seconds since UNIX epoch (UTC)
-      uint32 nsec;    // nanoseconds [0..1e9)
-    };
+    // Expose builtin Time under spatial::core
+    typedef builtin::Time Time;
 
-    struct PoseSE3 {
+    @extensibility(FINAL) struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
       spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
-    struct Aabb3 {
+    @extensibility(FINAL) struct Aabb3 {
       spatial::common::Vec3 min_xyz;
       spatial::common::Vec3 max_xyz;
     };
@@ -751,7 +782,11 @@ module spatial {
     };
 
     // ---------- Geometry ----------
-    enum PatchOp { ADD = 0, REPLACE = 1, REMOVE = 2 };
+    enum PatchOp {
+      @value(0) ADD,
+      @value(1) REPLACE,
+      @value(2) REMOVE
+    };
 
     @extensibility(APPENDABLE) struct BlobRef {
       string blob_id;   // UUID or content-address
@@ -801,10 +836,11 @@ module spatial {
       boolean last;          // true when this is the final chunk for blob_id
     };
 
-**BlobChunk Identity.** Each chunk is uniquely identified by the composite key `(blob_id, index)`. The `seq` field is **not** part of the key; it may be used for transport ordering, diagnostics, or gap detection. Readers on BEST_EFFORT transports MUST tolerate out-of-order arrival; keys are used for reassembly, not ordering. The `last` flag signals completion for a given blob even if later chunks arrive out of order.
-
     // ---------- Pose Graph (minimal) ----------
-    enum EdgeTypeCore { ODOM = 0, LOOP = 1 };
+    enum EdgeTypeCore {
+      @value(0) ODOM,
+      @value(1) LOOP
+    };
 
     @extensibility(APPENDABLE) struct Node {
       string map_id;
@@ -833,13 +869,17 @@ module spatial {
     };
 
     // ---------- Geo anchoring ----------
-    enum GeoFrameKind { ECEF = 0, ENU = 1, NED = 2 };
+    enum GeoFrameKind {
+      @value(0) ECEF,
+      @value(1) ENU,
+      @value(2) NED
+    };
 
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_NONE: octet _unused;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
-      default: ;
     };
 
     @extensibility(APPENDABLE) struct GeoPose {
@@ -896,46 +936,99 @@ module spatial {
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
+See **Appendix F.X (Discovery Query Expression)** for the normative grammar used by `CoverageQuery.expr` filters.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Discovery 1.4
 // Lightweight announces for services, coverage, and content
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
-    module disco {
+  module disco {
 
-      const string MODULE_ID = "spatial.discovery/1.4";
+    // -----------------------------
+    // Asset references (middle-ground model)
+    // -----------------------------
+    //
+    // Base contract: uniform access + integrity for all assets.
+    // Optional, namespaced metadata bags carry type-specific details
+    // without inflating the base schema.
+    //
+    // Example: media_type could be
+    //   "application/vnd.sdds.features+json;algo=orb;v=1"
+    //
+    // Namespaced metadata uses JSON strings so producers can include
+    // structured details without schema churn.
+    //
+    @extensibility(APPENDABLE) struct AssetMetaKV {
+      string namespace;  // e.g., "sensing.vision.features"
+      string json;       // JSON object string; producer-defined for this namespace
+    };
 
-      typedef spatial::core::Time Time;
-      typedef spatial::core::FrameRef FrameRef;
-      typedef spatial::core::Aabb3 Aabb3;
-      // Canonical manifest references use the spatialdds:// URI scheme.
-      typedef string SpatialUri;
+    @extensibility(APPENDABLE) struct AssetRef {
+      string uri;          // required: how to fetch
+      string media_type;   // required: IANA or registry-friendly type (with params)
+      string hash;         // required: e.g., "sha256:<hex>"
+      uint64 bytes;        // required: size in bytes
+      sequence<AssetMetaKV, 32> meta;  // optional: zero or more namespaced bags
+    };
 
-      // --- Profile version advertisement (additive) ---
-      // Semver per profile: name@MAJOR.MINOR
-      // Each row declares a contiguous range of MINORs within a single MAJOR.
-      @extensibility(APPENDABLE) struct ProfileSupport {
-        string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
-        uint32 major;       // compatible major (e.g., 1)
-        uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
-        uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
-        boolean preferred;  // optional tie-breaker hint (usually false)
-      };
+    const string MODULE_ID = "spatial.discovery/1.4";
 
-      @extensibility(APPENDABLE) struct Capabilities {
-        sequence<ProfileSupport, 64> supported_profiles;
-      };
+    typedef spatial::core::Time Time;
+    typedef spatial::core::Aabb3 Aabb3;
+    typedef spatial::core::FrameRef FrameRef;
+    // Canonical manifest references use the spatialdds:// URI scheme.
+    typedef string SpatialUri;
+
+    // --- Profile version advertisement (additive) ---
+    // Semver per profile: name@MAJOR.MINOR
+    // Each row declares a contiguous range of MINORs within a single MAJOR.
+    @extensibility(APPENDABLE) struct ProfileSupport {
+      string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
+      uint32 major;       // compatible major (e.g., 1)
+      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
+      uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
+      boolean preferred;  // optional tie-breaker hint (usually false)
+    };
+
+    // --- Optional feature flags (namespaced strings, e.g., "blob.crc32", "rad.tensor.zstd") ---
+    @extensibility(APPENDABLE) struct FeatureFlag {
+      string name;
+    };
+
+    // --- Capabilities advertised in-band on the discovery bus ---
+    @extensibility(APPENDABLE) struct Capabilities {
+      sequence<ProfileSupport, 64> supported_profiles;
+      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.*"]
+      sequence<FeatureFlag, 64>    features;           // optional feature flags
+    };
+
+    // --- Topic metadata to enable selection without parsing payloads ---
+    @extensibility(APPENDABLE) struct TopicMeta {
+      string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
+      string type;        // registered type (see Topic Identity & QoS §2.2.1)
+      string version;     // e.g., "v1"
+      string qos_profile; // e.g., "VIDEO_LIVE"
+      // optional advisory hints (topic-level, not per-message)
+      float target_rate_hz;
+      uint32  max_chunk_bytes;
+    };
 
     enum ServiceKind {
-      VPS = 0,
-      MAPPING = 1,
-      RELOCAL = 2,
-      SEMANTICS = 3,
-      STORAGE = 4,
-      CONTENT = 5,
-      ANCHOR_REGISTRY = 6,
-      OTHER = 255
+      @value(0)   VPS,
+      @value(1)   MAPPING,
+      @value(2)   RELOCAL,
+      @value(3)   SEMANTICS,
+      @value(4)   STORAGE,
+      @value(5)   CONTENT,
+      @value(6)   ANCHOR_REGISTRY,
+      @value(255) OTHER
     };
 
     @extensibility(APPENDABLE) struct KV {
@@ -951,11 +1044,12 @@ module spatial {
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
-      // Presence flags replace NaN sentinels. When has_bbox == true, bbox is authoritative.
+      // Presence flags indicate which geometry payloads are provided.
+      // When has_bbox == true, bbox is authoritative.
       boolean has_bbox;
       spatial::common::BBox2D bbox; // [west, south, east, north]
 
-      // When has_aabb == true, aabb is authoritative; NaN has no special meaning.
+      // When has_aabb == true, aabb is authoritative.
       boolean has_aabb;
       Aabb3  aabb;              // axis-aligned bounds in the declared frame
 
@@ -996,7 +1090,8 @@ module spatial {
       sequence<string,16> tx_topics;
       sequence<KV,32> hints;
       // New: wire-level capability advertisement for version negotiation.
-      Capabilities caps;
+      Capabilities caps;                 // in-band capabilities (profiles + features)
+      sequence<TopicMeta,128> topics;    // topic list with typed-topic metadata
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
       boolean has_coverage_eval_time;
@@ -1035,15 +1130,6 @@ module spatial {
       uint32 ttl_sec;
     };
 
-    @extensibility(APPENDABLE) struct CoverageResponse {
-      // Mirrors CoverageQuery.query_id for correlation.
-      uint64 query_id;
-      // Result page.
-      sequence<ContentAnnounce,65535> results;
-      // Empty when no further pages remain.
-      string next_page_token;
-    };
-
     @extensibility(APPENDABLE) struct ContentAnnounce {
       @key string content_id;
       string provider_id;
@@ -1055,7 +1141,7 @@ module spatial {
       sequence<CoverageElement,16> coverage;
       FrameRef coverage_frame_ref;
       boolean has_coverage_eval_time;
-      Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
+      Time    coverage_eval_time;
       sequence<Transform,8> transforms;
       Time available_from;
       Time available_until;
@@ -1063,10 +1149,20 @@ module spatial {
       uint32 ttl_sec;
     };
 
+    @extensibility(APPENDABLE) struct CoverageResponse {
+      // Mirrors CoverageQuery.query_id for correlation.
+      uint64 query_id;
+      // Result page.
+      sequence<ContentAnnounce,65535> results;
+      // Empty when no further pages remain.
+      string next_page_token;
+    };
+
   }; // module disco
 };
 
 ```
+
 
 ## **Appendix C: Anchor Registry Profile**
 
@@ -1077,13 +1173,18 @@ module spatial {
 // SpatialDDS Anchors 1.4
 // Bundles and updates for anchor registries
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module anchors {
     const string MODULE_ID = "spatial.anchors/1.4";
 
     typedef spatial::core::Time Time;
     typedef spatial::core::GeoPose GeoPose;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::core::FrameRef FrameRef;
 
     @extensibility(APPENDABLE) struct AnchorEntry {
       @key string anchor_id;
@@ -1108,7 +1209,11 @@ module spatial {
       string checksum;
     };
 
-    enum AnchorOp { ADD=0, UPDATE=1, REMOVE=2 };
+    enum AnchorOp {
+      @value(0) ADD,
+      @value(1) UPDATE,
+      @value(2) REMOVE
+    };
 
     @extensibility(APPENDABLE) struct AnchorDelta {
       @key string set_id;
@@ -1150,6 +1255,13 @@ module spatial {
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
 
+module builtin {
+  @extensibility(FINAL) struct Time {
+    int32 sec;      // seconds since UNIX epoch (UTC)
+    uint32 nanosec; // nanoseconds [0, 1e9)
+  };
+};
+
 module spatial {
   module common {
     typedef double BBox2D[4];
@@ -1160,14 +1272,15 @@ module spatial {
     typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
 
     enum CovarianceType {
-      COV_NONE = 0,
-      COV_POS3 = 3,
-      COV_POSE6 = 6
+      @value(0) COV_NONE,
+      @value(3) COV_POS3,
+      @value(6) COV_POSE6
     };
   };
 };
 
 #endif // SPATIAL_COMMON_TYPES_INCLUDED
+
 ```
 
 ### **Geometry Primitives**
@@ -1175,6 +1288,9 @@ module spatial {
 *Stable frame references shared across profiles.*
 
 ```idl
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#define SPATIAL_GEOMETRY_INCLUDED
+
 // SPDX-License-Identifier: MIT
 // SpatialDDS Geometry 1.0
 
@@ -1191,6 +1307,8 @@ module spatial {
   }; // module geometry
 };
 
+#endif // SPATIAL_GEOMETRY_INCLUDED
+
 ```
 
 ### **Sensing Common Extension**
@@ -1200,6 +1318,11 @@ module spatial {
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Sensing Common 1.4 (Extension module)
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
 
 module spatial { module sensing { module common {
 
@@ -1220,7 +1343,10 @@ module spatial { module sensing { module common {
   typedef spatial::geometry::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
-  enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+  enum AxisEncoding {
+    @value(0) CENTERS,
+    @value(1) LINSPACE
+  };
 
   // Compact parametric axis definition
   @extensibility(APPENDABLE) struct Linspace {
@@ -1233,7 +1359,6 @@ module spatial { module sensing { module common {
   @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
     case CENTERS:  sequence<double, 65535> centers;
     case LINSPACE: Linspace lin;
-    default: ;
   };
 
   @extensibility(APPENDABLE) struct Axis {
@@ -1276,22 +1401,34 @@ module spatial { module sensing { module common {
 
   // ---- Codecs / Payload kinds (shared enums) ----
   enum Codec {
-    CODEC_NONE = 0, LZ4 = 1, ZSTD = 2, GZIP = 3,
-    DRACO = 10,     // geometry compression
-    JPEG = 20, H264 = 21, H265 = 22, AV1 = 23, // vision
-    FP8Q = 40, FP4Q = 41, AE_V1 = 42          // quant/learned (tensors)
+    @value(0)  CODEC_NONE,
+    @value(1)  LZ4,
+    @value(2)  ZSTD,
+    @value(3)  GZIP,
+    @value(10) DRACO,     // geometry compression
+    @value(20) JPEG,
+    @value(21) H264,
+    @value(22) H265,
+    @value(23) AV1,
+    @value(40) FP8Q,
+    @value(41) FP4Q,
+    @value(42) AE_V1
   };
 
   enum PayloadKind {
-    DENSE_TILES = 0,    // tiled dense blocks (e.g., tensor tiles)
-    SPARSE_COO = 1,     // sparse indices + values
-    LATENT = 2,         // learned latent vectors
-    BLOB_GEOMETRY = 10, // PCC/PLY/glTF+Draco
-    BLOB_RASTER = 11    // JPEG/GOP chunk(s)
+    @value(0)  DENSE_TILES,    // tiled dense blocks (e.g., tensor tiles)
+    @value(1)  SPARSE_COO,     // sparse indices + values
+    @value(2)  LATENT,         // learned latent vectors
+    @value(10) BLOB_GEOMETRY,  // PCC/PLY/glTF+Draco
+    @value(11) BLOB_RASTER     // JPEG/GOP chunk(s)
   };
 
   enum SampleType {        // post-decode voxel/point sample type
-    U8_MAG = 0, F16_MAG = 1, CF16 = 2, CF32 = 3, MAGPHASE_S8 = 4
+    @value(0) U8_MAG,
+    @value(1) F16_MAG,
+    @value(2) CF16,
+    @value(3) CF32,
+    @value(4) MAGPHASE_S8
   };
 
   // ---- Stream identity & calibration header shared by sensors ----
@@ -1317,7 +1454,11 @@ module spatial { module sensing { module common {
   };
 
   // ---- Quality & health (uniform across sensors) ----
-  enum Health { OK = 0, DEGRADED = 1, ERROR = 2 };
+  enum Health {
+    @value(0) OK,
+    @value(1) DEGRADED,
+    @value(2) ERROR
+  };
 
   @extensibility(APPENDABLE) struct FrameQuality {
     boolean has_snr_db;
@@ -1350,22 +1491,6 @@ module spatial { module sensing { module common {
 
 ```
 
-### Axis Encoding (Normative)
-
-The `Axis` struct now embeds a discriminated union so that only one encoding is transmitted on the wire.
-
-**Definition**
-```idl
-enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
-@extensibility(APPENDABLE) struct Linspace { double start; double step; uint32 count; };
-@extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
-  case CENTERS:  sequence<double, 65535> centers;
-  case LINSPACE: Linspace lin;
-  default: ;
-};
-@extensibility(APPENDABLE) struct Axis { string name; string unit; AxisSpec spec; };
-```
-
 ### **Standard Sequence Bounds (Normative)**
 
 | Payload                           | Recommended Bound   | Rationale                              |
@@ -1377,16 +1502,27 @@ enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
 
 Producers SHOULD choose the smallest tier that covers real workloads; exceeding these bounds requires a new profile minor.
 
-**Semantics**
-* `CENTERS` — Explicit sample positions. The `centers` sequence provides all axis values as `double`.
+#### Axis Encoding (Normative)
+
+The `Axis` struct embeds a discriminated union to ensure only one encoding is transmitted on the wire.
+
+```idl
+enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+@extensibility(APPENDABLE) struct Linspace { double start; double step; uint32 count; };
+@extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
+  case CENTERS:  sequence<double, 65535> centers;
+  case LINSPACE: Linspace lin;
+  default: ;
+};
+@extensibility(APPENDABLE) struct Axis { string name; string unit; AxisSpec spec; };
+```
+
+* `CENTERS` — Explicit sample positions carried as `double` values.
 * `LINSPACE` — Uniform grid defined by `start + i * step` for `i ∈ [0, count‑1]`.
 * Negative `step` indicates descending axes.
-* `count` MUST be ≥ 1.
-* `step * (count – 1) + start` defines the final coordinate when `LINSPACE` is selected.
+* `count` MUST be ≥ 1 and `step * (count – 1) + start` yields the last coordinate.
 
-**Rationale**
-
-Eliminates redundant fields and boolean guards; reduces bandwidth and parsing errors. The legacy `start`, `step`, `centers`, and `has_centers` fields are removed.
+The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to eliminate ambiguity.
 
 ### **VIO / Inertial Extension**
 
@@ -1396,12 +1532,18 @@ Eliminates redundant fields and boolean guards; reduces bandwidth and parsing er
 // SPDX-License-Identifier: MIT
 // SpatialDDS VIO/Inertial 1.4
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module vio {
 
     const string MODULE_ID = "spatial.vio/1.4";
 
     typedef spatial::core::Time Time;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     // IMU calibration
     @extensibility(APPENDABLE) struct ImuInfo {
@@ -1447,8 +1589,19 @@ module spatial {
     };
 
     // Fused state (orientation ± position)
-    enum FusionMode { ORIENTATION_3DOF = 0, ORIENTATION_6DOF = 1, POSE_6DOF = 2 };
-    enum FusionSourceKind { EKF = 0, AHRS = 1, VIO = 2, IMU_ONLY = 3, MAG_AIDED = 4, AR_PLATFORM = 5 };
+    enum FusionMode {
+      @value(0) ORIENTATION_3DOF,
+      @value(1) ORIENTATION_6DOF,
+      @value(2) POSE_6DOF
+    };
+    enum FusionSourceKind {
+      @value(0) EKF,
+      @value(1) AHRS,
+      @value(2) VIO,
+      @value(3) IMU_ONLY,
+      @value(4) MAG_AIDED,
+      @value(5) AR_PLATFORM
+    };
 
     @extensibility(APPENDABLE) struct FusedState {
       @key string fusion_id;
@@ -1487,11 +1640,20 @@ module spatial {
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Vision (sensing.vision) 1.4 — Extension profile
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial { module sensing { module vision {
 
@@ -1502,7 +1664,6 @@ module spatial { module sensing { module vision {
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::geometry::FrameRef              FrameRef;
   typedef spatial::geometry::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
@@ -1516,15 +1677,43 @@ module spatial { module sensing { module vision {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
+  // ROI bounds follow Sensing Common presence flags.
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Camera / imaging specifics
-  enum CamModel     { PINHOLE=0, FISHEYE_EQUIDISTANT=1, KB_4=2, OMNI=3 };
-  enum Distortion   { NONE=0, RADTAN=1, KANNALA_BRANDT=2 };
-  enum PixFormat    { UNKNOWN=0, YUV420=1, RGB8=2, BGR8=3, RGBA8=4, RAW10=10, RAW12=12, RAW16=16 };
-  enum ColorSpace   { SRGB=0, REC709=1, REC2020=2, LINEAR=10 };
-  enum RigRole      { LEFT=0, RIGHT=1, CENTER=2, AUX=3 };
+  enum CamModel {
+    @value(0) PINHOLE,
+    @value(1) FISHEYE_EQUIDISTANT,
+    @value(2) KB_4,
+    @value(3) OMNI
+  };
+  enum Distortion {
+    @value(0) NONE,
+    @value(1) RADTAN,
+    @value(2) KANNALA_BRANDT
+  };
+  enum PixFormat {
+    @value(0)  UNKNOWN,
+    @value(1)  YUV420,
+    @value(2)  RGB8,
+    @value(3)  BGR8,
+    @value(4)  RGBA8,
+    @value(10) RAW10,
+    @value(12) RAW12,
+    @value(16) RAW16
+  };
+  enum ColorSpace {
+    @value(0)  SRGB,
+    @value(1)  REC709,
+    @value(2)  REC2020,
+    @value(10) LINEAR
+  };
+  enum RigRole {
+    @value(0) LEFT,
+    @value(1) RIGHT,
+    @value(2) CENTER,
+    @value(3) AUX
+  };
 
   @extensibility(APPENDABLE) struct CamIntrinsics {
     CamModel model;
@@ -1601,6 +1790,11 @@ module spatial { module sensing { module vision {
 // SPDX-License-Identifier: MIT
 // SpatialDDS SLAM Frontend 1.4
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module slam_frontend {
 
@@ -1611,7 +1805,12 @@ module spatial {
     typedef spatial::geometry::FrameRef FrameRef;
 
     // Camera calibration
-    enum DistortionModelKind { NONE = 0, RADTAN = 1, EQUIDISTANT = 2, KANNALA_BRANDT = 3 };
+    enum DistortionModelKind {
+      @value(0) NONE,
+      @value(1) RADTAN,
+      @value(2) EQUIDISTANT,
+      @value(3) KANNALA_BRANDT
+    };
 
     @extensibility(APPENDABLE) struct CameraInfo {
       @key string camera_id;
@@ -1700,6 +1899,15 @@ module spatial {
 // SPDX-License-Identifier: MIT
 // SpatialDDS Semantics 1.4
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
 module spatial {
   module semantics {
 
@@ -1777,11 +1985,20 @@ module spatial {
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Radar (RAD) 1.4 — Extension profile
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial { module sensing { module rad {
 
@@ -1792,6 +2009,7 @@ module spatial { module sensing { module rad {
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::geometry::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Axis           Axis;
   typedef spatial::sensing::common::ROI            ROI;
@@ -1804,11 +2022,15 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
+  // ROI bounds follow Sensing Common presence flags.
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Layout of the RAD tensor
-  enum RadTensorLayout { RA_D = 0, R_AZ_EL_D = 1, CUSTOM = 255 };
+  enum RadTensorLayout {
+    @value(0)   RA_D,
+    @value(1)   R_AZ_EL_D,
+    @value(255) CUSTOM
+  };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @extensibility(APPENDABLE) struct RadMeta {
@@ -1868,11 +2090,20 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow Sensing Common presence flags (no NaN sentinels; axes use the CENTERS/LINSPACE union encoding).* 
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS LiDAR (sensing.lidar) 1.4 — Extension profile
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
 
 module spatial { module sensing { module lidar {
 
@@ -1883,6 +2114,7 @@ module spatial { module sensing { module lidar {
   typedef spatial::core::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::geometry::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;
   typedef spatial::sensing::common::PayloadKind    PayloadKind; // use BLOB_GEOMETRY for clouds
@@ -1895,13 +2127,29 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIRequest     ROIRequest;
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
-  // ROI bounds follow Sensing Common presence flags (no NaN sentinels).
+  // ROI bounds follow Sensing Common presence flags.
   // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
 
   // Device + data model
-  enum LidarType    { SPINNING_2D=0, MULTI_BEAM_3D=1, SOLID_STATE=2 };
-  enum CloudEncoding{ PCD=0, PLY=1, LAS=2, LAZ=3, GLTF_DRACO=10, MPEG_PCC=20, CUSTOM_BIN=255 };
-  enum PointLayout  { XYZ_I=0, XYZ_I_R=1, XYZ_I_R_N=2 }; // intensity, ring, normal
+  enum LidarType {
+    @value(0) SPINNING_2D,
+    @value(1) MULTI_BEAM_3D,
+    @value(2) SOLID_STATE
+  };
+  enum CloudEncoding {
+    @value(0)   PCD,
+    @value(1)   PLY,
+    @value(2)   LAS,
+    @value(3)   LAZ,
+    @value(10)  GLTF_DRACO,
+    @value(20)  MPEG_PCC,
+    @value(255) CUSTOM_BIN
+  };
+  enum PointLayout { // intensity, ring, normal
+    @value(0) XYZ_I,
+    @value(1) XYZ_I_R,
+    @value(2) XYZ_I_R_N
+  };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
   @extensibility(APPENDABLE) struct LidarMeta {
@@ -1968,6 +2216,11 @@ module spatial { module sensing { module lidar {
 // SPDX-License-Identifier: MIT
 // SpatialDDS AR+Geo 1.4
 
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
 module spatial {
   module argeo {
 
@@ -1976,6 +2229,7 @@ module spatial {
     typedef spatial::core::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
     typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::geometry::FrameRef FrameRef;
 
     @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;
@@ -2127,8 +2381,6 @@ WS         = *( SP / HTAB )
 ; - Unknown identifiers evaluate to false in comparisons.
 ```
 
-<a id="g-frame-identifiers"></a>
-
 ## **Appendix G: Frame Identifiers (Normative)**
 
 SpatialDDS represents reference frames using the `FrameRef` structure:
@@ -2140,34 +2392,19 @@ struct FrameRef {
 };
 ```
 
-#### UUID Rules
+### UUID Rules
 - `uuid` is authoritative for identity.
 - `fqn` is an optional human-readable alias.
 - Implementations MUST treat `uuid` uniqueness as the identity key.
 - Deployments SHOULD establish well-known UUIDs for standard roots (e.g., `earth-fixed`, `map`, `body`) and document them for participants.
 
-#### Name and Hierarchy Rules
+### Name and Hierarchy Rules
 - `fqn` components are slash-delimited.
 - Reserved roots include `earth-fixed`, `map`, `body`, `anchor`, `local`.
 - A `FrameRef` DAG MUST be acyclic.
 
-#### Manifest References
+### Manifest References
 Manifest entries that refer to frames MUST use a `FrameRef` object rather than raw strings. Each manifest MAY define local frame aliases resolvable by `fqn`.
 
-#### Notes
-This appendix defines the authoritative encoding for `FrameRef`. Additional derived schemas (e.g. GeoPose, Anchors) SHALL refer to this definition by reference and MUST NOT re-declare frame semantics.
-
-### Coverage Semantics (Normative)
-
-* `coverage.frame_ref` is canonical. `bbox`, `aabb`, and every `CoverageElement` geometry SHALL be expressed in this frame. Per-element frames are not permitted.
-* When `coverage_eval_time` is present, consumers SHALL evaluate any supplied transforms at that instant before interpreting `coverage.frame_ref`.
-* `global == true` means worldwide coverage regardless of any regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
-* When `global == false`, producers MAY supply any combination of `bbox`, `geohash`, and `elements`. Consumers SHOULD treat the union of all provided regions as the effective coverage.
-* Presence flags govern coordinate validity. When a flag is `false`, consumers MUST ignore the associated coordinates. `NaN` has no special meaning in any coverage coordinate; non-finite values MUST be rejected.
-
-### Validation Guidance (Non-normative)
-
-* Reject `has_bbox == true` or `has_aabb == true` when any coordinate is non-finite (`NaN`/`Inf`).
-* Enforce axis ordering: `west ≤ east`, `south ≤ north`, and for AABBs ensure `min ≤ max` per axis.
-* When `global == true`, consumers MAY ignore conflicting regional hints and treat coverage as worldwide.
-
+### Notes
+This appendix defines the authoritative encoding for `FrameRef`. Additional derived schemas (e.g. GeoPose, Anchors) SHALL refer to this definition by reference and MUST NOT re-declare frame semantics. The conventions in §2.1 and the coverage/discovery rules in §3.3 reference this appendix for their frame requirements.
