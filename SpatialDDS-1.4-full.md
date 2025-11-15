@@ -195,7 +195,7 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **3.2 Core SpatialDDS**
 
@@ -273,6 +273,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -284,7 +285,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 | `caps.supported_profiles` | Version ranges per profile. Peers select the **highest compatible minor** within a shared major. |
 | `caps.preferred_profiles` | Optional tie-breaker hint (only within a major). |
 | `caps.features` | Optional feature flags (namespaced strings). Unknown flags can be ignored. |
-| `topics[].type` / `version` / `qos_profile` | Topic Identity keys used to filter and match streams. |
+| `topics[].type` / `version` / `qos_profile` | Topic Identity keys used to filter and match streams; see the allowed sets above. |
 | `reply_topic`, `query_id` | Allows asynchronous, paged responses and correlation. |
 
 #### Practical notes
@@ -378,7 +379,7 @@ Consumers use these three keys to match and filter streams without inspecting pa
 * No change to on-wire framing — this metadata lives at the discovery layer.
 * Named QoS profiles simplify cross-vendor interoperability and diagnostics.
 * For custom types, follow the same naming pattern and document new QoS presets.
-* All examples and tables herein are **additive**; legacy 1.3 compatibility language has been removed.
+* All examples and tables herein are **additive**.
 
 ### **3.4 Anchors**
 
@@ -659,7 +660,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 * Assets should prefer registered MIME types for interoperability.
 
 ## Summary
-Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it* — without version-negotiation clutter or legacy fields.
+Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.
 
 ## **9. Glossary of Acronyms**
 
@@ -764,12 +765,12 @@ module spatial {
     // Expose builtin Time under spatial::core
     typedef builtin::Time Time;
 
-    @extensibility(FINAL) struct PoseSE3 {
+    @extensibility(APPENDABLE) struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
       spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
-    @extensibility(FINAL) struct Aabb3 {
+    @extensibility(APPENDABLE) struct Aabb3 {
       spatial::common::Vec3 min_xyz;
       spatial::common::Vec3 max_xyz;
     };
@@ -830,10 +831,9 @@ module spatial {
       @key string blob_id;   // which blob
       @key uint32 index;     // chunk index (0..N-1)
       uint32 total_chunks;   // total number of chunks expected for this blob_id
-      uint32 seq;            // monotonic sequence number within this blob_id
       uint32 crc32;          // CRC32 checksum over 'data'
-      sequence<uint8, 262144> data; // ≤256 KiB per sample
       boolean last;          // true when this is the final chunk for blob_id
+      sequence<uint8, 262144> data; // ≤256 KiB per sample
     };
 
     // ---------- Pose Graph (minimal) ----------
@@ -846,8 +846,7 @@ module spatial {
       string map_id;
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
-      boolean has_cov;
-      spatial::common::Mat6x6 cov;   // 6x6 covariance (row-major)
+      CovMatrix cov;           // covariance payload (COV_NONE when absent)
       Time    stamp;
       FrameRef frame_ref;      // e.g., "map"
       string  source_id;
@@ -910,8 +909,7 @@ module spatial {
       FrameRef child_ref;       // local frame ("map")
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
-      boolean has_cov;
-      spatial::common::Mat6x6 cov; // 6x6 covariance
+      CovMatrix cov;             // covariance payload (COV_NONE when absent)
     };
 
     // ---------- Snapshot / Catch-up ----------
@@ -983,6 +981,7 @@ module spatial {
     typedef spatial::core::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
     typedef spatial::core::FrameRef FrameRef;
+    typedef spatial::core::PoseSE3 PoseSE3;
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
 
@@ -1012,9 +1011,9 @@ module spatial {
     // --- Topic metadata to enable selection without parsing payloads ---
     @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // registered type (see Topic Identity & QoS §2.2.1)
-      string version;     // e.g., "v1"
-      string qos_profile; // e.g., "VIDEO_LIVE"
+      string type;        // geometry_tile | video_frame | radar_tensor | seg_mask | desc_array
+      string version;     // currently fixed to "v1"
+      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
       // optional advisory hints (topic-level, not per-message)
       float target_rate_hz;
       uint32  max_chunk_bytes;
@@ -1036,7 +1035,7 @@ module spatial {
       string value;
     };
 
-    // CoverageElement geometry is always expressed in the parent coverage_frame_ref.
+    // CoverageElement geometry is expressed in the parent coverage_frame_ref unless has_frame_ref overrides it.
     // If that frame is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
     // otherwise coordinates are in local meters.
     @extensibility(APPENDABLE) struct CoverageElement {
@@ -1055,32 +1054,28 @@ module spatial {
 
       // Explicit global coverage toggle: when true, bbox/aabb may be ignored by consumers.
       boolean global;
+      // Optional per-element frame override.
+      boolean has_frame_ref;
+      FrameRef frame_ref;
     };
 
     // Validity window for time-bounded transforms.
     @extensibility(APPENDABLE) struct ValidityWindow {
-      Time   start;             // inclusive start
-      uint32 duration_s;        // seconds from start
+      Time   from;              // inclusive start time
+      uint32 seconds;           // duration from 'from'
     };
 
     // Quaternion follows GeoPose: unit [x,y,z,w]; pose maps FROM 'from' TO 'to'
     @extensibility(APPENDABLE) struct Transform {
       FrameRef from;            // source frame (e.g., "map")
       FrameRef to;              // target frame (e.g., "earth-fixed")
-      string stamp;             // ISO-8601 timestamp for this transform
-
-      // Explicit validity window (presence-flag style).
-      // When has_valid == true, the transform is valid in
-      //   [valid.start, valid.start + valid.duration_s].
-      // When has_valid == false, consumers treat the transform as valid at 'stamp'
-      // (or until superseded, per system policy).
-      boolean        has_valid;
-      ValidityWindow valid;
-      spatial::common::Vec3 t_m;           // meters in 'from' frame
-      spatial::common::QuaternionXYZW q_xyzw; // GeoPose order [x,y,z,w]
+      PoseSE3 pose;             // transform payload parent->child
+      Time    stamp;            // publication timestamp
+      boolean has_validity;     // when true, 'validity' bounds the transform
+      ValidityWindow validity;  // explicit validity window
     };
 
-    @extensibility(APPENDABLE) struct ServiceAnnounce {
+    @extensibility(APPENDABLE) struct Announce {
       @key string service_id;
       string name;
       ServiceKind kind;
@@ -1116,7 +1111,7 @@ module spatial {
 
     @extensibility(APPENDABLE) struct CoverageQuery {
       // Correlates responses to a specific query instance.
-      @key uint64 query_id;
+      @key string query_id;
       sequence<CoverageElement,4> coverage;  // requested regions of interest
       FrameRef coverage_frame_ref;
       boolean has_coverage_eval_time;
@@ -1150,12 +1145,9 @@ module spatial {
     };
 
     @extensibility(APPENDABLE) struct CoverageResponse {
-      // Mirrors CoverageQuery.query_id for correlation.
-      uint64 query_id;
-      // Result page.
-      sequence<ContentAnnounce,65535> results;
-      // Empty when no further pages remain.
-      string next_page_token;
+      string query_id;                    // Mirrors CoverageQuery.query_id for correlation.
+      sequence<Announce,256> results;     // Result page (caps + typed topics)
+      string next_page_token;             // Empty when no further pages remain.
     };
 
   }; // module disco
@@ -1522,7 +1514,6 @@ enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
 * Negative `step` indicates descending axes.
 * `count` MUST be ≥ 1 and `step * (count – 1) + start` yields the last coordinate.
 
-The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to eliminate ambiguity.
 
 ### **VIO / Inertial Extension**
 
@@ -2236,8 +2227,7 @@ module spatial {
       @key string node_id;      // same id as core::Node
       PoseSE3 pose;             // local pose in map frame
       GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
-      boolean has_cov;
-      spatial::common::Mat6x6  cov; // 6x6 covariance in local frame
+      spatial::core::CovMatrix cov; // covariance payload (COV_NONE when absent)
       Time    stamp;
       FrameRef frame_ref;       // local frame
       string  source_id;

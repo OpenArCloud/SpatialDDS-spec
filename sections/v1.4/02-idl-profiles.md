@@ -14,7 +14,7 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. All legacy quaternion and field-compatibility shims are removed—SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **3.2 Core SpatialDDS**
 
@@ -92,6 +92,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
+* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
@@ -103,7 +104,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 | `caps.supported_profiles` | Version ranges per profile. Peers select the **highest compatible minor** within a shared major. |
 | `caps.preferred_profiles` | Optional tie-breaker hint (only within a major). |
 | `caps.features` | Optional feature flags (namespaced strings). Unknown flags can be ignored. |
-| `topics[].type` / `version` / `qos_profile` | Topic Identity keys used to filter and match streams. |
+| `topics[].type` / `version` / `qos_profile` | Topic Identity keys used to filter and match streams; see the allowed sets above. |
 | `reply_topic`, `query_id` | Allows asynchronous, paged responses and correlation. |
 
 #### Practical notes
@@ -197,7 +198,7 @@ Consumers use these three keys to match and filter streams without inspecting pa
 * No change to on-wire framing — this metadata lives at the discovery layer.
 * Named QoS profiles simplify cross-vendor interoperability and diagnostics.
 * For custom types, follow the same naming pattern and document new QoS presets.
-* All examples and tables herein are **additive**; legacy 1.3 compatibility language has been removed.
+* All examples and tables herein are **additive**.
 
 ### **3.4 Anchors**
 

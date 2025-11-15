@@ -21,8 +21,7 @@ module spatial {
       @key string node_id;      // same id as core::Node
       PoseSE3 pose;             // local pose in map frame
       GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
-      boolean has_cov;
-      spatial::common::Mat6x6  cov; // 6x6 covariance in local frame
+      spatial::core::CovMatrix cov; // covariance payload (COV_NONE when absent)
       Time    stamp;
       FrameRef frame_ref;       // local frame
       string  source_id;

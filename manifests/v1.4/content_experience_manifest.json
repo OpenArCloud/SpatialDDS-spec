@@ -129,7 +129,7 @@
     {
       "uri": "https://cdn.museum.example/img/poster.jpg",
       "media_type": "image/jpeg",
-      "hash": "sha256:posterplaceholder...",
+      "hash": "sha256:3b83ef96387f14655fc854ddc3c6bd57d436c3b8f4d4f1b953ebd2da9382efc3",
       "bytes": 421337,
       "meta": {
         "experiences.asset": {
@@ -140,7 +140,7 @@
     {
       "uri": "https://cdn.museum.example/audio/room_intro.mp3",
       "media_type": "audio/mpeg",
-      "hash": "sha256:narrationplaceholder...",
+      "hash": "sha256:79c2f8c1fcead1e6d12c74a53ce38afcb7631c6fba58828a741b93d7c5edda6d",
       "bytes": 1987654,
       "meta": {
         "experiences.asset": {
