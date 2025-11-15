@@ -57,7 +57,6 @@ enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
 * Negative `step` indicates descending axes.
 * `count` MUST be ≥ 1 and `step * (count – 1) + start` yields the last coordinate.
 
-The legacy `start`, `step`, `centers`, and `has_centers` fields are removed to eliminate ambiguity.
 
 ### **VIO / Inertial Extension**
 

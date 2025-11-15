@@ -18,12 +18,12 @@ module spatial {
     // Expose builtin Time under spatial::core
     typedef builtin::Time Time;
 
-    @extensibility(FINAL) struct PoseSE3 {
+    @extensibility(APPENDABLE) struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
       spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
-    @extensibility(FINAL) struct Aabb3 {
+    @extensibility(APPENDABLE) struct Aabb3 {
       spatial::common::Vec3 min_xyz;
       spatial::common::Vec3 max_xyz;
     };
@@ -84,10 +84,9 @@ module spatial {
       @key string blob_id;   // which blob
       @key uint32 index;     // chunk index (0..N-1)
       uint32 total_chunks;   // total number of chunks expected for this blob_id
-      uint32 seq;            // monotonic sequence number within this blob_id
       uint32 crc32;          // CRC32 checksum over 'data'
-      sequence<uint8, 262144> data; // ≤256 KiB per sample
       boolean last;          // true when this is the final chunk for blob_id
+      sequence<uint8, 262144> data; // ≤256 KiB per sample
     };
 
     // ---------- Pose Graph (minimal) ----------
@@ -100,8 +99,7 @@ module spatial {
       string map_id;
       @key string node_id;     // unique keyframe id
       PoseSE3 pose;            // pose in frame_ref
-      boolean has_cov;
-      spatial::common::Mat6x6 cov;   // 6x6 covariance (row-major)
+      CovMatrix cov;           // covariance payload (COV_NONE when absent)
       Time    stamp;
       FrameRef frame_ref;      // e.g., "map"
       string  source_id;
@@ -164,8 +162,7 @@ module spatial {
       FrameRef child_ref;       // local frame ("map")
       PoseSE3 T_parent_child;   // transform parent->child
       Time    stamp;
-      boolean has_cov;
-      spatial::common::Mat6x6 cov; // 6x6 covariance
+      CovMatrix cov;             // covariance payload (COV_NONE when absent)
     };
 
     // ---------- Snapshot / Catch-up ----------

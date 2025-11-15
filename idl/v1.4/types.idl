@@ -5,7 +5,7 @@
 #define SPATIAL_COMMON_TYPES_INCLUDED
 
 module builtin {
-  @extensibility(FINAL) struct Time {
+  @extensibility(APPENDABLE) struct Time {
     int32 sec;      // seconds since UNIX epoch (UTC)
     uint32 nanosec; // nanoseconds [0, 1e9)
   };

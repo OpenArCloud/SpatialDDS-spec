@@ -50,7 +50,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 * **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
 * **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
 * **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.
-* All orientation fields follow the quaternion order defined in §2.1; older forms like `q_wxyz` are removed.
+* All orientation fields follow the quaternion order defined in §2.1.
 
 ## Practical Guidance
 * Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
@@ -59,4 +59,4 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 * Assets should prefer registered MIME types for interoperability.
 
 ## Summary
-Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it* — without version-negotiation clutter or legacy fields.
+Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.

@@ -100,7 +100,7 @@
         {
           "uri": "https://registry.example/anchors/statue-east/orb_v1.bin",
           "media_type": "application/vnd.sdds.features+binary;algo=orb;v=1",
-          "hash": "sha256:placeholder...",
+            "hash": "sha256:f05448d9b8b9669980b82ce49963cf343577b6c7d0f775d390d05f86519f8e5c",
           "bytes": 65536,
           "meta": {
             "sensing.vision.features": {
@@ -116,7 +116,7 @@
         {
           "uri": "https://registry.example/anchors/statue-east/patch_lod1.las",
           "media_type": "application/vnd.sdds.pointcloud+las;lod=1",
-          "hash": "sha256:placeholder...",
+            "hash": "sha256:7e2d0f6d8b7e4e7b28fa92abcf7350b55e1f08c3c6d1a2a7f6c1d23f7855a0c9",
           "bytes": 480000,
           "meta": {
             "sensing.vision.pointcloud": {
@@ -144,7 +144,7 @@
         {
           "uri": "https://registry.example/anchors/central-court-n/superpoint_v1.npz",
           "media_type": "application/vnd.sdds.features+npz;algo=superpoint;v=1",
-          "hash": "sha256:placeholder...",
+            "hash": "sha256:0c1be3d2ab9785c62843da4d6f0a8b6ba34f8608d9f2f9d2a44c9e928b1d5f27",
           "bytes": 220000,
           "meta": {
             "sensing.vision.features": {
@@ -156,7 +156,7 @@
         {
           "uri": "https://registry.example/anchors/central-court-n/patch_lod0.glb",
           "media_type": "model/gltf-binary;lod=0",
-          "hash": "sha256:placeholder...",
+            "hash": "sha256:5f48c631264f5c6b099b8095958be89347568cf8127781c78b810e16a3a836ce",
           "bytes": 350000,
           "meta": {
             "sensing.vision.mesh": {
