@@ -41,7 +41,7 @@
 
 ## **1\. Introduction**
 
-SpatialDDS is a lightweight, standards-based protocol for real-time exchange of spatial world models. It is designed as a shared data bus that allows devices, services, and AI agents to publish and subscribe to structured representations of the physical world — from pose graphs and 3D geometry to anchors, semantic detections, and service discovery. By providing a common substrate, SpatialDDS enables applications in robotics, AR/XR, digital twins, and smart cities to interoperate while also supporting new AI-driven use cases such as perception services, neural maps, and planning agents.
+SpatialDDS is a lightweight, standards-based protocol, built on OMG DDS, for real-time exchange of spatial world models. It is designed as a shared data bus that allows devices, services, and AI agents to publish and subscribe to structured representations of the physical world — from pose graphs and 3D geometry to anchors, semantic detections, and service discovery. By providing a common substrate, SpatialDDS enables applications in robotics, AR/XR, digital twins, and smart cities to interoperate while also supporting new AI-driven use cases such as perception services, neural maps, and planning agents.
 
 At its core, SpatialDDS is defined through IDL profiles that partition functionality into clean modules:
 
@@ -146,8 +146,9 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
 
 ### **2.3 Numeric Validity & NaN Deprecation**
 
-- `NaN`, `Inf`, or other sentinels SHALL NOT signal absence. Presence flags govern validity.
-- Non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, or coverage bounds appear.
+- `NaN`, `Inf`, or other sentinels SHALL NOT signal absence or "unbounded" values; explicit presence flags govern validity.
+- Fields guarded by `has_*` flags are meaningful only when the flag is `true`. When the flag is `false`, consumers MUST ignore the payload regardless of its contents.
+- When a `has_*` flag is `true`, non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, coverage bounds, or similar numeric payloads appear.
 
 ### **2.4 Canonical Ordering & Identity**
 
@@ -194,6 +195,8 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
+
+**Identifier conventions.** Profile tokens use the form `name@MAJOR.MINOR` (e.g., `core@1.4`, `discovery@1.4`) and appear in manifests plus capability negotiation. The corresponding module identifiers use `spatial.<profile>/<MAJOR.MINOR>` (e.g., `spatial.core/1.4`, `spatial.discovery/1.4`) and surface as `MODULE_ID` constants or in fields such as `schema_version`. These forms are canonically related: `core@1.4 ⇔ spatial.core/1.4`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
@@ -365,13 +368,16 @@ Consumers use these three keys to match and filter streams without inspecting pa
 
 #### **3.3.4 Coverage Model (Normative)**
 
-- `coverage.frame_ref` is canonical. `CoverageElement` geometries SHALL be expressed in that frame; per-element overrides are prohibited.
-- When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage.frame_ref`.
+- `coverage_frame_ref` is the canonical frame for all coverage elements in a given announcement. `CoverageElement` geometries SHOULD be expressed in this frame. Per-element overrides via `CoverageElement.frame_ref` are allowed, but SHOULD be used sparingly (e.g., when mixing a small number of local frames in the same announcement).
+- When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage_frame_ref`.
 - `global == true` means worldwide coverage regardless of regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
-- When `global == false`, producers MAY supply any combination of `bbox`, `geohash`, and `elements`. Consumers SHOULD treat the union of all regions as the effective coverage.
-- `has_bbox`/`has_aabb` flags govern coordinate validity. When a flag is `false`, consumers MUST ignore the associated coordinates and SHALL reject non-finite values.
+- When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
+- Manifests MAY express coverage using any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox`, `aabb`, and `elements` while preserving the same coverage semantics.
+- `has_bbox` and `has_aabb` govern whether the associated coordinates are meaningful:
+  - When `has_bbox == true`, consumers MUST treat `bbox` as authoritative and SHALL reject non-finite values (`NaN`, `Inf`).
+  - When `has_bbox == false`, consumers MUST ignore `bbox` entirely, regardless of its contents. The same rules apply to `has_aabb`/`aabb`.
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
-- Discovery announces and manifests share the same structure; `CoverageQuery` responders SHALL apply these rules when filtering or paginating results.
+- Discovery announces and manifests share the same coverage semantics and flags. `CoverageQuery` responders SHALL apply these rules consistently when filtering or paginating results.
 - See §2 Conventions for global normative rules.
 
 ##### Implementation Guidance (Non-Normative)
@@ -380,6 +386,12 @@ Consumers use these three keys to match and filter streams without inspecting pa
 * Named QoS profiles simplify cross-vendor interoperability and diagnostics.
 * For custom types, follow the same naming pattern and document new QoS presets.
 * All examples and tables herein are **additive**.
+
+##### Discovery recipe (tying the examples together)
+
+1. **Announce** — the producer sends `Announce` (see JSON example above) to advertise `caps` and `topics`.
+2. **CoverageQuery** — the consumer issues a `CoverageQuery` (see query JSON) to filter by profile, topic type, or QoS.
+3. **CoverageResponse** — the producer replies with `CoverageResponse` (see response JSON), returning results plus an optional `next_page_token` for pagination.
 
 ### **3.4 Anchors**
 
@@ -1044,19 +1056,19 @@ module spatial {
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags indicate which geometry payloads are provided.
-      // When has_bbox == true, bbox is authoritative.
+      // When has_bbox == true, bbox is authoritative and MUST contain finite coordinates.
       boolean has_bbox;
       spatial::common::BBox2D bbox; // [west, south, east, north]
 
-      // When has_aabb == true, aabb is authoritative.
+      // When has_aabb == true, aabb is authoritative and MUST contain finite coordinates.
       boolean has_aabb;
       Aabb3  aabb;              // axis-aligned bounds in the declared frame
 
       // Explicit global coverage toggle: when true, bbox/aabb may be ignored by consumers.
       boolean global;
-      // Optional per-element frame override.
+      // Optional per-element frame override. If has_frame_ref == false, consumers MUST interpret this element in coverage_frame_ref.
       boolean has_frame_ref;
-      FrameRef frame_ref;
+      FrameRef frame_ref;       // Use sparingly to mix a few local frames within one announcement.
     };
 
     // Validity window for time-bounded transforms.
