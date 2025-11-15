@@ -22,8 +22,9 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
 
 ### **2.3 Numeric Validity & NaN Deprecation**
 
-- `NaN`, `Inf`, or other sentinels SHALL NOT signal absence. Presence flags govern validity.
-- Non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, or coverage bounds appear.
+- `NaN`, `Inf`, or other sentinels SHALL NOT signal absence or "unbounded" values; explicit presence flags govern validity.
+- Fields guarded by `has_*` flags are meaningful only when the flag is `true`. When the flag is `false`, consumers MUST ignore the payload regardless of its contents.
+- When a `has_*` flag is `true`, non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, coverage bounds, or similar numeric payloads appear.
 
 ### **2.4 Canonical Ordering & Identity**
 
