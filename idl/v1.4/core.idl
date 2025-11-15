@@ -129,7 +129,7 @@ module spatial {
 
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
-      case spatial::common::COV_NONE: octet _unused;
+      case spatial::common::COV_NONE: uint8 _;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
     };

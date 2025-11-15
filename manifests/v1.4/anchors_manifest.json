@@ -1,5 +1,5 @@
 {
-  "schema_version": "manifest@1.4",
+  "schema_version": "spatial.core/1.4",
   "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",

@@ -16,7 +16,7 @@ module spatial { module sensing { module rad {
   const string MODULE_ID = "spatial.sensing.rad/1.4";
 
   // Reuse Core + Sensing Common types
-  typedef spatial::core::Time                      Time;
+  typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
   typedef spatial::geometry::FrameRef              FrameRef;

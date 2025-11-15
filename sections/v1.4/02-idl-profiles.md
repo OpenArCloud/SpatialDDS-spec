@@ -14,7 +14,7 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-**Identifier conventions.** Profile tokens use the form `name@MAJOR.MINOR` (e.g., `core@1.4`, `discovery@1.4`) and appear in manifests plus capability negotiation. The corresponding module identifiers use `spatial.<profile>/<MAJOR.MINOR>` (e.g., `spatial.core/1.4`, `spatial.discovery/1.4`) and surface as `MODULE_ID` constants or in fields such as `schema_version`. These forms are canonically related: `core@1.4 ⇔ spatial.core/1.4`.
+Identifier conventions: Profile tokens use `name@MAJOR.MINOR` (e.g., `core@1.4`). Module identifiers use `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.4`). These are canonically related: `core@1.4 ⇔ spatial.core/1.4`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
@@ -56,6 +56,8 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
+
+See Appendix F.X for the ABNF grammar.
 
 @extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
@@ -186,14 +188,12 @@ Consumers use these three keys to match and filter streams without inspecting pa
 
 #### **3.3.4 Coverage Model (Normative)**
 
-- `coverage_frame_ref` is the canonical frame for all coverage elements in a given announcement. `CoverageElement` geometries SHOULD be expressed in this frame. Per-element overrides via `CoverageElement.frame_ref` are allowed, but SHOULD be used sparingly (e.g., when mixing a small number of local frames in the same announcement).
+- `coverage_frame_ref` is the canonical frame for an announcement. `CoverageElement.frame_ref` MAY override it, but SHOULD be used sparingly (e.g., mixed local frames). If absent, consumers MUST use `coverage_frame_ref`.
 - When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage_frame_ref`.
 - `global == true` means worldwide coverage regardless of regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
 - When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
-- Manifests MAY express coverage using any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox`, `aabb`, and `elements` while preserving the same coverage semantics.
-- `has_bbox` and `has_aabb` govern whether the associated coordinates are meaningful:
-  - When `has_bbox == true`, consumers MUST treat `bbox` as authoritative and SHALL reject non-finite values (`NaN`, `Inf`).
-  - When `has_bbox == false`, consumers MUST ignore `bbox` entirely, regardless of its contents. The same rules apply to `has_aabb`/`aabb`.
+- Manifests MAY provide any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox` and `aabb`. Consumers SHALL treat all hints consistently according to the Coverage Model.
+- When `has_bbox == true`, `bbox` MUST contain finite coordinates; consumers SHALL reject non-finite values. When `has_bbox == false`, consumers MUST ignore `bbox` entirely. Same rules apply to `has_aabb` and `aabb`.
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
 - Discovery announces and manifests share the same coverage semantics and flags. `CoverageQuery` responders SHALL apply these rules consistently when filtering or paginating results.
 - See §2 Conventions for global normative rules.

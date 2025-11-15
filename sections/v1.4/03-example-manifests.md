@@ -39,8 +39,8 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
   "assets": [{
     "kind": "features:ORB:v1",
     "uri": "https://example.org/descriptors/1",
-    "mime": "application/x-array",
-    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    "media_type": "application/x-array",
+    "hash": "sha256:3af21f63d5b89c5b4a30b055ab8c5d4c9936542a934c7c417a0f4fb5048d1c72"
   }]
 }
 ```
@@ -49,14 +49,14 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 * **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
 * **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
 * **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
-* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.
+* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `media_type` and `hash`.
 * All orientation fields follow the quaternion order defined in §2.1.
 
 ## Practical Guidance
 * Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
 * When multiple frames exist, use one manifest per frame for clarity.  
 * Use HTTPS, DDS, or file URIs interchangeably — the `uri` scheme is transport-agnostic.  
-* Assets should prefer registered MIME types for interoperability.
+* Assets should prefer registered media types for interoperability.
 
 ## Summary
 Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.

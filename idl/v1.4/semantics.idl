@@ -15,7 +15,7 @@ module spatial {
 
     const string MODULE_ID = "spatial.semantics/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
     typedef spatial::geometry::FrameRef FrameRef;
 

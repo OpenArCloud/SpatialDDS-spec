@@ -11,7 +11,7 @@ module spatial {
   module anchors {
     const string MODULE_ID = "spatial.anchors/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::GeoPose GeoPose;
     typedef spatial::core::FrameRef FrameRef;
 

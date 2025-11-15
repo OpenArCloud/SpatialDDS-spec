@@ -19,7 +19,7 @@ module spatial { module sensing { module common {
   const uint32 SZ_XL     = 32768;
 
   // Reuse Core primitives (time, pose, blob references)
-  typedef spatial::core::Time    Time;
+  typedef builtin::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
   typedef spatial::core::BlobRef BlobRef;
   typedef spatial::geometry::FrameRef FrameRef;

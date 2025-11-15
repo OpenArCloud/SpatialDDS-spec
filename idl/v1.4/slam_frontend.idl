@@ -12,7 +12,7 @@ module spatial {
     const string MODULE_ID = "spatial.slam_frontend/1.4";
 
     // Reuse core: Time, etc.
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::geometry::FrameRef FrameRef;
 
     // Camera calibration
