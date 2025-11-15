@@ -118,7 +118,7 @@ See Appendix F.X for the ABNF grammar.
 * Negotiation is automatic once peers see each other’s `supported_profiles`; emit diagnostics like `NO_COMMON_MAJOR(name)` when selection fails.
 
 #### Summary
-Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
+Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without additional application-level handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
 #### **3.3.1 Topic Naming (Normative)**
 
@@ -156,6 +156,8 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
+
+Implementations defining custom `type` and `qos_profile` values SHOULD follow the naming pattern (`myorg.depth_frame`, `DEPTH_LIVE`) and document their DDS QoS mapping.
 
 #### **3.3.3 QoS Profiles**
 
@@ -197,6 +199,16 @@ Consumers use these three keys to match and filter streams without inspecting pa
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
 - Discovery announces and manifests share the same coverage semantics and flags. `CoverageQuery` responders SHALL apply these rules consistently when filtering or paginating results.
 - See §2 Conventions for global normative rules.
+
+#### Coverage Evaluation Pseudocode (Informative)
+```
+if coverage.global:
+    regions = WORLD
+else:
+    regions = union(bbox, geohash, elements[*].aabb)
+frame = coverage_frame_ref unless element.frame_ref present
+evaluate transforms at coverage_eval_time if present
+```
 
 ##### Implementation Guidance (Non-Normative)
 

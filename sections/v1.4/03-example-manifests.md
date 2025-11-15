@@ -1,5 +1,7 @@
 ## 8. Example Manifests
 
+The manifest schema is versioned as `spatial.manifest@MAJOR.MINOR`, consistent with IDL profile scheme.
+
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
 ## Structure Overview

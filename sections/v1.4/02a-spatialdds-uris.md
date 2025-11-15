@@ -30,3 +30,5 @@ spatialdds://studio.example.com/stage/content/01HCQF7DGKKB3J8F4AR98MJ6EH
 ```
 
 In the manifest samples later in this specification, each of these identifiers expands into a full JSON manifest. Reviewing those examples shows how a single URI flows from a discovery payload, through manifest retrieval, to runtime consumption.
+
+Authorities SHOULD use DNS hostnames they control to ensure globally unique, delegatable SpatialDDS URIs.

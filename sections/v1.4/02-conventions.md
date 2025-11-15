@@ -19,14 +19,26 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
 - Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field.
 - Mutually exclusive payloads SHALL be modeled as discriminated unions; do not overload presence flags to signal exclusivity.
 - Schema evolution leverages `@extensibility(APPENDABLE)`; omit fields only when the IDL version removes them, never as an on-wire sentinel.
+- See `CovMatrix` in Appendix A for the reference discriminated union pattern used for covariance.
 
 ### **2.3 Numeric Validity & NaN Deprecation**
 
 - `NaN`, `Inf`, or other sentinels SHALL NOT signal absence or "unbounded" values; explicit presence flags govern validity.
 - Fields guarded by `has_*` flags are meaningful only when the flag is `true`. When the flag is `false`, consumers MUST ignore the payload regardless of its contents.
 - When a `has_*` flag is `true`, non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, coverage bounds, or similar numeric payloads appear.
+- Producers SHOULD avoid emitting non-finite numbers; consumers MAY treat such samples as malformed and drop them.
 
-### **2.4 Canonical Ordering & Identity**
+### **2.4 Conventions Quick Table (Informative)**
+
+| Pattern | Rule |
+|--------|------|
+| Optional fields | All optional values use a `has_*` flag. |
+| NaN/Inf | Never valid; treated as malformed input. |
+| Quaternion order | Always `(x, y, z, w)` GeoPose order. |
+| Frames | `FrameRef.uuid` is authoritative. |
+| Ordering | `(source_id, seq)` is canonical. |
+
+### **2.5 Canonical Ordering & Identity**
 
 These rules apply to any message that carries the trio `{ stamp, source_id, seq }`.
 
@@ -47,7 +59,7 @@ These rules apply to any message that carries the trio `{ stamp, source_id, seq 
 1. **Intra-source** — Order solely by `seq`. Missing values under RELIABLE QoS indicate loss.
 2. **Inter-source merge** — Order by (`stamp`, `source_id`, `seq`) within a bounded window selected by the consumer.
 
-### **2.5 DDS / IDL Structure**
+### **2.6 DDS / IDL Structure**
 
 - All SpatialDDS modules conform to OMG IDL 4.2 and DDS-XTypes 1.3.
 - Extensibility SHALL be declared via `@extensibility(APPENDABLE)`.
