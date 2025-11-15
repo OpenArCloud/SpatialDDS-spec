@@ -6,9 +6,9 @@ The Markdown sources in this repository remain the canonical reference for each 
 
 ## Quick Links
 
-- [SpatialDDS 1.4 (single page)](SpatialDDS-1.4-full.md)
-- [SpatialDDS 1.3 (single page)](SpatialDDS-1.3-full.md)
-- [SpatialDDS 1.2 (single page)](SpatialDDS-1.2-full.md)
+- [SpatialDDS 1.4 (single page)](SpatialDDS-1.4-full/)
+- [SpatialDDS 1.3 (single page)](SpatialDDS-1.3-full/)
+- [SpatialDDS 1.2 (single page)](SpatialDDS-1.2-full/)
 - [SpatialDDS spec repo](https://github.com/OpenArCloud/SpatialDDS-spec)
 - [SpatialDDS demo repo](https://github.com/OpenArCloud/SpatialDDS-demo)
 
