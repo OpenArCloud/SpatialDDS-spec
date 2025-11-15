@@ -1,5 +1,5 @@
 {
-  "schema_version": "manifest@1.4",
+  "schema_version": "spatial.core/1.4",
   "service_id": "svc:vps:acme/sf-downtown",
   "profiles": [
     "Core",

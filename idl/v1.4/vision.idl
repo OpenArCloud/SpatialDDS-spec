@@ -16,7 +16,7 @@ module spatial { module sensing { module vision {
   const string MODULE_ID = "spatial.sensing.vision/1.4";
 
   // Reuse Core + Sensing Common
-  typedef spatial::core::Time                      Time;
+  typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
   typedef spatial::geometry::FrameRef              FrameRef;

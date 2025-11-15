@@ -11,7 +11,7 @@ module spatial {
 
     const string MODULE_ID = "spatial.vio/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::geometry::FrameRef FrameRef;
 
     // IMU calibration

@@ -38,6 +38,7 @@
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.4/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)
+    - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.4/appendix-h-operational-scenarios.md)
 
 ## **1\. Introduction**
 
@@ -196,7 +197,7 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-**Identifier conventions.** Profile tokens use the form `name@MAJOR.MINOR` (e.g., `core@1.4`, `discovery@1.4`) and appear in manifests plus capability negotiation. The corresponding module identifiers use `spatial.<profile>/<MAJOR.MINOR>` (e.g., `spatial.core/1.4`, `spatial.discovery/1.4`) and surface as `MODULE_ID` constants or in fields such as `schema_version`. These forms are canonically related: `core@1.4 ⇔ spatial.core/1.4`.
+Identifier conventions: Profile tokens use `name@MAJOR.MINOR` (e.g., `core@1.4`). Module identifiers use `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.4`). These are canonically related: `core@1.4 ⇔ spatial.core/1.4`.
 
 Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
@@ -238,6 +239,8 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
+
+See Appendix F.X for the ABNF grammar.
 
 @extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
@@ -350,6 +353,8 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
 
+(Typical deadlines are non-normative.)
+
 ###### Notes
 
 * Each topic advertises its `qos_profile` during discovery.
@@ -368,14 +373,12 @@ Consumers use these three keys to match and filter streams without inspecting pa
 
 #### **3.3.4 Coverage Model (Normative)**
 
-- `coverage_frame_ref` is the canonical frame for all coverage elements in a given announcement. `CoverageElement` geometries SHOULD be expressed in this frame. Per-element overrides via `CoverageElement.frame_ref` are allowed, but SHOULD be used sparingly (e.g., when mixing a small number of local frames in the same announcement).
+- `coverage_frame_ref` is the canonical frame for an announcement. `CoverageElement.frame_ref` MAY override it, but SHOULD be used sparingly (e.g., mixed local frames). If absent, consumers MUST use `coverage_frame_ref`.
 - When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage_frame_ref`.
 - `global == true` means worldwide coverage regardless of regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
 - When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
-- Manifests MAY express coverage using any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox`, `aabb`, and `elements` while preserving the same coverage semantics.
-- `has_bbox` and `has_aabb` govern whether the associated coordinates are meaningful:
-  - When `has_bbox == true`, consumers MUST treat `bbox` as authoritative and SHALL reject non-finite values (`NaN`, `Inf`).
-  - When `has_bbox == false`, consumers MUST ignore `bbox` entirely, regardless of its contents. The same rules apply to `has_aabb`/`aabb`.
+- Manifests MAY provide any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox` and `aabb`. Consumers SHALL treat all hints consistently according to the Coverage Model.
+- When `has_bbox == true`, `bbox` MUST contain finite coordinates; consumers SHALL reject non-finite values. When `has_bbox == false`, consumers MUST ignore `bbox` entirely. Same rules apply to `has_aabb` and `aabb`.
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
 - Discovery announces and manifests share the same coverage semantics and flags. `CoverageQuery` responders SHALL apply these rules consistently when filtering or paginating results.
 - See §2 Conventions for global normative rules.
@@ -441,117 +444,7 @@ The Sensing module family keeps sensor data interoperable: `sensing.common` unif
 
 ## **4. Operational Scenarios: From SLAM to AI World Models**
 
-SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
-
-### **Narrative Walkthrough: Local → Shared → Global → AI**
-
-1. **Local SLAM on-device.** A headset, drone, or robot runs visual-inertial SLAM, generating keyframes and odometry updates in its private map frame.
-2. **Sharing a pose graph.** The device publishes `pg.node` and `pg.edge` samples (often as compact PoseGraphDelta bursts) onto the SpatialDDS bus so nearby peers or edge services can extend or optimize the map.
-3. **Anchors stabilize VIO.** By discovering the Anchor Registry, the device resolves durable anchor URIs, retrieves their manifests, and fuses those priors to keep its VIO estimate drift-free.
-4. **VPS provides a GeoPose.** When the device needs a global fix, it queries a Visual Positioning Service (VPS). The VPS uses the shared pose graph plus anchor hints to return a `geo.fix` sample that orients the local map in a world frame.
-5. **Digital twin aggregation.** Twin backends subscribe to the same streams — pose graphs, anchors, geometry, and semantics — to maintain authoritative state for places, assets, and events.
-6. **AI world models consume the twin.** Analytics engines, planning agents, and foundation models read from the digital twin feeds, grounding their predictions and experiences in the synchronized world model.
-
-The end result is a continuous chain: local sensing feeds a shared spatial data bus, anchors and VPS lift content into a global frame, digital twins maintain durable state, and AI systems reason over the fused model.
-
-```mermaid
-sequenceDiagram
-    participant Device
-    participant DDS as SpatialDDS Bus
-    participant VPS
-    participant Anchors as Anchor Registry
-    participant Twin as Digital Twin
-    participant AI as AI Service
-    Device->>DDS: PoseGraphDelta (pg.node/pg.edge)
-    DDS->>Anchors: Anchor manifest request
-    Anchors-->>DDS: anchors.set / anchors.delta
-    Device->>VPS: feat.keyframe / image blob
-    VPS-->>DDS: geo.fix (GeoPose)
-    DDS-->>Twin: PoseGraph, GeoPose, geom.tile.*
-    Twin-->>AI: TwinStateUpdate / analytics feed
-    AI-->>Device: Optional guidance or overlays
-```
-
-### **Example 1: Device Localization with SLAM and Anchors**
-
-A field technician’s headset begins indoors with self-contained SLAM. As it walks the “local → shared → global” ladder:
-
-- **Publish local mapping.** Each keyframe produces a PoseGraphDelta that streams to `pg.node` / `pg.edge`. An excerpt looks like:
-
-    ```json
-    {
-      "topic": "pg.node",
-      "map_id": "map/facility-west",
-      "node_id": "kf_0120",
-      "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
-      "frame_ref": {
-        "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
-        "fqn": "facility-west/map"
-      },
-      "stamp": { "sec": 1714070452, "nsec": 125000000 },
-      "source_id": "device/headset-17"
-    }
-    ```
-
-- **Discover anchors.** Through `disco.service`, the headset resolves `anchor://facility-west/loading-bay`, fetches the manifest (Appendix A.1), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
-- **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
-
-    ```json
-    {
-      "topic": "geo.fix",
-      "anchor_id": "anchor://facility-west/loading-bay",
-      "geopose": {
-        "lat_deg": 37.79341,
-        "lon_deg": -122.39412,
-        "alt_m": 12.6,
-        "q": [0.71, 0.00, 0.70, 0.05],
-        "frame_kind": "ENU",
-        "frame_ref": {
-          "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
-          "fqn": "earth-fixed"
-        }
-      },
-      "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
-    }
-    ```
-
-- **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
-
-(See Appendix A.1 for the full anchor and VPS manifests referenced here.)
-
-### **Example 2: Updating and Using a Digital Twin**
-
-A facilities digital twin service subscribes to the same DDS topics to maintain a live model, while an AI analytics engine consumes the twin stream:
-
-- **Twin ingestion.** The backend listens to `pg.node`, `geo.anchor`, and `geom.tile.*` to reconcile a persistent state for each asset. When a door actuator changes, an operator microservice emits:
-
-    ```json
-    {
-      "topic": "twin.state.update",
-      "uri": "urn:spatial://facility-west/assets/door-17",
-      "anchor_ref": "anchor://facility-west/loading-bay",
-      "state": {
-        "pose_local": {
-          "t": [4.21, -1.02, 0.00],
-          "q": [1, 0, 0, 0]
-        },
-        "door_status": "open",
-        "last_maintenance": "2024-03-22"
-      },
-      "stamp": { "sec": 1714070520, "nsec": 0 }
-    }
-    ```
-
-  The twin registry validates the anchor reference, signs a manifest (Appendix A.2), and updates the canonical record.
-
-- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing alerts and AR overlays back through SpatialDDS.
-- **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
-
-(See Appendix A.2 for extended twin manifests and analytics payloads.)
-
-### **Why the Ladder Matters**
-
-This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
+Informative narratives, mermaid diagrams, and long-form JSON walkthroughs now live in Appendix H. See Appendix H for the full “local → shared → global → AI” ladder and device-to-AI examples.
 
 ## **5. Conclusion**
 
@@ -652,8 +545,8 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
   "assets": [{
     "kind": "features:ORB:v1",
     "uri": "https://example.org/descriptors/1",
-    "mime": "application/x-array",
-    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    "media_type": "application/x-array",
+    "hash": "sha256:3af21f63d5b89c5b4a30b055ab8c5d4c9936542a934c7c417a0f4fb5048d1c72"
   }]
 }
 ```
@@ -662,14 +555,14 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 * **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
 * **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
 * **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
-* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `mime` and `hash`.
+* **Assets (`assets`)** — URIs referencing external content. Each has a `kind`, `uri`, and optional `media_type` and `hash`.
 * All orientation fields follow the quaternion order defined in §2.1; older forms like `q_wxyz` are removed.
 
 ## Practical Guidance
 * Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
 * When multiple frames exist, use one manifest per frame for clarity.  
 * Use HTTPS, DDS, or file URIs interchangeably — the `uri` scheme is transport-agnostic.  
-* Assets should prefer registered MIME types for interoperability.
+* Assets should prefer registered media types for interoperability.
 
 ## Summary
 Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.
@@ -888,7 +781,7 @@ module spatial {
 
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
-      case spatial::common::COV_NONE: octet _unused;
+      case spatial::common::COV_NONE: uint8 _;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
     };
@@ -975,7 +868,7 @@ module spatial {
     // Namespaced metadata uses JSON strings so producers can include
     // structured details without schema churn.
     //
-    @extensibility(APPENDABLE) struct AssetMetaKV {
+    @extensibility(APPENDABLE) struct MetaKV {
       string namespace;  // e.g., "sensing.vision.features"
       string json;       // JSON object string; producer-defined for this namespace
     };
@@ -984,13 +877,12 @@ module spatial {
       string uri;          // required: how to fetch
       string media_type;   // required: IANA or registry-friendly type (with params)
       string hash;         // required: e.g., "sha256:<hex>"
-      uint64 bytes;        // required: size in bytes
-      sequence<AssetMetaKV, 32> meta;  // optional: zero or more namespaced bags
+      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
     };
 
     const string MODULE_ID = "spatial.discovery/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
     typedef spatial::core::FrameRef FrameRef;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -1047,26 +939,26 @@ module spatial {
       string value;
     };
 
-    // CoverageElement geometry is expressed in the parent coverage_frame_ref unless has_frame_ref overrides it.
-    // If that frame is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
-    // otherwise coordinates are in local meters.
+    // coverage_frame_ref is the canonical frame for an announcement. CoverageElement.frame_ref MAY override it sparingly.
+    // If coverage_frame_ref is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979); otherwise coordinates
+    // are in local meters.
     @extensibility(APPENDABLE) struct CoverageElement {
       string type;              // "bbox" | "volume"
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags indicate which geometry payloads are provided.
-      // When has_bbox == true, bbox is authoritative and MUST contain finite coordinates.
+      // When has_bbox == true, bbox MUST contain finite coordinates; consumers SHALL reject non-finite values.
       boolean has_bbox;
       spatial::common::BBox2D bbox; // [west, south, east, north]
 
-      // When has_aabb == true, aabb is authoritative and MUST contain finite coordinates.
+      // When has_aabb == true, aabb MUST contain finite coordinates; consumers SHALL reject non-finite values.
       boolean has_aabb;
       Aabb3  aabb;              // axis-aligned bounds in the declared frame
 
       // Explicit global coverage toggle: when true, bbox/aabb may be ignored by consumers.
       boolean global;
-      // Optional per-element frame override. If has_frame_ref == false, consumers MUST interpret this element in coverage_frame_ref.
+      // Optional per-element frame override. If has_frame_ref == false, this element MUST use coverage_frame_ref.
       boolean has_frame_ref;
       FrameRef frame_ref;       // Use sparingly to mix a few local frames within one announcement.
     };
@@ -1093,8 +985,6 @@ module spatial {
       ServiceKind kind;
       string version;
       string org;
-      sequence<string,16> rx_topics;
-      sequence<string,16> tx_topics;
       sequence<KV,32> hints;
       // New: wire-level capability advertisement for version negotiation.
       Capabilities caps;                 // in-band capabilities (profiles + features)
@@ -1186,7 +1076,7 @@ module spatial {
   module anchors {
     const string MODULE_ID = "spatial.anchors/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::GeoPose GeoPose;
     typedef spatial::core::FrameRef FrameRef;
 
@@ -1341,7 +1231,7 @@ module spatial { module sensing { module common {
   const uint32 SZ_XL     = 32768;
 
   // Reuse Core primitives (time, pose, blob references)
-  typedef spatial::core::Time    Time;
+  typedef builtin::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
   typedef spatial::core::BlobRef BlobRef;
   typedef spatial::geometry::FrameRef FrameRef;
@@ -1545,7 +1435,7 @@ module spatial {
 
     const string MODULE_ID = "spatial.vio/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::geometry::FrameRef FrameRef;
 
     // IMU calibration
@@ -1664,7 +1554,7 @@ module spatial { module sensing { module vision {
   const string MODULE_ID = "spatial.sensing.vision/1.4";
 
   // Reuse Core + Sensing Common
-  typedef spatial::core::Time                      Time;
+  typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
   typedef spatial::geometry::FrameRef              FrameRef;
@@ -1804,7 +1694,7 @@ module spatial {
     const string MODULE_ID = "spatial.slam_frontend/1.4";
 
     // Reuse core: Time, etc.
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::geometry::FrameRef FrameRef;
 
     // Camera calibration
@@ -1916,7 +1806,7 @@ module spatial {
 
     const string MODULE_ID = "spatial.semantics/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
     typedef spatial::geometry::FrameRef FrameRef;
 
@@ -2009,7 +1899,7 @@ module spatial { module sensing { module rad {
   const string MODULE_ID = "spatial.sensing.rad/1.4";
 
   // Reuse Core + Sensing Common types
-  typedef spatial::core::Time                      Time;
+  typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
   typedef spatial::geometry::FrameRef              FrameRef;
@@ -2114,7 +2004,7 @@ module spatial { module sensing { module lidar {
   const string MODULE_ID = "spatial.sensing.lidar/1.4";
 
   // Reuse Core + Sensing Common
-  typedef spatial::core::Time                      Time;
+  typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
   typedef spatial::geometry::FrameRef              FrameRef;
@@ -2229,7 +2119,7 @@ module spatial {
 
     const string MODULE_ID = "spatial.argeo/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
     typedef spatial::core::GeoPose GeoPose;
     typedef spatial::geometry::FrameRef FrameRef;
@@ -2410,3 +2300,118 @@ Manifest entries that refer to frames MUST use a `FrameRef` object rather than r
 
 ### Notes
 This appendix defines the authoritative encoding for `FrameRef`. Additional derived schemas (e.g. GeoPose, Anchors) SHALL refer to this definition by reference and MUST NOT re-declare frame semantics. The conventions in §2.1 and the coverage/discovery rules in §3.3 reference this appendix for their frame requirements.
+
+
+## **Appendix H: Operational Scenarios & AI World Model Ladder (Informative)**
+
+SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
+
+### **Narrative Walkthrough: Local → Shared → Global → AI**
+
+1. **Local SLAM on-device.** A headset, drone, or robot runs visual-inertial SLAM, generating keyframes and odometry updates in its private map frame.
+2. **Sharing a pose graph.** The device publishes `pg.node` and `pg.edge` samples (often as compact PoseGraphDelta bursts) onto the SpatialDDS bus so nearby peers or edge services can extend or optimize the map.
+3. **Anchors stabilize VIO.** By discovering the Anchor Registry, the device resolves durable anchor URIs, retrieves their manifests, and fuses those priors to keep its VIO estimate drift-free.
+4. **VPS provides a GeoPose.** When the device needs a global fix, it queries a Visual Positioning Service (VPS). The VPS uses the shared pose graph plus anchor hints to return a `geo.fix` sample that orients the local map in a world frame.
+5. **Digital twin aggregation.** Twin backends subscribe to the same streams — pose graphs, anchors, geometry, and semantics — to maintain authoritative state for places, assets, and events.
+6. **AI world models consume the twin.** Analytics engines, planning agents, and foundation models read from the digital twin feeds, grounding their predictions and experiences in the synchronized world model.
+
+The end result is a continuous chain: local sensing feeds a shared spatial data bus, anchors and VPS lift content into a global frame, digital twins maintain durable state, and AI systems reason over the fused model.
+
+```mermaid
+sequenceDiagram
+    participant Device
+    participant DDS as SpatialDDS Bus
+    participant VPS
+    participant Anchors as Anchor Registry
+    participant Twin as Digital Twin
+    participant AI as AI Service
+    Device->>DDS: PoseGraphDelta (pg.node/pg.edge)
+    DDS->>Anchors: Anchor manifest request
+    Anchors-->>DDS: anchors.set / anchors.delta
+    Device->>VPS: feat.keyframe / image blob
+    VPS-->>DDS: geo.fix (GeoPose)
+    DDS-->>Twin: PoseGraph, GeoPose, geom.tile.*
+    Twin-->>AI: TwinStateUpdate / analytics feed
+    AI-->>Device: Optional guidance or overlays
+```
+
+### **Example 1: Device Localization with SLAM and Anchors**
+
+A field technician’s headset begins indoors with self-contained SLAM. As it walks the “local → shared → global” ladder:
+
+- **Publish local mapping.** Each keyframe produces a PoseGraphDelta that streams to `pg.node` / `pg.edge`. An excerpt looks like:
+
+    ```json
+    {
+      "topic": "pg.node",
+      "map_id": "map/facility-west",
+      "node_id": "kf_0120",
+      "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
+      "frame_ref": {
+        "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+        "fqn": "facility-west/map"
+      },
+      "stamp": { "sec": 1714070452, "nsec": 125000000 },
+      "source_id": "device/headset-17"
+    }
+    ```
+
+- **Discover anchors.** Through `disco.service`, the headset resolves `anchor://facility-west/loading-bay`, fetches the manifest (Appendix A), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
+- **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
+
+    ```json
+    {
+      "topic": "geo.fix",
+      "anchor_id": "anchor://facility-west/loading-bay",
+      "geopose": {
+        "lat_deg": 37.79341,
+        "lon_deg": -122.39412,
+        "alt_m": 12.6,
+        "q": [0.71, 0.00, 0.70, 0.05],
+        "frame_kind": "ENU",
+        "frame_ref": {
+          "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
+          "fqn": "earth-fixed"
+        }
+      },
+      "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
+    }
+    ```
+
+- **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
+
+(See Appendix A for the full anchor and VPS manifests referenced here.)
+
+### **Example 2: Updating and Using a Digital Twin**
+
+A facilities digital twin service subscribes to the same DDS topics to maintain a live model, while an AI analytics engine consumes the twin stream:
+
+- **Twin ingestion.** The backend listens to `pg.node`, `geo.anchor`, and `geom.tile.*` to reconcile a persistent state for each asset. When a door actuator changes, an operator microservice emits:
+
+    ```json
+    {
+      "topic": "twin.state.update",
+      "uri": "urn:spatial://facility-west/assets/door-17",
+      "anchor_ref": "anchor://facility-west/loading-bay",
+      "state": {
+        "pose_local": {
+          "t": [4.21, -1.02, 0.00],
+          "q": [1, 0, 0, 0]
+        },
+        "door_status": "open",
+        "last_maintenance": "2024-03-22"
+      },
+      "stamp": { "sec": 1714070520, "nsec": 0 }
+    }
+    ```
+
+  The twin registry validates the anchor reference, signs a manifest (Appendix A), and updates the canonical record.
+
+- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing alerts and AR overlays back through SpatialDDS.
+- **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
+
+(See Appendix A for extended twin manifests and analytics payloads.)
+
+### **Why the Ladder Matters**
+
+This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.

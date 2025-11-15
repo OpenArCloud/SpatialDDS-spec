@@ -38,3 +38,4 @@
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.4/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)
+    - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.4/appendix-h-operational-scenarios.md)

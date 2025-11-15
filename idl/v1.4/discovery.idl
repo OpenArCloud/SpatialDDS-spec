@@ -24,7 +24,7 @@ module spatial {
     // Namespaced metadata uses JSON strings so producers can include
     // structured details without schema churn.
     //
-    @extensibility(APPENDABLE) struct AssetMetaKV {
+    @extensibility(APPENDABLE) struct MetaKV {
       string namespace;  // e.g., "sensing.vision.features"
       string json;       // JSON object string; producer-defined for this namespace
     };
@@ -33,13 +33,12 @@ module spatial {
       string uri;          // required: how to fetch
       string media_type;   // required: IANA or registry-friendly type (with params)
       string hash;         // required: e.g., "sha256:<hex>"
-      uint64 bytes;        // required: size in bytes
-      sequence<AssetMetaKV, 32> meta;  // optional: zero or more namespaced bags
+      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
     };
 
     const string MODULE_ID = "spatial.discovery/1.4";
 
-    typedef spatial::core::Time Time;
+    typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
     typedef spatial::core::FrameRef FrameRef;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -96,26 +95,26 @@ module spatial {
       string value;
     };
 
-    // CoverageElement geometry is expressed in the parent coverage_frame_ref unless has_frame_ref overrides it.
-    // If that frame is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979);
-    // otherwise coordinates are in local meters.
+    // coverage_frame_ref is the canonical frame for an announcement. CoverageElement.frame_ref MAY override it sparingly.
+    // If coverage_frame_ref is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979); otherwise coordinates
+    // are in local meters.
     @extensibility(APPENDABLE) struct CoverageElement {
       string type;              // "bbox" | "volume"
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
       // Presence flags indicate which geometry payloads are provided.
-      // When has_bbox == true, bbox is authoritative and MUST contain finite coordinates.
+      // When has_bbox == true, bbox MUST contain finite coordinates; consumers SHALL reject non-finite values.
       boolean has_bbox;
       spatial::common::BBox2D bbox; // [west, south, east, north]
 
-      // When has_aabb == true, aabb is authoritative and MUST contain finite coordinates.
+      // When has_aabb == true, aabb MUST contain finite coordinates; consumers SHALL reject non-finite values.
       boolean has_aabb;
       Aabb3  aabb;              // axis-aligned bounds in the declared frame
 
       // Explicit global coverage toggle: when true, bbox/aabb may be ignored by consumers.
       boolean global;
-      // Optional per-element frame override. If has_frame_ref == false, consumers MUST interpret this element in coverage_frame_ref.
+      // Optional per-element frame override. If has_frame_ref == false, this element MUST use coverage_frame_ref.
       boolean has_frame_ref;
       FrameRef frame_ref;       // Use sparingly to mix a few local frames within one announcement.
     };
@@ -142,8 +141,6 @@ module spatial {
       ServiceKind kind;
       string version;
       string org;
-      sequence<string,16> rx_topics;
-      sequence<string,16> tx_topics;
       sequence<KV,32> hints;
       // New: wire-level capability advertisement for version negotiation.
       Capabilities caps;                 // in-band capabilities (profiles + features)
