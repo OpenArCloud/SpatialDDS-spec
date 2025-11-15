@@ -43,12 +43,12 @@
 
 SpatialDDS is a lightweight, standards-based protocol for real-time exchange of spatial world models. It is designed as a shared data bus that allows devices, services, and AI agents to publish and subscribe to structured representations of the physical world — from pose graphs and 3D geometry to anchors, semantic detections, and service discovery. By providing a common substrate, SpatialDDS enables applications in robotics, AR/XR, digital twins, and smart cities to interoperate while also supporting new AI-driven use cases such as perception services, neural maps, and planning agents.
 
-At its core, SpatialDDS is defined through **IDL profiles** that partition functionality into clean modules:
+At its core, SpatialDDS is defined through IDL profiles that partition functionality into clean modules:
 
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
 * **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
-* **Extensions**: optional domain-specific profiles including the shared **Sensing Common** base types plus VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
+* **Extensions**: optional domain-specific profiles including the shared Sensing Common base types plus VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, AR+Geo, and provisional Neural/Agent profiles.
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 
