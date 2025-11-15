@@ -16,8 +16,8 @@
 1. [Introduction](sections/v1.4/01-introduction.md)
 2. [Conventions (Normative)](sections/v1.4/02-conventions.md)
 3. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
-   - 3.3.1 [Topic Naming (Normative)](sections/v1.4/02-idl-profiles.md#331-topic-naming-normative)
-   - 3.3.4 [Coverage Model (Normative)](sections/v1.4/02-idl-profiles.md#334-coverage-model-normative)
+   3.3.1 [Topic Naming (Normative)](sections/v1.4/02-idl-profiles.md#331-topic-naming-normative)
+   3.3.4 [Coverage Model (Normative)](sections/v1.4/02-idl-profiles.md#334-coverage-model-normative)
 4. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
 5. [Conclusion](sections/v1.4/conclusion.md)
 6. [Future Directions](sections/v1.4/future-directions.md)
@@ -83,7 +83,7 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 * **Keep the wire light**
   SpatialDDS defines compact, typed messages via IDL. Heavy or variable content (meshes, splats, masks, assets) is carried as blobs, referenced by stable IDs. This avoids bloating the bus while keeping payloads flexible.
 * **Profiles, not monoliths**
-  SpatialDDS is organized into modular profiles: Core, Discovery, and Anchors form the foundation, while optional Extensions (Sensing Common, VIO, Vision, SLAM Frontend, Semantics, Radar, Lidar, AR+Geo) and provisional profiles (Neural, Agent) add domain-specific capabilities. Implementers adopt only what they need, keeping deployments lean and interoperable.
+  SpatialDDS is organized into modular profiles. Core, Discovery, and Anchors form the foundation; Extension Profiles add domain-specific capabilities. Implementations include only what they need while maintaining interoperability.
 * **AI-ready, domain-neutral**
   While motivated by SLAM, AR, robotics, and digital twins, the schema is deliberately generic. Agents, foundation models, and AI services can publish and subscribe alongside devices without special treatment.
 * **Anchors as first-class citizens**
@@ -144,14 +144,26 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
 - Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field.
 - Mutually exclusive payloads SHALL be modeled as discriminated unions; do not overload presence flags to signal exclusivity.
 - Schema evolution leverages `@extensibility(APPENDABLE)`; omit fields only when the IDL version removes them, never as an on-wire sentinel.
+- See `CovMatrix` in Appendix A for the reference discriminated union pattern used for covariance.
 
 ### **2.3 Numeric Validity & NaN Deprecation**
 
 - `NaN`, `Inf`, or other sentinels SHALL NOT signal absence or "unbounded" values; explicit presence flags govern validity.
 - Fields guarded by `has_*` flags are meaningful only when the flag is `true`. When the flag is `false`, consumers MUST ignore the payload regardless of its contents.
 - When a `has_*` flag is `true`, non-finite numbers MUST be rejected wherever geographic coordinates, quaternions, coverage bounds, or similar numeric payloads appear.
+- Producers SHOULD avoid emitting non-finite numbers; consumers MAY treat such samples as malformed and drop them.
 
-### **2.4 Canonical Ordering & Identity**
+### **2.4 Conventions Quick Table (Informative)**
+
+| Pattern | Rule |
+|--------|------|
+| Optional fields | All optional values use a `has_*` flag. |
+| NaN/Inf | Never valid; treated as malformed input. |
+| Quaternion order | Always `(x, y, z, w)` GeoPose order. |
+| Frames | `FrameRef.uuid` is authoritative. |
+| Ordering | `(source_id, seq)` is canonical. |
+
+### **2.5 Canonical Ordering & Identity**
 
 These rules apply to any message that carries the trio `{ stamp, source_id, seq }`.
 
@@ -172,7 +184,7 @@ These rules apply to any message that carries the trio `{ stamp, source_id, seq 
 1. **Intra-source** — Order solely by `seq`. Missing values under RELIABLE QoS indicate loss.
 2. **Inter-source merge** — Order by (`stamp`, `source_id`, `seq`) within a bounded window selected by the consumer.
 
-### **2.5 DDS / IDL Structure**
+### **2.6 DDS / IDL Structure**
 
 - All SpatialDDS modules conform to OMG IDL 4.2 and DDS-XTypes 1.3.
 - Extensibility SHALL be declared via `@extensibility(APPENDABLE)`.
@@ -301,7 +313,7 @@ See Appendix F.X for the ABNF grammar.
 * Negotiation is automatic once peers see each other’s `supported_profiles`; emit diagnostics like `NO_COMMON_MAJOR(name)` when selection fails.
 
 #### Summary
-Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
+Discovery keeps the wire simple: nodes publish what they have, clients filter for what they need, and the system converges on compatible versions. Use typed topic metadata to choose streams, rely on capabilities to negotiate versions without additional application-level handshakes, and treat discovery traffic as the lightweight directory for every SpatialDDS deployment.
 
 #### **3.3.1 Topic Naming (Normative)**
 
@@ -339,6 +351,8 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
+
+Implementations defining custom `type` and `qos_profile` values SHOULD follow the naming pattern (`myorg.depth_frame`, `DEPTH_LIVE`) and document their DDS QoS mapping.
 
 #### **3.3.3 QoS Profiles**
 
@@ -382,6 +396,16 @@ Consumers use these three keys to match and filter streams without inspecting pa
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
 - Discovery announces and manifests share the same coverage semantics and flags. `CoverageQuery` responders SHALL apply these rules consistently when filtering or paginating results.
 - See §2 Conventions for global normative rules.
+
+#### Coverage Evaluation Pseudocode (Informative)
+```
+if coverage.global:
+    regions = WORLD
+else:
+    regions = union(bbox, geohash, elements[*].aabb)
+frame = coverage_frame_ref unless element.frame_ref present
+evaluate transforms at coverage_eval_time if present
+```
 
 ##### Implementation Guidance (Non-Normative)
 
@@ -504,7 +528,11 @@ spatialdds://studio.example.com/stage/content/01HCQF7DGKKB3J8F4AR98MJ6EH
 
 In the manifest samples later in this specification, each of these identifiers expands into a full JSON manifest. Reviewing those examples shows how a single URI flows from a discovery payload, through manifest retrieval, to runtime consumption.
 
+Authorities SHOULD use DNS hostnames they control to ensure globally unique, delegatable SpatialDDS URIs.
+
 ## 8. Example Manifests
+
+The manifest schema is versioned as `spatial.manifest@MAJOR.MINOR`, consistent with IDL profile scheme.
 
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
