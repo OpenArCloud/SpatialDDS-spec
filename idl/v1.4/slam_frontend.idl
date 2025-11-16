@@ -13,7 +13,7 @@ module spatial {
 
     // Reuse core: Time, etc.
     typedef builtin::Time Time;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     // Camera calibration
     enum DistortionModelKind {

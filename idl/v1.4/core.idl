@@ -48,7 +48,7 @@ module spatial {
       string checksum;  // SHA-256 (hex)
     };
 
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     @extensibility(APPENDABLE) struct TileMeta {
       @key TileKey key;              // unique tile key

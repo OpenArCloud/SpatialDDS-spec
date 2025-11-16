@@ -19,7 +19,7 @@ module spatial { module sensing { module vision {
   typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::geometry::FrameRef              FrameRef;
+  typedef spatial::common::FrameRef               FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
   typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs

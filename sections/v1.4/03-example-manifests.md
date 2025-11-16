@@ -2,6 +2,8 @@
 
 The manifest schema is versioned as `spatial.manifest@MAJOR.MINOR`, consistent with IDL profile scheme.
 
+The manifest schema is defined as the `spatial.manifest` profile. It uses the same `name@MAJOR.MINOR` convention as IDL profiles, and `spatial.manifest@1.4` is the canonical identifier for this specification.
+
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
 ## Structure Overview

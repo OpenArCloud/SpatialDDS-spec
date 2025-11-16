@@ -17,7 +17,7 @@ module spatial {
 
     typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     // 2D detections per keyframe (image space)
     @extensibility(APPENDABLE) struct Detection2D {

@@ -37,7 +37,7 @@
     - [Appendix E: Provisional Extension Examples](sections/v1.4/appendix-e.md)
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.4/appendix-fx-discovery-query-expression.md)
-    - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)
+    - [Appendix G: Frame Identifiers (Informative Reference)](sections/v1.4/appendix-g-frame-identifiers.md)
     - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.4/appendix-h-operational-scenarios.md)
 
 ## **1\. Introduction**
@@ -219,8 +219,10 @@ The Core profile defines the essential building blocks for representing and shar
 
 #### Frame Identifiers (Reference)
 
-SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.  
-See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
+SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.
+See *Appendix G Frame Identifiers (Informative Reference)* for the complete definition and naming rules.
+
+Each Transform expresses a pose that maps coordinates from the `from` frame into the `to` frame (parent → child).
 
 ### **3.3 Discovery**
 
@@ -252,7 +254,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
   string query_id;    // correlate request/response
 }
 
-See Appendix F.X for the ABNF grammar.
+The expression syntax is defined formally in the CoverageQuery ABNF grammar (see Appendix F.X).
 
 @extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
@@ -296,6 +298,10 @@ See Appendix F.X for the ABNF grammar.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
+
+#### Asset references
+
+Discovery announcements and manifests share a single `AssetRef` structure composed of URI, media type, integrity hash, and optional `MetaKV` metadata bags. AssetRef and MetaKV are normative types for asset referencing in the Discovery profile.
 
 #### What fields mean (quick reference)
 | Field | Use |
@@ -383,6 +389,8 @@ Every `Announce.topics[]` entry and manifest topic reference SHALL include:
 - `version` — the schema or message version
 - `qos_profile` — one of the standard or extended QoS names
 
+For each advertised topic, `type`, `version`, and `qos_profile` MUST be present and MUST either match a registered value in this specification or a documented deployment-specific extension.
+
 Consumers use these three keys to match and filter streams without inspecting payload bytes. Brokers and routers SHOULD isolate lanes by `(topic, stream_id, qos_profile)` to avoid head-of-line blocking.
 
 #### **3.3.4 Coverage Model (Normative)**
@@ -418,7 +426,7 @@ evaluate transforms at coverage_eval_time if present
 
 1. **Announce** — the producer sends `Announce` (see JSON example above) to advertise `caps` and `topics`.
 2. **CoverageQuery** — the consumer issues a `CoverageQuery` (see query JSON) to filter by profile, topic type, or QoS.
-3. **CoverageResponse** — the producer replies with `CoverageResponse` (see response JSON), returning results plus an optional `next_page_token` for pagination.
+3. **CoverageResponse** — the Discovery producer replies with `CoverageResponse` (see response JSON), returning results plus an optional `next_page_token` for pagination.
 
 ### **3.4 Anchors**
 
@@ -454,6 +462,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.core/1.4
 - spatial.discovery/1.4
 - spatial.anchors/1.4
+- spatial.manifest/1.4 (manifest schema profile for SpatialDDS 1.4)
 - spatial.argeo/1.4
 - spatial.sensing.common/1.4
 - spatial.sensing.rad/1.4
@@ -533,6 +542,8 @@ Authorities SHOULD use DNS hostnames they control to ensure globally unique, del
 ## 8. Example Manifests
 
 The manifest schema is versioned as `spatial.manifest@MAJOR.MINOR`, consistent with IDL profile scheme.
+
+The manifest schema is defined as the `spatial.manifest` profile. It uses the same `name@MAJOR.MINOR` convention as IDL profiles, and `spatial.manifest@1.4` is the canonical identifier for this specification.
 
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
@@ -676,77 +687,6 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 ## **Appendix A: Core Profile**
 
 *The Core profile defines the fundamental data structures for SpatialDDS. It includes pose graphs, 3D geometry tiles, anchors, transforms, and generic blob transport. This is the minimal interoperable baseline for exchanging world models across devices and services.*
-
-```idl
-// SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.4
-
-#ifndef SPATIAL_COMMON_TYPES_INCLUDED
-#include "types.idl"
-#endif
-#ifndef SPATIAL_GEOMETRY_INCLUDED
-#include "geometry.idl"
-#endif
-
-module spatial {
-  module core {
-
-    // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.4";
-
-    // ---------- Utility ----------
-    // Expose builtin Time under spatial::core
-    typedef builtin::Time Time;
-
-    @extensibility(APPENDABLE) struct PoseSE3 {
-      spatial::common::Vec3 t;               // translation (x,y,z)
-      spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
-    };
-
-    @extensibility(APPENDABLE) struct Aabb3 {
-      spatial::common::Vec3 min_xyz;
-      spatial::common::Vec3 max_xyz;
-    };
-
-    @extensibility(APPENDABLE) struct TileKey {
-      @key uint32 x;     // tile coordinate (quadtree/3D grid)
-      @key uint32 y;
-      @key uint32 z;     // use 0 for 2D schemes
-      @key uint8  level; // LOD level
-    };
-
-    // ---------- Geometry ----------
-    enum PatchOp {
-      @value(0) ADD,
-      @value(1) REPLACE,
-      @value(2) REMOVE
-    };
-
-    @extensibility(APPENDABLE) struct BlobRef {
-      string blob_id;   // UUID or content-address
-      string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
-      string checksum;  // SHA-256 (hex)
-    };
-
-    typedef spatial::geometry::FrameRef FrameRef;
-
-    @extensibility(APPENDABLE) struct TileMeta {
-      @key TileKey key;              // unique tile key
-      boolean has_tile_id_compat;
-      string  tile_id_compat;        // optional human-readable id
-      spatial::common::Vec3 min_xyz; // AABB min (local frame)
-      spatial::common::Vec3 max_xyz; // AABB max (local frame)
-      uint32 lod;                    // may mirror key.level
-      uint64 version;                // monotonic full-state version
-      string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
-      string checksum;               // checksum of composed tile
-      sequence<string, 32> blob_ids; // blobs composing this tile
-      // optional geo hints
-      boolean has_centroid_llh;
-      spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
-      boolean has_radius_m;
-      double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.4"
     };
 
     @extensibility(APPENDABLE) struct TilePatch {
@@ -851,17 +791,158 @@ module spatial {
       uint64 up_to_revision;   // 0 = latest
     };
 
-    @extensibility(APPENDABLE) struct SnapshotResponse {
-      @key TileKey key;                 // tile key
-      uint64 revision;                  // snapshot revision served
-      sequence<string, 64> blob_ids;    // composing blobs
-      string checksum;                  // composed state checksum
+
+### **Common Type Aliases (Normative)**
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Common Type Aliases 1.4
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#define SPATIAL_COMMON_TYPES_INCLUDED
+
+module builtin {
+  @extensibility(APPENDABLE) struct Time {
+    int32 sec;      // seconds since UNIX epoch (UTC)
+    uint32 nanosec; // nanoseconds [0, 1e9)
+  };
+};
+
+module spatial {
+  module common {
+    typedef double BBox2D[4];
+    typedef double Aabb3D[6];
+    typedef double Vec3[3];
+    typedef double Mat3x3[9];
+    typedef double Mat6x6[36];
+    typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+
+    enum CovarianceType {
+      @value(0) COV_NONE,
+      @value(3) COV_POS3,
+      @value(6) COV_POSE6
     };
 
-  }; // module core
-};   // module spatial
+    // Stable, typo-proof frame identity shared across all profiles.
+    // Equality is by uuid; fqn is a normalized, human-readable alias.
+    @extensibility(APPENDABLE) struct FrameRef {
+      string uuid;  // REQUIRED: stable identifier for the frame
+      string fqn;   // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+    };
+
+    // Optional namespaced metadata bag for asset descriptors.
+    @extensibility(APPENDABLE) struct MetaKV {
+      string namespace;  // e.g., "sensing.vision.features"
+      string json;       // JSON object string; producer-defined for this namespace
+    };
+
+    // Uniform contract for asset references, covering fetch + integrity.
+    @extensibility(APPENDABLE) struct AssetRef {
+      string uri;          // required: how to fetch
+      string media_type;   // required: IANA or registry-friendly type (with params)
+      string hash;         // required: e.g., "sha256:<hex>"
+      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
+    };
+  };
+};
+
+#endif // SPATIAL_COMMON_TYPES_INCLUDED
 
 ```
+
+### **Geometry Primitives**
+
+```idl
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#define SPATIAL_GEOMETRY_INCLUDED
+
+// SPDX-License-Identifier: MIT
+// SpatialDDS Geometry 1.0
+
+module spatial {
+  module geometry {
+
+    typedef spatial::common::FrameRef FrameRef;
+
+  }; // module geometry
+};
+
+#endif // SPATIAL_GEOMETRY_INCLUDED
+
+```
+
+### **Core Module**
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Core 1.4
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#include "geometry.idl"
+#endif
+
+module spatial {
+  module core {
+
+    // Module identity (authoritative string for interop)
+    const string MODULE_ID = "spatial.core/1.4";
+
+    // ---------- Utility ----------
+    // Expose builtin Time under spatial::core
+    typedef builtin::Time Time;
+
+    @extensibility(APPENDABLE) struct PoseSE3 {
+      spatial::common::Vec3 t;               // translation (x,y,z)
+      spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
+    };
+
+    @extensibility(APPENDABLE) struct Aabb3 {
+      spatial::common::Vec3 min_xyz;
+      spatial::common::Vec3 max_xyz;
+    };
+
+    @extensibility(APPENDABLE) struct TileKey {
+      @key uint32 x;     // tile coordinate (quadtree/3D grid)
+      @key uint32 y;
+      @key uint32 z;     // use 0 for 2D schemes
+      @key uint8  level; // LOD level
+    };
+
+    // ---------- Geometry ----------
+    enum PatchOp {
+      @value(0) ADD,
+      @value(1) REPLACE,
+      @value(2) REMOVE
+    };
+
+    @extensibility(APPENDABLE) struct BlobRef {
+      string blob_id;   // UUID or content-address
+      string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
+      string checksum;  // SHA-256 (hex)
+    };
+
+    typedef spatial::common::FrameRef FrameRef;
+
+    @extensibility(APPENDABLE) struct TileMeta {
+      @key TileKey key;              // unique tile key
+      boolean has_tile_id_compat;
+      string  tile_id_compat;        // optional human-readable id
+      spatial::common::Vec3 min_xyz; // AABB min (local frame)
+      spatial::common::Vec3 max_xyz; // AABB max (local frame)
+      uint32 lod;                    // may mirror key.level
+      uint64 version;                // monotonic full-state version
+      string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
+      string checksum;               // checksum of composed tile
+      sequence<string, 32> blob_ids; // blobs composing this tile
+      // optional geo hints
+      boolean has_centroid_llh;
+      spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
+      boolean has_radius_m;
+      double  radius_m;              // rough extent (m)
+      string schema_version;         // MUST be "spatial.core/1.4"
 
 ## **Appendix B: Discovery Profile**
 
@@ -885,34 +966,16 @@ module spatial {
     // -----------------------------
     // Asset references (middle-ground model)
     // -----------------------------
-    //
-    // Base contract: uniform access + integrity for all assets.
-    // Optional, namespaced metadata bags carry type-specific details
-    // without inflating the base schema.
-    //
-    // Example: media_type could be
-    //   "application/vnd.sdds.features+json;algo=orb;v=1"
-    //
-    // Namespaced metadata uses JSON strings so producers can include
-    // structured details without schema churn.
-    //
-    @extensibility(APPENDABLE) struct MetaKV {
-      string namespace;  // e.g., "sensing.vision.features"
-      string json;       // JSON object string; producer-defined for this namespace
-    };
-
-    @extensibility(APPENDABLE) struct AssetRef {
-      string uri;          // required: how to fetch
-      string media_type;   // required: IANA or registry-friendly type (with params)
-      string hash;         // required: e.g., "sha256:<hex>"
-      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
-    };
+    // Asset references reuse shared spatial::common types so manifests
+    // and discovery share the same contract.
+    typedef spatial::common::MetaKV  MetaKV;
+    typedef spatial::common::AssetRef AssetRef;
 
     const string MODULE_ID = "spatial.discovery/1.4";
 
     typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
-    typedef spatial::core::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
     typedef spatial::core::PoseSE3 PoseSE3;
     // Canonical manifest references use the spatialdds:// URI scheme.
     typedef string SpatialUri;
@@ -946,6 +1009,8 @@ module spatial {
       string type;        // geometry_tile | video_frame | radar_tensor | seg_mask | desc_array
       string version;     // currently fixed to "v1"
       string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
+      // type, version, and qos_profile are mandatory fields describing the
+      // topic’s semantic type and QoS profile.
       // optional advisory hints (topic-level, not per-message)
       float target_rate_hz;
       uint32  max_chunk_bytes;
@@ -1001,7 +1066,7 @@ module spatial {
     @extensibility(APPENDABLE) struct Transform {
       FrameRef from;            // source frame (e.g., "map")
       FrameRef to;              // target frame (e.g., "earth-fixed")
-      PoseSE3 pose;             // transform payload parent->child
+      PoseSE3 pose;             // maps from 'from' into 'to' (parent → child)
       Time    stamp;            // publication timestamp
       boolean has_validity;     // when true, 'validity' bounds the transform
       ValidityWindow validity;  // explicit validity window
@@ -1049,7 +1114,7 @@ module spatial {
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
       // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.4\""
       string expr;
-      // Responders publish CoverageResponse samples to this topic.
+      // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;
       Time stamp;
       uint32 ttl_sec;
@@ -1166,72 +1231,7 @@ module spatial {
 
 *These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
-### **Common Type Aliases**
-
-*Shared numeric array typedefs used across SpatialDDS modules.*
-
-```idl
-// SPDX-License-Identifier: MIT
-// SpatialDDS Common Type Aliases 1.4
-
-#ifndef SPATIAL_COMMON_TYPES_INCLUDED
-#define SPATIAL_COMMON_TYPES_INCLUDED
-
-module builtin {
-  @extensibility(FINAL) struct Time {
-    int32 sec;      // seconds since UNIX epoch (UTC)
-    uint32 nanosec; // nanoseconds [0, 1e9)
-  };
-};
-
-module spatial {
-  module common {
-    typedef double BBox2D[4];
-    typedef double Aabb3D[6];
-    typedef double Vec3[3];
-    typedef double Mat3x3[9];
-    typedef double Mat6x6[36];
-    typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
-
-    enum CovarianceType {
-      @value(0) COV_NONE,
-      @value(3) COV_POS3,
-      @value(6) COV_POSE6
-    };
-  };
-};
-
-#endif // SPATIAL_COMMON_TYPES_INCLUDED
-
-```
-
-### **Geometry Primitives**
-
-*Stable frame references shared across profiles.*
-
-```idl
-#ifndef SPATIAL_GEOMETRY_INCLUDED
-#define SPATIAL_GEOMETRY_INCLUDED
-
-// SPDX-License-Identifier: MIT
-// SpatialDDS Geometry 1.0
-
-module spatial {
-  module geometry {
-
-    // Stable, typo-proof frame identity (breaking change).
-    // Equality is by uuid; fqn is a normalized, human-readable alias.
-    @extensibility(APPENDABLE) struct FrameRef {
-      uint8  uuid[16];  // REQUIRED: stable identifier for the frame
-      string fqn;       // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
-    };
-
-  }; // module geometry
-};
-
-#endif // SPATIAL_GEOMETRY_INCLUDED
-
-```
+> Common type aliases and geometry primitives are defined once in Appendix A. Extension modules import those shared definitions and MUST NOT re-declare them.
 
 ### **Sensing Common Extension**
 
@@ -1262,7 +1262,7 @@ module spatial { module sensing { module common {
   typedef builtin::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
   typedef spatial::core::BlobRef BlobRef;
-  typedef spatial::geometry::FrameRef FrameRef;
+  typedef spatial::common::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
   enum AxisEncoding {
@@ -1464,7 +1464,7 @@ module spatial {
     const string MODULE_ID = "spatial.vio/1.4";
 
     typedef builtin::Time Time;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     // IMU calibration
     @extensibility(APPENDABLE) struct ImuInfo {
@@ -1585,7 +1585,7 @@ module spatial { module sensing { module vision {
   typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::geometry::FrameRef              FrameRef;
+  typedef spatial::common::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
   typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
@@ -1723,7 +1723,7 @@ module spatial {
 
     // Reuse core: Time, etc.
     typedef builtin::Time Time;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     // Camera calibration
     enum DistortionModelKind {
@@ -1836,7 +1836,7 @@ module spatial {
 
     typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     // 2D detections per keyframe (image space)
     @extensibility(APPENDABLE) struct Detection2D {
@@ -1930,7 +1930,7 @@ module spatial { module sensing { module rad {
   typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::geometry::FrameRef              FrameRef;
+  typedef spatial::common::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Axis           Axis;
   typedef spatial::sensing::common::ROI            ROI;
@@ -2035,7 +2035,7 @@ module spatial { module sensing { module lidar {
   typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::geometry::FrameRef              FrameRef;
+  typedef spatial::common::FrameRef              FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;
   typedef spatial::sensing::common::PayloadKind    PayloadKind; // use BLOB_GEOMETRY for clouds
@@ -2150,7 +2150,7 @@ module spatial {
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
     typedef spatial::core::GeoPose GeoPose;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;
@@ -2301,14 +2301,16 @@ WS         = *( SP / HTAB )
 ; - Unknown identifiers evaluate to false in comparisons.
 ```
 
-## **Appendix G: Frame Identifiers (Normative)**
+## **Appendix G: Frame Identifiers (Informative Reference)**
 
 SpatialDDS represents reference frames using the `FrameRef` structure:
 
+The normative IDL for `FrameRef` resides in Appendix A (Core profile). This appendix is descriptive/informative and restates the usage guidance for reference frames.
+
 ```idl
 struct FrameRef {
-  uuid uuid;           // globally unique frame ID
-  string fqn;          // optional fully-qualified name, e.g. "earth-fixed/map/cam_front"
+  string uuid;   // globally unique frame ID
+  string fqn;    // normalized fully-qualified name, e.g. "earth-fixed/map/cam_front"
 };
 ```
 
@@ -2327,7 +2329,7 @@ struct FrameRef {
 Manifest entries that refer to frames MUST use a `FrameRef` object rather than raw strings. Each manifest MAY define local frame aliases resolvable by `fqn`.
 
 ### Notes
-This appendix defines the authoritative encoding for `FrameRef`. Additional derived schemas (e.g. GeoPose, Anchors) SHALL refer to this definition by reference and MUST NOT re-declare frame semantics. The conventions in §2.1 and the coverage/discovery rules in §3.3 reference this appendix for their frame requirements.
+Derived schemas (e.g. GeoPose, Anchors) SHALL refer to the Appendix A definition by reference and MUST NOT re-declare frame semantics. The conventions in §2.1 and the coverage/discovery rules in §3.3 reference this appendix for their frame requirements.
 
 
 ## **Appendix H: Operational Scenarios & AI World Model Ladder (Informative)**
@@ -2443,3 +2445,14 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 ### **Why the Ladder Matters**
 
 This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
+    @extensibility(APPENDABLE) struct SnapshotResponse {
+      @key TileKey key;                 // tile key
+      uint64 revision;                  // snapshot revision served
+      sequence<string, 64> blob_ids;    // composing blobs
+      string checksum;                  // composed state checksum
+    };
+
+  }; // module core
+};   // module spatial
+
+```

@@ -22,7 +22,7 @@ module spatial { module sensing { module common {
   typedef builtin::Time    Time;
   typedef spatial::core::PoseSE3 PoseSE3;
   typedef spatial::core::BlobRef BlobRef;
-  typedef spatial::geometry::FrameRef FrameRef;
+  typedef spatial::common::FrameRef FrameRef;
 
   // ---- Axes & Regions (for tensors or scans) ----
   enum AxisEncoding {

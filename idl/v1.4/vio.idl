@@ -12,7 +12,7 @@ module spatial {
     const string MODULE_ID = "spatial.vio/1.4";
 
     typedef builtin::Time Time;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     // IMU calibration
     @extensibility(APPENDABLE) struct ImuInfo {

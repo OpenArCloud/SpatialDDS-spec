@@ -7,12 +7,7 @@
 module spatial {
   module geometry {
 
-    // Stable, typo-proof frame identity (breaking change).
-    // Equality is by uuid; fqn is a normalized, human-readable alias.
-    @extensibility(APPENDABLE) struct FrameRef {
-      uint8  uuid[16];  // REQUIRED: stable identifier for the frame
-      string fqn;       // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
-    };
+    typedef spatial::common::FrameRef FrameRef;
 
   }; // module geometry
 };
