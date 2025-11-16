@@ -25,6 +25,27 @@ module spatial {
       @value(3) COV_POS3,
       @value(6) COV_POSE6
     };
+
+    // Stable, typo-proof frame identity shared across all profiles.
+    // Equality is by uuid; fqn is a normalized, human-readable alias.
+    @extensibility(APPENDABLE) struct FrameRef {
+      string uuid;  // REQUIRED: stable identifier for the frame
+      string fqn;   // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+    };
+
+    // Optional namespaced metadata bag for asset descriptors.
+    @extensibility(APPENDABLE) struct MetaKV {
+      string namespace;  // e.g., "sensing.vision.features"
+      string json;       // JSON object string; producer-defined for this namespace
+    };
+
+    // Uniform contract for asset references, covering fetch + integrity.
+    @extensibility(APPENDABLE) struct AssetRef {
+      string uri;          // required: how to fetch
+      string media_type;   // required: IANA or registry-friendly type (with params)
+      string hash;         // required: e.g., "sha256:<hex>"
+      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
+    };
   };
 };
 

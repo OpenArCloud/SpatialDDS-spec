@@ -14,7 +14,7 @@ module spatial {
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
     typedef spatial::core::GeoPose GeoPose;
-    typedef spatial::geometry::FrameRef FrameRef;
+    typedef spatial::common::FrameRef FrameRef;
 
     @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;

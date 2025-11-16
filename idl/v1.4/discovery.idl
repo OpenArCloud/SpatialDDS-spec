@@ -10,31 +10,10 @@
 module spatial {
   module disco {
 
-    // -----------------------------
-    // Asset references (middle-ground model)
-    // -----------------------------
-    //
-    // Base contract: uniform access + integrity for all assets.
-    // Optional, namespaced metadata bags carry type-specific details
-    // without inflating the base schema.
-    //
-    // Example: media_type could be
-    //   "application/vnd.sdds.features+json;algo=orb;v=1"
-    //
-    // Namespaced metadata uses JSON strings so producers can include
-    // structured details without schema churn.
-    //
-    @extensibility(APPENDABLE) struct MetaKV {
-      string namespace;  // e.g., "sensing.vision.features"
-      string json;       // JSON object string; producer-defined for this namespace
-    };
-
-    @extensibility(APPENDABLE) struct AssetRef {
-      string uri;          // required: how to fetch
-      string media_type;   // required: IANA or registry-friendly type (with params)
-      string hash;         // required: e.g., "sha256:<hex>"
-      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
-    };
+    // Asset references (middle-ground model) reuse the shared spatial::common
+    // types so that manifests and discovery share a single contract.
+    typedef spatial::common::MetaKV  MetaKV;
+    typedef spatial::common::AssetRef AssetRef;
 
     const string MODULE_ID = "spatial.discovery/1.4";
 
@@ -74,6 +53,8 @@ module spatial {
       string type;        // geometry_tile | video_frame | radar_tensor | seg_mask | desc_array
       string version;     // currently fixed to "v1"
       string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
+      // type, version, and qos_profile are mandatory fields describing the
+      // topic’s semantic type and QoS profile.
       // optional advisory hints (topic-level, not per-message)
       float target_rate_hz;
       uint32  max_chunk_bytes;
@@ -129,7 +110,7 @@ module spatial {
     @extensibility(APPENDABLE) struct Transform {
       FrameRef from;            // source frame (e.g., "map")
       FrameRef to;              // target frame (e.g., "earth-fixed")
-      PoseSE3 pose;             // transform payload parent->child
+      PoseSE3 pose;             // maps from 'from' into 'to' (parent → child)
       Time    stamp;            // publication timestamp
       boolean has_validity;     // when true, 'validity' bounds the transform
       ValidityWindow validity;  // explicit validity window
@@ -177,7 +158,7 @@ module spatial {
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
       // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.4\""
       string expr;
-      // Responders publish CoverageResponse samples to this topic.
+      // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;
       Time stamp;
       uint32 ttl_sec;

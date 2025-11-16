@@ -19,7 +19,7 @@ module spatial { module sensing { module lidar {
   typedef builtin::Time                      Time;
   typedef spatial::core::PoseSE3                   PoseSE3;
   typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::geometry::FrameRef              FrameRef;
+  typedef spatial::common::FrameRef               FrameRef;
 
   typedef spatial::sensing::common::Codec          Codec;
   typedef spatial::sensing::common::PayloadKind    PayloadKind; // use BLOB_GEOMETRY for clouds

@@ -24,8 +24,10 @@ The Core profile defines the essential building blocks for representing and shar
 
 #### Frame Identifiers (Reference)
 
-SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.  
-See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
+SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.
+See *Appendix G Frame Identifiers (Informative Reference)* for the complete definition and naming rules.
+
+Each Transform expresses a pose that maps coordinates from the `from` frame into the `to` frame (parent → child).
 
 ### **3.3 Discovery**
 
@@ -57,7 +59,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
   string query_id;    // correlate request/response
 }
 
-See Appendix F.X for the ABNF grammar.
+The expression syntax is defined formally in the CoverageQuery ABNF grammar (see Appendix F.X).
 
 @extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
@@ -101,6 +103,10 @@ See Appendix F.X for the ABNF grammar.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
+
+#### Asset references
+
+Discovery announcements and manifests share a single `AssetRef` structure composed of URI, media type, integrity hash, and optional `MetaKV` metadata bags. AssetRef and MetaKV are normative types for asset referencing in the Discovery profile.
 
 #### What fields mean (quick reference)
 | Field | Use |
@@ -186,6 +192,8 @@ Every `Announce.topics[]` entry and manifest topic reference SHALL include:
 - `version` — the schema or message version
 - `qos_profile` — one of the standard or extended QoS names
 
+For each advertised topic, `type`, `version`, and `qos_profile` MUST be present and MUST either match a registered value in this specification or a documented deployment-specific extension.
+
 Consumers use these three keys to match and filter streams without inspecting payload bytes. Brokers and routers SHOULD isolate lanes by `(topic, stream_id, qos_profile)` to avoid head-of-line blocking.
 
 #### **3.3.4 Coverage Model (Normative)**
@@ -221,7 +229,7 @@ evaluate transforms at coverage_eval_time if present
 
 1. **Announce** — the producer sends `Announce` (see JSON example above) to advertise `caps` and `topics`.
 2. **CoverageQuery** — the consumer issues a `CoverageQuery` (see query JSON) to filter by profile, topic type, or QoS.
-3. **CoverageResponse** — the producer replies with `CoverageResponse` (see response JSON), returning results plus an optional `next_page_token` for pagination.
+3. **CoverageResponse** — the Discovery producer replies with `CoverageResponse` (see response JSON), returning results plus an optional `next_page_token` for pagination.
 
 ### **3.4 Anchors**
 
@@ -257,6 +265,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.core/1.4
 - spatial.discovery/1.4
 - spatial.anchors/1.4
+- spatial.manifest/1.4 (manifest schema profile for SpatialDDS 1.4)
 - spatial.argeo/1.4
 - spatial.sensing.common/1.4
 - spatial.sensing.rad/1.4
