@@ -95,6 +95,13 @@ module spatial {
       @value(1) LOOP
     };
 
+    // Discriminated union: exactly one covariance payload (or none) is serialized.
+    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_NONE: uint8 none;
+      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
+      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
+    };
+
     @extensibility(APPENDABLE) struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id
@@ -125,13 +132,6 @@ module spatial {
       @value(0) ECEF,
       @value(1) ENU,
       @value(2) NED
-    };
-
-    // Discriminated union: exactly one covariance payload (or none) is serialized.
-    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
-      case spatial::common::COV_NONE: uint8 _;
-      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
-      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
     };
 
     @extensibility(APPENDABLE) struct GeoPose {

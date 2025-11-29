@@ -33,7 +33,7 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
   // ROI bounds follow Sensing Common presence flags.
-  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
 
   // Layout of the RAD tensor
   enum RadTensorLayout {

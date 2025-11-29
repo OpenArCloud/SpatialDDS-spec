@@ -33,7 +33,7 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
   // ROI bounds follow Sensing Common presence flags.
-  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
 
   // Device + data model
   enum LidarType {

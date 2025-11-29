@@ -683,6 +683,30 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 
 \[12\] Google Research. *ARCore Geospatial API & Visual Positioning Service.* Developer Documentation. Available: [https://developers.google.com/ar](https://developers.google.com/ar)
 
+## IDL Tooling Notes (Non-Consecutive Enums)
+
+Several enumerations in the SpatialDDS 1.4 profiles use **intentionally
+sparse or non-consecutive numeric values**. These enums are designed for
+forward extensibility (e.g., reserving ranges for future codecs, layouts, or
+pixel formats). Because of this, certain DDS toolchains (including Cyclone
+DDS’s `idlc`) may emit **non-fatal warnings** such as:
+
+> “enum literal values are not consecutive”
+
+These warnings do *not* indicate a schema error. All affected enums are
+valid IDL4.x and interoperable on the wire.
+
+The intentionally sparse enums are:
+- `Codec` (common.idl)
+- `PayloadKind` (common.idl)
+- `RadTensorLayout` (rad.idl)
+- `CloudEncoding` (lidar.idl)
+- `ColorSpace` (vision.idl)
+- `PixFormat` (vision.idl)
+
+No changes are required for implementers. These warnings may be safely
+ignored.
+
 
 ## **Appendix A: Core Profile**
 
@@ -715,6 +739,13 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
       @value(1) LOOP
     };
 
+    // Discriminated union: exactly one covariance payload (or none) is serialized.
+    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_NONE: uint8 none;
+      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
+      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
+    };
+
     @extensibility(APPENDABLE) struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id
@@ -745,13 +776,6 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
       @value(0) ECEF,
       @value(1) ENU,
       @value(2) NED
-    };
-
-    // Discriminated union: exactly one covariance payload (or none) is serialized.
-    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
-      case spatial::common::COV_NONE: uint8 _;
-      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
-      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
     };
 
     @extensibility(APPENDABLE) struct GeoPose {
@@ -858,6 +882,9 @@ module spatial {
 
 // SPDX-License-Identifier: MIT
 // SpatialDDS Geometry 1.0
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
 
 module spatial {
   module geometry {
@@ -1017,14 +1044,14 @@ module spatial {
     };
 
     enum ServiceKind {
-      @value(0)   VPS,
-      @value(1)   MAPPING,
-      @value(2)   RELOCAL,
-      @value(3)   SEMANTICS,
-      @value(4)   STORAGE,
-      @value(5)   CONTENT,
-      @value(6)   ANCHOR_REGISTRY,
-      @value(255) OTHER
+      @value(0) VPS,
+      @value(1) MAPPING,
+      @value(2) RELOCAL,
+      @value(3) SEMANTICS,
+      @value(4) STORAGE,
+      @value(5) CONTENT,
+      @value(6) ANCHOR_REGISTRY,
+      @value(7) OTHER
     };
 
     @extensibility(APPENDABLE) struct KV {
@@ -1266,8 +1293,8 @@ module spatial { module sensing { module common {
 
   // ---- Axes & Regions (for tensors or scans) ----
   enum AxisEncoding {
-    @value(0) CENTERS,
-    @value(1) LINSPACE
+    @value(0) AXIS_CENTERS,
+    @value(1) AXIS_LINSPACE
   };
 
   // Compact parametric axis definition
@@ -1279,8 +1306,8 @@ module spatial { module sensing { module common {
 
   // Discriminated union: carries only one encoding on wire
   @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
-    case CENTERS:  sequence<double, 65535> centers;
-    case LINSPACE: Linspace lin;
+    case AXIS_CENTERS:  sequence<double, 65535> centers;
+    case AXIS_LINSPACE: Linspace lin;
   };
 
   @extensibility(APPENDABLE) struct Axis {
@@ -1429,18 +1456,18 @@ Producers SHOULD choose the smallest tier that covers real workloads; exceeding 
 The `Axis` struct embeds a discriminated union to ensure only one encoding is transmitted on the wire.
 
 ```idl
-enum AxisEncoding { CENTERS = 0, LINSPACE = 1 };
+enum AxisEncoding { AXIS_CENTERS = 0, AXIS_LINSPACE = 1 };
 @extensibility(APPENDABLE) struct Linspace { double start; double step; uint32 count; };
 @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
-  case CENTERS:  sequence<double, 65535> centers;
-  case LINSPACE: Linspace lin;
+  case AXIS_CENTERS:  sequence<double, 65535> centers;
+  case AXIS_LINSPACE: Linspace lin;
   default: ;
 };
 @extensibility(APPENDABLE) struct Axis { string name; string unit; AxisSpec spec; };
 ```
 
-* `CENTERS` — Explicit sample positions carried as `double` values.
-* `LINSPACE` — Uniform grid defined by `start + i * step` for `i ∈ [0, count‑1]`.
+* `AXIS_CENTERS` — Explicit sample positions carried as `double` values.
+* `AXIS_LINSPACE` — Uniform grid defined by `start + i * step` for `i ∈ [0, count‑1]`.
 * Negative `step` indicates descending axes.
 * `count` MUST be ≥ 1 and `step * (count – 1) + start` yields the last coordinate.
 
@@ -1518,7 +1545,7 @@ module spatial {
     enum FusionSourceKind {
       @value(0) EKF,
       @value(1) AHRS,
-      @value(2) VIO,
+      @value(2) VIO_FUSED,
       @value(3) IMU_ONLY,
       @value(4) MAG_AIDED,
       @value(5) AR_PLATFORM
@@ -1561,7 +1588,7 @@ module spatial {
 
 ### **Vision Extension**
 
-*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
+*Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1599,7 +1626,7 @@ module spatial { module sensing { module vision {
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
   // ROI bounds follow Sensing Common presence flags.
-  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
 
   // Camera / imaging specifics
   enum CamModel {
@@ -1906,7 +1933,7 @@ module spatial {
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
+*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -1944,7 +1971,7 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
   // ROI bounds follow Sensing Common presence flags.
-  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
 
   // Layout of the RAD tensor
   enum RadTensorLayout {
@@ -2011,7 +2038,7 @@ module spatial { module sensing { module rad {
 
 ### **Lidar Extension**
 
-*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common CENTERS/LINSPACE union encoding.* See §2 Conventions for global normative rules.
+*Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -2049,7 +2076,7 @@ module spatial { module sensing { module lidar {
   typedef spatial::sensing::common::ROIReply       ROIReply;
 
   // ROI bounds follow Sensing Common presence flags.
-  // Axis samples are encoded via the Sensing Common union (CENTERS or LINSPACE).
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
 
   // Device + data model
   enum LidarType {

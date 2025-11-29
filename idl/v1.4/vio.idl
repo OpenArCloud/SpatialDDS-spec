@@ -66,7 +66,7 @@ module spatial {
     enum FusionSourceKind {
       @value(0) EKF,
       @value(1) AHRS,
-      @value(2) VIO,
+      @value(2) VIO_FUSED,
       @value(3) IMU_ONLY,
       @value(4) MAG_AIDED,
       @value(5) AR_PLATFORM

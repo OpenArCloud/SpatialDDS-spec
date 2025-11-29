@@ -1,16 +1,9 @@
-agent::Task {
-  task_id = "route-2025-001";
-  kind = "navigate";
-  subject_id = "robot-42";
-  inputs = ["geo.anchor:main-entrance"];
-  due = { sec=1700000500, nsec=0 };
-  notes = "Deliver package to lobby.";
-}
+module spatial {
+  module examples {
 
-agent::TaskStatus {
-  task_id = "route-2025-001";
-  status = RUNNING;
-  result_uri = "";
-  log = "En route, ETA 3 min.";
-  stamp = { sec=1700000520, nsec=0 };
-}
+    @extensibility(APPENDABLE) struct AgentExamplePlaceholder {
+      boolean dummy;
+    };
+
+  };
+};

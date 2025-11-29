@@ -4,6 +4,10 @@
 // SPDX-License-Identifier: MIT
 // SpatialDDS Geometry 1.0
 
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+
 module spatial {
   module geometry {
 

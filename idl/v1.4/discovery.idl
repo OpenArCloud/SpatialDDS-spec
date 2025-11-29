@@ -61,14 +61,14 @@ module spatial {
     };
 
     enum ServiceKind {
-      @value(0)   VPS,
-      @value(1)   MAPPING,
-      @value(2)   RELOCAL,
-      @value(3)   SEMANTICS,
-      @value(4)   STORAGE,
-      @value(5)   CONTENT,
-      @value(6)   ANCHOR_REGISTRY,
-      @value(255) OTHER
+      @value(0) VPS,
+      @value(1) MAPPING,
+      @value(2) RELOCAL,
+      @value(3) SEMANTICS,
+      @value(4) STORAGE,
+      @value(5) CONTENT,
+      @value(6) ANCHOR_REGISTRY,
+      @value(7) OTHER
     };
 
     @extensibility(APPENDABLE) struct KV {

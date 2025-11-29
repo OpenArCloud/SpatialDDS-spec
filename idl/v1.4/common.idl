@@ -26,8 +26,8 @@ module spatial { module sensing { module common {
 
   // ---- Axes & Regions (for tensors or scans) ----
   enum AxisEncoding {
-    @value(0) CENTERS,
-    @value(1) LINSPACE
+    @value(0) AXIS_CENTERS,
+    @value(1) AXIS_LINSPACE
   };
 
   // Compact parametric axis definition
@@ -39,8 +39,8 @@ module spatial { module sensing { module common {
 
   // Discriminated union: carries only one encoding on wire
   @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
-    case CENTERS:  sequence<double, 65535> centers;
-    case LINSPACE: Linspace lin;
+    case AXIS_CENTERS:  sequence<double, 65535> centers;
+    case AXIS_LINSPACE: Linspace lin;
   };
 
   @extensibility(APPENDABLE) struct Axis {
