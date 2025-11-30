@@ -63,6 +63,30 @@ This foundation ensures that SpatialDDS is not just a message format, but a full
 
 Before diving into identifiers and manifests, it helps to see how SpatialDDS components interlock when a client joins the bus. The typical flow looks like:
 
+### High-level layering
+
+SpatialDDS follows the same four-layer model shown in the architecture diagrams:
+
+Applications
+    ↓ use
+SpatialDDS Profiles
+    ↓ define
+DDS Topics (typed + QoS)
+    ↓ are described by
+Discovery & Manifests
+    ↓ reference
+spatial:// URIs
+
+- Applications (AR, robotics, digital twins, telco sensing, AI runtimes) use
+  SpatialDDS profiles instead of raw DDS topics.
+- Profiles define the shared types, semantics, and QoS groupings.
+- DDS topics carry typed streams with well-known QoS names.
+- Discovery and manifests describe the available streams and their spatial
+  coverage.
+- URIs provide stable identifiers for anchors, maps, content, and services.
+
+This textual view matches the layered diagrams used in the presentation.
+
 ```
 SpatialDDS URI ──▶ Manifest Resolver ──▶ Discovery Topic ──▶ DDS/Data Streams ──▶ Shared State & Anchors
         │                 │                      │                   │                      │

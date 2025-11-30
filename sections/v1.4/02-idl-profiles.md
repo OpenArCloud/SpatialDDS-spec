@@ -208,6 +208,19 @@ Consumers use these three keys to match and filter streams without inspecting pa
 - Discovery announces and manifests share the same coverage semantics and flags. `CoverageQuery` responders SHALL apply these rules consistently when filtering or paginating results.
 - See §2 Conventions for global normative rules.
 
+### Earth-fixed roots and local frames
+
+For global interoperability, SpatialDDS assumes that earth-fixed frames
+(e.g., WGS84 longitude/latitude/height) form the root of the coverage
+hierarchy. Local frames (for devices, vehicles, buildings, or ships) may
+appear in coverage elements, but if the coverage is intended to be
+globally meaningful, these local frames must be relatable to an
+earth-fixed root through declared transforms or manifests.
+
+Implementations are not required to resolve every local frame at runtime,
+but when they do, the resulting coverage must be interpretable in an
+earth-fixed reference frame.
+
 #### Coverage Evaluation Pseudocode (Informative)
 ```
 if coverage.global:
