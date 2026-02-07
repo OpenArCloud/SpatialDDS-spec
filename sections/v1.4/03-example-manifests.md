@@ -35,7 +35,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
       "type": "volume",
       "has_bbox": false,
       "has_aabb": true,
-      "aabb": { "min": [-122.420, 37.790, -10], "max": [-122.410, 37.800, 100] },
+      "aabb": { "min_xyz": [-122.420, 37.790, -10], "max_xyz": [-122.410, 37.800, 100] },
       "global": false
     }],
     "global": false
