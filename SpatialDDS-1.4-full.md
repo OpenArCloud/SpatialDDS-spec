@@ -1587,6 +1587,7 @@ These warnings do *not* indicate a schema error. All affected enums are
 valid IDL4.x and interoperable on the wire.
 
 The intentionally sparse enums are:
+- `CovarianceType` (types.idl)
 - `Codec` (common.idl)
 - `PayloadKind` (common.idl)
 - `RadTensorLayout` (rad.idl)
