@@ -1052,7 +1052,7 @@ module spatial {
     // --- Capabilities advertised in-band on the discovery bus ---
     @extensibility(APPENDABLE) struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
-      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.*"]
+      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.4"]
       sequence<FeatureFlag, 64>    features;           // optional feature flags
     };
 
