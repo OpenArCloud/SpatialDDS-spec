@@ -1,0 +1,136 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Vision (sensing.vision) 1.5 — Extension profile
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial { module sensing { module vision {
+
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.vision/1.5";
+
+  // Reuse Core + Sensing Common
+  typedef builtin::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::common::FrameRef               FrameRef;
+
+  typedef spatial::sensing::common::Codec          Codec;        // JPEG/H264/H265/AV1, etc.
+  typedef spatial::sensing::common::PayloadKind    PayloadKind;  // use BLOB_RASTER for frames/GOPs
+  typedef spatial::sensing::common::SampleType     SampleType;
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
+
+  // ROI bounds follow Sensing Common presence flags.
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
+
+  // Camera / imaging specifics
+  enum CamModel {
+    @value(0) PINHOLE,
+    @value(1) FISHEYE_EQUIDISTANT,
+    @value(2) KB_4,
+    @value(3) OMNI
+  };
+  enum Distortion {
+    @value(0) NONE,
+    @value(1) RADTAN,
+    @value(2) KANNALA_BRANDT
+  };
+  enum PixFormat {
+    @value(0)  UNKNOWN,
+    @value(1)  YUV420,
+    @value(2)  RGB8,
+    @value(3)  BGR8,
+    @value(4)  RGBA8,
+    @value(10) RAW10,
+    @value(12) RAW12,
+    @value(16) RAW16
+  };
+  enum ColorSpace {
+    @value(0)  SRGB,
+    @value(1)  REC709,
+    @value(2)  REC2020,
+    @value(10) LINEAR
+  };
+  enum RigRole {
+    @value(0) LEFT,
+    @value(1) RIGHT,
+    @value(2) CENTER,
+    @value(3) AUX
+  };
+
+  @extensibility(APPENDABLE) struct CamIntrinsics {
+    CamModel model;
+    uint16 width;  uint16 height;
+    float fx; float fy; float cx; float cy;
+    Distortion dist;
+    sequence<float,16> dist_params;     // k1,k2,p1,p2,k3,... or KB params
+    float shutter_us;                   // exposure time
+    float readout_us;                   // rolling-shutter line time (0=global)
+    PixFormat pix;  ColorSpace color;
+    string calib_version;               // hash or tag
+  };
+
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
+  @extensibility(APPENDABLE) struct VisionMeta {
+    @key string stream_id;
+    StreamMeta base;                    // frame_ref, T_bus_sensor, nominal_rate_hz
+    CamIntrinsics K;                    // intrinsics
+    RigRole role;                       // for stereo/rigs
+    string rig_id;                      // shared id across synchronized cameras
+
+    // Default payload (frames ride as blobs)
+    Codec codec;                        // JPEG/H264/H265/AV1 or NONE
+    PixFormat pix;                      // for RAW payloads
+    ColorSpace color;
+    string schema_version;              // MUST be "spatial.sensing.vision/1.5"
+  };
+
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
+  @extensibility(APPENDABLE) struct VisionFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                    // t_start/t_end, optional sensor_pose, blobs[]
+
+    // May override meta per-frame
+    Codec codec;
+    PixFormat pix;
+    ColorSpace color;
+
+    boolean has_line_readout_us;
+    float   line_readout_us;            // valid when has_line_readout_us == true
+    boolean rectified;                  // true if pre-rectified to pinhole
+
+    FrameQuality quality;               // shared health/SNR notes
+  };
+
+  // Optional lightweight derivatives (for VIO/SfM/analytics)
+  @extensibility(APPENDABLE) struct Keypoint2D { float u; float v; float score; };
+  @extensibility(APPENDABLE) struct Track2D {
+    uint64 id;
+    sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> trail;
+  };
+
+  // Detections topic — BEST_EFFORT
+  @extensibility(APPENDABLE) struct VisionDetections {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   stamp;
+    sequence<Keypoint2D, spatial::sensing::common::SZ_LARGE> keypoints;
+    sequence<Track2D, spatial::sensing::common::SZ_MEDIUM>    tracks;
+    // Masks/boxes can be added in Semantics profile to keep Vision lean
+  };
+
+}; }; };

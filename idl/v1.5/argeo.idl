@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS AR+Geo 1.5
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module argeo {
+
+    const string MODULE_ID = "spatial.argeo/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::common::FrameRef FrameRef;
+
+    @extensibility(APPENDABLE) struct NodeGeo {
+      string map_id;
+      @key string node_id;      // same id as core::Node
+      PoseSE3 pose;             // local pose in map frame
+      GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
+      spatial::core::CovMatrix cov; // covariance payload (COV_NONE when absent)
+      Time    stamp;
+      FrameRef frame_ref;       // local frame
+      string  source_id;
+      uint64  seq;
+      uint64  graph_epoch;
+    };
+
+  }; // module argeo
+};

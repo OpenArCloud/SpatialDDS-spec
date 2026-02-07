@@ -1,0 +1,172 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Sensing Common 1.5 (Extension module)
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial { module sensing { module common {
+
+  const string MODULE_ID = "spatial.sensing.common/1.5";
+
+  // --- Standard sizing tiers ---
+  // Use these to bound sequences for detections and other per-frame arrays.
+  const uint32 SZ_TINY   = 64;
+  const uint32 SZ_SMALL  = 256;
+  const uint32 SZ_MEDIUM = 2048;
+  const uint32 SZ_LARGE  = 8192;
+  const uint32 SZ_XL     = 32768;
+
+  // Reuse Core primitives (time, pose, blob references)
+  typedef builtin::Time    Time;
+  typedef spatial::core::PoseSE3 PoseSE3;
+  typedef spatial::core::BlobRef BlobRef;
+  typedef spatial::common::FrameRef FrameRef;
+
+  // ---- Axes & Regions (for tensors or scans) ----
+  enum AxisEncoding {
+    @value(0) AXIS_CENTERS,
+    @value(1) AXIS_LINSPACE
+  };
+
+  // Compact parametric axis definition
+  @extensibility(APPENDABLE) struct Linspace {
+    double start;   // first point
+    double step;    // spacing (may be negative for descending axes)
+    uint32 count;   // number of samples (>=1)
+  };
+
+  // Discriminated union: carries only one encoding on wire
+  @extensibility(APPENDABLE) union AxisSpec switch (AxisEncoding) {
+    case AXIS_CENTERS:  sequence<double, 65535> centers;
+    case AXIS_LINSPACE: Linspace lin;
+  };
+
+  @extensibility(APPENDABLE) struct Axis {
+    string   name;    // "range","azimuth","elevation","doppler","time","channel"
+    string   unit;    // "m","deg","m/s","Hz","s",...
+    AxisSpec spec;    // encoding of the axis samples (centers or linspace)
+  };
+
+  @extensibility(APPENDABLE) struct ROI {
+    // Range bounds (meters). When has_range == false, consumers MUST ignore range_min/range_max.
+    boolean has_range;
+    float   range_min;
+    float   range_max;
+
+    // Azimuth bounds (degrees). When has_azimuth == false, azimuth bounds are unspecified.
+    boolean has_azimuth;
+    float   az_min;
+    float   az_max;
+
+    // Elevation bounds (degrees). When has_elevation == false, elevation bounds are unspecified.
+    boolean has_elevation;
+    float   el_min;
+    float   el_max;
+
+    // Doppler bounds (m/s). When has_doppler == false, doppler_min/doppler_max are unspecified.
+    boolean has_doppler;
+    float   dop_min;
+    float   dop_max;
+
+    // Image-plane ROI for vision (pixels). When has_image_roi == false, u/v bounds are unspecified.
+    boolean has_image_roi;
+    int32   u_min;
+    int32   v_min;
+    int32   u_max;
+    int32   v_max;
+
+    // Indicates this ROI covers the entire valid domain of its axes. When true, all numeric bounds may be ignored.
+    boolean global;
+  };
+
+  // ---- Codecs / Payload kinds (shared enums) ----
+  enum Codec {
+    @value(0)  CODEC_NONE,
+    @value(1)  LZ4,
+    @value(2)  ZSTD,
+    @value(3)  GZIP,
+    @value(10) DRACO,     // geometry compression
+    @value(20) JPEG,
+    @value(21) H264,
+    @value(22) H265,
+    @value(23) AV1,
+    @value(40) FP8Q,
+    @value(41) FP4Q,
+    @value(42) AE_V1
+  };
+
+  enum PayloadKind {
+    @value(0)  DENSE_TILES,    // tiled dense blocks (e.g., tensor tiles)
+    @value(1)  SPARSE_COO,     // sparse indices + values
+    @value(2)  LATENT,         // learned latent vectors
+    @value(10) BLOB_GEOMETRY,  // PCC/PLY/glTF+Draco
+    @value(11) BLOB_RASTER     // JPEG/GOP chunk(s)
+  };
+
+  enum SampleType {        // post-decode voxel/point sample type
+    @value(0) U8_MAG,
+    @value(1) F16_MAG,
+    @value(2) CF16,
+    @value(3) CF32,
+    @value(4) MAGPHASE_S8
+  };
+
+  // ---- Stream identity & calibration header shared by sensors ----
+  @extensibility(APPENDABLE) struct StreamMeta {
+    @key string stream_id;        // stable id for this sensor stream
+    FrameRef frame_ref;           // mounting frame (Core frame naming)
+    PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
+    double   nominal_rate_hz;     // advertised cadence
+    string   schema_version;      // MUST be "spatial.sensing.common/1.5"
+  };
+
+  // ---- Frame index header shared by sensors (small, on-bus) ----
+  @extensibility(APPENDABLE) struct FrameHeader {
+    @key string stream_id;
+    uint64 frame_seq;
+    Time   t_start;
+    Time   t_end;
+    // Optional sensor pose at acquisition (moving platforms)
+    boolean has_sensor_pose;
+    PoseSE3 sensor_pose;
+    // data pointers: heavy bytes referenced as blobs
+    sequence<BlobRef, SZ_SMALL> blobs;
+  };
+
+  // ---- Quality & health (uniform across sensors) ----
+  enum Health {
+    @value(0) OK,
+    @value(1) DEGRADED,
+    @value(2) ERROR
+  };
+
+  @extensibility(APPENDABLE) struct FrameQuality {
+    boolean has_snr_db;
+    float   snr_db;          // valid when has_snr_db == true
+    float   percent_valid;   // 0..100
+    Health health;
+    string note;             // short diagnostic
+  };
+
+  // ---- ROI request/reply (control-plane pattern) ----
+  @extensibility(APPENDABLE) struct ROIRequest {
+    @key string stream_id;
+    uint64 request_id;
+    Time   t_start; Time t_end;
+    ROI    roi;
+    boolean wants_payload_kind; PayloadKind desired_payload_kind;
+    boolean wants_codec;       Codec       desired_codec;
+    boolean wants_sample_type; SampleType  desired_sample_type;
+    int32  max_bytes;          // -1 for unlimited
+  };
+
+  @extensibility(APPENDABLE) struct ROIReply {
+    @key string stream_id;
+    uint64 request_id;
+    // Typically returns new frames whose blobs contain only the ROI
+    sequence<spatial::sensing::common::FrameHeader, 64> frames;
+  };
+
+}; }; };

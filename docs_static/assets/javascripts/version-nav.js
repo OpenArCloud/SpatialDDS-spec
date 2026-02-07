@@ -5,7 +5,7 @@
       return;
     }
 
-    const latestLabel = 'SpatialDDS 1.4';
+    const latestLabel = 'SpatialDDS 1.5';
 
     menu.querySelectorAll('p.caption').forEach((caption) => {
       const list = caption.nextElementSibling;

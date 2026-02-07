@@ -2,15 +2,19 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.4     | TBD        | Initialized work-in-progress 1.4 specification structure. |
+| 1.5     | TBD        | Initialized work-in-progress 1.5 specification structure. |
+| 1.4     | 2026-02-07 | Finalized 1.4 draft text and examples; regenerated full spec. |
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
 
-## Version 1.4 - TBD
+## Version 1.5 - TBD
 
-- Initialized directories and stub documents for the 1.4 drafting cycle.
-- Added §2.2.1 “Topic Identity & QoS (Normative)” combining registered topic types with named QoS profiles and required discovery metadata.
+- Initialized directories and stub documents for the 1.5 drafting cycle.
+
+## Version 1.4 - 2026-02-07
+
+- Finalized 1.4 draft text and examples; regenerated full spec.
 
 ## Version 1.3 - 2025-10-03
 

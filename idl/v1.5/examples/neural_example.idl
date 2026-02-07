@@ -1,0 +1,9 @@
+module spatial {
+  module examples {
+
+    @extensibility(APPENDABLE) struct NeuralExamplePlaceholder {
+      boolean dummy;
+    };
+
+  };
+};

@@ -1,0 +1,19 @@
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#define SPATIAL_GEOMETRY_INCLUDED
+
+// SPDX-License-Identifier: MIT
+// SpatialDDS Geometry 1.0
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+
+module spatial {
+  module geometry {
+
+    typedef spatial::common::FrameRef FrameRef;
+
+  }; // module geometry
+};
+
+#endif // SPATIAL_GEOMETRY_INCLUDED

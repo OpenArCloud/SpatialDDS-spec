@@ -6,6 +6,27 @@ use_directory_urls: true
 
 nav:
   - Overview: index.md
+  - SpatialDDS 1.5:
+      - 1. Introduction: v1.5/01-introduction.md
+      - 2. Conventions: v1.5/02-conventions.md
+      - 2. IDL Profiles: v1.5/02-idl-profiles.md
+      - 3. Operational Scenarios: v1.5/04-operational-scenarios.md
+      - 4. Conclusion: v1.5/conclusion.md
+      - 5. Future Directions: v1.5/future-directions.md
+      - 6. SpatialDDS URIs: v1.5/02a-spatialdds-uris.md
+      - 7. Example Manifests: v1.5/03-example-manifests.md
+      - 8. Glossary of Acronyms: v1.5/glossary.md
+      - 9. References: v1.5/references.md
+      - Appendix A - Core Profile: v1.5/appendix-a.md
+      - Appendix B - Discovery Profile: v1.5/appendix-b.md
+      - Appendix C - Anchor Registry Profile: v1.5/appendix-c.md
+      - Appendix D - Extension Profiles: v1.5/appendix-d.md
+      - Appendix E - Provisional Extension Examples: v1.5/appendix-e.md
+      - Appendix F - SpatialDDS URI Scheme (ABNF): v1.5/appendix-f.md
+      - Appendix F.X - Discovery Query Expression (ABNF): v1.5/appendix-fx-discovery-query-expression.md
+      - Appendix G - Frame Identifiers (Normative): v1.5/appendix-g-frame-identifiers.md
+      - Appendix H - Operational Scenarios: v1.5/appendix-h-operational-scenarios.md
+      - Full Spec (single page): SpatialDDS-1.5-full.md
   - SpatialDDS 1.4:
       - 1. Introduction: v1.4/01-introduction.md
       - 2. Conventions: v1.4/02-conventions.md

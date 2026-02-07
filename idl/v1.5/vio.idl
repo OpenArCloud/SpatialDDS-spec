@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS VIO/Inertial 1.5
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module vio {
+
+    const string MODULE_ID = "spatial.vio/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::common::FrameRef FrameRef;
+
+    // IMU calibration
+    @extensibility(APPENDABLE) struct ImuInfo {
+      @key string imu_id;
+      FrameRef frame_ref;
+      double accel_noise_density;    // (m/s^2)/√Hz
+      double gyro_noise_density;     // (rad/s)/√Hz
+      double accel_random_walk;      // (m/s^3)/√Hz
+      double gyro_random_walk;       // (rad/s^2)/√Hz
+      Time   stamp;
+    };
+
+    // Raw IMU sample
+    @extensibility(APPENDABLE) struct ImuSample {
+      @key string imu_id;
+      spatial::common::Vec3 accel;   // m/s^2
+      spatial::common::Vec3 gyro;    // rad/s
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Magnetometer
+    @extensibility(APPENDABLE) struct MagnetometerSample {
+      @key string mag_id;
+      spatial::common::Vec3 mag;     // microtesla
+      Time   stamp;
+      FrameRef frame_ref;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Convenience raw 9-DoF bundle
+    @extensibility(APPENDABLE) struct SensorFusionSample {
+      @key string fusion_id;         // e.g., device id
+      spatial::common::Vec3 accel;   // m/s^2
+      spatial::common::Vec3 gyro;    // rad/s
+      spatial::common::Vec3 mag;     // microtesla
+      Time   stamp;
+      FrameRef frame_ref;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Fused state (orientation ± position)
+    enum FusionMode {
+      @value(0) ORIENTATION_3DOF,
+      @value(1) ORIENTATION_6DOF,
+      @value(2) POSE_6DOF
+    };
+    enum FusionSourceKind {
+      @value(0) EKF,
+      @value(1) AHRS,
+      @value(2) VIO_FUSED,
+      @value(3) IMU_ONLY,
+      @value(4) MAG_AIDED,
+      @value(5) AR_PLATFORM
+    };
+
+    @extensibility(APPENDABLE) struct FusedState {
+      @key string fusion_id;
+      FusionMode       mode;
+      FusionSourceKind source_kind;
+
+      spatial::common::QuaternionXYZW q; // quaternion (x,y,z,w) in GeoPose order
+      boolean has_position;
+      spatial::common::Vec3 t;       // meters, in frame_ref
+
+      boolean has_gravity;
+      spatial::common::Vec3  gravity;    // m/s^2
+      boolean has_lin_accel;
+      spatial::common::Vec3  lin_accel;  // m/s^2
+      boolean has_gyro_bias;
+      spatial::common::Vec3  gyro_bias;  // rad/s
+      boolean has_accel_bias;
+      spatial::common::Vec3  accel_bias; // m/s^2
+
+      boolean has_cov_orient;
+      spatial::common::Mat3x3  cov_orient; // 3x3 covariance
+      boolean has_cov_pos;
+      spatial::common::Mat3x3  cov_pos;    // 3x3 covariance
+
+      Time   stamp;
+      FrameRef frame_ref;
+      string source_id;
+      uint64 seq;
+      double quality;                // 0..1
+    };
+
+  }; // module vio
+};

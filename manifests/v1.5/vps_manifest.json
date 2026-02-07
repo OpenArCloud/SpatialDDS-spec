@@ -1,0 +1,106 @@
+{
+  "schema_version": "spatial.core/1.5",
+  "service_id": "svc:vps:acme/sf-downtown",
+  "profiles": [
+    "Core",
+    "SLAM Frontend",
+    "AR+Geo"
+  ],
+  "request": {
+    "features_topic": "feat.keyframe",
+    "image_blob_role": "image/jpeg",
+    "prior_topic": "geo.fix"
+  },
+  "response": {
+    "rich": "pg.nodegeo",
+    "minimal": "geo.fix"
+  },
+  "limits": {
+    "max_fps": 10,
+    "max_image_px": 1920
+  },
+  "auth": {
+    "scheme": "oauth2",
+    "issuer": "https://auth.acme.com"
+  },
+  "coverage": {
+    "$comment": "All coverage shapes are expressed in the canonical frame_ref below. If multiple frames are required, publish separate coverage records; geohash (if used) is always earth-fixed.",
+    "frame_ref": {
+      "fqn": "earth-fixed",
+      "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+    },
+    "has_bbox": true,
+    "bbox": [
+      -122.4186,
+      37.7931,
+      -122.4123,
+      37.7982
+    ],
+    "geohash": [
+      "9q8y",
+      "9q8z"
+    ],
+    "elements": [
+      {
+        "type": "bbox",
+        "crs": "EPSG:4979",
+        "has_bbox": true,
+        "has_aabb": false,
+        "bbox": [
+          -122.4186,
+          37.7931,
+          -122.4123,
+          37.7982
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east.",
+        "global": false
+      },
+      {
+        "type": "volume",
+        "has_bbox": false,
+        "has_aabb": true,
+        "aabb": {
+          "min_xyz": [
+            -122.4186,
+            37.7931,
+            -5.0
+          ],
+          "max_xyz": [
+            -122.4123,
+            37.7982,
+            20.0
+          ]
+        },
+        "$comment": "AABB expressed in coverage.frame_ref coordinates [xmin,ymin,zmin,xmax,ymax,zmax].",
+        "global": false
+      }
+    ],
+    "global": false
+  },
+  "transforms": [
+    {
+      "from": "ship-fixed",
+      "to": "earth-fixed",
+      "stamp": "2025-05-01T12:00:00Z",
+      "has_valid": true,
+      "valid": {
+        "start": "2025-05-01T12:00:00Z",
+        "duration_s": 5
+      },
+      "pose": {
+        "t_m": [
+          -2650.4,
+          15.2,
+          8.6
+        ],
+        "q_xyzw": [
+          0.0,
+          0.3827,
+          0.0,
+          0.9239
+        ]
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. When has_valid is true, apply within [valid.start, valid.start + valid.duration_s]; otherwise treat as valid at stamp."
+    }
+  ]
+}

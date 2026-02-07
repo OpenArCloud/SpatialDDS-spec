@@ -1,0 +1,153 @@
+{
+  "schema_version": "spatial.core/1.5",
+  "content_id": "xp:sculpture-walk:met-foyer",
+  "version": "1.0.2",
+  "provider": {
+    "id": "svc:content:museum-inc",
+    "org": "Museum Inc."
+  },
+  "title": "AR Sculpture Walk",
+  "summary": "Guided AR overlays for five sculptures in the main foyer.",
+  "tags": [
+    "ar",
+    "museum",
+    "tour"
+  ],
+  "profiles_required": [
+    "Core",
+    "AR+Geo"
+  ],
+  "availability": {
+    "from": "2025-09-01T09:00:00Z",
+    "until": "2025-12-31T23:59:59Z",
+    "local_tz": "America/New_York"
+  },
+  "coverage": {
+    "$comment": "All coverage shapes are expressed in the canonical frame_ref below. If multiple frames are required, publish separate coverage records; geohash (if used) is always earth-fixed.",
+    "frame_ref": {
+      "fqn": "foyer-local",
+      "uuid": "5f3f8bb4-2a46-4878-9d80-2c9f71d407bb"
+    },
+    "has_bbox": true,
+    "bbox": [
+      -8.0,
+      -12.0,
+      8.0,
+      12.0
+    ],
+    "geohash": [
+      "dr5ru9",
+      "dr5rua"
+    ],
+    "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson",
+    "elements": [
+      {
+        "type": "bbox",
+        "has_bbox": true,
+        "has_aabb": false,
+        "bbox": [
+          -8.0,
+          -12.0,
+          8.0,
+          12.0
+        ],
+        "$comment": "Local bbox uses canonical frame_ref coordinates [xmin,ymin,xmax,ymax].",
+        "global": false
+      },
+      {
+        "type": "volume",
+        "has_bbox": false,
+        "has_aabb": true,
+        "aabb": {
+          "min_xyz": [
+            -8.0,
+            -12.0,
+            0.0
+          ],
+          "max_xyz": [
+            8.0,
+            12.0,
+            5.0
+          ]
+        },
+        "$comment": "AABB expressed in coverage.frame_ref coordinates [xmin,ymin,zmin,xmax,ymax,zmax].",
+        "global": false
+      }
+    ],
+    "global": false
+  },
+  "transforms": [
+    {
+      "from": "foyer-local",
+      "to": "earth-fixed",
+      "stamp": "2025-09-01T09:00:00Z",
+      "has_valid": true,
+      "valid": {
+        "start": "2025-09-01T09:00:00Z",
+        "duration_s": 3600
+      },
+      "pose": {
+        "t_m": [
+          -73.9633,
+          40.7794,
+          25.5
+        ],
+        "q_xyzw": [
+          0.0,
+          0.3827,
+          0.0,
+          0.9239
+        ]
+      },
+      "$comment": "Pose maps FROM 'from' TO 'to'. q_xyzw follows GeoPose: [x,y,z,w], unit-norm. When has_valid is true, apply within [valid.start, valid.start + valid.duration_s]; otherwise treat as valid at stamp."
+    }
+  ],
+  "entrypoints": {
+    "anchors": [
+      {
+        "anchor_id": "anchor/met-foyer/north-plinth",
+        "hint": "Start here"
+      },
+      {
+        "anchor_id": "anchor/met-foyer/central",
+        "hint": "Checkpoint 2"
+      }
+    ]
+  },
+  "runtime_topics": {
+    "subscribe": [
+      "geo.tf",
+      "geo.anchor",
+      "geom.tile.meta",
+      "geom.tile.patch"
+    ],
+    "optional": [
+      "semantics.det.3d.set"
+    ]
+  },
+  "assets": [
+    {
+      "uri": "https://cdn.museum.example/img/poster.jpg",
+      "media_type": "image/jpeg",
+      "hash": "sha256:3b83ef96387f14655fc854ddc3c6bd57d436c3b8f4d4f1b953ebd2da9382efc3",
+      "bytes": 421337,
+      "meta": {
+        "experiences.asset": {
+          "role": "poster"
+        }
+      }
+    },
+    {
+      "uri": "https://cdn.museum.example/audio/room_intro.mp3",
+      "media_type": "audio/mpeg",
+      "hash": "sha256:79c2f8c1fcead1e6d12c74a53ce38afcb7631c6fba58828a741b93d7c5edda6d",
+      "bytes": 1987654,
+      "meta": {
+        "experiences.asset": {
+          "role": "narration",
+          "lang": "en"
+        }
+      }
+    }
+  ]
+}

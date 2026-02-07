@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Anchors 1.5
+// Bundles and updates for anchor registries
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module anchors {
+    const string MODULE_ID = "spatial.anchors/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::core::FrameRef FrameRef;
+
+    @extensibility(APPENDABLE) struct AnchorEntry {
+      @key string anchor_id;
+      string name;
+      GeoPose geopose;
+      double confidence;
+      sequence<string,8> tags;
+      Time stamp;
+      string checksum;
+    };
+
+    @extensibility(APPENDABLE) struct AnchorSet {
+      @key string set_id;
+      string title;
+      string provider_id;
+      FrameRef map_frame;
+      string version;
+      sequence<string,16> tags;
+      double center_lat; double center_lon; double radius_m;
+      sequence<AnchorEntry,256> anchors;
+      Time stamp;
+      string checksum;
+    };
+
+    enum AnchorOp {
+      @value(0) ADD,
+      @value(1) UPDATE,
+      @value(2) REMOVE
+    };
+
+    @extensibility(APPENDABLE) struct AnchorDelta {
+      @key string set_id;
+      AnchorOp op;
+      AnchorEntry entry;
+      uint64 revision;
+      Time stamp;
+      string post_checksum;
+    };
+
+    @extensibility(APPENDABLE) struct AnchorSetRequest {
+      @key string set_id;
+      uint64 up_to_revision;
+    };
+
+    @extensibility(APPENDABLE) struct AnchorSetResponse {
+      @key string set_id;
+      uint64 revision;
+      AnchorSet set;
+    };
+
+  }; // module anchors
+};

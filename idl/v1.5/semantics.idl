@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Semantics 1.5
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial {
+  module semantics {
+
+    const string MODULE_ID = "spatial.semantics/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::TileKey TileKey;
+    typedef spatial::common::FrameRef FrameRef;
+
+    // 2D detections per keyframe (image space)
+    @extensibility(APPENDABLE) struct Detection2D {
+      @key string det_id;       // unique per publisher
+      string node_id;           // keyframe id
+      string camera_id;         // camera
+      string class_id;          // ontology label
+      float  score;             // [0..1]
+      spatial::common::BBox2D bbox; // [u_min,v_min,u_max,v_max] (px)
+      boolean has_mask;         // if a pixel mask exists
+      string  mask_blob_id;     // BlobChunk ref (role="mask")
+      Time   stamp;
+      string source_id;
+    };
+
+    @extensibility(APPENDABLE) struct Detection2DSet {
+      @key string set_id;                 // batch id (e.g., node_id + seq)
+      string node_id;
+      string camera_id;
+      sequence<Detection2D, spatial::sensing::common::SZ_SMALL> dets;    // ≤256
+      Time   stamp;
+      string source_id;
+    };
+
+    // 3D detections in world/local frame (scene space)
+    @extensibility(APPENDABLE) struct Detection3D {
+      @key string det_id;
+      FrameRef frame_ref;        // e.g., "map" (pose known elsewhere)
+      boolean has_tile;
+      TileKey tile_key;          // valid when has_tile = true
+
+      string class_id;           // semantic label
+      float  score;              // [0..1]
+
+      // Oriented bounding box in frame_ref
+      spatial::common::Vec3 center;      // m
+      spatial::common::Vec3 size;        // width,height,depth (m)
+      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
+
+      // Uncertainty (optional)
+      boolean has_covariance;
+      spatial::common::Mat3x3 cov_pos; // 3x3 position covariance (row-major)
+      spatial::common::Mat3x3 cov_rot; // 3x3 rotation covariance (row-major)
+
+      // Optional instance tracking
+      boolean has_track_id;
+      string  track_id;
+
+      Time   stamp;
+      string source_id;
+    };
+
+    @extensibility(APPENDABLE) struct Detection3DSet {
+      @key string set_id;                 // batch id
+      FrameRef frame_ref;                 // common frame for the set
+      boolean has_tile;
+      TileKey tile_key;                   // valid when has_tile = true
+      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤128
+      Time   stamp;
+      string source_id;
+    };
+
+  }; // module semantics
+};

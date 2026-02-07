@@ -1,0 +1,9 @@
+module spatial {
+  module examples {
+
+    @extensibility(APPENDABLE) struct AgentExamplePlaceholder {
+      boolean dummy;
+    };
+
+  };
+};

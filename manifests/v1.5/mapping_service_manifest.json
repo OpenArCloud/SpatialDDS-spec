@@ -1,0 +1,88 @@
+{
+  "schema_version": "spatial.core/1.5",
+  "service_id": "svc:mapping:acme/sf-downtown",
+  "version": "1.0.0",
+  "provider": {
+    "id": "acme-maps",
+    "org": "Acme Maps Inc."
+  },
+  "title": "Acme Downtown Map Service",
+  "summary": "Tiled 3D meshes for SF downtown area",
+  "profiles": [
+    "Core"
+  ],
+  "topics": {
+    "meta": "geom.tile.meta",
+    "patch": "geom.tile.patch",
+    "blob": "geom.tile.blob"
+  },
+  "tile_scheme": "quadtree",
+  "encodings": [
+    "glTF+Draco",
+    "LASzip"
+  ],
+  "lod_range": [
+    12,
+    18
+  ],
+  "coverage": {
+    "$comment": "All coverage shapes are expressed in the canonical frame_ref below. If multiple frames are required, publish separate coverage records; geohash (if used) is always earth-fixed.",
+    "frame_ref": {
+      "fqn": "earth-fixed",
+      "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10"
+    },
+    "has_bbox": true,
+    "bbox": [
+      -122.4195,
+      37.7925,
+      -122.4115,
+      37.799
+    ],
+    "geohash": [
+      "9q8y",
+      "9q8z"
+    ],
+    "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
+    "elements": [
+      {
+        "type": "bbox",
+        "has_bbox": true,
+        "has_aabb": false,
+        "bbox": [
+          -122.4195,
+          37.7925,
+          -122.4115,
+          37.799
+        ],
+        "$comment": "Earth-fixed bbox uses degrees [west,south,east,north]. If crossing 180°, west may be > east.",
+        "global": false
+      },
+      {
+        "type": "volume",
+        "has_bbox": false,
+        "has_aabb": true,
+        "aabb": {
+          "min_xyz": [
+            -122.4195,
+            37.7925,
+            -10.0
+          ],
+          "max_xyz": [
+            -122.4115,
+            37.799,
+            250.0
+          ]
+        },
+        "$comment": "AABB expressed in coverage.frame_ref coordinates [xmin,ymin,zmin,xmax,ymax,zmax].",
+        "global": false
+      }
+    ],
+    "global": false
+  },
+  "auth": {
+    "scheme": "none"
+  },
+  "terms": {
+    "license": "CC-BY-4.0"
+  }
+}

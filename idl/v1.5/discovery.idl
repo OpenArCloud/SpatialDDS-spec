@@ -1,0 +1,193 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Discovery 1.5
+// Lightweight announces for services, coverage, and content
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module disco {
+
+    // Asset references (middle-ground model) reuse the shared spatial::common
+    // types so that manifests and discovery share a single contract.
+    typedef spatial::common::MetaKV  MetaKV;
+    typedef spatial::common::AssetRef AssetRef;
+
+    const string MODULE_ID = "spatial.discovery/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::Aabb3 Aabb3;
+    typedef spatial::core::FrameRef FrameRef;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    // Canonical manifest references use the spatialdds:// URI scheme.
+    typedef string SpatialUri;
+
+    // --- Profile version advertisement (additive) ---
+    // Semver per profile: name@MAJOR.MINOR
+    // Each row declares a contiguous range of MINORs within a single MAJOR.
+    @extensibility(APPENDABLE) struct ProfileSupport {
+      string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
+      uint32 major;       // compatible major (e.g., 1)
+      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
+      uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
+      boolean preferred;  // optional tie-breaker hint (usually false)
+    };
+
+    // --- Optional feature flags (namespaced strings, e.g., "blob.crc32", "rad.tensor.zstd") ---
+    @extensibility(APPENDABLE) struct FeatureFlag {
+      string name;
+    };
+
+    // --- Capabilities advertised in-band on the discovery bus ---
+    @extensibility(APPENDABLE) struct Capabilities {
+      sequence<ProfileSupport, 64> supported_profiles;
+      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.5"]
+      sequence<FeatureFlag, 64>    features;           // optional feature flags
+    };
+
+    // --- Topic metadata to enable selection without parsing payloads ---
+    @extensibility(APPENDABLE) struct TopicMeta {
+      string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
+      string type;        // geometry_tile | video_frame | radar_tensor | seg_mask | desc_array
+      string version;     // currently fixed to "v1"
+      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
+      // type, version, and qos_profile are mandatory fields describing the
+      // topic’s semantic type and QoS profile.
+      // optional advisory hints (topic-level, not per-message)
+      float target_rate_hz;
+      uint32  max_chunk_bytes;
+    };
+
+    enum ServiceKind {
+      @value(0) VPS,
+      @value(1) MAPPING,
+      @value(2) RELOCAL,
+      @value(3) SEMANTICS,
+      @value(4) STORAGE,
+      @value(5) CONTENT,
+      @value(6) ANCHOR_REGISTRY,
+      @value(7) OTHER
+    };
+
+    @extensibility(APPENDABLE) struct KV {
+      string key;
+      string value;
+    };
+
+    // coverage_frame_ref is the canonical frame for an announcement. CoverageElement.frame_ref MAY override it sparingly.
+    // If coverage_frame_ref is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979); otherwise coordinates
+    // are in local meters.
+    @extensibility(APPENDABLE) struct CoverageElement {
+      string type;              // "bbox" | "volume"
+      boolean has_crs;
+      string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
+
+      // Presence flags indicate which geometry payloads are provided.
+      // When has_bbox == true, bbox MUST contain finite coordinates; consumers SHALL reject non-finite values.
+      boolean has_bbox;
+      spatial::common::BBox2D bbox; // [west, south, east, north]
+
+      // When has_aabb == true, aabb MUST contain finite coordinates; consumers SHALL reject non-finite values.
+      boolean has_aabb;
+      Aabb3  aabb;              // axis-aligned bounds in the declared frame
+
+      // Explicit global coverage toggle: when true, bbox/aabb may be ignored by consumers.
+      boolean global;
+      // Optional per-element frame override. If has_frame_ref == false, this element MUST use coverage_frame_ref.
+      boolean has_frame_ref;
+      FrameRef frame_ref;       // Use sparingly to mix a few local frames within one announcement.
+    };
+
+    // Validity window for time-bounded transforms.
+    @extensibility(APPENDABLE) struct ValidityWindow {
+      Time   from;              // inclusive start time
+      uint32 seconds;           // duration from 'from'
+    };
+
+    // Quaternion follows GeoPose: unit [x,y,z,w]; pose maps FROM 'from' TO 'to'
+    @extensibility(APPENDABLE) struct Transform {
+      FrameRef from;            // source frame (e.g., "map")
+      FrameRef to;              // target frame (e.g., "earth-fixed")
+      PoseSE3 pose;             // maps from 'from' into 'to' (parent → child)
+      Time    stamp;            // publication timestamp
+      boolean has_validity;     // when true, 'validity' bounds the transform
+      ValidityWindow validity;  // explicit validity window
+    };
+
+    @extensibility(APPENDABLE) struct Announce {
+      @key string service_id;
+      string name;
+      ServiceKind kind;
+      string version;
+      string org;
+      sequence<KV,32> hints;
+      // New: wire-level capability advertisement for version negotiation.
+      Capabilities caps;                 // in-band capabilities (profiles + features)
+      sequence<TopicMeta,128> topics;    // topic list with typed-topic metadata
+      sequence<CoverageElement,16> coverage;
+      FrameRef coverage_frame_ref;      // canonical frame consumers should use when evaluating coverage
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;       // evaluate time-varying transforms at this instant when interpreting coverage_frame_ref
+      sequence<Transform,8> transforms;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this service manifest
+      string auth_hint;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct CoverageHint {
+      @key string service_id;
+      sequence<CoverageElement,16> coverage;
+      FrameRef coverage_frame_ref;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
+      sequence<Transform,8> transforms;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct CoverageQuery {
+      // Correlates responses to a specific query instance.
+      @key string query_id;
+      sequence<CoverageElement,4> coverage;  // requested regions of interest
+      FrameRef coverage_frame_ref;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
+      // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
+      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
+      string expr;
+      // Discovery responders publish CoverageResponse samples to this topic.
+      string reply_topic;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct ContentAnnounce {
+      @key string content_id;
+      string provider_id;
+      string title;
+      string summary;
+      sequence<string,16> tags;
+      string class_id;
+      SpatialUri manifest_uri;  // MUST be a spatialdds:// URI for this content manifest
+      sequence<CoverageElement,16> coverage;
+      FrameRef coverage_frame_ref;
+      boolean has_coverage_eval_time;
+      Time    coverage_eval_time;
+      sequence<Transform,8> transforms;
+      Time available_from;
+      Time available_until;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct CoverageResponse {
+      string query_id;                    // Mirrors CoverageQuery.query_id for correlation.
+      sequence<Announce,256> results;     // Result page (caps + typed topics)
+      string next_page_token;             // Empty when no further pages remain.
+    };
+
+  }; // module disco
+};

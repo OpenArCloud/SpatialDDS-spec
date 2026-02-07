@@ -1,0 +1,182 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Core 1.5
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+#ifndef SPATIAL_GEOMETRY_INCLUDED
+#include "geometry.idl"
+#endif
+
+module spatial {
+  module core {
+
+    // Module identity (authoritative string for interop)
+    const string MODULE_ID = "spatial.core/1.5";
+
+    // ---------- Utility ----------
+    // Expose builtin Time under spatial::core
+    typedef builtin::Time Time;
+
+    @extensibility(APPENDABLE) struct PoseSE3 {
+      spatial::common::Vec3 t;               // translation (x,y,z)
+      spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
+    };
+
+    @extensibility(APPENDABLE) struct Aabb3 {
+      spatial::common::Vec3 min_xyz;
+      spatial::common::Vec3 max_xyz;
+    };
+
+    @extensibility(APPENDABLE) struct TileKey {
+      @key uint32 x;     // tile coordinate (quadtree/3D grid)
+      @key uint32 y;
+      @key uint32 z;     // use 0 for 2D schemes
+      @key uint8  level; // LOD level
+    };
+
+    // ---------- Geometry ----------
+    enum PatchOp {
+      @value(0) ADD,
+      @value(1) REPLACE,
+      @value(2) REMOVE
+    };
+
+    @extensibility(APPENDABLE) struct BlobRef {
+      string blob_id;   // UUID or content-address
+      string role;      // "mesh","attr/normals","pcc/geom","pcc/attr",...
+      string checksum;  // SHA-256 (hex)
+    };
+
+    typedef spatial::common::FrameRef FrameRef;
+
+    @extensibility(APPENDABLE) struct TileMeta {
+      @key TileKey key;              // unique tile key
+      boolean has_tile_id_compat;
+      string  tile_id_compat;        // optional human-readable id
+      spatial::common::Vec3 min_xyz; // AABB min (local frame)
+      spatial::common::Vec3 max_xyz; // AABB max (local frame)
+      uint32 lod;                    // may mirror key.level
+      uint64 version;                // monotonic full-state version
+      string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
+      string checksum;               // checksum of composed tile
+      sequence<string, 32> blob_ids; // blobs composing this tile
+      // optional geo hints
+      boolean has_centroid_llh;
+      spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
+      boolean has_radius_m;
+      double  radius_m;              // rough extent (m)
+      string schema_version;         // MUST be "spatial.core/1.5"
+    };
+
+    @extensibility(APPENDABLE) struct TilePatch {
+      @key TileKey key;              // which tile
+      uint64 revision;               // monotonic per-tile
+      PatchOp op;                    // ADD/REPLACE/REMOVE
+      string target;                 // submesh/attr/"all"
+      sequence<BlobRef, 8> blobs;    // payload refs
+      string post_checksum;          // checksum after apply
+      Time   stamp;                  // production time
+    };
+
+    @extensibility(APPENDABLE) struct BlobChunk {
+      // Composite key: (blob_id, index) uniquely identifies a chunk instance.
+      @key string blob_id;   // which blob
+      @key uint32 index;     // chunk index (0..N-1)
+      uint32 total_chunks;   // total number of chunks expected for this blob_id
+      uint32 crc32;          // CRC32 checksum over 'data'
+      boolean last;          // true when this is the final chunk for blob_id
+      sequence<uint8, 262144> data; // ≤256 KiB per sample
+    };
+
+    // ---------- Pose Graph (minimal) ----------
+    enum EdgeTypeCore {
+      @value(0) ODOM,
+      @value(1) LOOP
+    };
+
+    // Discriminated union: exactly one covariance payload (or none) is serialized.
+    @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
+      case spatial::common::COV_NONE: uint8 none;
+      case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
+      case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
+    };
+
+    @extensibility(APPENDABLE) struct Node {
+      string map_id;
+      @key string node_id;     // unique keyframe id
+      PoseSE3 pose;            // pose in frame_ref
+      CovMatrix cov;           // covariance payload (COV_NONE when absent)
+      Time    stamp;
+      FrameRef frame_ref;      // e.g., "map"
+      string  source_id;
+      uint64  seq;             // per-source monotonic
+      uint64  graph_epoch;     // for major rebases/merges
+    };
+
+    @extensibility(APPENDABLE) struct Edge {
+      string map_id;
+      @key string edge_id;     // unique edge id
+      string from_id;          // source node
+      string to_id;            // target node
+      EdgeTypeCore type;       // ODOM or LOOP
+      spatial::common::Mat6x6 information; // 6x6 info matrix (row-major)
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+      uint64 graph_epoch;
+    };
+
+    // ---------- Geo anchoring ----------
+    enum GeoFrameKind {
+      @value(0) ECEF,
+      @value(1) ENU,
+      @value(2) NED
+    };
+
+    @extensibility(APPENDABLE) struct GeoPose {
+      double lat_deg;
+      double lon_deg;
+      double alt_m;            // ellipsoidal meters
+      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
+      GeoFrameKind frame_kind; // ECEF/ENU/NED
+      FrameRef frame_ref;      // for ENU/NED: canonical frame reference
+      Time   stamp;
+      // Exactly one covariance payload will be present based on the discriminator.
+      CovMatrix cov;
+    };
+
+    @extensibility(APPENDABLE) struct GeoAnchor {
+      @key string anchor_id;   // e.g., "anchor/4th-and-main"
+      string map_id;
+      FrameRef frame_ref;      // local frame (e.g., "map")
+      GeoPose geopose;         // global pose
+      string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
+      double  confidence;      // 0..1
+      string  checksum;        // integrity/versioning
+    };
+
+    @extensibility(APPENDABLE) struct FrameTransform {
+      @key string transform_id; // e.g., "map->ENU@lat,lon,alt"
+      FrameRef parent_ref;      // global frame (ENU@..., ECEF, ...)
+      FrameRef child_ref;       // local frame ("map")
+      PoseSE3 T_parent_child;   // transform parent->child
+      Time    stamp;
+      CovMatrix cov;             // covariance payload (COV_NONE when absent)
+    };
+
+    // ---------- Snapshot / Catch-up ----------
+    @extensibility(APPENDABLE) struct SnapshotRequest {
+      @key TileKey key;        // which tile
+      uint64 up_to_revision;   // 0 = latest
+    };
+
+    @extensibility(APPENDABLE) struct SnapshotResponse {
+      @key TileKey key;                 // tile key
+      uint64 revision;                  // snapshot revision served
+      sequence<string, 64> blob_ids;    // composing blobs
+      string checksum;                  // composed state checksum
+    };
+
+  }; // module core
+};   // module spatial

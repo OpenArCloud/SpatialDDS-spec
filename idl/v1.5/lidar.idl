@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS LiDAR (sensing.lidar) 1.5 — Extension profile
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial { module sensing { module lidar {
+
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.lidar/1.5";
+
+  // Reuse Core + Sensing Common
+  typedef builtin::Time                      Time;
+  typedef spatial::core::PoseSE3                   PoseSE3;
+  typedef spatial::core::BlobRef                   BlobRef;
+  typedef spatial::common::FrameRef               FrameRef;
+
+  typedef spatial::sensing::common::Codec          Codec;
+  typedef spatial::sensing::common::PayloadKind    PayloadKind; // use BLOB_GEOMETRY for clouds
+  typedef spatial::sensing::common::SampleType     SampleType;  // optional for per-point extras
+  typedef spatial::sensing::common::Axis           Axis;
+  typedef spatial::sensing::common::ROI            ROI;
+  typedef spatial::sensing::common::StreamMeta     StreamMeta;
+  typedef spatial::sensing::common::FrameHeader    FrameHeader;
+  typedef spatial::sensing::common::FrameQuality   FrameQuality;
+  typedef spatial::sensing::common::ROIRequest     ROIRequest;
+  typedef spatial::sensing::common::ROIReply       ROIReply;
+
+  // ROI bounds follow Sensing Common presence flags.
+  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
+
+  // Device + data model
+  enum LidarType {
+    @value(0) SPINNING_2D,
+    @value(1) MULTI_BEAM_3D,
+    @value(2) SOLID_STATE
+  };
+  enum CloudEncoding {
+    @value(0)   PCD,
+    @value(1)   PLY,
+    @value(2)   LAS,
+    @value(3)   LAZ,
+    @value(10)  GLTF_DRACO,
+    @value(20)  MPEG_PCC,
+    @value(255) CUSTOM_BIN
+  };
+  enum PointLayout { // intensity, ring, normal
+    @value(0) XYZ_I,
+    @value(1) XYZ_I_R,
+    @value(2) XYZ_I_R_N
+  };
+
+  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
+  @extensibility(APPENDABLE) struct LidarMeta {
+    @key string stream_id;
+    StreamMeta base;                  // frame_ref, T_bus_sensor, nominal_rate_hz
+    LidarType     type;
+    uint16        n_rings;            // 0 if N/A
+    float         min_range_m; float max_range_m;
+    float         horiz_fov_deg_min; float horiz_fov_deg_max;
+    float         vert_fov_deg_min;  float vert_fov_deg_max;
+
+    // Default payload for frames (clouds ride as blobs)
+    CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
+    Codec         codec;              // ZSTD/LZ4/DRACO/…
+    PointLayout   layout;             // expected fields when decoded
+    string schema_version;            // MUST be "spatial.sensing.lidar/1.5"
+  };
+
+  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
+  @extensibility(APPENDABLE) struct LidarFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader  hdr;                 // t_start/t_end, optional sensor_pose, blobs[]
+    CloudEncoding encoding;           // may override meta
+    Codec         codec;              // may override meta
+    PointLayout   layout;             // may override meta
+
+    // Optional quick hints (for health/telemetry)
+    boolean      has_average_range_m;
+    float        average_range_m;     // valid when has_average_range_m == true
+    boolean      has_percent_valid;
+    float        percent_valid;       // valid when has_percent_valid == true (0..100)
+    boolean      has_quality;
+    FrameQuality quality;             // valid when has_quality == true
+  };
+
+  // Lightweight derivative for immediate fusion/tracking (optional)
+  @extensibility(APPENDABLE) struct LidarDetection {
+    spatial::common::Vec3 xyz_m;
+    float  intensity;
+    uint16 ring;
+    float  quality;                   // 0..1
+  };
+
+  // Detections topic — BEST_EFFORT
+  @extensibility(APPENDABLE) struct LidarDetectionSet {
+    @key string stream_id;
+    uint64 frame_seq;
+    FrameRef frame_ref;               // coordinate frame of xyz_m
+    sequence<LidarDetection, spatial::sensing::common::SZ_SMALL> dets;
+    Time   stamp;
+  };
+
+}; }; };

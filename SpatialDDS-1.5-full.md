@@ -2,9 +2,9 @@
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
-**Version**: 1.4 (Draft)
+**Version**: 1.5 (Draft)
 
-**Date**: 2026-02-07
+**Date**: TBD
 
 **Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
@@ -13,32 +13,32 @@
 ### Part I – Overview
 *Get oriented with the motivation, core building blocks, practical scenarios, and forward-looking roadmap before diving into the normative material.*
 
-1. [Introduction](sections/v1.4/01-introduction.md)
-2. [Conventions (Normative)](sections/v1.4/02-conventions.md)
-3. [IDL Profiles](sections/v1.4/02-idl-profiles.md)
-   3.3.1 [Topic Naming (Normative)](sections/v1.4/02-idl-profiles.md#331-topic-naming-normative)
-   3.3.4 [Coverage Model (Normative)](sections/v1.4/02-idl-profiles.md#334-coverage-model-normative)
-4. [Operational Scenarios](sections/v1.4/04-operational-scenarios.md)
-5. [Conclusion](sections/v1.4/conclusion.md)
-6. [Future Directions](sections/v1.4/future-directions.md)
+1. [Introduction](sections/v1.5/01-introduction.md)
+2. [Conventions (Normative)](sections/v1.5/02-conventions.md)
+3. [IDL Profiles](sections/v1.5/02-idl-profiles.md)
+   3.3.1 [Topic Naming (Normative)](sections/v1.5/02-idl-profiles.md#331-topic-naming-normative)
+   3.3.4 [Coverage Model (Normative)](sections/v1.5/02-idl-profiles.md#334-coverage-model-normative)
+4. [Operational Scenarios](sections/v1.5/04-operational-scenarios.md)
+5. [Conclusion](sections/v1.5/conclusion.md)
+6. [Future Directions](sections/v1.5/future-directions.md)
 
 ### Part II – Reference
 *Specifications, identifiers, supporting glossaries, and appendices that implementers can consult while building SpatialDDS solutions.*
 
-7. [SpatialDDS URIs](sections/v1.4/02a-spatialdds-uris.md)
-8. [Example Manifests](sections/v1.4/03-example-manifests.md)
-9. [Glossary of Acronyms](sections/v1.4/glossary.md)
-10. [References](sections/v1.4/references.md)
+7. [SpatialDDS URIs](sections/v1.5/02a-spatialdds-uris.md)
+8. [Example Manifests](sections/v1.5/03-example-manifests.md)
+9. [Glossary of Acronyms](sections/v1.5/glossary.md)
+10. [References](sections/v1.5/references.md)
 11. Appendices
-    - [Appendix A: Core Profile](sections/v1.4/appendix-a.md)
-    - [Appendix B: Discovery Profile](sections/v1.4/appendix-b.md)
-    - [Appendix C: Anchor Registry Profile](sections/v1.4/appendix-c.md)
-    - [Appendix D: Extension Profiles](sections/v1.4/appendix-d.md)
-    - [Appendix E: Provisional Extension Examples](sections/v1.4/appendix-e.md)
-    - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.4/appendix-f.md)
-    - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.4/appendix-fx-discovery-query-expression.md)
-    - [Appendix G: Frame Identifiers (Normative)](sections/v1.4/appendix-g-frame-identifiers.md)
-    - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.4/appendix-h-operational-scenarios.md)
+    - [Appendix A: Core Profile](sections/v1.5/appendix-a.md)
+    - [Appendix B: Discovery Profile](sections/v1.5/appendix-b.md)
+    - [Appendix C: Anchor Registry Profile](sections/v1.5/appendix-c.md)
+    - [Appendix D: Extension Profiles](sections/v1.5/appendix-d.md)
+    - [Appendix E: Provisional Extension Examples](sections/v1.5/appendix-e.md)
+    - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.5/appendix-f.md)
+    - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.5/appendix-fx-discovery-query-expression.md)
+    - [Appendix G: Frame Identifiers (Normative)](sections/v1.5/appendix-g-frame-identifiers.md)
+    - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.5/appendix-h-operational-scenarios.md)
 
 ## **1\. Introduction**
 
@@ -147,7 +147,7 @@ This loop repeats as participants encounter new SpatialDDS URIs—keeping discov
 SpatialDDS URIs give every anchor, service, and content bundle a stable handle that can be shared across devices and transports while still resolving to rich manifest metadata. They are the glue between lightweight on-bus messages and descriptive out-of-band manifests, ensuring that discovery pointers stay durable even as infrastructure moves. Section 6 (SpatialDDS URIs) defines the precise syntax, allowed types, and resolver requirements for these identifiers.
 
 // SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
+// SpatialDDS Specification 1.5 (© Open AR Cloud Initiative)
 
 ## **2. Conventions (Normative)**
 
@@ -260,7 +260,7 @@ SpatialDDS deployments that require authentication, authorization, integrity, or
 This specification does not redefine DDS Security. Implementations should use vendor-compatible DDS Security configuration mechanisms.
 
 // SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
+// SpatialDDS Specification 1.5 (© Open AR Cloud Initiative)
 
 ## **3\. IDL Profiles**
 
@@ -275,9 +275,9 @@ SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-Identifier conventions: Profile tokens use `name@MAJOR.MINOR` (e.g., `core@1.4`). Module identifiers use `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.4`). These are canonically related: `core@1.4 ⇔ spatial.core/1.4`.
+Identifier conventions: Profile tokens use `name@MAJOR.MINOR` (e.g., `core@1.5`). Module identifiers use `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.5`). These are canonically related: `core@1.5 ⇔ spatial.core/1.5`.
 
-Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.4 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.5 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **3.2 Core SpatialDDS**
 
@@ -315,7 +315,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 @extensibility(APPENDABLE) struct CoverageQuery {
   // minimal illustrative fields
-  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.4\""
+  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.5\""
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
@@ -350,7 +350,7 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 
 **Query + Response**
 ```json
-{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.4\"", "reply_topic": "spatialdds/sys/queries/q1" }
+{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.5\"", "reply_topic": "spatialdds/sys/queries/q1" }
 ```
 ```json
 { "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
@@ -564,20 +564,20 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
-#### **Profile Matrix (SpatialDDS 1.4)**
+#### **Profile Matrix (SpatialDDS 1.5)**
 
-- spatial.core/1.4
-- spatial.discovery/1.4
-- spatial.anchors/1.4
-- spatial.manifest/1.4 (manifest schema profile for SpatialDDS 1.4)
-- spatial.argeo/1.4
-- spatial.sensing.common/1.4
-- spatial.sensing.rad/1.4
-- spatial.sensing.lidar/1.4
-- spatial.sensing.vision/1.4
-- spatial.slam_frontend/1.4
-- spatial.vio/1.4
-- spatial.semantics/1.4
+- spatial.core/1.5
+- spatial.discovery/1.5
+- spatial.anchors/1.5
+- spatial.manifest/1.5 (manifest schema profile for SpatialDDS 1.5)
+- spatial.argeo/1.5
+- spatial.sensing.common/1.5
+- spatial.sensing.rad/1.5
+- spatial.sensing.lidar/1.5
+- spatial.sensing.vision/1.5
+- spatial.slam_frontend/1.5
+- spatial.vio/1.5
+- spatial.semantics/1.5
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
@@ -731,7 +731,7 @@ Clients **MUST** treat any non-200 response as resolution failure.
 
 The manifest schema is versioned as `spatial.manifest@MAJOR.MINOR`, consistent with IDL profile scheme.
 
-The manifest schema is defined as the `spatial.manifest` profile. It uses the same `name@MAJOR.MINOR` convention as IDL profiles, and `spatial.manifest@1.4` is the canonical identifier for this specification.
+The manifest schema is defined as the `spatial.manifest` profile. It uses the same `name@MAJOR.MINOR` convention as IDL profiles, and `spatial.manifest@1.5` is the canonical identifier for this specification.
 
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents discoverable via the same bus or HTTP endpoints.
 
@@ -739,7 +739,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 | Field | Purpose |
 |-------|----------|
 | `id` | Unique manifest identifier (UUID or URI) |
-| `profile` | Manifest schema name and version (e.g., `spatial.manifest@1.4`) |
+| `profile` | Manifest schema name and version (e.g., `spatial.manifest@1.5`) |
 | `caps` | Supported profiles, features, and capabilities |
 | `coverage` | Spatial or temporal extent of data |
 | `assets` | Referenced content (tiles, descriptors, etc.) |
@@ -748,7 +748,7 @@ Manifests describe what a SpatialDDS node or dataset provides: **capabilities**,
 ```json
 {
   "id": "manifest-001",
-  "profile": "spatial.manifest@1.4",
+  "profile": "spatial.manifest@1.5",
   "caps": {
     "supported_profiles": [
       { "name": "core", "major": 1, "min_minor": 0, "max_minor": 3 }
@@ -880,7 +880,7 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Common Type Aliases 1.4
+// SpatialDDS Common Type Aliases 1.5
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
@@ -963,7 +963,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.4
+// SpatialDDS Core 1.5
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
@@ -976,7 +976,7 @@ module spatial {
   module core {
 
     // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.4";
+    const string MODULE_ID = "spatial.core/1.5";
 
     // ---------- Utility ----------
     // Expose builtin Time under spatial::core
@@ -1030,7 +1030,7 @@ module spatial {
       spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.4"
+      string schema_version;         // MUST be "spatial.core/1.5"
     };
 
     @extensibility(APPENDABLE) struct TilePatch {
@@ -1162,7 +1162,7 @@ See **Appendix F.X (Discovery Query Expression)** for the normative grammar used
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.4
+// SpatialDDS Discovery 1.5
 // Lightweight announces for services, coverage, and content
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -1178,7 +1178,7 @@ module spatial {
     typedef spatial::common::MetaKV  MetaKV;
     typedef spatial::common::AssetRef AssetRef;
 
-    const string MODULE_ID = "spatial.discovery/1.4";
+    const string MODULE_ID = "spatial.discovery/1.5";
 
     typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
@@ -1206,7 +1206,7 @@ module spatial {
     // --- Capabilities advertised in-band on the discovery bus ---
     @extensibility(APPENDABLE) struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
-      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.4"]
+      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.5"]
       sequence<FeatureFlag, 64>    features;           // optional feature flags
     };
 
@@ -1319,7 +1319,7 @@ module spatial {
       boolean has_coverage_eval_time;
       Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
       // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
-      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.4\""
+      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
       string expr;
       // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;
@@ -1364,7 +1364,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Anchors 1.4
+// SpatialDDS Anchors 1.5
 // Bundles and updates for anchor registries
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -1374,7 +1374,7 @@ module spatial {
 
 module spatial {
   module anchors {
-    const string MODULE_ID = "spatial.anchors/1.4";
+    const string MODULE_ID = "spatial.anchors/1.5";
 
     typedef builtin::Time Time;
     typedef spatial::core::GeoPose GeoPose;
@@ -1446,7 +1446,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing Common 1.4 (Extension module)
+// SpatialDDS Sensing Common 1.5 (Extension module)
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -1455,7 +1455,7 @@ module spatial {
 
 module spatial { module sensing { module common {
 
-  const string MODULE_ID = "spatial.sensing.common/1.4";
+  const string MODULE_ID = "spatial.sensing.common/1.5";
 
   // --- Standard sizing tiers ---
   // Use these to bound sequences for detections and other per-frame arrays.
@@ -1566,7 +1566,7 @@ module spatial { module sensing { module common {
     FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
-    string   schema_version;      // MUST be "spatial.sensing.common/1.4"
+    string   schema_version;      // MUST be "spatial.sensing.common/1.5"
   };
 
   // ---- Frame index header shared by sensors (small, on-bus) ----
@@ -1654,7 +1654,7 @@ enum AxisEncoding { AXIS_CENTERS = 0, AXIS_LINSPACE = 1 };
 
 ## IDL Tooling Notes (Non-Consecutive Enums)
 
-Several enumerations in the SpatialDDS 1.4 profiles use **intentionally
+Several enumerations in the SpatialDDS 1.5 profiles use **intentionally
 sparse or non-consecutive numeric values**. These enums are designed for
 forward extensibility (e.g., reserving ranges for future codecs, layouts, or
 pixel formats). Because of this, certain DDS toolchains (including Cyclone
@@ -1683,7 +1683,7 @@ ignored.
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS VIO/Inertial 1.4
+// SpatialDDS VIO/Inertial 1.5
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -1693,7 +1693,7 @@ ignored.
 module spatial {
   module vio {
 
-    const string MODULE_ID = "spatial.vio/1.4";
+    const string MODULE_ID = "spatial.vio/1.5";
 
     typedef builtin::Time Time;
     typedef spatial::common::FrameRef FrameRef;
@@ -1797,7 +1797,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Vision (sensing.vision) 1.4 — Extension profile
+// SpatialDDS Vision (sensing.vision) 1.5 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -1811,7 +1811,7 @@ module spatial {
 module spatial { module sensing { module vision {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.vision/1.4";
+  const string MODULE_ID = "spatial.sensing.vision/1.5";
 
   // Reuse Core + Sensing Common
   typedef builtin::Time                      Time;
@@ -1892,7 +1892,7 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
-    string schema_version;              // MUST be "spatial.sensing.vision/1.4"
+    string schema_version;              // MUST be "spatial.sensing.vision/1.5"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -1941,7 +1941,7 @@ module spatial { module sensing { module vision {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS SLAM Frontend 1.4
+// SpatialDDS SLAM Frontend 1.5
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -1951,7 +1951,7 @@ module spatial { module sensing { module vision {
 module spatial {
   module slam_frontend {
 
-    const string MODULE_ID = "spatial.slam_frontend/1.4";
+    const string MODULE_ID = "spatial.slam_frontend/1.5";
 
     // Reuse core: Time, etc.
     typedef builtin::Time Time;
@@ -2050,7 +2050,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.4
+// SpatialDDS Semantics 1.5
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2064,7 +2064,7 @@ module spatial {
 module spatial {
   module semantics {
 
-    const string MODULE_ID = "spatial.semantics/1.4";
+    const string MODULE_ID = "spatial.semantics/1.5";
 
     typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
@@ -2142,7 +2142,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar (RAD) 1.4 — Extension profile
+// SpatialDDS Radar (RAD) 1.5 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2156,7 +2156,7 @@ module spatial {
 module spatial { module sensing { module rad {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rad/1.4";
+  const string MODULE_ID = "spatial.sensing.rad/1.5";
 
   // Reuse Core + Sensing Common types
   typedef builtin::Time                      Time;
@@ -2193,7 +2193,7 @@ module spatial { module sensing { module rad {
     sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
     SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
     string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
-    string schema_version;                 // MUST be "spatial.sensing.rad/1.4"
+    string schema_version;                 // MUST be "spatial.sensing.rad/1.5"
 
     // Default payload settings for frames
     PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
@@ -2247,7 +2247,7 @@ module spatial { module sensing { module rad {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS LiDAR (sensing.lidar) 1.4 — Extension profile
+// SpatialDDS LiDAR (sensing.lidar) 1.5 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2261,7 +2261,7 @@ module spatial { module sensing { module rad {
 module spatial { module sensing { module lidar {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.lidar/1.4";
+  const string MODULE_ID = "spatial.sensing.lidar/1.5";
 
   // Reuse Core + Sensing Common
   typedef builtin::Time                      Time;
@@ -2318,7 +2318,7 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…
     PointLayout   layout;             // expected fields when decoded
-    string schema_version;            // MUST be "spatial.sensing.lidar/1.4"
+    string schema_version;            // MUST be "spatial.sensing.lidar/1.5"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -2367,7 +2367,7 @@ module spatial { module sensing { module lidar {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.4
+// SpatialDDS AR+Geo 1.5
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2377,7 +2377,7 @@ module spatial { module sensing { module lidar {
 module spatial {
   module argeo {
 
-    const string MODULE_ID = "spatial.argeo/1.4";
+    const string MODULE_ID = "spatial.argeo/1.5";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -2599,7 +2599,7 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "topic": "pg.node",
       "map_id": "map/facility-west",
       "node_id": "kf_0120",
-      "pose": { "t": [0.12, 0.04, 1.43], "q": [0.99, 0.01, -0.02, 0.03] },
+      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.99, 0.01, -0.02, 0.03] },
       "frame_ref": {
         "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
         "fqn": "facility-west/map"
