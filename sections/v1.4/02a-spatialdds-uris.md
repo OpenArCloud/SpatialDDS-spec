@@ -19,7 +19,7 @@ Formal syntax is given in Appendix F.
 
 ### 7.3 Working with SpatialDDS URIs
 
-Once a URI is known, clients resolve it according to the **SpatialURI Resolution rules** (§7.5). The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
+Once a URI is known, clients resolve it according to the **SpatialURI Resolution rules** (§7.5), including the HTTPS/TLS binding (§7.5.5). The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
 
 ### 7.4 Examples
 
@@ -108,3 +108,9 @@ Clients **MUST** treat any non-200 response as resolution failure.
 - HTTPS resolution **MUST** use TLS.
 - Authentication **MAY** be required when advertised.
 - Clients **MAY** enforce local trust policies.
+
+#### 7.5.5 HTTPS/TLS Binding for URI Resolution (Normative)
+
+1. If a `spatialdds://` URI is resolved using HTTP(S), the client **MUST** use **HTTPS** and **MUST** validate the server’s TLS identity (WebPKI or pinned keys by deployment policy).
+2. If OAuth2 is used, clients **SHOULD** present bearer tokens using the standard `Authorization: Bearer <token>` header.
+3. Implementations **MAY** use a local cache for resolution, but cached artifacts **MUST** be bound to an authenticated origin (e.g., obtained over HTTPS/TLS or validated signature) and **MUST** respect TTL/expiration.

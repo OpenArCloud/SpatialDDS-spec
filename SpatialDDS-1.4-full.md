@@ -135,7 +135,7 @@ SpatialDDS URI ──▶ Manifest Resolver ──▶ Discovery Topic ──▶ D
    (§7)             (§8)                (§3.3)                   (§3)                   (§5 & Appendix C)
 ```
 
-1. **URI → Manifest lookup** – Durable SpatialDDS URIs point to JSON manifests that describe services, anchor sets, or content. Clients resolve the URI according to the SpatialURI Resolution rules (§7.5) to fetch capabilities, QoS hints, and connection parameters.
+1. **URI → Manifest lookup** – Durable SpatialDDS URIs point to JSON manifests that describe services, anchor sets, or content. Clients resolve the URI via HTTPS/TLS or a validated local cache per the SpatialURI Resolution rules (§7.5.5) to fetch capabilities, QoS hints, and connection parameters.
 2. **Discovery → selecting a service** – Guided by the manifest and Discovery profile messages, participants determine which SpatialDDS services are available in their vicinity, their coverage areas, and how to engage them.
 3. **Transport → messages on stream or DDS** – With a target service selected, the client joins the appropriate DDS domain/partition or auxiliary transport identified in the manifest and begins exchanging typed IDL messages for pose graphs, geometry, or perception streams.
 4. **State updates / anchor resolution** – As data flows, participants publish and subscribe to state changes. Anchor registries and anchor delta messages keep spatial references aligned so downstream applications can resolve world-locked content with shared context.
@@ -215,6 +215,49 @@ These rules apply to any message that carries the trio `{ stamp, source_id, seq 
 - Compound identity SHALL be declared with multiple `@key` annotations.
 - Field initialization remains a runtime concern and SHALL NOT be encoded in IDL.
 - Abridged snippets within the main body are informative; the appendices contain the authoritative IDLs listed above.
+
+### **2.7 Security Model (Normative)**
+
+#### **2.7.1 Threat model (informative background)**
+SpatialDDS deployments may involve untrusted or partially trusted networks and intermediaries. Threats include:
+- **Spoofing:** malicious participants advertising fake services or content.
+- **Tampering:** modification of messages, manifests, or blob payloads in transit.
+- **Replay:** re-sending previously valid messages (e.g., ANNOUNCE, responses) outside their intended validity window.
+- **Unauthorized access:** clients subscribing to sensitive streams or publishing unauthorized updates.
+- **Privacy leakage:** exposure of user location, sensor frames, or inferred trajectories.
+
+#### **2.7.2 Trust boundaries**
+SpatialDDS distinguishes among:
+- **Local transport fabric** (e.g., DDS domain): participants may be on a shared L2/L3 network, but not necessarily trusted.
+- **Resolution channels** (e.g., HTTPS retrieval or local cache): used to fetch manifests and referenced resources.
+- **Device/app policy:** the client’s local trust store and decision logic.
+
+#### **2.7.3 Normative requirements**
+1. **Service authenticity.** A client **MUST** authenticate the authority of a `spatialdds://` URI (or the service/entity that advertises it) before trusting any security-sensitive content derived from it (e.g., localization results, transforms, anchors, content attachments).
+2. **Integrity.** When security is enabled by deployment policy or indicated via `auth_hint`, clients **MUST** reject data that fails integrity verification.
+3. **Authorization.** When security is enabled, services **MUST** enforce authorization for publish/subscribe operations that expose or modify sensitive spatial state (e.g., anchors, transforms, localization results, raw sensor frames).
+4. **Confidentiality.** Services **SHOULD** protect confidentiality for user-associated location/sensor payloads when transmitted beyond a physically trusted local network.
+5. **Discovery trust.** Clients **MUST NOT** treat Discovery/ANNOUNCE messages as sufficient proof of service authenticity on their own. ANNOUNCE may be used for bootstrapping **only** when accompanied by one of:
+   - (a) transport-level security that authenticates the publisher (e.g., DDS Security), or
+   - (b) authenticated retrieval and verification of an authority-controlled artifact (e.g., a manifest fetched over HTTPS/TLS, or a signed manifest) that binds the service identity to the advertised topics/URIs.
+
+#### **2.7.4 Validity and replay considerations**
+Implementations **SHOULD** enforce TTL and timestamps to mitigate replay. Where TTL exists (e.g., in Discovery messages), recipients **SHOULD** discard messages outside the declared validity interval.
+
+#### **2.7.5 DDS Security Binding (Normative)**
+SpatialDDS deployments that require authentication, authorization, integrity, or confidentiality over DDS **MUST** use **OMG DDS Security**.
+
+**Minimum conformance profile:**
+- **Authentication:** PKI-based authentication as defined by DDS Security.
+- **Access control:** governance and permissions documents configured per DDS Security.
+- **Cryptographic protection:** when confidentiality or integrity is required by policy, endpoints **MUST** enable DDS Security cryptographic plugins to provide message protection.
+
+**Operational mapping (non-exhaustive):**
+- Participants join a DDS **Domain**; security configuration applies to DomainParticipants and topics as governed by DDS Security governance rules.
+- Discovery/ANNOUNCE messages that convey service identifiers, manifest URIs, or access hints **SHOULD** be protected when operating on untrusted networks.
+
+**Interoperability note (informative):**
+This specification does not redefine DDS Security. Implementations should use vendor-compatible DDS Security configuration mechanisms.
 
 // SPDX-License-Identifier: MIT
 // SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
@@ -322,9 +365,39 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
+#### **Discovery trust (Normative)**
+ANNOUNCE messages provide discovery convenience and are not, by themselves, authoritative. Clients **MUST** apply the Security Model requirements in §2.7 before trusting advertised URIs, topics, or services.
+
 #### Asset references
 
 Discovery announcements and manifests share a single `AssetRef` structure composed of URI, media type, integrity hash, and optional `MetaKV` metadata bags. AssetRef and MetaKV are normative types for asset referencing in the Discovery profile.
+
+#### **`auth_hint` (Normative)**
+`auth_hint` provides a machine-readable hint describing how clients can authenticate and authorize access to the service or resolve associated resources. `auth_hint` does **not** replace deployment policy; clients may enforce stricter requirements than indicated.
+
+- If `auth_hint` is **empty** or omitted, it means “no authentication hint provided.” Clients **MUST** fall back to deployment policy (e.g., DDS Security configuration, trusted network assumptions, or authenticated manifest retrieval).
+- If `auth_hint` is **present**, it **MUST** be interpreted as one or more **auth URIs** encoded as a comma-separated list.
+
+**Grammar (normative):**  
+`auth_hint := auth-uri ("," auth-uri)*`  
+`auth-uri := scheme ":" scheme-specific`
+
+**Required schemes (minimum set):**
+- `ddssec:` indicates that the DDS transport uses **OMG DDS Security** (governance/permissions) for authentication and access control.
+  - Example: `ddssec:profile=default`
+  - Example: `ddssec:governance=spatialdds://auth.example/…/governance.xml;permissions=spatialdds://auth.example/…/permissions.xml`
+- `oauth2:` indicates OAuth2-based access for HTTP(S) resolution or service APIs.
+  - Example: `oauth2:issuer=https://auth.example.com;aud=spatialdds;scope=vps.localize`
+- `mtls:` indicates mutual TLS for HTTP(S) resolution endpoints.
+  - Example: `mtls:https://resolver.example.com`
+
+**Client behavior (normative):**
+- A client **MUST** treat `auth_hint` as advisory configuration and **MUST** still validate the authenticity of the service/authority via a trusted mechanism (DDS Security identity or authenticated artifact retrieval).
+- If the client does not support any scheme listed in `auth_hint`, it **MUST** fail gracefully and report “unsupported authentication scheme.”
+
+**Examples (informative):**
+- `auth_hint="ddssec:profile=city-austin"`
+- `auth_hint="ddssec:governance=spatialdds://city.example/…/gov.xml,oauth2:issuer=https://auth.city.example;aud=spatialdds;scope=catalog.read"`
 
 #### What fields mean (quick reference)
 | Field | Use |
@@ -558,7 +631,7 @@ Formal syntax is given in Appendix F.
 
 ### 7.3 Working with SpatialDDS URIs
 
-Once a URI is known, clients resolve it according to the **SpatialURI Resolution rules** (§7.5). The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
+Once a URI is known, clients resolve it according to the **SpatialURI Resolution rules** (§7.5), including the HTTPS/TLS binding (§7.5.5). The manifest reveals everything the client needs to act: anchor poses, dependency graphs for experiences, or how to reach a service. Because URIs remain lightweight, they are easy to pass around in tickets, QR codes, or discovery topics while deferring the heavier data fetch until runtime.
 
 ### 7.4 Examples
 
@@ -647,6 +720,12 @@ Clients **MUST** treat any non-200 response as resolution failure.
 - HTTPS resolution **MUST** use TLS.
 - Authentication **MAY** be required when advertised.
 - Clients **MAY** enforce local trust policies.
+
+#### 7.5.5 HTTPS/TLS Binding for URI Resolution (Normative)
+
+1. If a `spatialdds://` URI is resolved using HTTP(S), the client **MUST** use **HTTPS** and **MUST** validate the server’s TLS identity (WebPKI or pinned keys by deployment policy).
+2. If OAuth2 is used, clients **SHOULD** present bearer tokens using the standard `Authorization: Bearer <token>` header.
+3. Implementations **MAY** use a local cache for resolution, but cached artifacts **MUST** be bound to an authenticated origin (e.g., obtained over HTTPS/TLS or validated signature) and **MUST** respect TTL/expiration.
 
 ## 8. Example Manifests
 

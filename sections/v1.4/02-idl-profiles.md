@@ -104,9 +104,39 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 * `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
+#### **Discovery trust (Normative)**
+ANNOUNCE messages provide discovery convenience and are not, by themselves, authoritative. Clients **MUST** apply the Security Model requirements in §2.7 before trusting advertised URIs, topics, or services.
+
 #### Asset references
 
 Discovery announcements and manifests share a single `AssetRef` structure composed of URI, media type, integrity hash, and optional `MetaKV` metadata bags. AssetRef and MetaKV are normative types for asset referencing in the Discovery profile.
+
+#### **`auth_hint` (Normative)**
+`auth_hint` provides a machine-readable hint describing how clients can authenticate and authorize access to the service or resolve associated resources. `auth_hint` does **not** replace deployment policy; clients may enforce stricter requirements than indicated.
+
+- If `auth_hint` is **empty** or omitted, it means “no authentication hint provided.” Clients **MUST** fall back to deployment policy (e.g., DDS Security configuration, trusted network assumptions, or authenticated manifest retrieval).
+- If `auth_hint` is **present**, it **MUST** be interpreted as one or more **auth URIs** encoded as a comma-separated list.
+
+**Grammar (normative):**  
+`auth_hint := auth-uri ("," auth-uri)*`  
+`auth-uri := scheme ":" scheme-specific`
+
+**Required schemes (minimum set):**
+- `ddssec:` indicates that the DDS transport uses **OMG DDS Security** (governance/permissions) for authentication and access control.
+  - Example: `ddssec:profile=default`
+  - Example: `ddssec:governance=spatialdds://auth.example/…/governance.xml;permissions=spatialdds://auth.example/…/permissions.xml`
+- `oauth2:` indicates OAuth2-based access for HTTP(S) resolution or service APIs.
+  - Example: `oauth2:issuer=https://auth.example.com;aud=spatialdds;scope=vps.localize`
+- `mtls:` indicates mutual TLS for HTTP(S) resolution endpoints.
+  - Example: `mtls:https://resolver.example.com`
+
+**Client behavior (normative):**
+- A client **MUST** treat `auth_hint` as advisory configuration and **MUST** still validate the authenticity of the service/authority via a trusted mechanism (DDS Security identity or authenticated artifact retrieval).
+- If the client does not support any scheme listed in `auth_hint`, it **MUST** fail gracefully and report “unsupported authentication scheme.”
+
+**Examples (informative):**
+- `auth_hint="ddssec:profile=city-austin"`
+- `auth_hint="ddssec:governance=spatialdds://city.example/…/gov.xml,oauth2:issuer=https://auth.city.example;aud=spatialdds;scope=catalog.read"`
 
 #### What fields mean (quick reference)
 | Field | Use |

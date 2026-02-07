@@ -93,7 +93,7 @@ SpatialDDS URI ──▶ Manifest Resolver ──▶ Discovery Topic ──▶ D
    (§7)             (§8)                (§3.3)                   (§3)                   (§5 & Appendix C)
 ```
 
-1. **URI → Manifest lookup** – Durable SpatialDDS URIs point to JSON manifests that describe services, anchor sets, or content. Clients resolve the URI according to the SpatialURI Resolution rules (§7.5) to fetch capabilities, QoS hints, and connection parameters.
+1. **URI → Manifest lookup** – Durable SpatialDDS URIs point to JSON manifests that describe services, anchor sets, or content. Clients resolve the URI via HTTPS/TLS or a validated local cache per the SpatialURI Resolution rules (§7.5.5) to fetch capabilities, QoS hints, and connection parameters.
 2. **Discovery → selecting a service** – Guided by the manifest and Discovery profile messages, participants determine which SpatialDDS services are available in their vicinity, their coverage areas, and how to engage them.
 3. **Transport → messages on stream or DDS** – With a target service selected, the client joins the appropriate DDS domain/partition or auxiliary transport identified in the manifest and begins exchanging typed IDL messages for pose graphs, geometry, or perception streams.
 4. **State updates / anchor resolution** – As data flows, participants publish and subscribe to state changes. Anchor registries and anchor delta messages keep spatial references aligned so downstream applications can resolve world-locked content with shared context.
