@@ -148,6 +148,12 @@ module spatial {
       uint32 ttl_sec;
     };
 
+    @extensibility(APPENDABLE) struct CoverageFilter {
+      sequence<string,16> type_in;        // match any of these topic types
+      sequence<string,16> qos_profile_in; // match any of these QoS profiles
+      sequence<string,16> module_id_in;   // match any of these module IDs
+    };
+
     @extensibility(APPENDABLE) struct CoverageQuery {
       // Correlates responses to a specific query instance.
       @key string query_id;
@@ -155,7 +161,11 @@ module spatial {
       FrameRef coverage_frame_ref;
       boolean has_coverage_eval_time;
       Time    coverage_eval_time;       // evaluate transforms at this instant when interpreting coverage_frame_ref
-      // Optional search expression per Appendix F.X (Discovery Query Expression ABNF).
+      // Structured filter (preferred in 1.5).
+      boolean has_filter;
+      CoverageFilter filter;
+      // Deprecated in 1.5: freeform expression per Appendix F.X.
+      // Responders MUST ignore expr if has_filter == true.
       // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
       string expr;
       // Discovery responders publish CoverageResponse samples to this topic.
@@ -187,6 +197,11 @@ module spatial {
       string query_id;                    // Mirrors CoverageQuery.query_id for correlation.
       sequence<Announce,256> results;     // Result page (caps + typed topics)
       string next_page_token;             // Empty when no further pages remain.
+    };
+
+    @extensibility(APPENDABLE) struct Depart {
+      @key string service_id;
+      Time stamp;
     };
 
   }; // module disco

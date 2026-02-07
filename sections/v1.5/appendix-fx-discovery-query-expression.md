@@ -1,6 +1,6 @@
-## **Appendix F.X Discovery Query Expression (Normative)**
+## **Appendix F.X Discovery Query Expression (Informative)**
 
-This appendix defines the boolean filter grammar used by `disco.CoverageQuery.expr`. The language is case-sensitive,
+This appendix defines the boolean filter grammar used by the deprecated `disco.CoverageQuery.expr`. The language is case-sensitive,
 UTF-8, and whitespace-tolerant. Identifiers target announced metadata fields (for example `type`, `profile`,
 `module_id`); string literals are double-quoted and use a C-style escape subset.
 

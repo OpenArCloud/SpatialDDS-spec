@@ -38,6 +38,126 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 2. **Query** — clients publish simple filters (by profile version, type, QoS) to narrow results.
 3. **Select** — clients subscribe to chosen topics; negotiation picks the highest compatible minor per profile.
 
+#### **3.3.0 Discovery Layers & Bootstrap (Normative)**
+
+SpatialDDS distinguishes two discovery layers:
+
+- **Layer 1 — Network Bootstrap:** how a device discovers that a SpatialDDS DDS domain exists and obtains connection parameters. This is transport and access-network dependent.
+- **Layer 2 — On-Bus Discovery:** how a device, once connected to a DDS domain, discovers services, coverage, and streams. This is what the Discovery profile defines.
+
+Layer 1 mechanisms deliver a **Bootstrap Manifest** that provides the parameters needed to transition to Layer 2.
+
+##### **Bootstrap Manifest (Normative)**
+
+A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
+
+```json
+{
+  "spatialdds_bootstrap": "1.5",
+  "domain_id": 42,
+  "initial_peers": [
+    "udpv4://192.168.1.100:7400",
+    "udpv4://10.0.0.50:7400"
+  ],
+  "partitions": ["venue/museum-west"],
+  "discovery_topic": "spatialdds/discovery/announce/v1",
+  "manifest_uri": "spatialdds://museum.example.org/west/service/discovery",
+  "auth": {
+    "method": "none"
+  }
+}
+```
+
+**Field definitions**
+
+| Field | Required | Description |
+|---|---|---|
+| `spatialdds_bootstrap` | REQUIRED | Bootstrap schema version (e.g., "1.5") |
+| `domain_id` | REQUIRED | DDS domain ID to join |
+| `initial_peers` | REQUIRED | One or more DDS peer locators for initial discovery |
+| `partitions` | OPTIONAL | DDS partition(s) to join. Empty or absent means default partition. |
+| `discovery_topic` | OPTIONAL | Override for the well-known announce topic. Defaults to `spatialdds/discovery/announce/v1`. |
+| `manifest_uri` | OPTIONAL | A `spatialdds://` URI for the deployment's root manifest. |
+| `auth` | OPTIONAL | Authentication hint. `method` is one of `"none"`, `"dds-security"`, `"token"`. |
+
+**Normative rules**
+
+- `domain_id` MUST be a valid DDS domain ID (0–232).
+- `initial_peers` MUST contain at least one locator. Locator format follows the DDS implementation's peer descriptor syntax.
+- Consumers SHOULD attempt all listed peers and use the first that responds.
+- The bootstrap manifest is a discovery aid, not a security boundary. Deployments requiring authentication MUST use DDS Security or an equivalent transport-level mechanism.
+
+##### **Well-Known HTTPS Path (Normative)**
+
+Clients MAY fetch the bootstrap manifest from:
+
+```
+https://{authority}/.well-known/spatialdds
+```
+
+The response MUST be `application/json` using the bootstrap manifest schema. Servers SHOULD set `Cache-Control` headers appropriate to their deployment (e.g., `max-age=300`).
+
+##### **DNS-SD Binding (Normative)**
+
+DNS-SD is the recommended first binding for local bootstrap.
+
+**Service type:** `_spatialdds._udp`
+
+**TXT record keys**
+
+| Key | Maps to | Example |
+|---|---|---|
+| `ver` | `spatialdds_bootstrap` | `1.5` |
+| `did` | `domain_id` | `42` |
+| `part` | `partitions` (comma-separated) | `venue/museum-west` |
+| `muri` | `manifest_uri` | `spatialdds://museum.example.org/west/service/discovery` |
+
+**Resolution flow**
+
+1. Device queries for `_spatialdds._udp.local` (mDNS) or `_spatialdds._udp.<domain>` (wide-area DNS-SD).
+2. SRV record provides host and port for the initial DDS peer.
+3. TXT record provides domain ID, partitions, and optional manifest URI.
+4. Device constructs a bootstrap manifest from the SRV + TXT data and joins the DDS domain.
+5. On-bus Discovery (Layer 2) takes over.
+
+**Normative rules**
+
+- `did` is REQUIRED in the TXT record.
+- The SRV target and port MUST resolve to a reachable DDS peer locator.
+- If `muri` is present, clients SHOULD resolve it after joining the domain to obtain full deployment metadata.
+
+##### **Other Bootstrap Mechanisms (Informative)**
+
+- **DHCP:** vendor-specific option carrying a URL to the bootstrap manifest.
+- **QR / NFC / BLE beacons:** encode a `spatialdds://` URI or direct URL to the bootstrap manifest.
+- **Mobile / MEC:** edge discovery APIs provide a URL to the bootstrap manifest.
+
+##### **Complete Bootstrap Chain (Informative)**
+
+```
+Access Network           Bootstrap              DDS Domain            On-Bus Discovery
+     │                      │                       │                       │
+     │  WiFi/5G/BLE/QR      │                       │                       │
+     ├─────────────────────► │                       │                       │
+     │                       │  DNS-SD / HTTPS /     │                       │
+     │                       │  .well-known lookup   │                       │
+     │                       ├─────────────────────► │                       │
+     │                       │  Bootstrap Manifest   │                       │
+     │                       │  (domain_id, peers,   │                       │
+     │                       │   partitions)         │                       │
+     │                       │ ◄─────────────────────┤                       │
+     │                       │                       │  Join DDS domain      │
+     │                       │                       ├─────────────────────► │
+     │                       │                       │  Subscribe to         │
+     │                       │                       │  .../announce/v1      │
+     │                       │                       │  Receive Announce     │
+     │                       │                       │  messages             │
+     │                       │                       │  Issue CoverageQuery  │
+     │                       │                       │  Select streams       │
+     │                       │                       │  Begin operation      │
+```
+
+
 #### Key messages (abridged IDL)
 *(Abridged IDL — see Appendix B for full definitions.)*
 ```idl
@@ -52,14 +172,22 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
   sequence<TopicMeta,128> topics;     // typed topics offered by this node
 }
 
-@extensibility(APPENDABLE) struct CoverageQuery {
-  // minimal illustrative fields
-  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.5\""
-  string reply_topic; // topic to receive results
-  string query_id;    // correlate request/response
+@extensibility(APPENDABLE) struct CoverageFilter {
+  sequence<string,16> type_in;
+  sequence<string,16> qos_profile_in;
+  sequence<string,16> module_id_in;
 }
 
-The expression syntax is defined formally in the CoverageQuery ABNF grammar (see Appendix F.X).
+@extensibility(APPENDABLE) struct CoverageQuery {
+  // minimal illustrative fields
+  boolean has_filter;
+  CoverageFilter filter; // preferred in 1.5
+  string expr;           // deprecated in 1.5; Appendix F.X grammar
+  string reply_topic;    // topic to receive results
+  string query_id;       // correlate request/response
+}
+
+The expression syntax is retained for legacy deployments and defined in Appendix F.X; `expr` is deprecated in 1.5 in favor of `filter`.
 
 @extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
@@ -89,7 +217,19 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 
 **Query + Response**
 ```json
-{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.5\"", "reply_topic": "spatialdds/sys/queries/q1" }
+{
+  "query_id": "q1",
+  "has_filter": true,
+  "filter": {
+    "type_in": ["radar_tensor"],
+    "qos_profile_in": [],
+    "module_id_in": ["spatial.discovery/1.4", "spatial.discovery/1.5"]
+  },
+  "expr": "",
+  "reply_topic": "spatialdds/discovery/response/q1",
+  "stamp": { "sec": 1714070400, "nsec": 0 },
+  "ttl_sec": 30
+}
 ```
 ```json
 { "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
@@ -101,8 +241,47 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 * Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
-* `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
+* `CoverageQuery.filter` provides structured matching for `type`, `qos_profile`, and `module_id`.
+* Empty sequences in `CoverageFilter` mean “match all” for that field.
+* When multiple filter fields are populated, they are ANDed; a result MUST match at least one value in every non-empty sequence.
+* Version range matching stays in profile negotiation (`supported_profiles` with `min_minor`/`max_minor`), not in coverage queries.
+* `CoverageQuery.expr` is deprecated in 1.5. If `has_filter` is true, responders MUST ignore `expr`.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
+
+#### **Pagination Contract (Normative)**
+
+1. **Opacity.** Page tokens are opaque strings produced by the responder. Consumers MUST NOT parse, construct, or modify them.
+2. **Consistency.** Results are best-effort. Pages may include duplicates or miss nodes that arrived/departed between pages. Consumers SHOULD deduplicate by `service_id`.
+3. **Expiry.** Responders SHOULD honor page tokens for at least `ttl_sec` seconds from the originating query’s `stamp`. After expiry, responders MAY return an empty result set rather than an error.
+4. **Termination.** An empty string in `next_page_token` means no further pages remain.
+5. **Page size.** Responders choose page size. Consumers MUST accept any non-zero page size.
+
+#### **Announce Lifecycle (Normative)**
+
+- **Departure:** A node that leaves the bus gracefully SHOULD publish a `Depart` message. Consumers MUST remove the corresponding `service_id` from their local directory upon receiving `Depart`. `Depart` does not replace TTL-based expiry.
+- **Staleness:** Consumers SHOULD discard Announce samples where `now - stamp > 2 * ttl_sec`.
+- **Re-announce cadence:** Producers SHOULD re-announce at intervals no greater than `ttl_sec / 2` to prevent premature expiry.
+- **Rate limiting:** Producers SHOULD NOT re-announce more frequently than once per second unless capabilities, coverage, or topics have changed. Consumers MAY rate-limit processing per `service_id`.
+
+#### **Well-Known Discovery Topics (Normative)**
+
+| Message Type | Topic Name |
+|---|---|
+| `Announce` | `spatialdds/discovery/announce/v1` |
+| `Depart` | `spatialdds/discovery/depart/v1` |
+| `CoverageQuery` | `spatialdds/discovery/query/v1` |
+| `CoverageHint` | `spatialdds/discovery/coverage_hint/v1` |
+
+`CoverageResponse` uses the `reply_topic` specified in the originating `CoverageQuery`.
+
+**QoS defaults for discovery topics**
+
+| Topic | Reliability | Durability | History |
+|---|---|---|---|
+| `announce` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `depart` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `query` | RELIABLE | VOLATILE | KEEP_ALL |
+| `coverage_hint` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) per key |
 
 #### **Discovery trust (Normative)**
 ANNOUNCE messages provide discovery convenience and are not, by themselves, authoritative. Clients **MUST** apply the Security Model requirements in §2.7 before trusting advertised URIs, topics, or services.

@@ -11,6 +11,9 @@
 ## Version 1.5 - TBD
 
 - Initialized directories and stub documents for the 1.5 drafting cycle.
+- Added structured `CoverageFilter` and deprecated freeform `expr` for discovery queries.
+- Defined pagination, announce lifecycle, and well-known discovery topic names/QoS.
+- Added bootstrap manifest and DNS-SD / `.well-known` bindings for Layer 1 discovery.
 
 ## Version 1.4 - 2026-02-07
 
