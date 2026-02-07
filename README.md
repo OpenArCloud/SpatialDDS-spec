@@ -4,7 +4,7 @@ SpatialDDS is a concept protocol for real-world spatial computing that defines a
 
 It's released to spark discussion—explore the spec, experiment, and join the conversation through issues or pull requests to help shape future iterations.
 
-This repository hosts the published 1.3 specification alongside a work-in-progress 1.5 draft. See the [CHANGELOG](CHANGELOG.md) for version history.
+This repository hosts the published 1.3 and 1.4 specifications alongside a work-in-progress 1.5 draft. See the [CHANGELOG](CHANGELOG.md) for version history.
 
 
 ## Repository structure

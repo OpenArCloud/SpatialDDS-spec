@@ -2,7 +2,7 @@
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
-**Version**: 1.4 (Draft)
+**Version**: 1.4
 
 **Date**: 2026-02-07
 
