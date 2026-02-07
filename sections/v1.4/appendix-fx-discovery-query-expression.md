@@ -24,5 +24,6 @@ WS         = *( SP / HTAB )
 ; - Values are double-quoted strings; escapes follow C-style subset.
 ; - Operators: equality and inequality only. Boolean ops: &&, ||, unary !
 ; - Parentheses group precedence; otherwise, ! > && > ||
+; - Comparisons are exact string matches; wildcards/globs are not supported.
 ; - Unknown identifiers evaluate to false in comparisons.
 ```

@@ -273,7 +273,7 @@ Discovery is how SpatialDDS peers **find each other**, **advertise what they pub
 
 @extensibility(APPENDABLE) struct CoverageQuery {
   // minimal illustrative fields
-  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.*\""
+  string expr;        // Appendix F.X grammar; e.g., "type==\"radar_tensor\" && profile==\"discovery@1.4\""
   string reply_topic; // topic to receive results
   string query_id;    // correlate request/response
 }
@@ -308,7 +308,7 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 
 **Query + Response**
 ```json
-{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.*\"", "reply_topic": "spatialdds/sys/queries/q1" }
+{ "query_id": "q1", "expr": "type==\"radar_tensor\" && profile==\"discovery@1.4\"", "reply_topic": "spatialdds/sys/queries/q1" }
 ```
 ```json
 { "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
@@ -320,7 +320,7 @@ The expression syntax is defined formally in the CoverageQuery ABNF grammar (see
 * Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
-* `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.*` or `name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
+* `CoverageQuery.expr` follows the boolean grammar in Appendix F.X and MAY filter on profile tokens (`name@MAJOR.MINOR`), topic `type`, and `qos_profile` strings.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
 #### Asset references
@@ -508,7 +508,6 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.semantics/1.4
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
-
 
 ## **4. Operational Scenarios: From SLAM to AI World Models**
 
@@ -2366,6 +2365,7 @@ WS         = *( SP / HTAB )
 ; - Values are double-quoted strings; escapes follow C-style subset.
 ; - Operators: equality and inequality only. Boolean ops: &&, ||, unary !
 ; - Parentheses group precedence; otherwise, ! > && > ||
+; - Comparisons are exact string matches; wildcards/globs are not supported.
 ; - Unknown identifiers evaluate to false in comparisons.
 ```
 
