@@ -211,10 +211,10 @@ These rules apply to any message that carries the trio `{ stamp, source_id, seq 
 
 - All SpatialDDS modules conform to OMG IDL 4.2 and DDS-XTypes 1.3.
 - Extensibility SHALL be declared via `@extensibility(APPENDABLE)`.
+- Consumers MUST ignore unknown appended fields in APPENDABLE types.
 - Compound identity SHALL be declared with multiple `@key` annotations.
 - Field initialization remains a runtime concern and SHALL NOT be encoded in IDL.
 - Abridged snippets within the main body are informative; the appendices contain the authoritative IDLs listed above.
-
 
 // SPDX-License-Identifier: MIT
 // SpatialDDS Specification 1.4 (© Open AR Cloud Initiative)
