@@ -8,6 +8,7 @@ nav:
   - Overview: index.md
   - SpatialDDS 1.4:
       - 1. Introduction: v1.4/01-introduction.md
+      - 2. Conventions: v1.4/02-conventions.md
       - 2. IDL Profiles: v1.4/02-idl-profiles.md
       - 3. Operational Scenarios: v1.4/04-operational-scenarios.md
       - 4. Conclusion: v1.4/conclusion.md
@@ -24,6 +25,7 @@ nav:
       - Appendix F - SpatialDDS URI Scheme (ABNF): v1.4/appendix-f.md
       - Appendix F.X - Discovery Query Expression (ABNF): v1.4/appendix-fx-discovery-query-expression.md
       - Appendix G - Frame Identifiers (Normative): v1.4/appendix-g-frame-identifiers.md
+      - Appendix H - Operational Scenarios: v1.4/appendix-h-operational-scenarios.md
       - Full Spec (single page): SpatialDDS-1.4-full.md
   - SpatialDDS 1.3:
       - 1. Introduction: v1.3/01-introduction.md
