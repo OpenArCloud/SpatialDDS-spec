@@ -44,6 +44,7 @@ pvalue         = 1*( unreserved / pct-encoded / ":" / "@" / "." )
 - **Comparison rules**: authority is case-insensitive; all other components are case-sensitive after percent-decoding.
 - **Reserved params**: `v` (revision identifier), `ts` (RFC 3339 timestamp). Others are vendor-specific.
 - **Semantics**: URIs without `;v=` act as persistent identifiers (PID). With `;v=` they denote immutable revisions (RID).
+- **Resolution**: This appendix defines **syntax only**. Normative resolution behavior is defined in §7.5 (SpatialURI Resolution).
 
 ### **Examples**
 
