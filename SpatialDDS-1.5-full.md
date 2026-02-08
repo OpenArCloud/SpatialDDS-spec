@@ -543,6 +543,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 | `Depart` | `spatialdds/discovery/depart/v1` |
 | `CoverageQuery` | `spatialdds/discovery/query/v1` |
 | `CoverageHint` | `spatialdds/discovery/coverage_hint/v1` |
+| `ContentAnnounce` | `spatialdds/discovery/content/v1` |
 
 `CoverageResponse` uses the `reply_topic` specified in the originating `CoverageQuery`.
 
@@ -554,6 +555,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 | `depart` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
 | `query` | RELIABLE | VOLATILE | KEEP_ALL |
 | `coverage_hint` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) per key |
+| `content` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 
 #### **Discovery trust (Normative)**
 ANNOUNCE messages provide discovery convenience and are not, by themselves, authoritative. Clients **MUST** apply the Security Model requirements in §2.7 before trusting advertised URIs, topics, or services.
