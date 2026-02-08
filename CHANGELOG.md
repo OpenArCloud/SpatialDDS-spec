@@ -13,12 +13,17 @@
 - Initialized directories and stub documents for the 1.5 drafting cycle.
 - Added structured `CoverageFilter` and deprecated freeform `expr` for discovery queries.
 - Defined pagination, announce lifecycle, and well-known discovery topic names/QoS.
+- Added a normative security model, `auth_hint` semantics, and DDS/HTTPS security bindings.
 - Added bootstrap manifest and DNS-SD / `.well-known` bindings for Layer 1 discovery.
+- Clarified coexistence of `/.well-known/spatialdds` (bootstrap) and `/.well-known/spatialdds-resolver` (resolver metadata).
 - Added normative `spatial.manifest@1.5` schema with type-specific blocks and JSON Schema.
 - Added normative blob reassembly guidance for `BlobChunk` delivery.
 - Replaced the radar extension with a detection-centric profile (`RadSensorMeta`, expanded `RadDetection`, `RadDetectionSet`) and removed tensor-centric structs.
 - Updated vision, lidar, and semantics profiles with detection-centric and dataset-aligned fields (RigRole expansion, BIN_INTERLEAVED, per-point timestamps, Detection3D attributes/visibility/evidence) plus supporting normative guidance.
 - Added Appendix I documenting dataset conformance testing and the resulting profile changes.
+- Added §1.1 Conceptual Overview and refined introduction/profile summaries.
+- Added provisional Neural and Agent example profiles in Appendix E.
+- Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.
 
 ## Version 1.4 - 2026-02-07
 
