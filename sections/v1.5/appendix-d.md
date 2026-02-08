@@ -62,6 +62,7 @@ The intentionally sparse enums are:
 - `Codec` (common.idl)
 - `PayloadKind` (common.idl)
 - `RadSensorType` (rad.idl)
+- `RadTensorLayout` (rad.idl)
 - `CloudEncoding` (lidar.idl)
 - `ColorSpace` (vision.idl)
 - `PixFormat` (vision.idl)
@@ -114,7 +115,7 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 
 ### **Radar Extension**
 
-*Detection-centric radar metadata and per-frame detection sets. ROI semantics follow §2 Conventions for global normative rules.* See §2 Conventions for global normative rules.
+*Radar metadata, per-frame detection sets, and raw/processed tensor transport. The detection-centric path (`RadSensorMeta` / `RadDetectionSet`) serves automotive-style point detections. The tensor path (`RadTensorMeta` / `RadTensorFrame`) serves raw or processed radar data cubes for ISAC and ML workloads. Deployments may use either or both. ROI semantics follow §2 Conventions for global normative rules.* See §2 Conventions for global normative rules.
 
 ```idl
 {{include:idl/v1.5/rad.idl}}

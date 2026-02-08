@@ -55,6 +55,17 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | R-05 | Per-detection RCS | `rcs_dbm2` field in dBm^2 with `has_rcs_dbm2` guard. |
 | R-06 | Sensor type enum | `RadSensorType` differentiates SHORT_RANGE, LONG_RANGE, IMAGING_4D, etc. |
 
+#### DeepSense 6G Radar Tensor (6 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| T-01 | Tensor meta struct | `RadTensorMeta` exists with `axes`, `voxel_type`, `layout`, `physical_meaning`. |
+| T-02 | Complex sample type | `SampleType.CF32` covers complex I/Q data. |
+| T-03 | Channel axis | `RadTensorLayout.CH_FAST_SLOW` maps raw FMCW [Rx, samples, chirps]. |
+| T-04 | MIMO antenna config | `num_tx`, `num_rx`, `num_virtual_channels` with `has_antenna_config` guard. |
+| T-05 | Waveform params | `bandwidth_hz`, `center_freq_hz`, `samples_per_chirp`, `chirps_per_frame` with guard. |
+| T-06 | Frame blob transport | `RadTensorFrame.hdr.blobs[]` carries the raw cube; size computable from axes and sample size. |
+
 #### Vision (5 checks)
 
 | ID | Check | Description |
@@ -98,16 +109,17 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 
 ### **Results**
 
-All 27 checks pass against the SpatialDDS 1.5 specification as published.
+All 33 checks pass against the SpatialDDS 1.5 specification as published.
 
 | Modality | Checks | Pass | Remaining Gaps |
 |---|---|---|---|
-| Radar | 6 | 6 | 0 |
+| Radar (detections) | 6 | 6 | 0 |
+| Radar (tensor) | 6 | 6 | 0 |
 | Vision | 5 | 5 | 0 |
 | Lidar | 6 | 6 | 0 |
 | Semantics | 5 | 5 | 0 |
 | Common / Core | 5 | 5 | 0 |
-| **Total** | **27** | **27** | **0** |
+| **Total** | **33** | **33** | **0** |
 
 ### **Spec Changes Informed by Testing**
 
@@ -116,6 +128,7 @@ The conformance harness was first run against an early draft of SpatialDDS 1.5, 
 | Change | Profile | Origin |
 |---|---|---|
 | Complete radar profile replacement: tensor-based -> detection-centric (`RadDetection`, `RadDetectionSet`, `RadSensorMeta`) | Radar | R-01 through R-06 |
+| Radar tensor path restored: `RadTensorMeta` / `RadTensorFrame` and `RadTensorLayout` | Radar | T-01 through T-06 |
 | `RigRole` enum expanded with FRONT, FRONT_LEFT, FRONT_RIGHT, BACK, BACK_LEFT, BACK_RIGHT | Vision | V-01 |
 | Normative prose for `dist = NONE` pre-rectified image semantics | Vision | V-02 |
 | `CamIntrinsics.width` / `height` made REQUIRED with malformed-sample guidance | Vision | V-03 |

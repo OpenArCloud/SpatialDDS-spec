@@ -7,7 +7,7 @@ At its core, SpatialDDS is defined through IDL profiles that partition functiona
 * **Core**: pose graphs, geometry tiles, anchors, transforms, and blobs.  
 * **Discovery**: lightweight announce messages and manifests for services, coverage, anchors, and content.
 * **Anchors**: durable anchors and registry updates for persistent world-locked reference points.  
-* **Extensions**: optional domain-specific profiles including the shared Sensing Common base types plus VIO sensors, vision streams, SLAM frontend features, semantic detections, radar tensors, lidar streams, and AR+Geo.
+* **Extensions**: optional domain-specific profiles including the shared Sensing Common base types plus VIO sensors, vision streams, SLAM frontend features, semantic detections, radar detections/tensors, lidar streams, and AR+Geo.
 
 This profile-based design keeps the protocol lean and interoperable, while letting communities adopt only the pieces they need.
 

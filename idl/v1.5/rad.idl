@@ -26,6 +26,9 @@ module spatial { module sensing { module rad {
   typedef spatial::sensing::common::StreamMeta   StreamMeta;
   typedef spatial::sensing::common::FrameHeader  FrameHeader;
   typedef spatial::sensing::common::FrameQuality FrameQuality;
+  typedef spatial::sensing::common::Axis         Axis;
+  typedef spatial::sensing::common::SampleType   SampleType;
+  typedef spatial::sensing::common::PayloadKind  PayloadKind;
   typedef spatial::sensing::common::ROI          ROI;
   typedef spatial::sensing::common::ROIRequest   ROIRequest;
   typedef spatial::sensing::common::ROIReply     ROIReply;
@@ -162,6 +165,77 @@ module spatial { module sensing { module rad {
     // Frame-level quality
     boolean has_quality;
     FrameQuality quality;                // valid when has_quality == true
+  };
+
+  // ==============================================================
+  // RAD TENSOR TYPES (for raw/processed radar cubes)
+  // ==============================================================
+
+  // Layout of the RAD tensor - axis ordering convention
+  enum RadTensorLayout {
+    @value(0)   RA_D,             // [range, azimuth, doppler]
+    @value(1)   R_AZ_EL_D,        // [range, azimuth, elevation, doppler]
+    @value(2)   CH_FAST_SLOW,     // [channel/Rx, fast_time, slow_time] - raw FMCW
+    @value(3)   CH_R_D,           // [channel, range, doppler] - post range-doppler FFT
+    @value(255) CUSTOM            // axes[] defines the order explicitly
+  };
+
+  // Static tensor description - RELIABLE + TRANSIENT_LOCAL
+  // Publishes once; late joiners receive current state.
+  @extensibility(APPENDABLE) struct RadTensorMeta {
+    @key string stream_id;                 // stable id for this radar tensor stream
+    StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
+
+    RadSensorType sensor_type;             // reuse existing enum (SHORT_RANGE, IMAGING_4D, etc.)
+
+    // Tensor shape description
+    RadTensorLayout layout;                // axis ordering convention
+    sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler/channel/time)
+
+    SampleType voxel_type;                 // pre-compression sample type (e.g., CF32)
+    string physical_meaning;               // e.g., "raw FMCW I/Q", "post 3D-FFT complex baseband"
+
+    // Antenna configuration (informative, for MIMO systems)
+    boolean has_antenna_config;
+    uint16  num_tx;                        // valid when has_antenna_config == true
+    uint16  num_rx;                        // valid when has_antenna_config == true
+    uint16  num_virtual_channels;          // num_tx * num_rx (informative)
+
+    // Waveform parameters (informative)
+    boolean has_waveform_params;
+    float   bandwidth_hz;                  // valid when has_waveform_params == true
+    float   center_freq_hz;                // valid when has_waveform_params == true
+    float   chirp_duration_s;              // valid when has_waveform_params == true
+    uint32  samples_per_chirp;             // valid when has_waveform_params == true
+    uint32  chirps_per_frame;              // valid when has_waveform_params == true
+
+    // Default payload settings for frames
+    PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
+    Codec       codec;                     // LZ4, ZSTD, CODEC_NONE, etc.
+    boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
+    uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
+
+    string  schema_version;                // MUST be "spatial.sensing.rad/1.5"
+  };
+
+  // Per-frame tensor index - BEST_EFFORT + KEEP_LAST=1
+  // Heavy payload referenced via FrameHeader.blobs[]
+  @extensibility(APPENDABLE) struct RadTensorFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                       // t_start/t_end, optional sensor_pose, blobs[]
+
+    // Per-frame overrides (may differ from RadTensorMeta defaults)
+    PayloadKind payload_kind;
+    Codec       codec;
+    SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF32 -> MAG_F16)
+    boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
+
+    FrameQuality quality;                  // SNR/valid%/health note
+    string proc_chain;                     // e.g., "raw", "FFT3D->hann", "FFT3D->OS-CFAR"
   };
 
 }; }; };
