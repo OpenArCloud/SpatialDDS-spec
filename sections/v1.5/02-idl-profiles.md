@@ -22,6 +22,15 @@ Participants advertise supported ranges via `caps.supported_profiles` (discovery
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
+#### **Blob Reassembly (Normative)**
+
+Blob payloads are transported as `BlobChunk` sequences. Consumers MUST be prepared for partial delivery and SHOULD apply a per-blob timeout window based on expected rate and `total_chunks`.
+
+- **Timeout guidance:** Consumers SHOULD apply a per-blob timeout of at least `2 × (total_chunks / expected_rate)` seconds when an expected rate is known.
+- **Failure handling:** If all chunks have not arrived within this window under **RELIABLE** QoS, the consumer SHOULD discard the partial blob and MAY re-request it via `SnapshotRequest`.
+- **BEST_EFFORT behavior:** Under **BEST_EFFORT** QoS, consumers MUST NOT assume complete delivery and SHOULD treat blobs as opportunistic.
+- **Memory pressure:** Consumers MAY discard partial blobs early under memory pressure, but MUST NOT treat them as valid payloads.
+
 #### Frame Identifiers (Reference)
 
 SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.

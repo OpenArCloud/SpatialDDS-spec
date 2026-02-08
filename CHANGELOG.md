@@ -15,6 +15,7 @@
 - Defined pagination, announce lifecycle, and well-known discovery topic names/QoS.
 - Added bootstrap manifest and DNS-SD / `.well-known` bindings for Layer 1 discovery.
 - Added normative `spatial.manifest@1.5` schema with type-specific blocks and JSON Schema.
+- Added normative blob reassembly guidance for `BlobChunk` delivery.
 
 ## Version 1.4 - 2026-02-07
 
