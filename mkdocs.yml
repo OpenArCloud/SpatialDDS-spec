@@ -26,6 +26,7 @@ nav:
       - Appendix F.X - Discovery Query Expression (ABNF): v1.5/appendix-fx-discovery-query-expression.md
       - Appendix G - Frame Identifiers (Normative): v1.5/appendix-g-frame-identifiers.md
       - Appendix H - Operational Scenarios: v1.5/appendix-h-operational-scenarios.md
+      - Appendix I - Dataset Conformance Testing: v1.5/appendix-i.md
       - Full Spec (single page): SpatialDDS-1.5-full.md
   - SpatialDDS 1.4:
       - 1. Introduction: v1.4/01-introduction.md

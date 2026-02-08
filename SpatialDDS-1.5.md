@@ -39,3 +39,4 @@
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.5/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.5/appendix-g-frame-identifiers.md)
     - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.5/appendix-h-operational-scenarios.md)
+    - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.5/appendix-i.md)
