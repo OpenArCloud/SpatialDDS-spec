@@ -52,13 +52,13 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
     }
     ```
 
-- **Discover anchors.** Through `disco.service`, the headset resolves `anchor://facility-west/loading-bay`, fetches the manifest (Appendix A), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
+- **Discover anchors.** Through `disco.service`, the headset resolves `spatialdds://facility.example.org/west/anchor/loading-bay`, fetches the manifest (Appendix A), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
 - **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
 
     ```json
     {
       "topic": "geo.fix",
-      "anchor_id": "anchor://facility-west/loading-bay",
+      "anchor_id": "spatialdds://facility.example.org/west/anchor/loading-bay",
       "geopose": {
         "lat_deg": 37.79341,
         "lon_deg": -122.39412,
@@ -87,8 +87,8 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
     ```json
     {
       "topic": "twin.state.update",
-      "uri": "urn:spatial://facility-west/assets/door-17",
-      "anchor_ref": "anchor://facility-west/loading-bay",
+      "uri": "spatialdds://facility.example.org/west/content/door-17",
+      "anchor_ref": "spatialdds://facility.example.org/west/anchor/loading-bay",
       "state": {
         "pose_local": {
           "t": [4.21, -1.02, 0.00],
