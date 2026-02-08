@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spatialdds.org/schemas/manifest/1.5/spatial-manifest.schema.json",
+  "title": "SpatialDDS Manifest 1.5",
+  "type": "object",
+  "required": ["id", "profile", "rtype"],
+  "properties": {
+    "id": { "type": "string" },
+    "profile": { "type": "string", "pattern": "^spatial\\.manifest@1\\.[5-9][0-9]*$" },
+    "rtype": { "type": "string", "enum": ["anchor", "anchor_set", "content", "tileset", "service", "stream"] },
+    "caps": { "$ref": "#/$defs/Capabilities" },
+    "coverage": { "$ref": "#/$defs/Coverage" },
+    "assets": { "type": "array", "items": { "$ref": "#/$defs/AssetRef" } },
+    "stamp": { "$ref": "#/$defs/Time" },
+    "ttl_sec": { "type": "integer", "minimum": 0 },
+    "auth": { "type": "object" },
+    "anchor": { "$ref": "#/$defs/Anchor" },
+    "anchor_set": { "$ref": "#/$defs/AnchorSet" },
+    "service": { "$ref": "#/$defs/Service" },
+    "content": { "$ref": "#/$defs/Content" },
+    "tileset": { "$ref": "#/$defs/Tileset" },
+    "stream": { "$ref": "#/$defs/Stream" }
+  },
+  "oneOf": [
+    { "properties": { "rtype": { "const": "anchor" } }, "required": ["anchor"] },
+    { "properties": { "rtype": { "const": "anchor_set" } }, "required": ["anchor_set"] },
+    { "properties": { "rtype": { "const": "service" } }, "required": ["service"] },
+    { "properties": { "rtype": { "const": "content" } }, "required": ["content"] },
+    { "properties": { "rtype": { "const": "tileset" } }, "required": ["tileset"] },
+    { "properties": { "rtype": { "const": "stream" } }, "required": ["stream"] }
+  ],
+  "additionalProperties": true,
+  "$defs": {
+    "Time": {
+      "type": "object",
+      "required": ["sec", "nanosec"],
+      "properties": {
+        "sec": { "type": "integer" },
+        "nanosec": { "type": "integer", "minimum": 0, "maximum": 999999999 }
+      }
+    },
+    "FrameRef": {
+      "type": "object",
+      "required": ["uuid", "fqn"],
+      "properties": {
+        "uuid": { "type": "string" },
+        "fqn": { "type": "string" }
+      }
+    },
+    "AssetRef": {
+      "type": "object",
+      "required": ["uri", "media_type", "hash"],
+      "properties": {
+        "uri": { "type": "string" },
+        "media_type": { "type": "string" },
+        "hash": { "type": "string", "pattern": "^[a-z0-9]+:[0-9a-f]+$" },
+        "meta": { "type": "array" }
+      }
+    },
+    "Capabilities": { "type": "object" },
+    "Coverage": { "type": "object" },
+    "Anchor": {
+      "type": "object",
+      "required": ["anchor_id", "geopose", "frame_ref"],
+      "properties": {
+        "anchor_id": { "type": "string" },
+        "geopose": { "type": "object" },
+        "method": { "type": "string" },
+        "confidence": { "type": "number" },
+        "frame_ref": { "$ref": "#/$defs/FrameRef" },
+        "checksum": { "type": "string" }
+      }
+    },
+    "AnchorSet": {
+      "type": "object",
+      "required": ["set_id", "anchors"],
+      "properties": {
+        "set_id": { "type": "string" },
+        "title": { "type": "string" },
+        "provider_id": { "type": "string" },
+        "version": { "type": "string" },
+        "anchors": { "type": "array" },
+        "center_lat": { "type": "number" },
+        "center_lon": { "type": "number" },
+        "radius_m": { "type": "number" }
+      }
+    },
+    "Service": {
+      "type": "object",
+      "required": ["service_id", "kind"],
+      "properties": {
+        "service_id": { "type": "string" },
+        "kind": { "type": "string" },
+        "name": { "type": "string" },
+        "org": { "type": "string" },
+        "version": { "type": "string" },
+        "connection": { "type": "object" },
+        "topics": { "type": "array" }
+      }
+    },
+    "Content": {
+      "type": "object",
+      "required": ["content_id"],
+      "properties": {
+        "content_id": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "tags": { "type": "array" },
+        "class_id": { "type": "string" },
+        "dependencies": { "type": "array" },
+        "available_from": { "$ref": "#/$defs/Time" },
+        "available_until": { "$ref": "#/$defs/Time" }
+      }
+    },
+    "Tileset": {
+      "type": "object",
+      "required": ["tileset_id", "encoding", "frame_ref"],
+      "properties": {
+        "tileset_id": { "type": "string" },
+        "encoding": { "type": "string" },
+        "frame_ref": { "$ref": "#/$defs/FrameRef" },
+        "version": { "type": "string" },
+        "lod_levels": { "type": "integer" },
+        "tile_count": { "type": "integer" }
+      }
+    },
+    "Stream": {
+      "type": "object",
+      "required": ["stream_id", "topic"],
+      "properties": {
+        "stream_id": { "type": "string" },
+        "topic": { "type": "object" },
+        "connection": { "type": "object" }
+      }
+    }
+  }
+}
