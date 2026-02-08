@@ -77,8 +77,9 @@ ROS 2's `PointCloud2` is maximally flexible -- any field layout is expressible v
 | Sensor type | `RadSensorType` enum (SHORT/MEDIUM/LONG/IMAGING_4D/SAR) | Not present |
 | Uncertainty | Per-detection position/velocity RMS, ambiguity state, false alarm probability | Not present |
 | Sensor metadata | `RadSensorMeta` (latched): range limits, FOV, velocity limits | Not present |
+| Tensor transport | `RadTensorMeta` / `RadTensorFrame` for raw or processed radar cubes | Not present |
 
-SpatialDDS radar was designed to accommodate automotive radar datasets (nuScenes, Continental ARS 408, 4D imaging radar). ROS 2 `radar_msgs` is minimal and has seen limited community adoption; many teams define custom messages.
+SpatialDDS radar supports both detection-centric outputs (automotive datasets like nuScenes, Continental ARS 408) and raw/processed radar cubes via tensor transport for ISAC and ML pipelines. ROS 2 `radar_msgs` is minimal and has seen limited community adoption; many teams define custom messages.
 
 #### Semantics / Object Detections
 
