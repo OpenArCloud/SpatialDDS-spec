@@ -21,6 +21,7 @@
 - Replaced the radar extension with a detection-centric profile (`RadSensorMeta`, expanded `RadDetection`, `RadDetectionSet`) and removed tensor-centric structs.
 - Updated vision, lidar, and semantics profiles with detection-centric and dataset-aligned fields (RigRole expansion, BIN_INTERLEAVED, per-point timestamps, Detection3D attributes/visibility/evidence) plus supporting normative guidance.
 - Added Appendix I documenting dataset conformance testing and the resulting profile changes.
+- Added Appendix J comparing SpatialDDS 1.5 with ROS 2 across architecture and message design.
 - Added §1.1 Conceptual Overview and refined introduction/profile summaries.
 - Added provisional Neural and Agent example profiles in Appendix E.
 - Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.
