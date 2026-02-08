@@ -40,3 +40,4 @@
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.5/appendix-g-frame-identifiers.md)
     - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.5/appendix-h-operational-scenarios.md)
     - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.5/appendix-i.md)
+    - [Appendix J: Comparison with ROS 2 (Informative)](sections/v1.5/appendix-j.md)

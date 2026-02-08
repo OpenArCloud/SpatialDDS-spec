@@ -27,6 +27,7 @@ nav:
       - Appendix G - Frame Identifiers (Normative): v1.5/appendix-g-frame-identifiers.md
       - Appendix H - Operational Scenarios: v1.5/appendix-h-operational-scenarios.md
       - Appendix I - Dataset Conformance Testing: v1.5/appendix-i.md
+      - Appendix J - Comparison with ROS 2: v1.5/appendix-j.md
       - Full Spec (single page): SpatialDDS-1.5-full.md
   - SpatialDDS 1.4:
       - 1. Introduction: v1.4/01-introduction.md
