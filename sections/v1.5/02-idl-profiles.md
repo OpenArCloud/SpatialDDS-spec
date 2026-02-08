@@ -221,7 +221,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   },
   "topics": [
     { "name": "spatialdds/perception/cam_front/video_frame/v1", "type": "video_frame", "version": "v1", "qos_profile": "VIDEO_LIVE" },
-    { "name": "spatialdds/perception/radar_1/radar_tensor/v1",  "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT"   }
+    { "name": "spatialdds/perception/radar_1/radar_detection/v1",  "type": "radar_detection", "version": "v1", "qos_profile": "RADAR_RT"   }
   ]
 }
 ```
@@ -232,7 +232,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   "query_id": "q1",
   "has_filter": true,
   "filter": {
-    "type_in": ["radar_tensor"],
+    "type_in": ["radar_detection"],
     "qos_profile_in": [],
     "module_id_in": ["spatial.discovery/1.4", "spatial.discovery/1.5"]
   },
@@ -243,13 +243,13 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 }
 ```
 ```json
-{ "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
+{ "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_detection/v1", "type": "radar_detection", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
 ```
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
-* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
+* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `FeatureFlag` is a struct (not a raw string) to allow future appended fields (e.g., version or parameters) without breaking wire compatibility.
@@ -371,8 +371,8 @@ spatialdds/<domain>/<stream>/<type>/<version>
 ###### Example
 ```json
 {
-  "name": "spatialdds/perception/radar_1/radar_tensor/v1",
-  "type": "radar_tensor",
+  "name": "spatialdds/perception/radar_1/radar_detection/v1",
+  "type": "radar_detection",
   "version": "v1",
   "qos_profile": "RADAR_RT"
 }
@@ -384,7 +384,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 |------|------------------|-------|
 | `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Large, reliable transfers |
 | `video_frame` | Encoded video/image | Real-time camera streams |
-| `radar_tensor` | N-D float/int tensor | Structured radar data |
+| `radar_detection` | Per-frame detection set | Structured radar detections |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -489,7 +489,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadDetectionSet`/`RadTensor`/`beam_params` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.

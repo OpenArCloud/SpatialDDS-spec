@@ -16,6 +16,7 @@
 - Added bootstrap manifest and DNS-SD / `.well-known` bindings for Layer 1 discovery.
 - Added normative `spatial.manifest@1.5` schema with type-specific blocks and JSON Schema.
 - Added normative blob reassembly guidance for `BlobChunk` delivery.
+- Replaced the radar extension with a detection-centric profile (`RadSensorMeta`, expanded `RadDetection`, `RadDetectionSet`) and removed tensor-centric structs.
 
 ## Version 1.4 - 2026-02-07
 

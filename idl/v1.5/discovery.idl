@@ -50,7 +50,7 @@ module spatial {
     // --- Topic metadata to enable selection without parsing payloads ---
     @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // geometry_tile | video_frame | radar_tensor | seg_mask | desc_array
+      string type;        // geometry_tile | video_frame | radar_detection | seg_mask | desc_array
       string version;     // currently fixed to "v1"
       string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
       // type, version, and qos_profile are mandatory fields describing the
@@ -166,7 +166,7 @@ module spatial {
       CoverageFilter filter;
       // Deprecated in 1.5: freeform expression per Appendix F.X.
       // Responders MUST ignore expr if has_filter == true.
-      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
+      // Example: "type==\"radar_detection\" && module_id==\"spatial.sensing.rad/1.5\""
       string expr;
       // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;

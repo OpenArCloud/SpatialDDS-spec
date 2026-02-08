@@ -537,7 +537,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   },
   "topics": [
     { "name": "spatialdds/perception/cam_front/video_frame/v1", "type": "video_frame", "version": "v1", "qos_profile": "VIDEO_LIVE" },
-    { "name": "spatialdds/perception/radar_1/radar_tensor/v1",  "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT"   }
+    { "name": "spatialdds/perception/radar_1/radar_detection/v1",  "type": "radar_detection", "version": "v1", "qos_profile": "RADAR_RT"   }
   ]
 }
 ```
@@ -548,7 +548,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   "query_id": "q1",
   "has_filter": true,
   "filter": {
-    "type_in": ["radar_tensor"],
+    "type_in": ["radar_detection"],
     "qos_profile_in": [],
     "module_id_in": ["spatial.discovery/1.4", "spatial.discovery/1.5"]
   },
@@ -559,13 +559,13 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 }
 ```
 ```json
-{ "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
+{ "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_detection/v1", "type": "radar_detection", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
 ```
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
-* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
+* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `FeatureFlag` is a struct (not a raw string) to allow future appended fields (e.g., version or parameters) without breaking wire compatibility.
@@ -687,8 +687,8 @@ spatialdds/<domain>/<stream>/<type>/<version>
 ###### Example
 ```json
 {
-  "name": "spatialdds/perception/radar_1/radar_tensor/v1",
-  "type": "radar_tensor",
+  "name": "spatialdds/perception/radar_1/radar_detection/v1",
+  "type": "radar_detection",
   "version": "v1",
   "qos_profile": "RADAR_RT"
 }
@@ -700,7 +700,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 |------|------------------|-------|
 | `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Large, reliable transfers |
 | `video_frame` | Encoded video/image | Real-time camera streams |
-| `radar_tensor` | N-D float/int tensor | Structured radar data |
+| `radar_detection` | Per-frame detection set | Structured radar detections |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -805,7 +805,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadDetectionSet`/`RadTensor`/`beam_params` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
@@ -1650,7 +1650,7 @@ module spatial {
     // --- Topic metadata to enable selection without parsing payloads ---
     @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // geometry_tile | video_frame | radar_tensor | seg_mask | desc_array
+      string type;        // geometry_tile | video_frame | radar_detection | seg_mask | desc_array
       string version;     // currently fixed to "v1"
       string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
       // type, version, and qos_profile are mandatory fields describing the
@@ -1766,7 +1766,7 @@ module spatial {
       CoverageFilter filter;
       // Deprecated in 1.5: freeform expression per Appendix F.X.
       // Responders MUST ignore expr if has_filter == true.
-      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
+      // Example: "type==\"radar_detection\" && module_id==\"spatial.sensing.rad/1.5\""
       string expr;
       // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;
@@ -1888,7 +1888,7 @@ module spatial {
 
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile streams radar tensors, derived detections, and optional ROI control. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile provides detection-centric radar metadata and per-frame detection sets. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content.*
 
 > Common type aliases and geometry primitives are defined once in Appendix A. Extension modules import those shared definitions and MUST NOT re-declare them.
 
@@ -2121,7 +2121,7 @@ The intentionally sparse enums are:
 - `CovarianceType` (types.idl)
 - `Codec` (common.idl)
 - `PayloadKind` (common.idl)
-- `RadTensorLayout` (rad.idl)
+- `RadSensorType` (rad.idl)
 - `CloudEncoding` (lidar.idl)
 - `ColorSpace` (vision.idl)
 - `PixFormat` (vision.idl)
@@ -2590,11 +2590,12 @@ module spatial {
 
 ### **Radar Extension**
 
-*Radar tensor metadata, frame indices, ROI negotiation, and derived detection sets. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
+*Detection-centric radar metadata and per-frame detection sets. ROI semantics follow §2 Conventions for global normative rules.* See §2 Conventions for global normative rules.
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar (RAD) 1.5 — Extension profile
+// SpatialDDS Radar (sensing.rad) 1.5 - Extension profile
+// Detection-centric radar for automotive, industrial, and robotics sensors.
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2611,82 +2612,151 @@ module spatial { module sensing { module rad {
   const string MODULE_ID = "spatial.sensing.rad/1.5";
 
   // Reuse Core + Sensing Common types
-  typedef builtin::Time                      Time;
-  typedef spatial::core::PoseSE3                   PoseSE3;
-  typedef spatial::core::BlobRef                   BlobRef;
-  typedef spatial::common::FrameRef               FrameRef;
+  typedef builtin::Time                          Time;
+  typedef spatial::core::PoseSE3                 PoseSE3;
+  typedef spatial::core::BlobRef                 BlobRef;
+  typedef spatial::common::FrameRef              FrameRef;
 
-  typedef spatial::sensing::common::Axis           Axis;
-  typedef spatial::sensing::common::ROI            ROI;
-  typedef spatial::sensing::common::Codec          Codec;
-  typedef spatial::sensing::common::PayloadKind    PayloadKind;
-  typedef spatial::sensing::common::SampleType     SampleType;
-  typedef spatial::sensing::common::StreamMeta     StreamMeta;
-  typedef spatial::sensing::common::FrameHeader    FrameHeader;
-  typedef spatial::sensing::common::FrameQuality   FrameQuality;
-  typedef spatial::sensing::common::ROIRequest     ROIRequest;
-  typedef spatial::sensing::common::ROIReply       ROIReply;
+  typedef spatial::sensing::common::Codec        Codec;
+  typedef spatial::sensing::common::StreamMeta   StreamMeta;
+  typedef spatial::sensing::common::FrameHeader  FrameHeader;
+  typedef spatial::sensing::common::FrameQuality FrameQuality;
+  typedef spatial::sensing::common::ROI          ROI;
+  typedef spatial::sensing::common::ROIRequest   ROIRequest;
+  typedef spatial::sensing::common::ROIReply     ROIReply;
 
-  // ROI bounds follow Sensing Common presence flags.
-  // Axis samples are encoded via the Sensing Common union (AXIS_CENTERS or AXIS_LINSPACE).
-
-  // Layout of the RAD tensor
-  enum RadTensorLayout {
-    @value(0)   RA_D,
-    @value(1)   R_AZ_EL_D,
-    @value(255) CUSTOM
+  // ---- Radar sensor type ----
+  enum RadSensorType {
+    @value(0) SHORT_RANGE,       // e.g., corner/parking radar, ~30m
+    @value(1) MEDIUM_RANGE,      // e.g., blind-spot, ~80m
+    @value(2) LONG_RANGE,        // e.g., forward-facing, ~200m+
+    @value(3) IMAGING_4D,        // 4D imaging radar (range/az/el/doppler)
+    @value(4) SAR,               // synthetic aperture radar
+    @value(255) OTHER
   };
 
-  // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
-  @extensibility(APPENDABLE) struct RadMeta {
-    @key string stream_id;                 // stable id for this radar stream
-    StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
-    RadTensorLayout layout;                // order of axes
-    sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler)
-    SampleType voxel_type;                 // pre-compression sample type (e.g., CF16, U8_MAG)
-    string physical_meaning;               // e.g., "post 3D-FFT complex baseband"
-    string schema_version;                 // MUST be "spatial.sensing.rad/1.5"
-
-    // Default payload settings for frames
-    PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
-    Codec       codec;                     // LZ4, ZSTD, FP8Q, AE_V1, ...
-    boolean     has_quant_scale;
-    float       quant_scale;               // valid when has_quant_scale == true
-    uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
+  // ---- Dynamic property per detection ----
+  enum RadDynProp {
+    @value(0) UNKNOWN,
+    @value(1) MOVING,
+    @value(2) STATIONARY,
+    @value(3) ONCOMING,
+    @value(4) CROSSING_LEFT,
+    @value(5) CROSSING_RIGHT,
+    @value(6) STOPPED            // was moving, now stationary
   };
 
-  // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
-  @extensibility(APPENDABLE) struct RadFrame {
-    @key string stream_id;
-    uint64 frame_seq;
+  // ---- Static sensor description ----
+  // RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
+  @extensibility(APPENDABLE) struct RadSensorMeta {
+    @key string stream_id;               // stable id for this radar stream
+    StreamMeta base;                     // frame_ref, T_bus_sensor, nominal_rate_hz
 
-    FrameHeader hdr;                       // t_start/t_end, optional sensor_pose, blobs[]
-    PayloadKind payload_kind;              // may override defaults
-    Codec       codec;                     // may override defaults
-    SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF16 → MAG_F16)
-    boolean     has_quant_scale;
-    float       quant_scale;               // valid when has_quant_scale == true
+    RadSensorType sensor_type;           // range class of this radar
 
-    FrameQuality quality;                  // SNR/valid%/health note
-    string proc_chain;                     // e.g., "FFT3D->hann->OS-CFAR"
+    // Detection-space limits (from sensor datasheet)
+    boolean has_range_limits;
+    float   min_range_m;                 // valid when has_range_limits == true
+    float   max_range_m;
+
+    boolean has_azimuth_fov;
+    float   az_fov_min_deg;              // valid when has_azimuth_fov == true
+    float   az_fov_max_deg;
+
+    boolean has_elevation_fov;
+    float   el_fov_min_deg;              // valid when has_elevation_fov == true
+    float   el_fov_max_deg;
+
+    boolean has_velocity_limits;
+    float   v_min_mps;                   // valid when has_velocity_limits == true
+    float   v_max_mps;                   // max unambiguous radial velocity
+
+    // Max detections per frame (informative hint for subscriber allocation)
+    uint32  max_detections_per_frame;
+
+    // Processing chain description (informative)
+    string  proc_chain;                  // e.g., "CFAR -> clustering -> tracking"
+
+    string  schema_version;              // MUST be "spatial.sensing.rad/1.5"
   };
 
-  // Lightweight derivative for fast fusion/tracking (optional)
+  // ---- Per-detection data ----
   @extensibility(APPENDABLE) struct RadDetection {
-    spatial::common::Vec3 xyz_m;       // Cartesian point in base.frame_ref
+    // Position in sensor frame (meters)
+    spatial::common::Vec3 xyz_m;
+
+    // Velocity: Cartesian vector preferred; scalar radial as fallback.
+    // Producers SHOULD populate velocity_xyz when available.
+    // When only radial velocity is known, set has_velocity_xyz = false
+    // and use v_r_mps.
+    boolean has_velocity_xyz;
+    spatial::common::Vec3 velocity_xyz;  // m/s in frame_ref (valid when has_velocity_xyz == true)
+
     boolean has_v_r_mps;
-    double  v_r_mps;       // valid when has_v_r_mps == true
-    float  intensity;      // reflectivity/magnitude
-    float  quality;        // 0..1
+    double  v_r_mps;                     // scalar radial velocity (valid when has_v_r_mps == true)
+
+    // Ego-motion compensated velocity (optional)
+    boolean has_velocity_comp_xyz;
+    spatial::common::Vec3 velocity_comp_xyz; // ego-compensated, m/s (valid when has_velocity_comp_xyz == true)
+
+    // Radar cross-section in physical units
+    boolean has_rcs_dbm2;
+    float   rcs_dbm2;                    // dBm^2 (valid when has_rcs_dbm2 == true)
+
+    // Generic intensity / magnitude (0..1 normalized, for renderers)
+    float   intensity;
+
+    // Per-detection quality / confidence (0..1)
+    float   quality;
+
+    // Dynamic property classification
+    boolean has_dyn_prop;
+    RadDynProp dyn_prop;                 // valid when has_dyn_prop == true
+
+    // Per-detection position uncertainty (optional)
+    boolean has_pos_rms;
+    float   x_rms_m;                     // valid when has_pos_rms == true
+    float   y_rms_m;
+    float   z_rms_m;
+
+    // Per-detection velocity uncertainty (optional)
+    boolean has_vel_rms;
+    float   vx_rms_mps;                  // valid when has_vel_rms == true
+    float   vy_rms_mps;
+    float   vz_rms_mps;
+
+    // Ambiguity state (radar-specific; 0 = unambiguous)
+    boolean has_ambig_state;
+    uint8   ambig_state;                 // valid when has_ambig_state == true
+
+    // False alarm probability hint (0 = high confidence, higher = less certain)
+    boolean has_false_alarm_prob;
+    float   false_alarm_prob;            // valid when has_false_alarm_prob == true
+
+    // Optional tracking ID assigned by the radar firmware
+    boolean has_sensor_track_id;
+    uint32  sensor_track_id;             // valid when has_sensor_track_id == true
   };
 
-  // Detections topic — BEST_EFFORT
+  // ---- Detection set (per-frame batch) ----
+  // BEST_EFFORT + KEEP_LAST=1
   @extensibility(APPENDABLE) struct RadDetectionSet {
     @key string stream_id;
     uint64 frame_seq;
-    FrameRef frame_ref;    // coordinate frame of xyz_m
+    FrameRef frame_ref;                  // coordinate frame of xyz_m
+
     sequence<RadDetection, spatial::sensing::common::SZ_XL> dets;
+
     Time   stamp;
+    string source_id;
+    uint64 seq;
+
+    // Processing provenance
+    string proc_chain;                   // e.g., "ARS408-CFAR" or "OS-CFAR->cluster"
+
+    // Frame-level quality
+    boolean has_quality;
+    FrameQuality quality;                // valid when has_quality == true
   };
 
 }; }; };
@@ -2864,7 +2934,7 @@ This profile describes neural scene representations — such as NeRFs, Gaussian 
 
 The profile intentionally avoids prescribing model internals. `model_format` is a freeform string that identifies the training framework and version; model weights ride as blobs. This keeps the schema stable across the rapid evolution of neural representation research while giving consumers enough metadata to discover fields, check coverage, and request renders.
 
-`NeuralFieldMeta` follows the same static-meta pattern as `RadMeta` and `LidarMeta`: publish once with RELIABLE + TRANSIENT_LOCAL QoS so late joiners receive the current state. `ViewSynthesisRequest` and `ViewSynthesisResponse` follow the request/reply pattern used by `SnapshotRequest` and `SnapshotResponse`.
+`NeuralFieldMeta` follows the same static-meta pattern as `RadSensorMeta` and `LidarMeta`: publish once with RELIABLE + TRANSIENT_LOCAL QoS so late joiners receive the current state. `ViewSynthesisRequest` and `ViewSynthesisResponse` follow the request/reply pattern used by `SnapshotRequest` and `SnapshotResponse`.
 
 ```idl
 // SPDX-License-Identifier: MIT
