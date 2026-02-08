@@ -9,14 +9,14 @@ nav:
   - SpatialDDS 1.5:
       - 1. Introduction: v1.5/01-introduction.md
       - 2. Conventions: v1.5/02-conventions.md
-      - 2. IDL Profiles: v1.5/02-idl-profiles.md
-      - 3. Operational Scenarios: v1.5/04-operational-scenarios.md
-      - 4. Conclusion: v1.5/conclusion.md
-      - 5. Future Directions: v1.5/future-directions.md
-      - 6. SpatialDDS URIs: v1.5/02a-spatialdds-uris.md
-      - 7. Example Manifests: v1.5/03-example-manifests.md
-      - 8. Glossary of Acronyms: v1.5/glossary.md
-      - 9. References: v1.5/references.md
+      - 3. IDL Profiles: v1.5/02-idl-profiles.md
+      - 4. Operational Scenarios: v1.5/04-operational-scenarios.md
+      - 5. Conclusion: v1.5/conclusion.md
+      - 6. Future Directions: v1.5/future-directions.md
+      - 7. SpatialDDS URIs: v1.5/02a-spatialdds-uris.md
+      - 8. Manifest Schema: v1.5/03-example-manifests.md
+      - 9. Glossary of Acronyms: v1.5/glossary.md
+      - 10. References: v1.5/references.md
       - Appendix A - Core Profile: v1.5/appendix-a.md
       - Appendix B - Discovery Profile: v1.5/appendix-b.md
       - Appendix C - Anchor Registry Profile: v1.5/appendix-c.md
