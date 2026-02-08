@@ -1,9 +1,100 @@
-module spatial {
-  module examples {
+// SPDX-License-Identifier: MIT
+// SpatialDDS Neural Profile 1.5 (Provisional Extension)
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
 
-    @extensibility(APPENDABLE) struct NeuralExamplePlaceholder {
-      boolean dummy;
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module neural {
+
+    const string MODULE_ID = "spatial.neural/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::Aabb3 Aabb3;
+    typedef spatial::core::BlobRef BlobRef;
+    typedef spatial::common::FrameRef FrameRef;
+
+    enum RepresentationType {
+      @value(0) NERF,
+      @value(1) GAUSSIAN_SPLAT,
+      @value(2) NEURAL_SDF,
+      @value(3) NEURAL_MESH,
+      @value(4) TRIPLANE,
+      @value(255) CUSTOM
     };
 
-  };
+    enum OutputModality {
+      @value(0) RGB,
+      @value(1) DEPTH,
+      @value(2) NORMALS,
+      @value(3) SEMANTICS,
+      @value(4) ALPHA
+    };
+
+    @extensibility(APPENDABLE) struct NeuralFieldMeta {
+      @key string field_id;
+
+      RepresentationType rep_type;
+      string model_format;
+
+      FrameRef frame_ref;
+      boolean has_extent;
+      Aabb3 extent;
+
+      boolean has_quality;
+      float quality;
+      string checkpoint;
+
+      sequence<BlobRef, 16> model_blobs;
+
+      sequence<OutputModality, 8> supported_outputs;
+
+      boolean has_render_time_ms;
+      float render_time_ms;
+
+      Time stamp;
+      string schema_version;             // MUST be "spatial.neural/1.5"
+    };
+
+    @extensibility(APPENDABLE) struct ViewSynthesisRequest {
+      @key string request_id;
+      string field_id;
+
+      PoseSE3 camera_pose;
+      boolean has_fov_deg;
+      float fov_y_deg;
+      uint16 width;
+      uint16 height;
+
+      sequence<OutputModality, 8> requested_outputs;
+
+      string reply_topic;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct ViewSynthesisResponse {
+      @key string request_id;
+
+      sequence<BlobRef, 8> result_blobs;
+
+      boolean has_render_time_ms;
+      float render_time_ms;
+      boolean has_quality;
+      float quality;
+
+      boolean succeeded;
+      string diagnostic;
+
+      Time stamp;
+    };
+
+  }; // module neural
 };

@@ -2799,41 +2799,348 @@ module spatial {
 
 ## **Appendix E: Provisional Extension Examples**
 
-The following examples illustrate how provisional extensions might be used in practice. They are not normative and are provided only to show how Neural and Agent profiles could appear on the wire.
+These provisional extensions are intentionally minimal and subject to breaking changes in future versions. Implementers SHOULD treat all struct layouts as unstable and MUST NOT assume wire compatibility across spec revisions.
 
 ### **Example: Neural Extension (Provisional)**
 
-*This example shows how a service might publish metadata for a Gaussian splat field covering part of a city block.*
+This profile describes neural scene representations — such as NeRFs, Gaussian splats, and neural SDFs — and provides a request/reply pattern for view synthesis. A mapping service might publish a `NeuralFieldMeta` describing a Gaussian splat covering part of a city block, and an AR client could request novel views from arbitrary camera poses.
+
+The profile intentionally avoids prescribing model internals. `model_format` is a freeform string that identifies the training framework and version; model weights ride as blobs. This keeps the schema stable across the rapid evolution of neural representation research while giving consumers enough metadata to discover fields, check coverage, and request renders.
+
+`NeuralFieldMeta` follows the same static-meta pattern as `RadMeta` and `LidarMeta`: publish once with RELIABLE + TRANSIENT_LOCAL QoS so late joiners receive the current state. `ViewSynthesisRequest` and `ViewSynthesisResponse` follow the request/reply pattern used by `SnapshotRequest` and `SnapshotResponse`.
 
 ```idl
-module spatial {
-  module examples {
+// SPDX-License-Identifier: MIT
+// SpatialDDS Neural Profile 1.5 (Provisional Extension)
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
 
-    @extensibility(APPENDABLE) struct NeuralExamplePlaceholder {
-      boolean dummy;
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module neural {
+
+    const string MODULE_ID = "spatial.neural/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::Aabb3 Aabb3;
+    typedef spatial::core::BlobRef BlobRef;
+    typedef spatial::common::FrameRef FrameRef;
+
+    enum RepresentationType {
+      @value(0) NERF,
+      @value(1) GAUSSIAN_SPLAT,
+      @value(2) NEURAL_SDF,
+      @value(3) NEURAL_MESH,
+      @value(4) TRIPLANE,
+      @value(255) CUSTOM
     };
 
-  };
+    enum OutputModality {
+      @value(0) RGB,
+      @value(1) DEPTH,
+      @value(2) NORMALS,
+      @value(3) SEMANTICS,
+      @value(4) ALPHA
+    };
+
+    @extensibility(APPENDABLE) struct NeuralFieldMeta {
+      @key string field_id;
+
+      RepresentationType rep_type;
+      string model_format;
+
+      FrameRef frame_ref;
+      boolean has_extent;
+      Aabb3 extent;
+
+      boolean has_quality;
+      float quality;
+      string checkpoint;
+
+      sequence<BlobRef, 16> model_blobs;
+
+      sequence<OutputModality, 8> supported_outputs;
+
+      boolean has_render_time_ms;
+      float render_time_ms;
+
+      Time stamp;
+      string schema_version;             // MUST be "spatial.neural/1.5"
+    };
+
+    @extensibility(APPENDABLE) struct ViewSynthesisRequest {
+      @key string request_id;
+      string field_id;
+
+      PoseSE3 camera_pose;
+      boolean has_fov_deg;
+      float fov_y_deg;
+      uint16 width;
+      uint16 height;
+
+      sequence<OutputModality, 8> requested_outputs;
+
+      string reply_topic;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
+    @extensibility(APPENDABLE) struct ViewSynthesisResponse {
+      @key string request_id;
+
+      sequence<BlobRef, 8> result_blobs;
+
+      boolean has_render_time_ms;
+      float render_time_ms;
+      boolean has_quality;
+      float quality;
+
+      boolean succeeded;
+      string diagnostic;
+
+      Time stamp;
+    };
+
+  }; // module neural
 };
 
+```
+
+**Example JSON (Informative)**
+```json
+{
+  "field_id": "splat/downtown-sf-block-7",
+  "rep_type": "GAUSSIAN_SPLAT",
+  "model_format": "inria-3dgs-v1",
+  "frame_ref": {
+    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
+    "fqn": "earth-fixed"
+  },
+  "has_extent": true,
+  "extent": {
+    "min_xyz": [-122.420, 37.790, -5.0],
+    "max_xyz": [-122.410, 37.800, 50.0]
+  },
+  "has_quality": true,
+  "quality": 0.85,
+  "checkpoint": "epoch-30000",
+  "model_blobs": [
+    { "blob_id": "gs-weights-001", "role": "weights", "checksum": "sha256:a1b2c3..." },
+    { "blob_id": "gs-pointcloud-001", "role": "point_cloud", "checksum": "sha256:d4e5f6..." }
+  ],
+  "supported_outputs": ["RGB", "DEPTH", "NORMALS"],
+  "has_render_time_ms": true,
+  "render_time_ms": 12.5,
+  "stamp": { "sec": 1714070400, "nanosec": 0 },
+  "schema_version": "spatial.neural/1.5"
+}
 ```
 
 ### **Example: Agent Extension (Provisional)**
 
-*This example shows how an AI planner could issue a navigation task and later update its status.*
+This profile provides lightweight task coordination for AI agents and planners operating over the SpatialDDS bus. A planner publishes `TaskRequest` messages describing spatial tasks — navigate to a location, observe a region, build a map — and agents claim and report progress via `TaskStatus`.
+
+The design is deliberately minimal. Task-specific parameters are carried as freeform JSON in the `params` field, avoiding premature schema commitment for the wide variety of agent capabilities in robotics, drone fleets, AR-guided workflows, and AI services. Spatial targeting reuses the existing `PoseSE3`, `FrameRef`, and `SpatialUri` types so tasks can reference any addressable resource on the bus.
+
+The profile does not define planning algorithms, auction or bidding protocols, or inter-agent negotiation. These are application-layer concerns built on top of the task primitives.
 
 ```idl
-module spatial {
-  module examples {
+// SPDX-License-Identifier: MIT
+// SpatialDDS Agent Profile 1.5 (Provisional Extension)
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
 
-    @extensibility(APPENDABLE) struct AgentExamplePlaceholder {
-      boolean dummy;
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module agent {
+
+    const string MODULE_ID = "spatial.agent/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::common::FrameRef FrameRef;
+    typedef string SpatialUri;
+
+    // ---- Task types ----
+    // Broad categories of spatial tasks an agent might execute.
+    // CUSTOM allows deployment-specific task types with params.
+    enum TaskType {
+      @value(0) NAVIGATE,         // Move to a target pose or region
+      @value(1) OBSERVE,          // Collect sensor data at/around a target
+      @value(2) MANIPULATE,       // Physically interact with an object
+      @value(3) MAP,              // Build or extend a spatial map
+      @value(4) DELIVER,          // Transport an item to a target
+      @value(5) REPORT,           // Generate and publish a data report
+      @value(255) CUSTOM          // Deployment-specific; describe in params
     };
 
-  };
+    // ---- Task lifecycle states ----
+    enum TaskState {
+      @value(0) PENDING,          // Published, not yet accepted
+      @value(1) ACCEPTED,         // Agent has claimed the task
+      @value(2) IN_PROGRESS,      // Execution underway
+      @value(3) COMPLETED,        // Successfully finished
+      @value(4) FAILED,           // Execution failed
+      @value(5) CANCELLED         // Withdrawn by requester or agent
+    };
+
+    // ---- Priority levels ----
+    enum TaskPriority {
+      @value(0) LOW,
+      @value(1) NORMAL,
+      @value(2) HIGH,
+      @value(3) CRITICAL
+    };
+
+    // ---- Task request ----
+    // A planner or coordinator publishes a task for agents to claim.
+    // Keyed by task_id so DDS KEEP_LAST gives the latest version.
+    @extensibility(APPENDABLE) struct TaskRequest {
+      @key string task_id;               // Unique task identifier
+
+      TaskType type;                     // What kind of task
+      TaskPriority priority;
+
+      string requester_id;               // Agent or service requesting the task
+
+      // Spatial target (optional -- not all tasks are spatially targeted)
+      boolean has_target_pose;
+      PoseSE3 target_pose;               // Goal pose (valid when flag true)
+      boolean has_target_frame;
+      FrameRef target_frame;             // Frame for target_pose (valid when flag true)
+      boolean has_target_uri;
+      SpatialUri target_uri;             // URI of target resource -- anchor, content,
+                                         // service, or any addressable entity
+                                         // (valid when flag true)
+
+      // Task-specific parameters -- freeform JSON
+      // Avoids premature schema commitment for diverse agent capabilities.
+      // Examples:
+      //   NAVIGATE: {"speed_mps": 1.5, "altitude_m": 30}
+      //   OBSERVE:  {"sensor": "cam_front", "duration_sec": 60, "coverage_overlap": 0.3}
+      //   MAP:      {"resolution_m": 0.05, "region_radius_m": 50}
+      //   REPORT:   {"format": "json", "include_images": true}
+      string params;                     // JSON object string; empty if no params
+
+      // Timing
+      boolean has_deadline;
+      Time deadline;                     // Task must complete by this time
+                                         // (valid when has_deadline == true)
+      Time stamp;                        // Publication time
+      uint32 ttl_sec;                    // Task offer expires after this
+    };
+
+    // ---- Task status ----
+    // The executing agent (or the requester for CANCELLED) publishes
+    // status updates. Keyed by task_id for KEEP_LAST per task.
+    @extensibility(APPENDABLE) struct TaskStatus {
+      @key string task_id;               // Mirrors TaskRequest.task_id
+
+      TaskState state;
+      string agent_id;                   // Agent executing (or that attempted);
+                                         // empty if PENDING
+
+      // Progress (optional -- meaningful for IN_PROGRESS)
+      boolean has_progress;
+      float progress;                    // 0..1 (valid when has_progress == true)
+
+      // Result (optional -- meaningful for COMPLETED)
+      boolean has_result_uri;
+      SpatialUri result_uri;             // URI to result artifact (map, report, etc.)
+                                         // (valid when has_result_uri == true)
+
+      // Diagnostics
+      string diagnostic;                 // Empty on success; error/status description
+                                         // on FAILED or CANCELLED
+
+      Time stamp;                        // Status update time
+    };
+
+  }; // module agent
 };
 
 ```
+
+**Example JSON (Informative)**
+
+Task Request:
+```json
+{
+  "task_id": "task/survey-block-7",
+  "type": "OBSERVE",
+  "priority": "HIGH",
+  "requester_id": "planner/fleet-coordinator",
+  "has_target_pose": true,
+  "target_pose": {
+    "t": [-122.415, 37.795, 30.0],
+    "q": [0.0, 0.0, 0.0, 1.0]
+  },
+  "has_target_frame": true,
+  "target_frame": {
+    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
+    "fqn": "earth-fixed"
+  },
+  "has_target_uri": false,
+  "params": "{\"sensor\": \"cam_nadir\", \"duration_sec\": 120, \"overlap\": 0.4}",
+  "has_deadline": true,
+  "deadline": { "sec": 1714074000, "nanosec": 0 },
+  "stamp": { "sec": 1714070400, "nanosec": 0 },
+  "ttl_sec": 300
+}
+```
+
+Task Status:
+```json
+{
+  "task_id": "task/survey-block-7",
+  "state": "IN_PROGRESS",
+  "agent_id": "drone/unit-14",
+  "has_progress": true,
+  "progress": 0.45,
+  "has_result_uri": false,
+  "diagnostic": "",
+  "stamp": { "sec": 1714071200, "nanosec": 0 }
+}
+```
+
+### **Integration Notes (Informative)**
+
+Discovery integration: Neural and agent services advertise via `Announce` with `ServiceKind::OTHER`. To signal neural or agent capabilities, services SHOULD include feature flags in `caps.features` such as `neural.field_meta`, `neural.view_synth`, or `agent.tasking`.
+
+Topic naming: following `spatialdds/<domain>/<stream>/<type>/<version>`:
+
+| Message | Suggested Topic Pattern |
+|---|---|
+| `NeuralFieldMeta` | `spatialdds/neural/<field_id>/field_meta/v1` |
+| `ViewSynthesisRequest` | `spatialdds/neural/<field_id>/view_synth_req/v1` |
+| `ViewSynthesisResponse` | Uses `reply_topic` from request |
+| `TaskRequest` | `spatialdds/agent/tasks/task_request/v1` |
+| `TaskStatus` | `spatialdds/agent/tasks/task_status/v1` |
+
+QoS suggestions (informative):
+
+| Message | Reliability | Durability | History |
+|---|---|---|---|
+| `NeuralFieldMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `ViewSynthesisRequest` | RELIABLE | VOLATILE | KEEP_ALL |
+| `ViewSynthesisResponse` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `TaskRequest` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `TaskStatus` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+
+Profile matrix: Do NOT add these to the Profile Matrix table in §3.5 yet. They remain in Appendix E as provisional. When promoted to stable in a future version, they move to Appendix D and enter the matrix.
 
 ## **Appendix F: SpatialDDS URI Scheme (ABNF)**
 

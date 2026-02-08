@@ -1,9 +1,119 @@
-module spatial {
-  module examples {
+// SPDX-License-Identifier: MIT
+// SpatialDDS Agent Profile 1.5 (Provisional Extension)
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
 
-    @extensibility(APPENDABLE) struct AgentExamplePlaceholder {
-      boolean dummy;
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module agent {
+
+    const string MODULE_ID = "spatial.agent/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::common::FrameRef FrameRef;
+    typedef string SpatialUri;
+
+    // ---- Task types ----
+    // Broad categories of spatial tasks an agent might execute.
+    // CUSTOM allows deployment-specific task types with params.
+    enum TaskType {
+      @value(0) NAVIGATE,         // Move to a target pose or region
+      @value(1) OBSERVE,          // Collect sensor data at/around a target
+      @value(2) MANIPULATE,       // Physically interact with an object
+      @value(3) MAP,              // Build or extend a spatial map
+      @value(4) DELIVER,          // Transport an item to a target
+      @value(5) REPORT,           // Generate and publish a data report
+      @value(255) CUSTOM          // Deployment-specific; describe in params
     };
 
-  };
+    // ---- Task lifecycle states ----
+    enum TaskState {
+      @value(0) PENDING,          // Published, not yet accepted
+      @value(1) ACCEPTED,         // Agent has claimed the task
+      @value(2) IN_PROGRESS,      // Execution underway
+      @value(3) COMPLETED,        // Successfully finished
+      @value(4) FAILED,           // Execution failed
+      @value(5) CANCELLED         // Withdrawn by requester or agent
+    };
+
+    // ---- Priority levels ----
+    enum TaskPriority {
+      @value(0) LOW,
+      @value(1) NORMAL,
+      @value(2) HIGH,
+      @value(3) CRITICAL
+    };
+
+    // ---- Task request ----
+    // A planner or coordinator publishes a task for agents to claim.
+    // Keyed by task_id so DDS KEEP_LAST gives the latest version.
+    @extensibility(APPENDABLE) struct TaskRequest {
+      @key string task_id;               // Unique task identifier
+
+      TaskType type;                     // What kind of task
+      TaskPriority priority;
+
+      string requester_id;               // Agent or service requesting the task
+
+      // Spatial target (optional -- not all tasks are spatially targeted)
+      boolean has_target_pose;
+      PoseSE3 target_pose;               // Goal pose (valid when flag true)
+      boolean has_target_frame;
+      FrameRef target_frame;             // Frame for target_pose (valid when flag true)
+      boolean has_target_uri;
+      SpatialUri target_uri;             // URI of target resource -- anchor, content,
+                                         // service, or any addressable entity
+                                         // (valid when flag true)
+
+      // Task-specific parameters -- freeform JSON
+      // Avoids premature schema commitment for diverse agent capabilities.
+      // Examples:
+      //   NAVIGATE: {"speed_mps": 1.5, "altitude_m": 30}
+      //   OBSERVE:  {"sensor": "cam_front", "duration_sec": 60, "coverage_overlap": 0.3}
+      //   MAP:      {"resolution_m": 0.05, "region_radius_m": 50}
+      //   REPORT:   {"format": "json", "include_images": true}
+      string params;                     // JSON object string; empty if no params
+
+      // Timing
+      boolean has_deadline;
+      Time deadline;                     // Task must complete by this time
+                                         // (valid when has_deadline == true)
+      Time stamp;                        // Publication time
+      uint32 ttl_sec;                    // Task offer expires after this
+    };
+
+    // ---- Task status ----
+    // The executing agent (or the requester for CANCELLED) publishes
+    // status updates. Keyed by task_id for KEEP_LAST per task.
+    @extensibility(APPENDABLE) struct TaskStatus {
+      @key string task_id;               // Mirrors TaskRequest.task_id
+
+      TaskState state;
+      string agent_id;                   // Agent executing (or that attempted);
+                                         // empty if PENDING
+
+      // Progress (optional -- meaningful for IN_PROGRESS)
+      boolean has_progress;
+      float progress;                    // 0..1 (valid when has_progress == true)
+
+      // Result (optional -- meaningful for COMPLETED)
+      boolean has_result_uri;
+      SpatialUri result_uri;             // URI to result artifact (map, report, etc.)
+                                         // (valid when has_result_uri == true)
+
+      // Diagnostics
+      string diagnostic;                 // Empty on success; error/status description
+                                         // on FAILED or CANCELLED
+
+      Time stamp;                        // Status update time
+    };
+
+  }; // module agent
 };
