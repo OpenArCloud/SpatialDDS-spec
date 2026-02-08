@@ -131,10 +131,10 @@ The conformance harness was first run against an early draft of SpatialDDS 1.5, 
 
 ### **Reproducing the Test**
 
-The conformance harness is a single self-contained Python 3 script (`nuscenes_harness_v2.py`) with no external dependencies. To run:
+The conformance harness is a single self-contained Python 3 script (`scripts/nuscenes_harness_v2.py`) with no external dependencies. To run:
 
 ```bash
-python3 nuscenes_harness_v2.py
+python3 scripts/nuscenes_harness_v2.py
 ```
 
 The script mirrors the IDL structures from this specification as Python dictionaries and checks them against the nuScenes schema. It produces a plain-text report and a JSON results file. No DDS runtime, network access, or nuScenes database download is required.
