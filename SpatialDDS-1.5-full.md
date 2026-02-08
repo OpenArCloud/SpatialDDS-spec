@@ -557,6 +557,10 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 | `coverage_hint` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) per key |
 | `content` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 
+**CoverageResponse reply topic QoS (Normative)**  
+The writer for `reply_topic` SHOULD use **RELIABLE**, **VOLATILE**, **KEEP_ALL**.  
+The querier SHOULD create a matching reader before publishing the `CoverageQuery`.
+
 #### **Discovery trust (Normative)**
 ANNOUNCE messages provide discovery convenience and are not, by themselves, authoritative. Clients **MUST** apply the Security Model requirements in §2.7 before trusting advertised URIs, topics, or services.
 
