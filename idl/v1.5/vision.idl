@@ -67,15 +67,21 @@ module spatial { module sensing { module vision {
     @value(0) LEFT,
     @value(1) RIGHT,
     @value(2) CENTER,
-    @value(3) AUX
+    @value(3) FRONT,
+    @value(4) FRONT_LEFT,
+    @value(5) FRONT_RIGHT,
+    @value(6) BACK,
+    @value(7) BACK_LEFT,
+    @value(8) BACK_RIGHT,
+    @value(9) AUX
   };
 
   @extensibility(APPENDABLE) struct CamIntrinsics {
     CamModel model;
-    uint16 width;  uint16 height;
+    uint16 width;  uint16 height;       // REQUIRED: image dimensions in pixels
     float fx; float fy; float cx; float cy;
-    Distortion dist;
-    sequence<float,16> dist_params;     // k1,k2,p1,p2,k3,... or KB params
+    Distortion dist;                    // NONE for pre-rectified images
+    sequence<float,16> dist_params;     // empty when dist == NONE
     float shutter_us;                   // exposure time
     float readout_us;                   // rolling-shutter line time (0=global)
     PixFormat pix;  ColorSpace color;
@@ -112,6 +118,7 @@ module spatial { module sensing { module vision {
     boolean has_line_readout_us;
     float   line_readout_us;            // valid when has_line_readout_us == true
     boolean rectified;                  // true if pre-rectified to pinhole
+    boolean is_key_frame;               // true if this frame is a selected keyframe
 
     FrameQuality quality;               // shared health/SNR notes
   };

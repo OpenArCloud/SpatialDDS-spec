@@ -22,6 +22,22 @@ struct FrameRef {
 - Reserved roots include `earth-fixed`, `map`, `body`, `anchor`, `local`.
 - A `FrameRef` DAG MUST be acyclic.
 
+### Constructing FQNs from External Data (Informative)
+Datasets and frameworks that use flat frame identifiers (e.g., nuScenes `calibrated_sensor.token`, ROS TF `frame_id`) must construct hierarchical FQNs when publishing to SpatialDDS.
+
+Recommended approach:
+1. Choose a root corresponding to the vehicle/robot body: `fqn = "ego"` or `fqn = "<vehicle_id>"`.
+2. Append the sensor channel as a child: `fqn = "ego/cam_front"`, `fqn = "ego/lidar_top"`.
+3. Use the original flat token as the `uuid` field.
+4. For earth-fixed references, use the reserved root `fqn = "earth-fixed"`.
+
+Example nuScenes mapping:
+```
+calibrated_sensor.token = "a1b2c3..."
+sensor.channel = "CAM_FRONT"
+-> FrameRef { uuid: "a1b2c3...", fqn: "ego/cam_front" }
+```
+
 ### Manifest References
 Manifest entries that refer to frames MUST use a `FrameRef` object rather than raw strings. Each manifest MAY define local frame aliases resolvable by `fqn`.
 

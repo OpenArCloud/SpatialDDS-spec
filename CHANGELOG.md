@@ -17,6 +17,7 @@
 - Added normative `spatial.manifest@1.5` schema with type-specific blocks and JSON Schema.
 - Added normative blob reassembly guidance for `BlobChunk` delivery.
 - Replaced the radar extension with a detection-centric profile (`RadSensorMeta`, expanded `RadDetection`, `RadDetectionSet`) and removed tensor-centric structs.
+- Updated vision, lidar, and semantics profiles with detection-centric and dataset-aligned fields (RigRole expansion, BIN_INTERLEAVED, per-point timestamps, Detection3D attributes/visibility/evidence) plus supporting normative guidance.
 
 ## Version 1.4 - 2026-02-07
 

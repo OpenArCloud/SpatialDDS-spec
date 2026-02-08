@@ -14,6 +14,23 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
   "frame_ref": { "uuid": "00000000-0000-4000-8000-000000000000", "fqn": "earth-fixed/map/device" }
   ```
 
+**Quaternion Convention Reference (Informative)**
+
+SpatialDDS uses `(x, y, z, w)` component order for all quaternion fields, aligning with OGC GeoPose. Adjacent ecosystems use different conventions; implementers ingesting external data MUST reorder components before publishing to the bus.
+
+| Source | Order | Conversion to SpatialDDS |
+|---|---|---|
+| OGC GeoPose | (x, y, z, w) | None |
+| ROS 2 (`geometry_msgs/Quaternion`) | (x, y, z, w) | None |
+| nuScenes / pyquaternion | (w, x, y, z) | `(q[1], q[2], q[3], q[0])` |
+| Eigen (default) | (w, x, y, z) | `(q.x(), q.y(), q.z(), q.w())` |
+| Unity | (x, y, z, w) | None (left-handed) |
+| Unreal Engine | (x, y, z, w) | None (left-handed) |
+| OpenXR | (x, y, z, w) | None |
+| glTF | (x, y, z, w) | None |
+
+**Handedness note (Informative):** SpatialDDS does not prescribe handedness. Frame semantics are defined by `FrameRef` and transform chains, not by a global axis convention. Producers from left-handed engines (Unity, Unreal) must ensure the transform chain is consistent, not merely that the quaternion component order matches.
+
 ### **2.2 Optional Fields & Discriminated Unions**
 
 - Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field.
@@ -58,6 +75,14 @@ These rules apply to any message that carries the trio `{ stamp, source_id, seq 
 
 1. **Intra-source** — Order solely by `seq`. Missing values under RELIABLE QoS indicate loss.
 2. **Inter-source merge** — Order by (`stamp`, `source_id`, `seq`) within a bounded window selected by the consumer.
+
+**Synthesizing (`source_id`, `seq`) from External Data (Informative)**  
+Datasets and replay tools that lack native per-writer sequence counters SHOULD synthesize them as follows:
+1. Set `source_id` to a stable identifier for the data source (e.g., dataset name + sensor channel).
+2. Assign `seq` by sorting samples by timestamp within each `source_id` and numbering from 0.
+3. If the dataset contains gaps or non-monotonic timestamps, sort by the dataset's native ordering key and number from 0.
+
+This produces a valid (`source_id`, `seq`) tuple without requiring the original system to have had one.
 
 ### **2.6 DDS / IDL Structure**
 

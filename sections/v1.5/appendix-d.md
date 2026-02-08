@@ -81,6 +81,12 @@ ignored.
 
 *Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
+**Pre-Rectified Images (Normative)**  
+When images have been rectified (undistorted) before publication, producers MUST set `dist = NONE`, `dist_params` to an empty sequence, and `model = PINHOLE`. Consumers receiving `dist = NONE` MUST NOT apply any distortion correction.
+
+**Image Dimensions (Normative)**  
+`CamIntrinsics.width` and `CamIntrinsics.height` are REQUIRED and MUST be populated from the actual image dimensions. A `VisionMeta` sample with `width = 0` or `height = 0` is malformed and consumers MAY reject it.
+
 ```idl
 {{include:idl/v1.5/vision.idl}}
 ```
@@ -97,6 +103,11 @@ ignored.
 
 *2D detections tied to keyframes; 3D oriented boxes in world frames (optionally tiled).*
 
+**Size Convention (Normative)**  
+`Detection3D.size` is the extent of the oriented bounding box in the object's local frame (center + q):  
+`size[0]` = width (local X), `size[1]` = height (local Z), `size[2]` = depth (local Y).  
+All values are in meters and MUST be non-negative. For datasets that use `(width, length, height)`, map as `(width, height, length)`.
+
 ```idl
 {{include:idl/v1.5/semantics.idl}}
 ```
@@ -112,6 +123,25 @@ ignored.
 ### **Lidar Extension**
 
 *Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
+
+**`BIN_INTERLEAVED` Encoding (Normative)**  
+`BIN_INTERLEAVED` indicates raw interleaved binary where each point is a contiguous record of fields defined by the `PointLayout` enum. There is no header. The ring field is serialized as `uint16` per the `LidarDetection.ring` type.
+
+| Layout | Fields per point | Default byte-width per field |
+|---|---|---|
+| `XYZ_I` | x, y, z, intensity | 4 × float32 = 16 bytes |
+| `XYZ_I_R` | x, y, z, intensity, ring | 4 × float32 + 1 × uint16 = 18 bytes |
+| `XYZ_I_R_N` | x, y, z, intensity, ring, nx, ny, nz | 4 × float32 + 1 × uint16 + 3 × float32 = 30 bytes |
+| `XYZ_I_R_T` | x, y, z, intensity, ring, t | 4 × float32 + 1 × uint16 + 1 × float32 = 22 bytes |
+| `XYZ_I_R_T_N` | x, y, z, intensity, ring, t, nx, ny, nz | 4 × float32 + 1 × uint16 + 1 × float32 + 3 × float32 = 34 bytes |
+
+When `BIN_INTERLEAVED` is used, consumers MUST interpret the blob as `N × record_size` bytes where `N = blob_size / record_size`.
+
+**Per-Point Timestamps (Normative)**  
+Layouts `XYZ_I_R_T` and `XYZ_I_R_T_N` include a per-point relative timestamp field `t` serialized as `float32`, representing seconds elapsed since `FrameHeader.t_start`. Consumers performing motion compensation SHOULD use `t_start + point.t` as the acquisition time for each point.
+
+**Computing `t_end` for Spinning Lidars (Informative)**  
+When a source provides only `t_start`, producers SHOULD compute `t_end` as `t_start + (1.0 / nominal_rate_hz)` for spinning lidars, or as `t_start + max(point.t)` when per-point timestamps are available. Producers MUST populate `t_end` rather than leaving it as zero.
 
 ```idl
 {{include:idl/v1.5/lidar.idl}}

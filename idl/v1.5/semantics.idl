@@ -54,7 +54,7 @@ module spatial {
 
       // Oriented bounding box in frame_ref
       spatial::common::Vec3 center;      // m
-      spatial::common::Vec3 size;        // width,height,depth (m)
+      spatial::common::Vec3 size;        // (width, height, depth) in meters; see Size Convention
       spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
 
       // Uncertainty (optional)
@@ -68,6 +68,19 @@ module spatial {
 
       Time   stamp;
       string source_id;
+
+      // Optional attribute key-value pairs
+      boolean has_attributes;
+      sequence<spatial::common::MetaKV, 8> attributes; // valid when has_attributes == true
+
+      // Occlusion / visibility (0.0 = fully occluded, 1.0 = fully visible)
+      boolean has_visibility;
+      float   visibility;                // valid when has_visibility == true
+
+      // Evidence counts
+      boolean has_num_pts;
+      uint32  num_lidar_pts;             // valid when has_num_pts == true
+      uint32  num_radar_pts;             // valid when has_num_pts == true
     };
 
     @extensibility(APPENDABLE) struct Detection3DSet {

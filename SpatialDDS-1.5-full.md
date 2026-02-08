@@ -219,6 +219,23 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
   "frame_ref": { "uuid": "00000000-0000-4000-8000-000000000000", "fqn": "earth-fixed/map/device" }
   ```
 
+**Quaternion Convention Reference (Informative)**
+
+SpatialDDS uses `(x, y, z, w)` component order for all quaternion fields, aligning with OGC GeoPose. Adjacent ecosystems use different conventions; implementers ingesting external data MUST reorder components before publishing to the bus.
+
+| Source | Order | Conversion to SpatialDDS |
+|---|---|---|
+| OGC GeoPose | (x, y, z, w) | None |
+| ROS 2 (`geometry_msgs/Quaternion`) | (x, y, z, w) | None |
+| nuScenes / pyquaternion | (w, x, y, z) | `(q[1], q[2], q[3], q[0])` |
+| Eigen (default) | (w, x, y, z) | `(q.x(), q.y(), q.z(), q.w())` |
+| Unity | (x, y, z, w) | None (left-handed) |
+| Unreal Engine | (x, y, z, w) | None (left-handed) |
+| OpenXR | (x, y, z, w) | None |
+| glTF | (x, y, z, w) | None |
+
+**Handedness note (Informative):** SpatialDDS does not prescribe handedness. Frame semantics are defined by `FrameRef` and transform chains, not by a global axis convention. Producers from left-handed engines (Unity, Unreal) must ensure the transform chain is consistent, not merely that the quaternion component order matches.
+
 ### **2.2 Optional Fields & Discriminated Unions**
 
 - Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field.
@@ -263,6 +280,14 @@ These rules apply to any message that carries the trio `{ stamp, source_id, seq 
 
 1. **Intra-source** — Order solely by `seq`. Missing values under RELIABLE QoS indicate loss.
 2. **Inter-source merge** — Order by (`stamp`, `source_id`, `seq`) within a bounded window selected by the consumer.
+
+**Synthesizing (`source_id`, `seq`) from External Data (Informative)**  
+Datasets and replay tools that lack native per-writer sequence counters SHOULD synthesize them as follows:
+1. Set `source_id` to a stable identifier for the data source (e.g., dataset name + sensor channel).
+2. Assign `seq` by sorting samples by timestamp within each `source_id` and numbering from 0.
+3. If the dataset contains gaps or non-monotonic timestamps, sort by the dataset's native ordering key and number from 0.
+
+This produces a valid (`source_id`, `seq`) tuple without requiring the original system to have had one.
 
 ### **2.6 DDS / IDL Structure**
 
@@ -763,6 +788,16 @@ earth-fixed root through declared transforms or manifests.
 Implementations are not required to resolve every local frame at runtime,
 but when they do, the resulting coverage must be interpretable in an
 earth-fixed reference frame.
+
+#### Local-Frame Datasets Without GPS (Informative)
+Some datasets and deployments operate entirely in a local metric coordinate frame without a known WGS84 origin. In this case:
+
+1. The `coverage_frame_ref` SHOULD reference a local frame (e.g., `fqn = "map/local"`), not `earth-fixed`.
+2. `GeoPose` fields (lat_deg, lon_deg, alt_m) MUST NOT be populated with fabricated values. Use local `FrameTransform` instead.
+3. The Anchors profile can bridge local and earth-fixed frames when a GPS fix or survey becomes available.
+4. `coverage.global` MUST be `false` for local-frame-only deployments.
+
+This is the expected path for indoor robotics, warehouse automation, and datasets recorded without RTK-GPS.
 
 #### Coverage Evaluation Pseudocode (Informative)
 ```
@@ -2247,6 +2282,12 @@ module spatial {
 
 *Camera intrinsics, video frames, and keypoints/tracks for perception and analytics pipelines. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
+**Pre-Rectified Images (Normative)**  
+When images have been rectified (undistorted) before publication, producers MUST set `dist = NONE`, `dist_params` to an empty sequence, and `model = PINHOLE`. Consumers receiving `dist = NONE` MUST NOT apply any distortion correction.
+
+**Image Dimensions (Normative)**  
+`CamIntrinsics.width` and `CamIntrinsics.height` are REQUIRED and MUST be populated from the actual image dimensions. A `VisionMeta` sample with `width = 0` or `height = 0` is malformed and consumers MAY reject it.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Vision (sensing.vision) 1.5 — Extension profile
@@ -2317,15 +2358,21 @@ module spatial { module sensing { module vision {
     @value(0) LEFT,
     @value(1) RIGHT,
     @value(2) CENTER,
-    @value(3) AUX
+    @value(3) FRONT,
+    @value(4) FRONT_LEFT,
+    @value(5) FRONT_RIGHT,
+    @value(6) BACK,
+    @value(7) BACK_LEFT,
+    @value(8) BACK_RIGHT,
+    @value(9) AUX
   };
 
   @extensibility(APPENDABLE) struct CamIntrinsics {
     CamModel model;
-    uint16 width;  uint16 height;
+    uint16 width;  uint16 height;       // REQUIRED: image dimensions in pixels
     float fx; float fy; float cx; float cy;
-    Distortion dist;
-    sequence<float,16> dist_params;     // k1,k2,p1,p2,k3,... or KB params
+    Distortion dist;                    // NONE for pre-rectified images
+    sequence<float,16> dist_params;     // empty when dist == NONE
     float shutter_us;                   // exposure time
     float readout_us;                   // rolling-shutter line time (0=global)
     PixFormat pix;  ColorSpace color;
@@ -2362,6 +2409,7 @@ module spatial { module sensing { module vision {
     boolean has_line_readout_us;
     float   line_readout_us;            // valid when has_line_readout_us == true
     boolean rectified;                  // true if pre-rectified to pinhole
+    boolean is_key_frame;               // true if this frame is a selected keyframe
 
     FrameQuality quality;               // shared health/SNR notes
   };
@@ -2500,6 +2548,11 @@ module spatial {
 
 *2D detections tied to keyframes; 3D oriented boxes in world frames (optionally tiled).*
 
+**Size Convention (Normative)**  
+`Detection3D.size` is the extent of the oriented bounding box in the object's local frame (center + q):  
+`size[0]` = width (local X), `size[1]` = height (local Z), `size[2]` = depth (local Y).  
+All values are in meters and MUST be non-negative. For datasets that use `(width, length, height)`, map as `(width, height, length)`.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Semantics 1.5
@@ -2557,7 +2610,7 @@ module spatial {
 
       // Oriented bounding box in frame_ref
       spatial::common::Vec3 center;      // m
-      spatial::common::Vec3 size;        // width,height,depth (m)
+      spatial::common::Vec3 size;        // (width, height, depth) in meters; see Size Convention
       spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
 
       // Uncertainty (optional)
@@ -2571,6 +2624,19 @@ module spatial {
 
       Time   stamp;
       string source_id;
+
+      // Optional attribute key-value pairs
+      boolean has_attributes;
+      sequence<spatial::common::MetaKV, 8> attributes; // valid when has_attributes == true
+
+      // Occlusion / visibility (0.0 = fully occluded, 1.0 = fully visible)
+      boolean has_visibility;
+      float   visibility;                // valid when has_visibility == true
+
+      // Evidence counts
+      boolean has_num_pts;
+      uint32  num_lidar_pts;             // valid when has_num_pts == true
+      uint32  num_radar_pts;             // valid when has_num_pts == true
     };
 
     @extensibility(APPENDABLE) struct Detection3DSet {
@@ -2767,6 +2833,25 @@ module spatial { module sensing { module rad {
 
 *Lidar metadata, compressed point cloud frames, and detections. ROI semantics follow §2 Conventions for global normative rules; axes use the Sensing Common AXIS_CENTERS/AXIS_LINSPACE union encoding.* See §2 Conventions for global normative rules.
 
+**`BIN_INTERLEAVED` Encoding (Normative)**  
+`BIN_INTERLEAVED` indicates raw interleaved binary where each point is a contiguous record of fields defined by the `PointLayout` enum. There is no header. The ring field is serialized as `uint16` per the `LidarDetection.ring` type.
+
+| Layout | Fields per point | Default byte-width per field |
+|---|---|---|
+| `XYZ_I` | x, y, z, intensity | 4 × float32 = 16 bytes |
+| `XYZ_I_R` | x, y, z, intensity, ring | 4 × float32 + 1 × uint16 = 18 bytes |
+| `XYZ_I_R_N` | x, y, z, intensity, ring, nx, ny, nz | 4 × float32 + 1 × uint16 + 3 × float32 = 30 bytes |
+| `XYZ_I_R_T` | x, y, z, intensity, ring, t | 4 × float32 + 1 × uint16 + 1 × float32 = 22 bytes |
+| `XYZ_I_R_T_N` | x, y, z, intensity, ring, t, nx, ny, nz | 4 × float32 + 1 × uint16 + 1 × float32 + 3 × float32 = 34 bytes |
+
+When `BIN_INTERLEAVED` is used, consumers MUST interpret the blob as `N × record_size` bytes where `N = blob_size / record_size`.
+
+**Per-Point Timestamps (Normative)**  
+Layouts `XYZ_I_R_T` and `XYZ_I_R_T_N` include a per-point relative timestamp field `t` serialized as `float32`, representing seconds elapsed since `FrameHeader.t_start`. Consumers performing motion compensation SHOULD use `t_start + point.t` as the acquisition time for each point.
+
+**Computing `t_end` for Spinning Lidars (Informative)**  
+When a source provides only `t_start`, producers SHOULD compute `t_end` as `t_start + (1.0 / nominal_rate_hz)` for spinning lidars, or as `t_start + max(point.t)` when per-point timestamps are available. Producers MUST populate `t_end` rather than leaving it as zero.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS LiDAR (sensing.lidar) 1.5 — Extension profile
@@ -2816,6 +2901,7 @@ module spatial { module sensing { module lidar {
     @value(1)   PLY,
     @value(2)   LAS,
     @value(3)   LAZ,
+    @value(4)   BIN_INTERLEAVED,   // raw interleaved binary (fields by PointLayout)
     @value(10)  GLTF_DRACO,
     @value(20)  MPEG_PCC,
     @value(255) CUSTOM_BIN
@@ -2823,7 +2909,9 @@ module spatial { module sensing { module lidar {
   enum PointLayout { // intensity, ring, normal
     @value(0) XYZ_I,
     @value(1) XYZ_I_R,
-    @value(2) XYZ_I_R_N
+    @value(2) XYZ_I_R_N,
+    @value(3) XYZ_I_R_T,      // with per-point relative timestamp
+    @value(4) XYZ_I_R_T_N     // with per-point timestamp + normals
   };
 
   // Static description — RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
@@ -2832,9 +2920,15 @@ module spatial { module sensing { module lidar {
     StreamMeta base;                  // frame_ref, T_bus_sensor, nominal_rate_hz
     LidarType     type;
     uint16        n_rings;            // 0 if N/A
-    float         min_range_m; float max_range_m;
-    float         horiz_fov_deg_min; float horiz_fov_deg_max;
-    float         vert_fov_deg_min;  float vert_fov_deg_max;
+    boolean       has_range_limits;
+    float         min_range_m;        // valid when has_range_limits == true
+    float         max_range_m;
+    boolean       has_horiz_fov;
+    float         horiz_fov_deg_min;  // valid when has_horiz_fov == true
+    float         horiz_fov_deg_max;
+    boolean       has_vert_fov;
+    float         vert_fov_deg_min;   // valid when has_vert_fov == true
+    float         vert_fov_deg_max;
 
     // Default payload for frames (clouds ride as blobs)
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
@@ -2852,6 +2946,7 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // may override meta
     Codec         codec;              // may override meta
     PointLayout   layout;             // may override meta
+    boolean       has_per_point_timestamps; // true when blob contains per-point t
 
     // Optional quick hints (for health/telemetry)
     boolean      has_average_range_m;
@@ -3377,6 +3472,22 @@ struct FrameRef {
 - `fqn` components are slash-delimited.
 - Reserved roots include `earth-fixed`, `map`, `body`, `anchor`, `local`.
 - A `FrameRef` DAG MUST be acyclic.
+
+### Constructing FQNs from External Data (Informative)
+Datasets and frameworks that use flat frame identifiers (e.g., nuScenes `calibrated_sensor.token`, ROS TF `frame_id`) must construct hierarchical FQNs when publishing to SpatialDDS.
+
+Recommended approach:
+1. Choose a root corresponding to the vehicle/robot body: `fqn = "ego"` or `fqn = "<vehicle_id>"`.
+2. Append the sensor channel as a child: `fqn = "ego/cam_front"`, `fqn = "ego/lidar_top"`.
+3. Use the original flat token as the `uuid` field.
+4. For earth-fixed references, use the reserved root `fqn = "earth-fixed"`.
+
+Example nuScenes mapping:
+```
+calibrated_sensor.token = "a1b2c3..."
+sensor.channel = "CAM_FRONT"
+-> FrameRef { uuid: "a1b2c3...", fqn: "ego/cam_front" }
+```
 
 ### Manifest References
 Manifest entries that refer to frames MUST use a `FrameRef` object rather than raw strings. Each manifest MAY define local frame aliases resolvable by `fqn`.

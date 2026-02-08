@@ -448,6 +448,16 @@ Implementations are not required to resolve every local frame at runtime,
 but when they do, the resulting coverage must be interpretable in an
 earth-fixed reference frame.
 
+#### Local-Frame Datasets Without GPS (Informative)
+Some datasets and deployments operate entirely in a local metric coordinate frame without a known WGS84 origin. In this case:
+
+1. The `coverage_frame_ref` SHOULD reference a local frame (e.g., `fqn = "map/local"`), not `earth-fixed`.
+2. `GeoPose` fields (lat_deg, lon_deg, alt_m) MUST NOT be populated with fabricated values. Use local `FrameTransform` instead.
+3. The Anchors profile can bridge local and earth-fixed frames when a GPS fix or survey becomes available.
+4. `coverage.global` MUST be `false` for local-frame-only deployments.
+
+This is the expected path for indoor robotics, warehouse automation, and datasets recorded without RTK-GPS.
+
 #### Coverage Evaluation Pseudocode (Informative)
 ```
 if coverage.global:
