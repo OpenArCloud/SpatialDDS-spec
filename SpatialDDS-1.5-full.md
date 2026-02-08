@@ -513,6 +513,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 * Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
+* `FeatureFlag` is a struct (not a raw string) to allow future appended fields (e.g., version or parameters) without breaking wire compatibility.
 * `CoverageQuery.filter` provides structured matching for `type`, `qos_profile`, and `module_id`.
 * Empty sequences in `CoverageFilter` mean “match all” for that field.
 * When multiple filter fields are populated, they are ANDed; a result MUST match at least one value in every non-empty sequence.
