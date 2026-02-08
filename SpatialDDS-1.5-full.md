@@ -358,6 +358,8 @@ https://{authority}/.well-known/spatialdds
 
 The response MUST be `application/json` using the bootstrap manifest schema. Servers SHOULD set `Cache-Control` headers appropriate to their deployment (e.g., `max-age=300`).
 
+**Note:** The bootstrap path `/.well-known/spatialdds` and the resolver metadata path `/.well-known/spatialdds-resolver` serve distinct functions and MAY coexist on the same authority. The bootstrap path returns a Bootstrap Manifest (this section), while the resolver path returns resolver metadata for URI resolution (§7.5.2).
+
 ##### **DNS-SD Binding (Normative)**
 
 DNS-SD is the recommended first binding for local bootstrap.
