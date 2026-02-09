@@ -29,6 +29,8 @@
 - Updated Appendix I with DeepSense 6G v2 harness results and mmWave beam checks.
 - Added core GNSS diagnostics (`NavSatStatus`, `GnssFixType`, `GnssService`) and updated DeepSense conformance to v3 harness.
 - Updated Appendix I to reflect GNSS checks passing and full DeepSense coverage.
+- Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
+- Added `Edge.T_from_to` relative pose to core pose-graph edges.
 - Added §1.1 Conceptual Overview and refined introduction/profile summaries.
 - Added provisional Neural and Agent example profiles in Appendix E.
 - Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.

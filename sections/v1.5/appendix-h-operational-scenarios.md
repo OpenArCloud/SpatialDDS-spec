@@ -42,12 +42,12 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "topic": "pg.node",
       "map_id": "map/facility-west",
       "node_id": "kf_0120",
-      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.99, 0.01, -0.02, 0.03] },
+      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.01, -0.02, 0.03, 0.99] },
       "frame_ref": {
         "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
         "fqn": "facility-west/map"
       },
-      "stamp": { "sec": 1714070452, "nsec": 125000000 },
+      "stamp": { "sec": 1714070452, "nanosec": 125000000 },
       "source_id": "device/headset-17"
     }
     ```
@@ -70,7 +70,7 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
           "fqn": "earth-fixed"
         }
       },
-      "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
+      "cov": { "type": "COV_POS3", "pos": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09] }
     }
     ```
 
@@ -92,12 +92,12 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
       "state": {
         "pose_local": {
           "t": [4.21, -1.02, 0.00],
-          "q": [1, 0, 0, 0]
+          "q": [0, 0, 0, 1]
         },
         "door_status": "open",
         "last_maintenance": "2024-03-22"
       },
-      "stamp": { "sec": 1714070520, "nsec": 0 }
+      "stamp": { "sec": 1714070520, "nanosec": 0 }
     }
     ```
 

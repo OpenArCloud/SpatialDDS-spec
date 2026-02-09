@@ -88,7 +88,7 @@ module spatial {
       FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;
       TileKey tile_key;                   // valid when has_tile = true
-      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤128
+      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤256
       Time   stamp;
       string source_id;
     };

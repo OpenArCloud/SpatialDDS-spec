@@ -120,6 +120,7 @@ module spatial {
       string from_id;          // source node
       string to_id;            // target node
       EdgeTypeCore type;       // ODOM or LOOP
+      PoseSE3 T_from_to;       // relative transform from->to
       spatial::common::Mat6x6 information; // 6x6 info matrix (row-major)
       Time   stamp;
       string source_id;

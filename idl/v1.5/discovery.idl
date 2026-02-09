@@ -52,7 +52,7 @@ module spatial {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
       string type;        // geometry_tile | video_frame | radar_detection | radar_tensor | seg_mask | desc_array | rf_beam
       string version;     // currently fixed to "v1"
-      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
+      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | RF_BEAM_RT | SEG_MASK_RT | DESC_BATCH
       // type, version, and qos_profile are mandatory fields describing the
       // topic’s semantic type and QoS profile.
       // optional advisory hints (topic-level, not per-message)

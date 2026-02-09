@@ -89,6 +89,16 @@ When images have been rectified (undistorted) before publication, producers MUST
 **Image Dimensions (Normative)**  
 `CamIntrinsics.width` and `CamIntrinsics.height` are REQUIRED and MUST be populated from the actual image dimensions. A `VisionMeta` sample with `width = 0` or `height = 0` is malformed and consumers MAY reject it.
 
+**Distortion Model Mapping (Informative)**  
+Vision uses `CamModel` + `Distortion`, while SLAM Frontend uses `DistortionModelKind`. Implementers bridging the two SHOULD map as follows:
+
+| Vision | SLAM Frontend | Notes |
+|---|---|---|
+| `Distortion.NONE` | `DistortionModelKind.NONE` | No distortion |
+| `Distortion.RADTAN` | `DistortionModelKind.RADTAN` | Brown-Conrady |
+| `Distortion.KANNALA_BRANDT` | `DistortionModelKind.KANNALA_BRANDT` | Fisheye |
+| `CamModel.FISHEYE_EQUIDISTANT` | `DistortionModelKind.EQUIDISTANT` | Equivalent naming |
+
 ```idl
 {{include:idl/v1.5/vision.idl}}
 ```

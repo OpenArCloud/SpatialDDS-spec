@@ -235,17 +235,17 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
 ```
 
 ### 8.4 Field Notes (Normative)
-+* **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
-+* **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
-+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
-+* **Assets (`assets`)** — URIs referencing external content. Each has a `uri`, `media_type`, and `hash`.
-+* All orientation fields follow the quaternion order defined in §2.1.
-+
-+### 8.5 Practical Guidance (Informative)
-+* Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
-+* When multiple frames exist, use one manifest per frame for clarity.  
-+* Use HTTPS, DDS, or file URIs interchangeably — the `uri` scheme is transport-agnostic.  
-+* Assets should prefer registered media types for interoperability.
-+
-+### 8.6 Summary (Informative)
-+Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.
+* **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
+* **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
+* **Assets (`assets`)** — URIs referencing external content. Each has a `uri`, `media_type`, and `hash`.
+* All orientation fields follow the quaternion order defined in §2.1.
+
+### 8.5 Practical Guidance (Informative)
+* Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
+* When multiple frames exist, use one manifest per frame for clarity.  
+* Use HTTPS, DDS, or file URIs interchangeably — the `uri` scheme is transport-agnostic.  
+* Assets should prefer registered media types for interoperability.
+
+### 8.6 Summary (Informative)
+Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.

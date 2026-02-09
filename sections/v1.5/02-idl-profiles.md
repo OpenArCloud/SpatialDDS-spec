@@ -24,6 +24,8 @@ The Core profile defines the essential building blocks for representing and shar
 
 **GNSS diagnostics (Normative):** `NavSatStatus` is a companion to `GeoPose` that carries GNSS receiver diagnostics (fix type, DOP, satellite count, ground velocity) on a parallel topic. It is published alongside GNSS-derived GeoPoses and MUST NOT be used to annotate non-GNSS localization outputs.
 
+**NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct and identifies the GNSS receiver. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream. Producers publishing GNSS-derived GeoPoses SHOULD co-publish NavSatStatus at the same cadence. NavSatStatus is not a registered discovery type and does not require a `TopicMeta` entry in `Announce.topics[]`.
+
 #### **Blob Reassembly (Normative)**
 
 Blob payloads are transported as `BlobChunk` sequences. Consumers MUST be prepared for partial delivery and SHOULD apply a per-blob timeout window based on expected rate and `total_chunks`.
@@ -93,7 +95,7 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 
 **Normative rules**
 
-- `domain_id` MUST be a valid DDS domain ID (0–232).
+- `domain_id` MUST be a valid DDS domain ID (0–232 per the RTPS specification; higher values may require non-standard configuration).
 - `initial_peers` MUST contain at least one locator. Locator format follows the DDS implementation's peer descriptor syntax.
 - Consumers SHOULD attempt all listed peers and use the first that responds.
 - The bootstrap manifest is a discovery aid, not a security boundary. Deployments requiring authentication MUST use DDS Security or an equivalent transport-level mechanism.
@@ -241,7 +243,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   },
   "expr": "",
   "reply_topic": "spatialdds/discovery/response/q1",
-  "stamp": { "sec": 1714070400, "nsec": 0 },
+  "stamp": { "sec": 1714070400, "nanosec": 0 },
   "ttl_sec": 30
 }
 ```

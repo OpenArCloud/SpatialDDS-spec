@@ -367,6 +367,8 @@ The Core profile defines the essential building blocks for representing and shar
 
 **GNSS diagnostics (Normative):** `NavSatStatus` is a companion to `GeoPose` that carries GNSS receiver diagnostics (fix type, DOP, satellite count, ground velocity) on a parallel topic. It is published alongside GNSS-derived GeoPoses and MUST NOT be used to annotate non-GNSS localization outputs.
 
+**NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct and identifies the GNSS receiver. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream. Producers publishing GNSS-derived GeoPoses SHOULD co-publish NavSatStatus at the same cadence. NavSatStatus is not a registered discovery type and does not require a `TopicMeta` entry in `Announce.topics[]`.
+
 #### **Blob Reassembly (Normative)**
 
 Blob payloads are transported as `BlobChunk` sequences. Consumers MUST be prepared for partial delivery and SHOULD apply a per-blob timeout window based on expected rate and `total_chunks`.
@@ -436,7 +438,7 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 
 **Normative rules**
 
-- `domain_id` MUST be a valid DDS domain ID (0–232).
+- `domain_id` MUST be a valid DDS domain ID (0–232 per the RTPS specification; higher values may require non-standard configuration).
 - `initial_peers` MUST contain at least one locator. Locator format follows the DDS implementation's peer descriptor syntax.
 - Consumers SHOULD attempt all listed peers and use the first that responds.
 - The bootstrap manifest is a discovery aid, not a security boundary. Deployments requiring authentication MUST use DDS Security or an equivalent transport-level mechanism.
@@ -584,7 +586,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   },
   "expr": "",
   "reply_topic": "spatialdds/discovery/response/q1",
-  "stamp": { "sec": 1714070400, "nsec": 0 },
+  "stamp": { "sec": 1714070400, "nanosec": 0 },
   "ttl_sec": 30
 }
 ```
@@ -1259,20 +1261,20 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
 ```
 
 ### 8.4 Field Notes (Normative)
-+* **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
-+* **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
-+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
-+* **Assets (`assets`)** — URIs referencing external content. Each has a `uri`, `media_type`, and `hash`.
-+* All orientation fields follow the quaternion order defined in §2.1.
-+
-+### 8.5 Practical Guidance (Informative)
-+* Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
-+* When multiple frames exist, use one manifest per frame for clarity.  
-+* Use HTTPS, DDS, or file URIs interchangeably — the `uri` scheme is transport-agnostic.  
-+* Assets should prefer registered media types for interoperability.
-+
-+### 8.6 Summary (Informative)
-+Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.
+* **Capabilities (`caps`)** — declares supported profiles and feature flags. Peers use this to negotiate versions.  
+* **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
+* **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
+* **Assets (`assets`)** — URIs referencing external content. Each has a `uri`, `media_type`, and `hash`.
+* All orientation fields follow the quaternion order defined in §2.1.
+
+### 8.5 Practical Guidance (Informative)
+* Keep manifests small and cacheable; they are for discovery, not bulk metadata.  
+* When multiple frames exist, use one manifest per frame for clarity.  
+* Use HTTPS, DDS, or file URIs interchangeably — the `uri` scheme is transport-agnostic.  
+* Assets should prefer registered media types for interoperability.
+
+### 8.6 Summary (Informative)
+Manifests give every SpatialDDS resource a compact, self-describing identity. They express *what exists*, *where it is*, and *how to reach it*.
 
 ## **9. Glossary of Acronyms**
 
@@ -1564,6 +1566,7 @@ module spatial {
       string from_id;          // source node
       string to_id;            // target node
       EdgeTypeCore type;       // ODOM or LOOP
+      PoseSE3 T_from_to;       // relative transform from->to
       spatial::common::Mat6x6 information; // 6x6 info matrix (row-major)
       Time   stamp;
       string source_id;
@@ -1745,7 +1748,7 @@ module spatial {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
       string type;        // geometry_tile | video_frame | radar_detection | radar_tensor | seg_mask | desc_array | rf_beam
       string version;     // currently fixed to "v1"
-      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
+      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | RF_BEAM_RT | SEG_MASK_RT | DESC_BATCH
       // type, version, and qos_profile are mandatory fields describing the
       // topic’s semantic type and QoS profile.
       // optional advisory hints (topic-level, not per-message)
@@ -2348,6 +2351,16 @@ When images have been rectified (undistorted) before publication, producers MUST
 **Image Dimensions (Normative)**  
 `CamIntrinsics.width` and `CamIntrinsics.height` are REQUIRED and MUST be populated from the actual image dimensions. A `VisionMeta` sample with `width = 0` or `height = 0` is malformed and consumers MAY reject it.
 
+**Distortion Model Mapping (Informative)**  
+Vision uses `CamModel` + `Distortion`, while SLAM Frontend uses `DistortionModelKind`. Implementers bridging the two SHOULD map as follows:
+
+| Vision | SLAM Frontend | Notes |
+|---|---|---|
+| `Distortion.NONE` | `DistortionModelKind.NONE` | No distortion |
+| `Distortion.RADTAN` | `DistortionModelKind.RADTAN` | Brown-Conrady |
+| `Distortion.KANNALA_BRANDT` | `DistortionModelKind.KANNALA_BRANDT` | Fisheye |
+| `CamModel.FISHEYE_EQUIDISTANT` | `DistortionModelKind.EQUIDISTANT` | Equivalent naming |
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Vision (sensing.vision) 1.5 — Extension profile
@@ -2706,7 +2719,7 @@ module spatial {
       FrameRef frame_ref;                 // common frame for the set
       boolean has_tile;
       TileKey tile_key;                   // valid when has_tile = true
-      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤128
+      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤256
       Time   stamp;
       string source_id;
     };
@@ -3835,12 +3848,12 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "topic": "pg.node",
       "map_id": "map/facility-west",
       "node_id": "kf_0120",
-      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.99, 0.01, -0.02, 0.03] },
+      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.01, -0.02, 0.03, 0.99] },
       "frame_ref": {
         "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
         "fqn": "facility-west/map"
       },
-      "stamp": { "sec": 1714070452, "nsec": 125000000 },
+      "stamp": { "sec": 1714070452, "nanosec": 125000000 },
       "source_id": "device/headset-17"
     }
     ```
@@ -3863,7 +3876,7 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
           "fqn": "earth-fixed"
         }
       },
-      "cov": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09]
+      "cov": { "type": "COV_POS3", "pos": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09] }
     }
     ```
 
@@ -3885,12 +3898,12 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
       "state": {
         "pose_local": {
           "t": [4.21, -1.02, 0.00],
-          "q": [1, 0, 0, 0]
+          "q": [0, 0, 0, 1]
         },
         "door_status": "open",
         "last_maintenance": "2024-03-22"
       },
-      "stamp": { "sec": 1714070520, "nsec": 0 }
+      "stamp": { "sec": 1714070520, "nanosec": 0 }
     }
     ```
 
