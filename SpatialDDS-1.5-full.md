@@ -4103,8 +4103,8 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DG-02 | Orientation | `GeoPose.q` (QuaternionXYZW) for heading-derived orientation. |
 | DG-03 | Timestamp | `GeoPose.stamp` for 10 Hz GPS samples. |
 | DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK ≤1 cm). |
-| DG-05 | GNSS quality | ⚠️ **GAP.** DOP, fix type, satellite count require new `GnssQuality` struct (K-G1). Under separate discussion. |
-| DG-06 | Speed over ground | ⚠️ **GAP.** No GeoPose field for ground velocity. Under separate discussion. |
+| DG-05 | GNSS quality | `NavSatStatus` provides DOP, fix type, and satellite count with `has_dop` guard. |
+| DG-06 | Speed over ground | `NavSatStatus.speed_mps` + `course_deg` with `has_velocity` guard. |
 
 ##### mmWave Beam (8 checks)
 
@@ -4132,7 +4132,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 #### Results
 
-42 of 44 DeepSense 6G checks pass. The 2 remaining items are GPS quality metadata gaps, deferred pending `GnssQuality` struct design (K-G1). All mmWave Beam checks now pass against the provisional `rf_beam` profile (Appendix E).
+All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`, and mmWave Beam checks pass against the provisional `rf_beam` profile (Appendix E).
 
 | Modality | Checks | Pass | Gap | Missing | Notes |
 |---|---|---|---|---|---|
@@ -4140,22 +4140,14 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles |
 | Lidar | 7 | 7 | 0 | 0 | Includes sensor wavelength |
 | IMU | 4 | 4 | 0 | 0 | — |
-| GPS | 6 | 4 | 2 | 0 | GNSS quality deferred (K-G1) |
+| GPS | 6 | 6 | 0 | 0 | NavSatStatus covers GNSS diagnostics |
 | mmWave Beam | 8 | 8 | 0 | 0 | Provisional rf_beam profile (K-B1) |
 | Semantics | 4 | 4 | 0 | 0 | Beam labels via rf_beam |
-| **Total** | **44** | **42** | **2** | **0** | **95% coverage** |
+| **Total** | **44** | **44** | **0** | **0** | **100% coverage** |
 
 #### Deferred Items
 
-The following DeepSense 6G modality requires a new SpatialDDS struct that is under separate discussion:
-
-| Item | Gap | Proposed Type | Status |
-|---|---|---|---|
-| GNSS quality (DOP, fix type, satellites) | DG-05, DG-06 | `GnssQuality` struct (K-G1) | Under discussion |
-
-The mmWave beam power vector modality (formerly 5 MISSING checks) is now covered by the provisional `sensing.rf_beam` profile in Appendix E. The 8 beam checks (DB-01 through DB-08) pass against the provisional types. These types are subject to breaking changes pending multi-dataset validation; see Appendix K for the maturity promotion criteria.
-
-Closing the remaining GNSS quality gap would bring DeepSense coverage to 100%. See Appendix K for the full conformance analysis.
+DeepSense 6G conformance has no remaining schema gaps. Future ISAC extensions (e.g., CSI/CIR profiles) remain under discussion; see Appendix K for the maturity promotion criteria.
 
 ---
 
@@ -4177,7 +4169,7 @@ Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them
 python3 scripts/deepsense6g_harness_v3.py
 ```
 
-Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file. Deferred items (GNSS quality) are explicitly flagged and will transition to PASS once the corresponding struct is added.
+Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file.
 
 Neither harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal) to validate coverage for sensor configurations not present in nuScenes or DeepSense 6G.
 

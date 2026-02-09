@@ -28,6 +28,7 @@
 - Reworked Appendix I to separate nuScenes and DeepSense 6G conformance with independent methodologies and results.
 - Updated Appendix I with DeepSense 6G v2 harness results and mmWave beam checks.
 - Added core GNSS diagnostics (`NavSatStatus`, `GnssFixType`, `GnssService`) and updated DeepSense conformance to v3 harness.
+- Updated Appendix I to reflect GNSS checks passing and full DeepSense coverage.
 - Added §1.1 Conceptual Overview and refined introduction/profile summaries.
 - Added provisional Neural and Agent example profiles in Appendix E.
 - Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.
