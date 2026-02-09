@@ -29,6 +29,7 @@
 - Updated Appendix I with DeepSense 6G v2 harness results and mmWave beam checks.
 - Added core GNSS diagnostics (`NavSatStatus`, `GnssFixType`, `GnssService`) and updated DeepSense conformance to v3 harness.
 - Updated Appendix I to reflect GNSS checks passing and full DeepSense coverage.
+- Expanded Appendix J with RF beam / ISAC comparison and added an ISAC scenario row in the deployment table.
 - Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
 - Added `Edge.T_from_to` relative pose to core pose-graph edges.
 - Removed the empty `spatial.geometry` module and its `geometry.idl` include guard from the core IDL.
