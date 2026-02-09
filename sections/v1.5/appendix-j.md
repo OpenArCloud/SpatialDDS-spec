@@ -95,6 +95,20 @@ SpatialDDS radar supports both detection-centric outputs (automotive datasets li
 
 ROS 2 `vision_msgs` supports multi-hypothesis detections; SpatialDDS provides richer annotation metadata that is valuable for dataset-scale workflows and multi-sensor fusion pipelines.
 
+#### RF Beam / ISAC
+
+| Dimension | SpatialDDS `sensing.rf_beam` | ROS 2 |
+|---|---|---|
+| Beam power vectors | `RfBeamFrame` with per-beam power, sweep type, sparse beam indices | Not present |
+| Array metadata | `RfBeamMeta`: carrier frequency, codebook size, antenna elements, FoV, MIMO config | Not present |
+| Multi-array sync | `RfBeamArraySet` batches frames from multiple phased arrays at one timestamp | Not present |
+| Sweep types | `BeamSweepType` enum (EXHAUSTIVE, HIERARCHICAL, TRACKING, PARTIAL) | Not present |
+| Blockage detection | `has_blockage_state` / `is_blocked` / `blockage_confidence` per frame | Not present |
+| Power units | `PowerUnit` enum (DBM, LINEAR_MW, RSRP) | Not present |
+| Discovery | Registered type `rf_beam` with `RF_BEAM_RT` QoS profile | Not present |
+
+ROS 2 has no standard messages for phased-array beam sensing, mmWave communication metadata, or ISAC workloads. Teams working on 5G/6G sensing, V2X beam management, or joint radar-communication systems currently define custom ROS 2 messages or bypass ROS entirely. SpatialDDS's `rf_beam` profile provides a typed, discoverable transport path for these modalities -- validated against the DeepSense 6G dataset's 60 GHz phased-array beam power measurements (see Appendix I).
+
 ---
 
 ### **J.4 Discovery & Spatial Awareness**
@@ -150,4 +164,5 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Rapid prototyping with simulation and visualization | ROS 2 |
 | Manipulation and arm control | ROS 2 |
 | Cross-domain interop (city, IoT, AR, robotics on one bus) | SpatialDDS |
+| ISAC / V2X beam management and 5G/6G sensing | SpatialDDS |
 | Fleet robotics with heterogeneous sensors | Either; complementary |

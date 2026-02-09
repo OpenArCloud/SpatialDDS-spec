@@ -519,6 +519,7 @@ Access Network           Bootstrap              DDS Domain            On-Bus Dis
 #### Key messages (abridged IDL)
 *(Abridged IDL — see Appendix B for full definitions.)*
 ```idl
+// ABRIDGED — see Appendix B for normative definitions
 // Message shapes shown for orientation only
 @extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
 @extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<FeatureFlag,64> features; }
@@ -1416,31 +1417,6 @@ module spatial {
 
 ```
 
-### **Geometry Primitives**
-
-```idl
-#ifndef SPATIAL_GEOMETRY_INCLUDED
-#define SPATIAL_GEOMETRY_INCLUDED
-
-// SPDX-License-Identifier: MIT
-// SpatialDDS Geometry 1.0
-
-#ifndef SPATIAL_COMMON_TYPES_INCLUDED
-#include "types.idl"
-#endif
-
-module spatial {
-  module geometry {
-
-    typedef spatial::common::FrameRef FrameRef;
-
-  }; // module geometry
-};
-
-#endif // SPATIAL_GEOMETRY_INCLUDED
-
-```
-
 ### **Core Module**
 
 ```idl
@@ -1449,9 +1425,6 @@ module spatial {
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
-#endif
-#ifndef SPATIAL_GEOMETRY_INCLUDED
-#include "geometry.idl"
 #endif
 
 module spatial {
@@ -3879,6 +3852,8 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
       "cov": { "type": "COV_POS3", "pos": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09] }
     }
     ```
+
+*The quaternion `[0.71, 0.00, 0.70, 0.05]` is in `(x, y, z, w)` order per §2.1, representing a ~174° heading (facing roughly west in the ENU frame).*
 
 - **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
 
