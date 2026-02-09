@@ -98,6 +98,14 @@ Task Status:
 }
 ```
 
+### **Example: RF Beam Sensing Extension (Provisional)**
+
+This profile provides typed transport for phased-array beam power measurements used in ISAC research. It defines static array metadata (`RfBeamMeta`), per-sweep power vectors (`RfBeamFrame`), and multi-array batches (`RfBeamArraySet`). The design follows the Meta/Frame pattern used elsewhere in the sensing profiles and is intentionally provisional.
+
+```idl
+{{include:idl/v1.5/examples/rf_beam_example.idl}}
+```
+
 ### **Integration Notes (Informative)**
 
 Discovery integration: Neural and agent services advertise via `Announce` with `ServiceKind::OTHER`. To signal neural or agent capabilities, services SHOULD include feature flags in `caps.features` such as `neural.field_meta`, `neural.view_synth`, or `agent.tasking`.

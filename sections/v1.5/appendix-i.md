@@ -183,7 +183,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 | ID | Check | Description |
 |---|---|---|
-| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s). |
+| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s^2) + gyro (Vec3, rad/s). |
 | DI-02 | Noise densities | `ImuInfo.accel_noise_density` + `gyro_noise_density` + random walk params. |
 | DI-03 | Frame reference | `ImuInfo.frame_ref` for sensor-to-bus mounting. |
 | DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for 100 Hz temporal ordering. |

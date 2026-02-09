@@ -578,31 +578,38 @@ def check_gps():
 # ── MMWAVE BEAM (signature ISAC modality) ─────────────────────
 def check_mmwave_beam():
     # DB-01: Beam power vector
-    add("mmWave Beam","DB-01","64-element beam power vector",Sev.MISSING,
-        "DeepSense signature modality: 64×1 receive power vector from "
-        "phased-array beam sweep (60 GHz, 16 elements, 64-beam codebook). "
-        "No SpatialDDS type exists. Requires new rf_beam profile (K-B1). "
-        "Deferred: under separate discussion.")
+    add("mmWave Beam","DB-01","64-element beam power vector",Sev.PASS,
+        "RfBeamFrame.power carries the per-beam power vector. "
+        "Length equals RfBeamMeta.n_beams for EXHAUSTIVE sweeps.")
 
     # DB-02: Beam codebook metadata
-    add("mmWave Beam","DB-02","Beam codebook metadata",Sev.MISSING,
-        "Codebook size (64), FoV (90°), element count (16), sweep type. "
-        "No SpatialDDS type. Part of proposed RfBeamMeta (K-B1).")
+    add("mmWave Beam","DB-02","Beam codebook metadata",Sev.PASS,
+        "RfBeamMeta.n_beams, n_elements, fov_az_deg, sweep_type are defined.")
 
     # DB-03: Best beam index (ground truth)
-    add("mmWave Beam","DB-03","Optimal beam index",Sev.MISSING,
-        "Ground-truth label: index of beam maximizing SNR. "
-        "No SpatialDDS type. Part of proposed RfBeamFrame (K-B1).")
+    add("mmWave Beam","DB-03","Optimal beam index",Sev.PASS,
+        "RfBeamFrame.best_beam_idx with has_best_beam guard.")
 
     # DB-04: Blockage state (LOS/NLOS)
-    add("mmWave Beam","DB-04","Blockage status (LOS/NLOS)",Sev.MISSING,
-        "DeepSense labels include per-sample blockage state. "
-        "No SpatialDDS type. Part of proposed RfBeamFrame (K-B1).")
+    add("mmWave Beam","DB-04","Blockage status (LOS/NLOS)",Sev.PASS,
+        "RfBeamFrame.is_blocked + blockage_confidence with has_blockage_state guard.")
 
     # DB-05: Multi-array coordination (V2V 4× arrays)
-    add("mmWave Beam","DB-05","Multi-array beam set (V2V 4× arrays)",Sev.MISSING,
-        "V2V scenarios: 4 phased arrays per vehicle (360° coverage). "
-        "No SpatialDDS type. Part of proposed RfBeamArraySet (K-B1).")
+    add("mmWave Beam","DB-05","Multi-array beam set (V2V 4× arrays)",Sev.PASS,
+        "RfBeamArraySet batches per-array RfBeamFrame instances.")
+
+    # DB-06: Sparse sweep indices
+    add("mmWave Beam","DB-06","Sparse sweep indices",Sev.PASS,
+        "RfBeamFrame.beam_indices maps power entries to codebook indices for "
+        "PARTIAL/TRACKING sweeps; empty for EXHAUSTIVE.")
+
+    # DB-07: Power unit consistency
+    add("mmWave Beam","DB-07","Power unit consistency",Sev.PASS,
+        "RfBeamMeta.power_unit defines the unit for RfBeamFrame.power values.")
+
+    # DB-08: Stream linkage
+    add("mmWave Beam","DB-08","Stream linkage",Sev.PASS,
+        "RfBeamFrame.stream_id matches a published RfBeamMeta.stream_id.")
 
 
 # ── SEMANTICS / LABELS ────────────────────────────────────────

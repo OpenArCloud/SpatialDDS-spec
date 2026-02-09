@@ -24,6 +24,8 @@
 - Added Appendix J comparing SpatialDDS 1.5 with ROS 2 across architecture and message design.
 - Restored radar tensor transport alongside detection-centric radar types (RadTensorMeta/RadTensorFrame and `radar_tensor` topic type).
 - Added 360° rig roles (`PANORAMIC`, `EQUIRECTANGULAR`) and lidar wavelength metadata; documented DeepSense 6G harness in Appendix I.
+- Added provisional RF beam sensing extension (Appendix E) plus discovery type `rf_beam` and QoS `RF_BEAM_RT`.
+- Reworked Appendix I to separate nuScenes and DeepSense 6G conformance with independent methodologies and results.
 - Added §1.1 Conceptual Overview and refined introduction/profile summaries.
 - Added provisional Neural and Agent example profiles in Appendix E.
 - Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.

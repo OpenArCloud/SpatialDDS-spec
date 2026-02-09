@@ -593,7 +593,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
-* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `radar_tensor`, `seg_mask`, `desc_array`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`}.
+* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `radar_tensor`, `seg_mask`, `desc_array`, `rf_beam`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`, `RF_BEAM_RT`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `FeatureFlag` is a struct (not a raw string) to allow future appended fields (e.g., version or parameters) without breaking wire compatibility.
@@ -730,6 +730,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `video_frame` | Encoded video/image | Real-time camera streams |
 | `radar_detection` | Per-frame detection set | Structured radar detections |
 | `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube |
+| `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -747,6 +748,7 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `VIDEO_LIVE` | Best-effort | Ordered | 33 ms | Live video feeds |
 | `VIDEO_ARCHIVE` | Reliable | Ordered | 200 ms | Replay or stored media |
 | `RADAR_RT` | Partial | Ordered | 20 ms | Real-time radar data (detections or tensors) |
+| `RF_BEAM_RT` | Best-effort | Ordered | 20 ms | Real-time beam sweep data |
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
 
@@ -844,7 +846,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet`/`RadTensorMeta`/`RadTensorFrame` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet`/`RadTensorMeta`/`RadTensorFrame` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. The provisional `rf_beam` extension adds `RfBeamMeta`/`RfBeamFrame`/`RfBeamArraySet` for phased-array beam power measurements. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
@@ -1689,7 +1691,7 @@ module spatial {
     // --- Topic metadata to enable selection without parsing payloads ---
     @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // geometry_tile | video_frame | radar_detection | radar_tensor | seg_mask | desc_array
+      string type;        // geometry_tile | video_frame | radar_detection | radar_tensor | seg_mask | desc_array | rf_beam
       string version;     // currently fixed to "v1"
       string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | SEG_MASK_RT | DESC_BATCH
       // type, version, and qos_profile are mandatory fields describing the
@@ -3424,6 +3426,162 @@ Task Status:
 }
 ```
 
+### **Example: RF Beam Sensing Extension (Provisional)**
+
+This profile provides typed transport for phased-array beam power measurements used in ISAC research. It defines static array metadata (`RfBeamMeta`), per-sweep power vectors (`RfBeamFrame`), and multi-array batches (`RfBeamArraySet`). The design follows the Meta/Frame pattern used elsewhere in the sensing profiles and is intentionally provisional.
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS RF Beam Sensing Profile 1.5 (Provisional Extension)
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial { module sensing { module rf_beam {
+
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.rf_beam/1.5";
+
+  // Reuse Core + Sensing Common types
+  typedef builtin::Time                          Time;
+  typedef spatial::core::PoseSE3                 PoseSE3;
+  typedef spatial::core::BlobRef                 BlobRef;
+  typedef spatial::common::FrameRef              FrameRef;
+
+  typedef spatial::sensing::common::StreamMeta   StreamMeta;
+  typedef spatial::sensing::common::FrameHeader  FrameHeader;
+  typedef spatial::sensing::common::FrameQuality FrameQuality;
+  typedef spatial::sensing::common::Codec        Codec;
+  typedef spatial::sensing::common::SampleType   SampleType;
+
+  // ---- Beam sweep classification ----
+  enum BeamSweepType {
+    @value(0) EXHAUSTIVE,           // full codebook sweep (e.g., 64 beams)
+    @value(1) HIERARCHICAL,         // multi-stage: wide beams -> narrow refinement
+    @value(2) TRACKING,             // narrow sweep around predicted beam
+    @value(3) PARTIAL,              // subset of codebook (AI-selected beams)
+    @value(255) OTHER
+  };
+
+  // ---- Power measurement unit ----
+  enum PowerUnit {
+    @value(0) DBM,                  // decibels relative to 1 milliwatt (default)
+    @value(1) LINEAR_MW,            // milliwatts (linear scale)
+    @value(2) RSRP,                 // Reference Signal Received Power (3GPP)
+    @value(255) OTHER_UNIT
+  };
+
+  // ---- Static array description ----
+  // RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
+  @extensibility(APPENDABLE) struct RfBeamMeta {
+    @key string stream_id;               // stable id for this beam stream
+    StreamMeta base;                     // frame_ref, T_bus_sensor, nominal_rate_hz
+
+    // --- Carrier ---
+    float   center_freq_ghz;             // carrier frequency (e.g., 60.0, 28.0, 140.0)
+    boolean has_bandwidth;
+    float   bandwidth_ghz;               // valid when has_bandwidth == true (e.g., 0.02 for 20 MHz)
+
+    // --- Phased array description ---
+    uint16  n_elements;                  // antenna elements in the array (e.g., 16)
+    uint16  n_beams;                     // codebook size (e.g., 64, 128, 256)
+
+    // --- Spatial coverage ---
+    float   fov_az_deg;                  // total azimuth FoV covered by codebook (e.g., 90)
+    boolean has_fov_el;
+    float   fov_el_deg;                  // valid when has_fov_el == true (e.g., 30)
+
+    // --- Array identity within a rig (for multi-array setups) ---
+    boolean has_array_index;
+    uint8   array_index;                 // valid when has_array_index == true; 0-based
+    string  array_label;                 // human-readable label (e.g., "front", "left", "rear", "right")
+
+    // --- Codebook description (informative) ---
+    string  codebook_type;               // e.g., "DFT-64", "DFT-oversampled-128", "hierarchical-3stage"
+
+    // --- MIMO configuration (optional, for hybrid arrays) ---
+    boolean has_mimo_config;
+    uint16  n_tx;                        // valid when has_mimo_config == true
+    uint16  n_rx;                        // valid when has_mimo_config == true
+
+    // --- Power unit convention ---
+    PowerUnit power_unit;                // unit for power in RfBeamFrame (default: DBM)
+
+    string  schema_version;              // MUST be "spatial.sensing.rf_beam/1.5"
+  };
+
+  // ---- Per-sweep beam power measurement ----
+  // BEST_EFFORT + KEEP_LAST=1
+  @extensibility(APPENDABLE) struct RfBeamFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+    FrameHeader hdr;                     // t_start/t_end, optional sensor_pose, blobs[]
+
+    BeamSweepType sweep_type;
+
+    // --- Power vector ---
+    // One entry per beam in codebook order (index 0 = beam 0, etc.)
+    // Length MUST equal RfBeamMeta.n_beams for EXHAUSTIVE sweeps.
+    // For PARTIAL/TRACKING sweeps, length <= n_beams; beam_indices
+    // maps each entry to its codebook position.
+    sequence<float, 1024> power;         // received power per beam (unit per RfBeamMeta.power_unit)
+
+    // Sparse sweep support: when sweep_type != EXHAUSTIVE,
+    // beam_indices maps power[i] to codebook index beam_indices[i].
+    // Empty when sweep_type == EXHAUSTIVE (implicit 0..n_beams-1).
+    sequence<uint16, 1024> beam_indices; // codebook indices; empty for exhaustive sweeps
+
+    // --- Derived fields ---
+    boolean has_best_beam;
+    uint16  best_beam_idx;               // valid when has_best_beam == true
+    float   best_beam_power;             // valid when has_best_beam == true (same unit)
+
+    // --- Link state (ISAC-specific) ---
+    boolean has_blockage_state;
+    boolean is_blocked;                  // valid when has_blockage_state == true
+    float   blockage_confidence;         // valid when has_blockage_state == true (0.0..1.0)
+
+    // --- Signal quality (optional) ---
+    boolean has_snr_db;
+    float   snr_db;                      // valid when has_snr_db == true
+
+    // --- Frame quality ---
+    boolean has_quality;
+    FrameQuality quality;                // valid when has_quality == true
+  };
+
+  // ---- Multi-array synchronized set ----
+  // For rigs with multiple phased arrays (e.g., V2V with 4x arrays for 360 deg coverage).
+  // Batches one RfBeamFrame per array at the same time step.
+  // BEST_EFFORT + KEEP_LAST=1
+  @extensibility(APPENDABLE) struct RfBeamArraySet {
+    @key string set_id;                  // stable id for this array set
+    uint64 frame_seq;
+    Time   stamp;                        // common timestamp for all arrays
+
+    sequence<RfBeamFrame, 8> arrays;     // one per phased array in the rig
+
+    // Cross-array best beam (global index = array_index * n_beams + beam_idx)
+    boolean has_overall_best;
+    uint16  overall_best_array_idx;      // valid when has_overall_best == true
+    uint16  overall_best_beam_idx;       // valid when has_overall_best == true
+    float   overall_best_power;          // valid when has_overall_best == true
+  };
+
+}; }; };
+
+```
+
 ### **Integration Notes (Informative)**
 
 Discovery integration: Neural and agent services advertise via `Announce` with `ServiceKind::OTHER`. To signal neural or agent capabilities, services SHOULD include feature flags in `caps.features` such as `neural.field_meta`, `neural.view_synth`, or `agent.tasking`.
@@ -3880,7 +4038,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 | ID | Check | Description |
 |---|---|---|
-| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s). |
+| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s^2) + gyro (Vec3, rad/s). |
 | DI-02 | Noise densities | `ImuInfo.accel_noise_density` + `gyro_noise_density` + random walk params. |
 | DI-03 | Frame reference | `ImuInfo.frame_ref` for sensor-to-bus mounting. |
 | DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for 100 Hz temporal ordering. |
