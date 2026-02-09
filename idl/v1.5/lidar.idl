@@ -75,6 +75,10 @@ module spatial { module sensing { module lidar {
     float         vert_fov_deg_min;   // valid when has_vert_fov == true
     float         vert_fov_deg_max;
 
+    // Sensor wavelength (informative; for eye-safety and atmospheric classification)
+    boolean       has_wavelength;
+    float         wavelength_nm;      // valid when has_wavelength == true; e.g., 865, 905, 1550
+
     // Default payload for frames (clouds ride as blobs)
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…

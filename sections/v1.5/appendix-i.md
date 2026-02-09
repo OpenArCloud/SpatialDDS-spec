@@ -66,6 +66,43 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | T-05 | Waveform params | `bandwidth_hz`, `center_freq_hz`, `samples_per_chirp`, `chirps_per_frame` with guard. |
 | T-06 | Frame blob transport | `RadTensorFrame.hdr.blobs[]` carries the raw cube; size computable from axes and sample size. |
 
+#### DeepSense 6G Vision (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DV-05 | 360° rig roles | `RigRole` enum includes PANORAMIC and EQUIRECTANGULAR for 360° cameras. |
+| DV-06 | Keyframe flag | `VisionFrame.is_key_frame` boolean (shared with nuScenes V-04). |
+| DV-07 | Compression codec | `Codec` enum covers JPEG/H264/H265/AV1 for image transport. |
+
+#### DeepSense 6G Lidar (2 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DL-06 | Sensor wavelength | `LidarMeta.wavelength_nm` with `has_wavelength` guard (e.g., 865 nm for Ouster OS1). |
+| DL-07 | Frame rate | `StreamMeta.nominal_rate_hz` covers 10–20 Hz lidar cadence. |
+
+#### DeepSense 6G IMU (2 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3) + gyro (Vec3) at 100 Hz. |
+| DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for fine-grained temporal ordering. |
+
+#### DeepSense 6G GPS (2 checks, 2 deferred)
+
+| ID | Check | Description |
+|---|---|---|
+| DG-01 | Position | `GeoPose.lat_deg/lon_deg/alt_m` for GPS-RTK coordinates. |
+| DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK <=1 cm). |
+| DG-05 | GNSS quality | ⚠️ **Deferred.** DOP, fix type, satellite count require new `GnssQuality` struct. |
+| DG-06 | Speed over ground | ⚠️ **Deferred.** No field on GeoPose for ground velocity. |
+
+#### DeepSense 6G mmWave Beam (0/5, all deferred)
+
+| ID | Check | Description |
+|---|---|---|
+| DB-01–05 | RF beam sensing | ❌ **Deferred.** Beam power vectors, codebook metadata, blockage state require new `rf_beam` profile (K-B1). |
+
 #### Vision (5 checks)
 
 | ID | Check | Description |
@@ -109,7 +146,9 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 
 ### **Results**
 
-All 33 checks pass against the SpatialDDS 1.5 specification as published.
+All 33 nuScenes checks and all non-deferred DeepSense 6G checks pass against the SpatialDDS 1.5 specification as published. DeepSense 6G mmWave beam and GNSS quality checks are deferred pending new profile design.
+
+**nuScenes Conformance (perception-to-semantics pipeline):**
 
 | Modality | Checks | Pass | Remaining Gaps |
 |---|---|---|---|
@@ -120,6 +159,19 @@ All 33 checks pass against the SpatialDDS 1.5 specification as published.
 | Semantics | 5 | 5 | 0 |
 | Common / Core | 5 | 5 | 0 |
 | **Total** | **33** | **33** | **0** |
+
+**DeepSense 6G Conformance (signal-to-perception pipeline):**
+
+| Modality | Checks | Pass | Gap | Missing | Notes |
+|---|---|---|---|---|---|
+| Radar (tensor) | 8 | 8 | 0 | 0 | Shared with nuScenes T-01–T-06 + extras |
+| Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles (K-V1) |
+| Lidar | 7 | 7 | 0 | 0 | Includes wavelength (K-L1) |
+| IMU | 4 | 4 | 0 | 0 | — |
+| GPS | 6 | 4 | 2 | 0 | GNSS quality deferred (K-G1) |
+| mmWave Beam | 5 | 0 | 0 | 5 | RF beam profile deferred (K-B1) |
+| Semantics | 4 | 3 | 1 | 0 | Beam labels deferred |
+| **Total** | **41** | **33** | **3** | **5** | **80% coverage** |
 
 ### **Spec Changes Informed by Testing**
 
@@ -141,6 +193,8 @@ The conformance harness was first run against an early draft of SpatialDDS 1.5, 
 | `Detection3D.attributes`, `.visibility`, `.num_lidar_pts`, `.num_radar_pts` added | Semantics | S-02, S-03, S-04 |
 | §2 quaternion convention table with ecosystem mappings | Common | C-01, V-05, S-05 |
 | `FrameRef` FQN guidance and local-frame coverage section | Common | C-02, C-03 |
+| `RigRole.PANORAMIC` and `EQUIRECTANGULAR` added for 360° cameras | Vision | DV-05 |
+| `LidarMeta.has_wavelength` / `wavelength_nm` added | Lidar | DL-06 |
 
 ### **Reproducing the Test**
 
@@ -153,6 +207,14 @@ python3 scripts/nuscenes_harness_v2.py
 The script mirrors the IDL structures from this specification as Python dictionaries and checks them against the nuScenes schema. It produces a plain-text report and a JSON results file. No DDS runtime, network access, or nuScenes database download is required.
 
 Implementers are encouraged to adapt the harness for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2) to validate coverage for sensor configurations and annotation conventions not present in nuScenes.
+
+A companion conformance harness (`scripts/deepsense6g_harness_v1.py`) validates SpatialDDS 1.5 against the DeepSense 6G multi-modal sensing and communication dataset. It covers 41 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). To run:
+
+```bash
+python3 scripts/deepsense6g_harness_v1.py
+```
+
+The DeepSense harness is complementary to the nuScenes harness: nuScenes validates the perception-to-semantics pipeline; DeepSense validates signal-to-perception coverage and identifies ISAC-specific modalities (mmWave beam power vectors, GNSS quality metadata) that are under separate discussion for future SpatialDDS extensions. See Appendix K for the full DeepSense 6G conformance analysis.
 
 ### **Limitations**
 

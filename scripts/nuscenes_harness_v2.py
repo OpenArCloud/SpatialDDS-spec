@@ -66,7 +66,8 @@ RADAR_STRUCTS = {
 # ── Vision (updated) ───────────────────────────────────────────
 VISION_STRUCTS = {
     "RigRole": ["LEFT","RIGHT","CENTER","FRONT","FRONT_LEFT","FRONT_RIGHT",
-                "BACK","BACK_LEFT","BACK_RIGHT","AUX"],
+                "BACK","BACK_LEFT","BACK_RIGHT","AUX",
+                "PANORAMIC","EQUIRECTANGULAR"],
     "Distortion": ["NONE","RADTAN","KANNALA_BRANDT"],
     "CamIntrinsics_fields": [
         "model","width","height","fx","fy","cx","cy",
@@ -87,6 +88,7 @@ LIDAR_STRUCTS = {
         "has_range_limits","min_range_m","max_range_m",
         "has_horiz_fov","horiz_fov_deg_min","horiz_fov_deg_max",
         "has_vert_fov","vert_fov_deg_min","vert_fov_deg_max",
+        "has_wavelength","wavelength_nm",
         "encoding","codec","layout","schema_version",
     ],
     "LidarFrame_fields": [

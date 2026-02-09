@@ -73,7 +73,9 @@ module spatial { module sensing { module vision {
     @value(6) BACK,
     @value(7) BACK_LEFT,
     @value(8) BACK_RIGHT,
-    @value(9) AUX
+    @value(9) AUX,
+    @value(10) PANORAMIC,          // stitched panoramic view
+    @value(11) EQUIRECTANGULAR     // equirectangular 360° projection
   };
 
   @extensibility(APPENDABLE) struct CamIntrinsics {

@@ -48,7 +48,7 @@ SpatialDDS's `FrameRef` model with UUIDs is designed for multi-device environmen
 | Intrinsics | `CamModel` enum + explicit `fx/fy/cx/cy` | `float64[9] K` matrix + free-form `distortion_model` string |
 | Distortion | `Distortion` enum (NONE, RADTAN, KB) with normative `dist = NONE` prose | Free-form string; no enum constraint |
 | Pixel format | `PixFormat` enum + `ColorSpace` enum | Free-form `string encoding`; no color space |
-| Rig support | `RigRole` enum (10 values) + `rig_id` | No standard rig concept |
+| Rig support | `RigRole` enum (12 values incl. PANORAMIC, EQUIRECTANGULAR) + `rig_id` | No standard rig concept |
 | Compression | `Codec` enum including H.264/H.265/AV1 | `CompressedImage` with free-form `format` string |
 | Keyframe | `is_key_frame` boolean | Not standardized |
 
