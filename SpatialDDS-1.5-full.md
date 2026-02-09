@@ -3697,17 +3697,46 @@ This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared ancho
 
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against a large-scale, multi-modal autonomous driving dataset. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing and semantics profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against two public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing and semantics profiles and directly informed several normative additions to this specification.*
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 extension profiles (Appendix D) were validated against a well-known public reference dataset -- the **nuScenes** autonomous driving corpus -- which exercises all five sensor modalities simultaneously: camera, lidar, radar, semantic annotations, and shared conventions (coordinate frames, quaternion order, timing).
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 extension profiles were validated against two complementary datasets that together exercise the full signal-to-semantics pipeline:
 
-The goal was not to certify a particular dataset but to answer a concrete question: *Can every field, enum, and convention in the nuScenes schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?*
+| Dataset | Focus | Modalities Stressed |
+|---|---|---|
+| **nuScenes** (Motional / nuTonomy) | Perception -> semantics | Camera (6x), lidar, radar detections (5x), 3D annotations, coordinate conventions |
+| **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal -> perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
 
-### **Reference Dataset**
+nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets.
 
-**nuScenes** (Motional / nuTonomy) is a multimodal dataset containing:
+The goal was not to certify particular datasets but to answer a concrete question: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?*
+
+### **Methodology**
+
+For each dataset, a conformance harness was constructed as a self-contained Python 3 script that:
+
+1. **Mirrors the SpatialDDS 1.5 IDL** as Python data structures (enum values, struct field lists, normative prose flags).
+2. **Mirrors the dataset schema** as synthetic data (sensor names, field lists, data shapes).
+3. **Runs targeted checks**, each producing a verdict:
+
+| Verdict | Meaning |
+|---|---|
+| **PASS** | Dataset field maps losslessly to an existing SpatialDDS type or enum value. |
+| **GAP** | A mapping exists conceptually but the required SpatialDDS type or field does not yet exist. |
+| **MISSING** | No SpatialDDS construct exists for the dataset field; a new profile is needed. |
+
+4. **Reports a per-modality scorecard.**
+
+Neither harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment.
+
+---
+
+### **I.1 nuScenes Conformance**
+
+#### Reference Dataset
+
+**nuScenes** (Motional / nuTonomy) is a multimodal autonomous driving dataset containing:
 
 | Dimension | Value |
 |---|---|
@@ -3719,29 +3748,9 @@ The goal was not to certify a particular dataset but to answer a concrete questi
 | Annotation metadata | visibility tokens, attribute tokens, per-box lidar/radar point counts |
 | Coordinate convention | Right-handed; quaternions in (w, x, y, z) order |
 
-The dataset was chosen because it stresses sensor diversity (six camera rigs, five radar units, one lidar), per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts).
+#### Checks Performed (27)
 
-### **Methodology**
-
-A conformance harness was constructed as a Python script that:
-
-1. **Mirrors the SpatialDDS 1.5 IDL** as Python data structures (enum values, struct field lists, normative prose flags).
-2. **Mirrors the nuScenes schema** as synthetic data (camera names, radar point fields, lidar layout, annotation fields).
-3. **Runs 27 targeted checks** across five modalities, each producing a verdict:
-
-| Verdict | Meaning |
-|---|---|
-| **PASS** | nuScenes field maps losslessly to an existing SpatialDDS type or enum value. |
-| **GAP** | A mapping exists but requires additional prose, an enum value, or a convention note. |
-| **MISSING** | No SpatialDDS construct exists for the nuScenes field; a new IDL member is needed. |
-
-4. **Reports a per-modality scorecard** comparing current results against a baseline.
-
-The harness does not require network access, a DDS runtime, or the actual nuScenes database. It operates as a static schema-vs-schema dry run, making it reproducible in any CI environment.
-
-### **Checks Performed**
-
-#### Radar (6 checks)
+##### Radar -- Detection Path (6 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -3749,58 +3758,10 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | R-02 | Per-detection velocity | Cartesian `velocity_xyz` (preferred) + scalar `v_r_mps` (fallback), both with `has_*` guards. |
 | R-03 | Ego-compensated velocity | `velocity_comp_xyz` field for ego-motion-compensated velocity. |
 | R-04 | Dynamic property enum | `RadDynProp` covers all 7 nuScenes values (UNKNOWN through STOPPED). |
-| R-05 | Per-detection RCS | `rcs_dbm2` field in dBm^2 with `has_rcs_dbm2` guard. |
+| R-05 | Per-detection RCS | `rcs_dbm2` field in dBm² with `has_rcs_dbm2` guard. |
 | R-06 | Sensor type enum | `RadSensorType` differentiates SHORT_RANGE, LONG_RANGE, IMAGING_4D, etc. |
 
-#### DeepSense 6G Radar Tensor (6 checks)
-
-| ID | Check | Description |
-|---|---|---|
-| T-01 | Tensor meta struct | `RadTensorMeta` exists with `axes`, `voxel_type`, `layout`, `physical_meaning`. |
-| T-02 | Complex sample type | `SampleType.CF32` covers complex I/Q data. |
-| T-03 | Channel axis | `RadTensorLayout.CH_FAST_SLOW` maps raw FMCW [Rx, samples, chirps]. |
-| T-04 | MIMO antenna config | `num_tx`, `num_rx`, `num_virtual_channels` with `has_antenna_config` guard. |
-| T-05 | Waveform params | `bandwidth_hz`, `center_freq_hz`, `samples_per_chirp`, `chirps_per_frame` with guard. |
-| T-06 | Frame blob transport | `RadTensorFrame.hdr.blobs[]` carries the raw cube; size computable from axes and sample size. |
-
-#### DeepSense 6G Vision (3 checks)
-
-| ID | Check | Description |
-|---|---|---|
-| DV-05 | 360° rig roles | `RigRole` enum includes PANORAMIC and EQUIRECTANGULAR for 360° cameras. |
-| DV-06 | Keyframe flag | `VisionFrame.is_key_frame` boolean (shared with nuScenes V-04). |
-| DV-07 | Compression codec | `Codec` enum covers JPEG/H264/H265/AV1 for image transport. |
-
-#### DeepSense 6G Lidar (2 checks)
-
-| ID | Check | Description |
-|---|---|---|
-| DL-06 | Sensor wavelength | `LidarMeta.wavelength_nm` with `has_wavelength` guard (e.g., 865 nm for Ouster OS1). |
-| DL-07 | Frame rate | `StreamMeta.nominal_rate_hz` covers 10–20 Hz lidar cadence. |
-
-#### DeepSense 6G IMU (2 checks)
-
-| ID | Check | Description |
-|---|---|---|
-| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3) + gyro (Vec3) at 100 Hz. |
-| DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for fine-grained temporal ordering. |
-
-#### DeepSense 6G GPS (2 checks, 2 deferred)
-
-| ID | Check | Description |
-|---|---|---|
-| DG-01 | Position | `GeoPose.lat_deg/lon_deg/alt_m` for GPS-RTK coordinates. |
-| DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK <=1 cm). |
-| DG-05 | GNSS quality | ⚠️ **Deferred.** DOP, fix type, satellite count require new `GnssQuality` struct. |
-| DG-06 | Speed over ground | ⚠️ **Deferred.** No field on GeoPose for ground velocity. |
-
-#### DeepSense 6G mmWave Beam (0/5, all deferred)
-
-| ID | Check | Description |
-|---|---|---|
-| DB-01–05 | RF beam sensing | ❌ **Deferred.** Beam power vectors, codebook metadata, blockage state require new `rf_beam` profile (K-B1). |
-
-#### Vision (5 checks)
+##### Vision (5 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -3810,7 +3771,7 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | V-04 | Keyframe flag | `VisionFrame.is_key_frame` boolean. |
 | V-05 | Quaternion reorder | §2 table maps nuScenes `(w,x,y,z)` to SpatialDDS `(x,y,z,w)`. |
 
-#### Lidar (6 checks)
+##### Lidar (6 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -3821,7 +3782,7 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | L-05 | t_end computation | Normative guidance for computing `t_end` from `t_start + 1/rate_hz` or `max(point.t)`. |
 | L-06 | Ring field | `PointLayout.XYZ_I_R` carries ring as `uint16`. |
 
-#### Semantics (5 checks)
+##### Semantics (5 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -3831,7 +3792,7 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | S-04 | Evidence counts | `num_lidar_pts` + `num_radar_pts` with `has_num_pts` guard. |
 | S-05 | Quaternion reorder | §2 table covers annotation quaternion conversion. |
 
-#### Common / Core (5 checks)
+##### Common / Core (5 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -3841,81 +3802,172 @@ The harness does not require network access, a DDS runtime, or the actual nuScen
 | C-04 | has_* pattern consistency | All new optional fields use the `has_*` guard pattern uniformly. |
 | C-05 | Sequence bounds | Standard bounds table: SZ_MEDIUM (2048), SZ_SMALL (256), SZ_XL (32768), SZ_LARGE (8192). |
 
-### **Results**
+#### Results
 
-All 33 nuScenes checks and all non-deferred DeepSense 6G checks pass against the SpatialDDS 1.5 specification as published. DeepSense 6G mmWave beam and GNSS quality checks are deferred pending new profile design.
-
-**nuScenes Conformance (perception-to-semantics pipeline):**
+All 27 nuScenes checks pass.
 
 | Modality | Checks | Pass | Remaining Gaps |
 |---|---|---|---|
 | Radar (detections) | 6 | 6 | 0 |
-| Radar (tensor) | 6 | 6 | 0 |
 | Vision | 5 | 5 | 0 |
 | Lidar | 6 | 6 | 0 |
 | Semantics | 5 | 5 | 0 |
 | Common / Core | 5 | 5 | 0 |
-| **Total** | **33** | **33** | **0** |
+| **Total** | **27** | **27** | **0** |
 
-**DeepSense 6G Conformance (signal-to-perception pipeline):**
+---
+
+### **I.2 DeepSense 6G Conformance**
+
+#### Reference Dataset
+
+**DeepSense 6G** (Arizona State University, Wireless Intelligence Lab) is a large-scale multi-modal sensing and communication dataset containing:
+
+| Dimension | Value |
+|---|---|
+| Scenarios | 40+ across 12+ locations |
+| Snapshots | 1.08 M+ synchronized samples |
+| FMCW Radar | 76-81 GHz, 3 Tx x 4 Rx, complex I/Q tensor [4x256x128], 10 Hz |
+| 3D Lidar | Ouster OS1-32, 32x1024, 120 m range, 865 nm, 10-20 Hz |
+| Camera | ZED2 stereo (960x540) + Insta360 ONE X2 360° (5.7K) |
+| GPS-RTK | 10 Hz, <=1 cm accuracy (RTK fix), DOP + satellite metadata |
+| IMU | 6-axis, 100 Hz |
+| mmWave Comm | 60 GHz phased array, 64-beam codebook, 90° FoV, 10 Hz |
+| Deployment types | V2I, V2V (4x arrays/vehicle), ISAC indoor, drone |
+
+The dataset was chosen because it stresses signal-level data (raw FMCW radar cubes consumed directly by ML pipelines), 360° camera rigs, and ISAC modalities (beam power vectors, blockage state) absent from perception-focused datasets.
+
+#### Checks Performed (41)
+
+##### Radar -- Tensor Path (8 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DT-01 | Tensor meta struct | `RadTensorMeta` exists with `axes`, `voxel_type`, `layout`, `physical_meaning`. |
+| DT-02 | Complex sample type | `SampleType.CF32` covers complex I/Q data. |
+| DT-03 | Channel axis | `RadTensorLayout.CH_FAST_SLOW` maps raw FMCW [Rx, samples, chirps]. |
+| DT-04 | MIMO antenna config | `num_tx`, `num_rx`, `num_virtual_channels` with `has_antenna_config` guard. |
+| DT-05 | Waveform params | `bandwidth_hz`, `center_freq_hz`, `samples_per_chirp`, `chirps_per_frame` with guard. |
+| DT-06 | Frame blob transport | `RadTensorFrame.hdr.blobs[]` carries the raw cube; size computable from axes x sample size. |
+| DT-07 | Sensor type | `RadSensorType` covers FMCW radar as MEDIUM_RANGE or IMAGING_4D. |
+| DT-08 | StreamMeta extrinsics | `T_bus_sensor` (PoseSE3) + `nominal_rate_hz` for hand-eye calibration and 10 Hz cadence. |
+
+##### Vision (7 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DV-01 | Standard camera | `PixFormat.RGB8` + `CamIntrinsics.width`/`height` cover ZED2 at 960x540. |
+| DV-02 | Camera extrinsics | `VisionMeta.base` -> `StreamMeta.T_bus_sensor` for hand-eye calibration. |
+| DV-03 | Camera model | `CamModel.PINHOLE` for ZED2 pre-rectified output. |
+| DV-04 | Frame rate | `StreamMeta.nominal_rate_hz` = 10 (downsampled from 30 Hz). |
+| DV-05 | 360° rig roles | `RigRole.PANORAMIC` and `EQUIRECTANGULAR` for Insta360 ONE X2 in V2V scenarios. |
+| DV-06 | Keyframe flag | `VisionFrame.is_key_frame` boolean. |
+| DV-07 | Compression codec | `Codec` enum covers JPEG/H264/H265/AV1. |
+
+##### Lidar (7 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DL-01 | Lidar type | `LidarType.MULTI_BEAM_3D` for Ouster OS1-32 (spinning, 32 rings). |
+| DL-02 | Ring count + FOV | `LidarMeta.n_rings`, `has_horiz_fov`, `has_vert_fov` with guards. |
+| DL-03 | Range limits | `has_range_limits` + `max_range_m` = 120 m. |
+| DL-04 | Point layout | `PointLayout.XYZ_I_R` for x, y, z, intensity, ring. |
+| DL-05 | Cloud encoding | `CloudEncoding.BIN_INTERLEAVED` for raw binary transport. |
+| DL-06 | Sensor wavelength | `LidarMeta.wavelength_nm` with `has_wavelength` guard (865 nm). |
+| DL-07 | Frame rate | `StreamMeta.nominal_rate_hz` covers 10-20 Hz. |
+
+##### IMU (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s). |
+| DI-02 | Noise densities | `ImuInfo.accel_noise_density` + `gyro_noise_density` + random walk params. |
+| DI-03 | Frame reference | `ImuInfo.frame_ref` for sensor-to-bus mounting. |
+| DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for 100 Hz temporal ordering. |
+
+##### GPS (6 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DG-01 | Position | `GeoPose.lat_deg`/`lon_deg`/`alt_m` for GPS-RTK coordinates. |
+| DG-02 | Orientation | `GeoPose.q` (QuaternionXYZW) for heading-derived orientation. |
+| DG-03 | Timestamp | `GeoPose.stamp` for 10 Hz GPS samples. |
+| DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK <=1 cm). |
+| DG-05 | GNSS quality | ⚠️ **GAP.** DOP, fix type, satellite count require new `GnssQuality` struct (K-G1). Under separate discussion. |
+| DG-06 | Speed over ground | ⚠️ **GAP.** No GeoPose field for ground velocity. Under separate discussion. |
+
+##### mmWave Beam (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DB-01 | Beam power vector | ❌ **MISSING.** 64x1 receive power vector from phased-array beam sweep. Requires new `rf_beam` profile (K-B1). Under separate discussion. |
+| DB-02 | Codebook metadata | ❌ **MISSING.** Codebook size, FoV, element count, sweep type. Part of proposed `RfBeamMeta`. |
+| DB-03 | Optimal beam index | ❌ **MISSING.** Ground-truth label: beam maximizing SNR. Part of proposed `RfBeamFrame`. |
+| DB-04 | Blockage status | ❌ **MISSING.** Per-sample LOS/NLOS state. Part of proposed `RfBeamFrame`. |
+| DB-05 | Multi-array set | ❌ **MISSING.** V2V 4x arrays per vehicle (360° coverage). Part of proposed `RfBeamArraySet`. |
+
+##### Semantics (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| DS-01 | 2D bounding boxes | `Detection2D.bbox` + `class_id` covers 8 DeepSense object classes. |
+| DS-02 | Sequence index | `FrameHeader.frame_seq` for sample ordering. |
+| DS-03 | Class ID | `Detection2D.class_id` (string) maps all DeepSense class labels. |
+| DS-04 | Beam/blockage labels | ⚠️ **GAP.** ISAC-specific labels don't fit `Detection2D`/`3D`. Deferred to `rf_beam` profile. |
+
+#### Results
+
+33 of 41 DeepSense 6G checks pass. The 8 remaining items are all explicitly deferred pending new profile design (GNSS quality, RF beam sensing).
 
 | Modality | Checks | Pass | Gap | Missing | Notes |
 |---|---|---|---|---|---|
-| Radar (tensor) | 8 | 8 | 0 | 0 | Shared with nuScenes T-01–T-06 + extras |
-| Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles (K-V1) |
-| Lidar | 7 | 7 | 0 | 0 | Includes wavelength (K-L1) |
-| IMU | 4 | 4 | 0 | 0 | — |
+| Radar (tensor) | 8 | 8 | 0 | 0 | -- |
+| Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles |
+| Lidar | 7 | 7 | 0 | 0 | Includes sensor wavelength |
+| IMU | 4 | 4 | 0 | 0 | -- |
 | GPS | 6 | 4 | 2 | 0 | GNSS quality deferred (K-G1) |
 | mmWave Beam | 5 | 0 | 0 | 5 | RF beam profile deferred (K-B1) |
 | Semantics | 4 | 3 | 1 | 0 | Beam labels deferred |
 | **Total** | **41** | **33** | **3** | **5** | **80% coverage** |
 
-### **Spec Changes Informed by Testing**
+#### Deferred Items
 
-The conformance harness was first run against an early draft of SpatialDDS 1.5, which produced 29 gaps. The following normative changes were made in response:
+The following DeepSense 6G modalities require new SpatialDDS profiles that are under separate discussion:
 
-| Change | Profile | Origin |
-|---|---|---|
-| Complete radar profile replacement: tensor-based -> detection-centric (`RadDetection`, `RadDetectionSet`, `RadSensorMeta`) | Radar | R-01 through R-06 |
-| Radar tensor path restored: `RadTensorMeta` / `RadTensorFrame` and `RadTensorLayout` | Radar | T-01 through T-06 |
-| `RigRole` enum expanded with FRONT, FRONT_LEFT, FRONT_RIGHT, BACK, BACK_LEFT, BACK_RIGHT | Vision | V-01 |
-| Normative prose for `dist = NONE` pre-rectified image semantics | Vision | V-02 |
-| `CamIntrinsics.width` / `height` made REQUIRED with malformed-sample guidance | Vision | V-03 |
-| `VisionFrame.is_key_frame` boolean added | Vision | V-04 |
-| `CloudEncoding.BIN_INTERLEAVED` added with normative record layout table | Lidar | L-01 |
-| `PointLayout.XYZ_I_R_T` and `XYZ_I_R_T_N` added with per-point timestamp prose | Lidar | L-02, L-04 |
-| `has_range_limits`, `has_horiz_fov`, `has_vert_fov` guards added to `LidarMeta` | Lidar | L-03 |
-| `t_end` computation guidance for spinning lidars | Lidar | L-05 |
-| Size convention normative prose with nuScenes mapping | Semantics | S-01 |
-| `Detection3D.attributes`, `.visibility`, `.num_lidar_pts`, `.num_radar_pts` added | Semantics | S-02, S-03, S-04 |
-| §2 quaternion convention table with ecosystem mappings | Common | C-01, V-05, S-05 |
-| `FrameRef` FQN guidance and local-frame coverage section | Common | C-02, C-03 |
-| `RigRole.PANORAMIC` and `EQUIRECTANGULAR` added for 360° cameras | Vision | DV-05 |
-| `LidarMeta.has_wavelength` / `wavelength_nm` added | Lidar | DL-06 |
+| Item | Gap | Proposed Profile | Status |
+|---|---|---|---|
+| GNSS quality (DOP, fix type, satellites) | DG-05, DG-06 | `GnssQuality` struct (K-G1) | Under discussion |
+| mmWave beam power vectors | DB-01–DB-05, DS-04 | `sensing.rf_beam` profile (K-B1) | Under discussion |
 
-### **Reproducing the Test**
+These two gaps are architectural, not incremental. Closing them would position SpatialDDS as the first open spatial transport spec to support the full ISAC sensing pipeline: raw RF -> processed detections -> semantic annotations. See Appendix K for the full DeepSense 6G conformance analysis.
 
-The conformance harness is a single self-contained Python 3 script (`scripts/nuscenes_harness_v2.py`) with no external dependencies. To run:
+---
+
+### **Reproducing the Tests**
+
+Both conformance harnesses are self-contained Python 3 scripts with no external dependencies.
+
+**nuScenes harness** (`scripts/nuscenes_harness_v2.py`):
 
 ```bash
 python3 scripts/nuscenes_harness_v2.py
 ```
 
-The script mirrors the IDL structures from this specification as Python dictionaries and checks them against the nuScenes schema. It produces a plain-text report and a JSON results file. No DDS runtime, network access, or nuScenes database download is required.
+Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
 
-Implementers are encouraged to adapt the harness for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2) to validate coverage for sensor configurations and annotation conventions not present in nuScenes.
-
-A companion conformance harness (`scripts/deepsense6g_harness_v1.py`) validates SpatialDDS 1.5 against the DeepSense 6G multi-modal sensing and communication dataset. It covers 41 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). To run:
+**DeepSense 6G harness** (`scripts/deepsense6g_harness_v1.py`):
 
 ```bash
 python3 scripts/deepsense6g_harness_v1.py
 ```
 
-The DeepSense harness is complementary to the nuScenes harness: nuScenes validates the perception-to-semantics pipeline; DeepSense validates signal-to-perception coverage and identifies ISAC-specific modalities (mmWave beam power vectors, GNSS quality metadata) that are under separate discussion for future SpatialDDS extensions. See Appendix K for the full DeepSense 6G conformance analysis.
+Validates 41 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). Produces a plain-text report and a JSON results file. Deferred items (GNSS quality, RF beam) are explicitly flagged and will transition to PASS once the corresponding profiles are added.
+
+Neither harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal) to validate coverage for sensor configurations not present in nuScenes or DeepSense 6G.
 
 ### **Limitations**
 
-This testing validates schema expressiveness -- whether every nuScenes field has a lossless SpatialDDS mapping. It does not validate:
+This testing validates schema expressiveness -- whether every dataset field has a lossless SpatialDDS mapping. It does not validate:
 
 - **Wire interoperability** -- actual DDS serialization/deserialization round-trips.
 - **Performance** -- throughput, latency, or memory footprint under real sensor loads.
