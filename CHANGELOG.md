@@ -26,6 +26,7 @@
 - Added 360° rig roles (`PANORAMIC`, `EQUIRECTANGULAR`) and lidar wavelength metadata; documented DeepSense 6G harness in Appendix I.
 - Added provisional RF beam sensing extension (Appendix E) plus discovery type `rf_beam` and QoS `RF_BEAM_RT`.
 - Reworked Appendix I to separate nuScenes and DeepSense 6G conformance with independent methodologies and results.
+- Updated Appendix I with DeepSense 6G v2 harness results and mmWave beam checks.
 - Added §1.1 Conceptual Overview and refined introduction/profile summaries.
 - Added provisional Neural and Agent example profiles in Appendix E.
 - Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.

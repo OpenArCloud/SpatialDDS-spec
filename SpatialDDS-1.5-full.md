@@ -3908,7 +3908,7 @@ Neither harness requires network access, a DDS runtime, or a dataset download. B
 
 #### Checks Performed (27)
 
-##### Radar -- Detection Path (6 checks)
+##### Radar — Detection Path (6 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -3985,19 +3985,19 @@ All 27 nuScenes checks pass.
 |---|---|
 | Scenarios | 40+ across 12+ locations |
 | Snapshots | 1.08 M+ synchronized samples |
-| FMCW Radar | 76-81 GHz, 3 Tx x 4 Rx, complex I/Q tensor [4x256x128], 10 Hz |
-| 3D Lidar | Ouster OS1-32, 32x1024, 120 m range, 865 nm, 10-20 Hz |
-| Camera | ZED2 stereo (960x540) + Insta360 ONE X2 360° (5.7K) |
-| GPS-RTK | 10 Hz, <=1 cm accuracy (RTK fix), DOP + satellite metadata |
+| FMCW Radar | 76–81 GHz, 3 Tx × 4 Rx, complex I/Q tensor [4×256×128], 10 Hz |
+| 3D Lidar | Ouster OS1-32, 32×1024, 120 m range, 865 nm, 10–20 Hz |
+| Camera | ZED2 stereo (960×540) + Insta360 ONE X2 360° (5.7K) |
+| GPS-RTK | 10 Hz, ≤1 cm accuracy (RTK fix), DOP + satellite metadata |
 | IMU | 6-axis, 100 Hz |
 | mmWave Comm | 60 GHz phased array, 64-beam codebook, 90° FoV, 10 Hz |
-| Deployment types | V2I, V2V (4x arrays/vehicle), ISAC indoor, drone |
+| Deployment types | V2I, V2V (4× arrays/vehicle), ISAC indoor, drone |
 
 The dataset was chosen because it stresses signal-level data (raw FMCW radar cubes consumed directly by ML pipelines), 360° camera rigs, and ISAC modalities (beam power vectors, blockage state) absent from perception-focused datasets.
 
 #### Checks Performed (41)
 
-##### Radar -- Tensor Path (8 checks)
+##### Radar — Tensor Path (8 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -4006,7 +4006,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DT-03 | Channel axis | `RadTensorLayout.CH_FAST_SLOW` maps raw FMCW [Rx, samples, chirps]. |
 | DT-04 | MIMO antenna config | `num_tx`, `num_rx`, `num_virtual_channels` with `has_antenna_config` guard. |
 | DT-05 | Waveform params | `bandwidth_hz`, `center_freq_hz`, `samples_per_chirp`, `chirps_per_frame` with guard. |
-| DT-06 | Frame blob transport | `RadTensorFrame.hdr.blobs[]` carries the raw cube; size computable from axes x sample size. |
+| DT-06 | Frame blob transport | `RadTensorFrame.hdr.blobs[]` carries the raw cube; size computable from axes × sample size. |
 | DT-07 | Sensor type | `RadSensorType` covers FMCW radar as MEDIUM_RANGE or IMAGING_4D. |
 | DT-08 | StreamMeta extrinsics | `T_bus_sensor` (PoseSE3) + `nominal_rate_hz` for hand-eye calibration and 10 Hz cadence. |
 
@@ -4014,8 +4014,8 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 | ID | Check | Description |
 |---|---|---|
-| DV-01 | Standard camera | `PixFormat.RGB8` + `CamIntrinsics.width`/`height` cover ZED2 at 960x540. |
-| DV-02 | Camera extrinsics | `VisionMeta.base` -> `StreamMeta.T_bus_sensor` for hand-eye calibration. |
+| DV-01 | Standard camera | `PixFormat.RGB8` + `CamIntrinsics.width`/`height` cover ZED2 at 960×540. |
+| DV-02 | Camera extrinsics | `VisionMeta.base` → `StreamMeta.T_bus_sensor` for hand-eye calibration. |
 | DV-03 | Camera model | `CamModel.PINHOLE` for ZED2 pre-rectified output. |
 | DV-04 | Frame rate | `StreamMeta.nominal_rate_hz` = 10 (downsampled from 30 Hz). |
 | DV-05 | 360° rig roles | `RigRole.PANORAMIC` and `EQUIRECTANGULAR` for Insta360 ONE X2 in V2V scenarios. |
@@ -4032,13 +4032,13 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DL-04 | Point layout | `PointLayout.XYZ_I_R` for x, y, z, intensity, ring. |
 | DL-05 | Cloud encoding | `CloudEncoding.BIN_INTERLEAVED` for raw binary transport. |
 | DL-06 | Sensor wavelength | `LidarMeta.wavelength_nm` with `has_wavelength` guard (865 nm). |
-| DL-07 | Frame rate | `StreamMeta.nominal_rate_hz` covers 10-20 Hz. |
+| DL-07 | Frame rate | `StreamMeta.nominal_rate_hz` covers 10–20 Hz. |
 
 ##### IMU (4 checks)
 
 | ID | Check | Description |
 |---|---|---|
-| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s^2) + gyro (Vec3, rad/s). |
+| DI-01 | 6-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s). |
 | DI-02 | Noise densities | `ImuInfo.accel_noise_density` + `gyro_noise_density` + random walk params. |
 | DI-03 | Frame reference | `ImuInfo.frame_ref` for sensor-to-bus mounting. |
 | DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for 100 Hz temporal ordering. |
@@ -4050,19 +4050,24 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DG-01 | Position | `GeoPose.lat_deg`/`lon_deg`/`alt_m` for GPS-RTK coordinates. |
 | DG-02 | Orientation | `GeoPose.q` (QuaternionXYZW) for heading-derived orientation. |
 | DG-03 | Timestamp | `GeoPose.stamp` for 10 Hz GPS samples. |
-| DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK <=1 cm). |
+| DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK ≤1 cm). |
 | DG-05 | GNSS quality | ⚠️ **GAP.** DOP, fix type, satellite count require new `GnssQuality` struct (K-G1). Under separate discussion. |
 | DG-06 | Speed over ground | ⚠️ **GAP.** No GeoPose field for ground velocity. Under separate discussion. |
 
-##### mmWave Beam (5 checks)
+##### mmWave Beam (8 checks)
 
 | ID | Check | Description |
 |---|---|---|
-| DB-01 | Beam power vector | ❌ **MISSING.** 64x1 receive power vector from phased-array beam sweep. Requires new `rf_beam` profile (K-B1). Under separate discussion. |
-| DB-02 | Codebook metadata | ❌ **MISSING.** Codebook size, FoV, element count, sweep type. Part of proposed `RfBeamMeta`. |
-| DB-03 | Optimal beam index | ❌ **MISSING.** Ground-truth label: beam maximizing SNR. Part of proposed `RfBeamFrame`. |
-| DB-04 | Blockage status | ❌ **MISSING.** Per-sample LOS/NLOS state. Part of proposed `RfBeamFrame`. |
-| DB-05 | Multi-array set | ❌ **MISSING.** V2V 4x arrays per vehicle (360° coverage). Part of proposed `RfBeamArraySet`. |
+| DB-01 | Beam power vector | `RfBeamFrame.power` (sequence<float,1024>) carries per-beam received power. 64 entries for DeepSense exhaustive sweep. Provisional `rf_beam` profile (K-B1). |
+| DB-02 | Codebook metadata | `RfBeamMeta.n_beams` (64), `n_elements` (16), `center_freq_ghz` (60.0), `fov_az_deg` (90), `codebook_type`. |
+| DB-03 | Optimal beam index | `RfBeamFrame.best_beam_idx` (uint16) with `has_best_beam` guard. Ground-truth label: beam maximizing SNR. |
+| DB-04 | Blockage status | `RfBeamFrame.is_blocked` (boolean) + `blockage_confidence` (float 0..1) with `has_blockage_state` guard. |
+| DB-05 | Multi-array set | `RfBeamArraySet.arrays` (sequence<RfBeamFrame,8>) batches per-array frames. `overall_best_array_idx` + `overall_best_beam_idx` for cross-array best beam. Covers V2V 4-array rig. |
+| DB-06 | Sparse sweep indices | `RfBeamFrame.beam_indices` maps `power[i]` to codebook position for PARTIAL/TRACKING sweeps. `BeamSweepType` enum: EXHAUSTIVE, HIERARCHICAL, TRACKING, PARTIAL. |
+| DB-07 | Power unit convention | `RfBeamMeta.power_unit` (PowerUnit enum: DBM, LINEAR_MW, RSRP) declares units for `RfBeamFrame.power`. |
+| DB-08 | Stream linkage | `RfBeamFrame.stream_id` matches `RfBeamMeta.stream_id` for meta/frame correlation. |
+
+*Note: All mmWave Beam checks validated against the provisional `sensing.rf_beam` profile (Appendix E). Types are subject to breaking changes.*
 
 ##### Semantics (4 checks)
 
@@ -4071,33 +4076,34 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DS-01 | 2D bounding boxes | `Detection2D.bbox` + `class_id` covers 8 DeepSense object classes. |
 | DS-02 | Sequence index | `FrameHeader.frame_seq` for sample ordering. |
 | DS-03 | Class ID | `Detection2D.class_id` (string) maps all DeepSense class labels. |
-| DS-04 | Beam/blockage labels | ⚠️ **GAP.** ISAC-specific labels don't fit `Detection2D`/`3D`. Deferred to `rf_beam` profile. |
+| DS-04 | Beam/blockage labels | `RfBeamFrame.best_beam_idx` and `.is_blocked`/`.blockage_confidence` carry ISAC-specific ground-truth labels. Covered by provisional `rf_beam` profile. |
 
 #### Results
 
-33 of 41 DeepSense 6G checks pass. The 8 remaining items are all explicitly deferred pending new profile design (GNSS quality, RF beam sensing).
+42 of 44 DeepSense 6G checks pass. The 2 remaining items are GPS quality metadata gaps, deferred pending `GnssQuality` struct design (K-G1). All mmWave Beam checks now pass against the provisional `rf_beam` profile (Appendix E).
 
 | Modality | Checks | Pass | Gap | Missing | Notes |
 |---|---|---|---|---|---|
-| Radar (tensor) | 8 | 8 | 0 | 0 | -- |
+| Radar (tensor) | 8 | 8 | 0 | 0 | — |
 | Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles |
 | Lidar | 7 | 7 | 0 | 0 | Includes sensor wavelength |
-| IMU | 4 | 4 | 0 | 0 | -- |
+| IMU | 4 | 4 | 0 | 0 | — |
 | GPS | 6 | 4 | 2 | 0 | GNSS quality deferred (K-G1) |
-| mmWave Beam | 5 | 0 | 0 | 5 | RF beam profile deferred (K-B1) |
-| Semantics | 4 | 3 | 1 | 0 | Beam labels deferred |
-| **Total** | **41** | **33** | **3** | **5** | **80% coverage** |
+| mmWave Beam | 8 | 8 | 0 | 0 | Provisional rf_beam profile (K-B1) |
+| Semantics | 4 | 4 | 0 | 0 | Beam labels via rf_beam |
+| **Total** | **44** | **42** | **2** | **0** | **95% coverage** |
 
 #### Deferred Items
 
-The following DeepSense 6G modalities require new SpatialDDS profiles that are under separate discussion:
+The following DeepSense 6G modality requires a new SpatialDDS struct that is under separate discussion:
 
-| Item | Gap | Proposed Profile | Status |
+| Item | Gap | Proposed Type | Status |
 |---|---|---|---|
 | GNSS quality (DOP, fix type, satellites) | DG-05, DG-06 | `GnssQuality` struct (K-G1) | Under discussion |
-| mmWave beam power vectors | DB-01–DB-05, DS-04 | `sensing.rf_beam` profile (K-B1) | Under discussion |
 
-These two gaps are architectural, not incremental. Closing them would position SpatialDDS as the first open spatial transport spec to support the full ISAC sensing pipeline: raw RF -> processed detections -> semantic annotations. See Appendix K for the full DeepSense 6G conformance analysis.
+The mmWave beam power vector modality (formerly 5 MISSING checks) is now covered by the provisional `sensing.rf_beam` profile in Appendix E. The 8 beam checks (DB-01 through DB-08) pass against the provisional types. These types are subject to breaking changes pending multi-dataset validation; see Appendix K for the maturity promotion criteria.
+
+Closing the remaining GNSS quality gap would bring DeepSense coverage to 100%. See Appendix K for the full conformance analysis.
 
 ---
 
@@ -4113,13 +4119,13 @@ python3 scripts/nuscenes_harness_v2.py
 
 Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
 
-**DeepSense 6G harness** (`scripts/deepsense6g_harness_v1.py`):
+**DeepSense 6G harness** (`scripts/deepsense6g_harness_v2.py`):
 
 ```bash
-python3 scripts/deepsense6g_harness_v1.py
+python3 scripts/deepsense6g_harness_v2.py
 ```
 
-Validates 41 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). Produces a plain-text report and a JSON results file. Deferred items (GNSS quality, RF beam) are explicitly flagged and will transition to PASS once the corresponding profiles are added.
+Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file. Deferred items (GNSS quality) are explicitly flagged and will transition to PASS once the corresponding struct is added.
 
 Neither harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal) to validate coverage for sensor configurations not present in nuScenes or DeepSense 6G.
 
