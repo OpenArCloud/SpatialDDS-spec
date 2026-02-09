@@ -146,6 +146,56 @@ module spatial {
       CovMatrix cov;
     };
 
+    // ---------- GNSS diagnostics ----------
+    enum GnssFixType {
+      @value(0) NO_FIX,         // unable to determine position
+      @value(1) FIX_2D,         // 2D fix (no altitude)
+      @value(2) FIX_3D,         // 3D autonomous fix
+      @value(3) DGPS,           // differential GPS correction
+      @value(4) RTK_FLOAT,      // RTK float solution
+      @value(5) RTK_FIXED,      // RTK fixed (integer ambiguity resolved)
+      @value(6) SBAS,           // satellite-based augmentation (WAAS/EGNOS)
+      @value(7) DEAD_RECKONING, // DR-only (no satellite fix)
+      @value(8) UNKNOWN_FIX     // status not yet determined
+    };
+
+    module GnssService {
+      const uint16 GPS     = 0x0001;
+      const uint16 GLONASS = 0x0002;
+      const uint16 BEIDOU  = 0x0004;  // includes COMPASS
+      const uint16 GALILEO = 0x0008;
+      const uint16 QZSS    = 0x0010;
+      const uint16 IRNSS   = 0x0020;  // NavIC
+      const uint16 SBAS_SV = 0x0040;  // SBAS ranging SVs
+    };
+
+    @extensibility(APPENDABLE) struct NavSatStatus {
+      @key string gnss_id;      // receiver identifier, matches GeoPose stream
+
+      GnssFixType fix_type;     // current fix quality
+      uint16      service;      // GnssService bitmask: which constellations
+      uint16      num_satellites; // SVs used in fix
+
+      // Dilution of precision (from GSA sentence)
+      boolean has_dop;
+      float   pdop;             // position DOP  (valid when has_dop)
+      float   hdop;             // horizontal DOP (valid when has_dop)
+      float   vdop;             // vertical DOP   (valid when has_dop)
+
+      // Ground velocity (from RMC sentence)
+      boolean has_velocity;
+      float   speed_mps;        // speed over ground, m/s (valid when has_velocity)
+      float   course_deg;       // course over ground, degrees true north (valid when has_velocity)
+
+      // Differential correction metadata (from GGA fields 13-14)
+      boolean has_diff_age;
+      float   diff_age_s;       // age of differential correction, seconds
+      uint16  diff_station_id;  // reference station ID
+
+      Time   stamp;             // should match the associated GeoPose.stamp
+      string schema_version;    // e.g., "1.5.0"
+    };
+
     @extensibility(APPENDABLE) struct GeoAnchor {
       @key string anchor_id;   // e.g., "anchor/4th-and-main"
       string map_id;

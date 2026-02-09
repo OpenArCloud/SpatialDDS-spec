@@ -365,6 +365,8 @@ Participants advertise supported ranges via `caps.supported_profiles` (discovery
 
 The Core profile defines the essential building blocks for representing and sharing a live world model over DDS. It focuses on a small, stable set of concepts: pose graphs, 3D geometry tiles, blob transport for large payloads, and geo-anchoring primitives such as anchors, transforms, and simple GeoPoses. The design is deliberately lightweight and codec-agnostic: tiles reference payloads but do not dictate mesh formats, and anchors define stable points without tying clients to a specific localization method. All quaternion fields follow the OGC GeoPose component order `(x, y, z, w)` so orientation data can flow between GeoPose-aware systems without reordering. By centering on graph \+ geometry \+ anchoring, the Core profile provides a neutral foundation that can support diverse pipelines across robotics, AR, IoT, and smart city contexts.
 
+**GNSS diagnostics (Normative):** `NavSatStatus` is a companion to `GeoPose` that carries GNSS receiver diagnostics (fix type, DOP, satellite count, ground velocity) on a parallel topic. It is published alongside GNSS-derived GeoPoses and MUST NOT be used to annotate non-GNSS localization outputs.
+
 #### **Blob Reassembly (Normative)**
 
 Blob payloads are transported as `BlobChunk` sequences. Consumers MUST be prepared for partial delivery and SHOULD apply a per-blob timeout window based on expected rate and `total_chunks`.
@@ -1586,6 +1588,56 @@ module spatial {
       Time   stamp;
       // Exactly one covariance payload will be present based on the discriminator.
       CovMatrix cov;
+    };
+
+    // ---------- GNSS diagnostics ----------
+    enum GnssFixType {
+      @value(0) NO_FIX,         // unable to determine position
+      @value(1) FIX_2D,         // 2D fix (no altitude)
+      @value(2) FIX_3D,         // 3D autonomous fix
+      @value(3) DGPS,           // differential GPS correction
+      @value(4) RTK_FLOAT,      // RTK float solution
+      @value(5) RTK_FIXED,      // RTK fixed (integer ambiguity resolved)
+      @value(6) SBAS,           // satellite-based augmentation (WAAS/EGNOS)
+      @value(7) DEAD_RECKONING, // DR-only (no satellite fix)
+      @value(8) UNKNOWN_FIX     // status not yet determined
+    };
+
+    module GnssService {
+      const uint16 GPS     = 0x0001;
+      const uint16 GLONASS = 0x0002;
+      const uint16 BEIDOU  = 0x0004;  // includes COMPASS
+      const uint16 GALILEO = 0x0008;
+      const uint16 QZSS    = 0x0010;
+      const uint16 IRNSS   = 0x0020;  // NavIC
+      const uint16 SBAS_SV = 0x0040;  // SBAS ranging SVs
+    };
+
+    @extensibility(APPENDABLE) struct NavSatStatus {
+      @key string gnss_id;      // receiver identifier, matches GeoPose stream
+
+      GnssFixType fix_type;     // current fix quality
+      uint16      service;      // GnssService bitmask: which constellations
+      uint16      num_satellites; // SVs used in fix
+
+      // Dilution of precision (from GSA sentence)
+      boolean has_dop;
+      float   pdop;             // position DOP  (valid when has_dop)
+      float   hdop;             // horizontal DOP (valid when has_dop)
+      float   vdop;             // vertical DOP   (valid when has_dop)
+
+      // Ground velocity (from RMC sentence)
+      boolean has_velocity;
+      float   speed_mps;        // speed over ground, m/s (valid when has_velocity)
+      float   course_deg;       // course over ground, degrees true north (valid when has_velocity)
+
+      // Differential correction metadata (from GGA fields 13-14)
+      boolean has_diff_age;
+      float   diff_age_s;       // age of differential correction, seconds
+      uint16  diff_station_id;  // reference station ID
+
+      Time   stamp;             // should match the associated GeoPose.stamp
+      string schema_version;    // e.g., "1.5.0"
     };
 
     @extensibility(APPENDABLE) struct GeoAnchor {
@@ -4119,10 +4171,10 @@ python3 scripts/nuscenes_harness_v2.py
 
 Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
 
-**DeepSense 6G harness** (`scripts/deepsense6g_harness_v2.py`):
+**DeepSense 6G harness** (`scripts/deepsense6g_harness_v3.py`):
 
 ```bash
-python3 scripts/deepsense6g_harness_v2.py
+python3 scripts/deepsense6g_harness_v3.py
 ```
 
 Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file. Deferred items (GNSS quality) are explicitly flagged and will transition to PASS once the corresponding struct is added.

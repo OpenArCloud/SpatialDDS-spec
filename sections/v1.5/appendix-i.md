@@ -264,10 +264,10 @@ python3 scripts/nuscenes_harness_v2.py
 
 Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
 
-**DeepSense 6G harness** (`scripts/deepsense6g_harness_v2.py`):
+**DeepSense 6G harness** (`scripts/deepsense6g_harness_v3.py`):
 
 ```bash
-python3 scripts/deepsense6g_harness_v2.py
+python3 scripts/deepsense6g_harness_v3.py
 ```
 
 Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file. Deferred items (GNSS quality) are explicitly flagged and will transition to PASS once the corresponding struct is added.
