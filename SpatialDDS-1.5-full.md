@@ -168,6 +168,7 @@ Before diving into identifiers and manifests, it helps to see how SpatialDDS com
 
 SpatialDDS follows the same four-layer model shown in the architecture diagrams:
 
+```
 Applications
     ↓ use
 SpatialDDS Profiles
@@ -177,6 +178,7 @@ DDS Topics (typed + QoS)
 Discovery & Manifests
     ↓ reference
 spatial:// URIs
+```
 
 - Applications (AR, robotics, digital twins, telco sensing, AI runtimes) use
   SpatialDDS profiles instead of raw DDS topics.
