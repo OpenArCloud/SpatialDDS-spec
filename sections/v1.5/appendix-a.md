@@ -8,12 +8,6 @@
 {{include:idl/v1.5/types.idl}}
 ```
 
-### **Geometry Primitives**
-
-```idl
-{{include:idl/v1.5/geometry.idl}}
-```
-
 ### **Core Module**
 
 ```idl

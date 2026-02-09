@@ -31,6 +31,8 @@
 - Updated Appendix I to reflect GNSS checks passing and full DeepSense coverage.
 - Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
 - Added `Edge.T_from_to` relative pose to core pose-graph edges.
+- Removed the empty `spatial.geometry` module and its `geometry.idl` include guard from the core IDL.
+- Marked §3.3 abridged IDL snippets as non-normative and clarified a large-rotation quaternion example in Appendix H.
 - Added §1.1 Conceptual Overview and refined introduction/profile summaries.
 - Added provisional Neural and Agent example profiles in Appendix E.
 - Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.

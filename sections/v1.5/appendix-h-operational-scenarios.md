@@ -74,6 +74,8 @@ A field technician’s headset begins indoors with self-contained SLAM. As it wa
     }
     ```
 
+*The quaternion `[0.71, 0.00, 0.70, 0.05]` is in `(x, y, z, w)` order per §2.1, representing a ~174° heading (facing roughly west in the ENU frame).*
+
 - **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
 
 (See Appendix A for the full anchor and VPS manifests referenced here.)

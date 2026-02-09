@@ -176,6 +176,7 @@ Access Network           Bootstrap              DDS Domain            On-Bus Dis
 #### Key messages (abridged IDL)
 *(Abridged IDL — see Appendix B for full definitions.)*
 ```idl
+// ABRIDGED — see Appendix B for normative definitions
 // Message shapes shown for orientation only
 @extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
 @extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<FeatureFlag,64> features; }

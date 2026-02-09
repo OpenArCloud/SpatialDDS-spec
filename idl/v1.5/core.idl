@@ -4,9 +4,6 @@
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
 #endif
-#ifndef SPATIAL_GEOMETRY_INCLUDED
-#include "geometry.idl"
-#endif
 
 module spatial {
   module core {
