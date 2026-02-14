@@ -166,3 +166,4 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Cross-domain interop (city, IoT, AR, robotics on one bus) | SpatialDDS |
 | ISAC / V2X beam management and 5G/6G sensing | SpatialDDS |
 | Fleet robotics with heterogeneous sensors | Either; complementary |
+| Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |

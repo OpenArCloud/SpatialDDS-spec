@@ -393,6 +393,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `radar_detection` | Per-frame detection set | Structured radar detections |
 | `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube |
 | `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements |
+| `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
+| `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL |
+| `map_event` | Map lifecycle event | Lightweight notifications |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -413,6 +416,7 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `RF_BEAM_RT` | Best-effort | Ordered | 20 ms | Real-time beam sweep data |
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
+| `MAP_META` | Reliable | Ordered | 1000 ms | Map descriptors, alignments, events |
 
 ###### Notes
 
@@ -513,6 +517,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
+  * **Mapping Profile**: Map lifecycle descriptors (`MapMeta`), extended multi-source edge types, inter-map alignment transforms (`MapAlignment`), and lifecycle events for multi-agent map exchange.
 * **Provisional Extensions (Optional)**
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
   * **Agent Profile**: Generic task and status messages for AI agents and planners.
@@ -533,5 +538,6 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.slam_frontend/1.5
 - spatial.vio/1.5
 - spatial.semantics/1.5
+- spatial.mapping/1.5
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.

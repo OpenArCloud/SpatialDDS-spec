@@ -91,6 +91,11 @@ module spatial {
       @value(0) ODOM,
       @value(1) LOOP
     };
+    // NOTE: The mapping extension profile (spatial.mapping/1.5) defines
+    // mapping::EdgeType which extends EdgeTypeCore with additional constraint
+    // types (INTER_MAP, GPS, ANCHOR, IMU_PREINT, GRAVITY, PLANE, SEMANTIC,
+    // MANUAL). Values 0-1 are identical. Core consumers MAY downcast
+    // mapping::Edge to core::Edge by treating unknown edge types as LOOP.
 
     // Discriminated union: exactly one covariance payload (or none) is serialized.
     @extensibility(APPENDABLE) union CovMatrix switch (spatial::common::CovarianceType) {
