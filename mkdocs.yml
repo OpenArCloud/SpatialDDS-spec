@@ -20,7 +20,17 @@ nav:
       - Appendix A - Core Profile: v1.5/appendix-a.md
       - Appendix B - Discovery Profile: v1.5/appendix-b.md
       - Appendix C - Anchor Registry Profile: v1.5/appendix-c.md
-      - Appendix D - Extension Profiles: v1.5/appendix-d.md
+      - Appendix D - Extension Profiles:
+          - Overview: v1.5/appendix-d.md
+          - Sensing Common: v1.5/appendix-d.md#sensing-common-extension
+          - VIO / Inertial: v1.5/appendix-d.md#vio--inertial-extension
+          - Vision: v1.5/appendix-d.md#vision-extension
+          - SLAM Frontend: v1.5/appendix-d.md#slam-frontend-extension
+          - Semantics / Perception: v1.5/appendix-d.md#semantics--perception-extension
+          - Radar: v1.5/appendix-d.md#radar-extension
+          - Lidar: v1.5/appendix-d.md#lidar-extension
+          - AR + Geo: v1.5/appendix-d.md#ar--geo-extension
+          - Mapping: v1.5/appendix-d.md#mapping-extension
       - Appendix E - Provisional Extension Examples: v1.5/appendix-e.md
       - Appendix F - SpatialDDS URI Scheme (ABNF): v1.5/appendix-f.md
       - Appendix F.X - Discovery Query Expression (ABNF): v1.5/appendix-fx-discovery-query-expression.md
