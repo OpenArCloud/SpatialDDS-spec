@@ -744,6 +744,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
+| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL |
+| `task_offer` | Agent bid on a task | Volatile offer with TTL |
+| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -914,7 +917,7 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
 * **Neural Integration**  
   Provisional support for neural fields (NeRFs, Gaussian splats) could mature into a stable profile, ensuring consistent ways to stream and query neural representations across devices and services.  
 * **Agent Interoperability**  
-  Lightweight tasking and coordination schemas could evolve into a standard Agent profile, supporting multi-agent planning and human-AI collaboration at scale.  
+  The Agent extension's fleet coordination types (AgentStatus, TaskOffer, TaskAssignment, TaskHandoff) provide the typed data layer for multi-agent allocation. Future work could formalize common allocation patterns (auction-based, priority-queue, spatial-nearest) as reference implementations while keeping the protocol algorithm-agnostic.  
 * **Collaborative Mapping**  
   The Mapping extension enables multi-agent map discovery, alignment, and lifecycle coordination. Future work could formalize map merge protocols, distributed optimization coordination, and standardized map quality benchmarks for fleet-scale deployments.  
 * **Standards Alignment**  
@@ -3922,11 +3925,14 @@ module spatial {
 
 ### **Example: Agent Extension (Provisional)**
 
-This profile provides lightweight task coordination for AI agents and planners operating over the SpatialDDS bus. A planner publishes `TaskRequest` messages describing spatial tasks — navigate to a location, observe a region, build a map — and agents claim and report progress via `TaskStatus`.
+This profile provides lightweight task coordination for AI agents and planners operating over the SpatialDDS bus. It covers two layers:
 
-The design is deliberately minimal. Task-specific parameters are carried as freeform JSON in the `params` field, avoiding premature schema commitment for the wide variety of agent capabilities in robotics, drone fleets, AR-guided workflows, and AI services. Spatial targeting reuses the existing `PoseSE3`, `FrameRef`, and `SpatialUri` types so tasks can reference any addressable resource on the bus.
+- **Single-task lifecycle.** A planner publishes `TaskRequest` messages describing spatial tasks — navigate to a location, observe a region, build a map — and agents claim and report progress via `TaskStatus`.
+- **Fleet coordination.** Agents advertise availability and capabilities via `AgentStatus`. When multiple agents can handle a task, they may publish `TaskOffer` bids. The coordinator selects an agent via `TaskAssignment`. If an agent cannot finish, it publishes `TaskHandoff` with continuation context so the next agent picks up where it left off.
 
-The profile does not define planning algorithms, auction or bidding protocols, or inter-agent negotiation. These are application-layer concerns built on top of the task primitives.
+The design is deliberately minimal. Task-specific parameters are carried as freeform JSON in `params` fields, avoiding premature schema commitment for the wide variety of agent capabilities in robotics, drone fleets, AR-guided workflows, and AI services. Spatial targeting reuses the existing `PoseSE3`, `FrameRef`, and `SpatialUri` types so tasks can reference any addressable resource on the bus.
+
+The profile defines **what information agents and coordinators exchange**, not **how allocation decisions are made**. A round-robin dispatcher, a market-based auction, a centralized optimizer, and a human dispatcher all consume the same typed messages. The allocation algorithm is an application-layer concern.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -4046,6 +4052,173 @@ module spatial {
       Time stamp;                        // Status update time
     };
 
+    // ================================================================
+    // FLEET COORDINATION
+    // ================================================================
+    //
+    // Types that enable multi-agent task allocation over the DDS bus.
+    // These define the information agents and coordinators exchange,
+    // not the allocation algorithm. A round-robin dispatcher, a
+    // market-based auction, and a centralized optimizer all consume
+    // the same typed messages.
+
+    // ---- Agent operational state ----
+    enum AgentState {
+      @value(0) IDLE,             // available for new tasks
+      @value(1) BUSY,             // executing a task
+      @value(2) CHARGING,         // recharging / refueling
+      @value(3) RETURNING,        // returning to base / staging area
+      @value(4) ERROR,            // fault condition -- not available
+      @value(5) OFFLINE           // graceful shutdown / maintenance
+    };
+
+    // ---- Agent status advertisement ----
+    // Each agent publishes its current status at regular intervals.
+    // Keyed by agent_id; KEEP_LAST(1) per key with TRANSIENT_LOCAL
+    // so new coordinators immediately see all active agents.
+    //
+    // This is the fleet-level complement to disco::Announce. Announce
+    // tells you "a service exists with these profiles and coverage."
+    // AgentStatus tells you "this specific agent is available, here's
+    // what it can do right now, and here's its current state."
+    @extensibility(APPENDABLE) struct AgentStatus {
+      @key string agent_id;              // unique agent identifier
+
+      string name;                       // human-readable (e.g., "Drone Unit 14")
+      AgentState state;                  // current operational state
+
+      // Capabilities -- which task types this agent can execute
+      sequence<TaskType, 16> capable_tasks;
+
+      // Current position and coverage
+      boolean has_pose;
+      PoseSE3 pose;                      // current pose (valid when flag true)
+      boolean has_frame_ref;
+      FrameRef frame_ref;                // frame for pose (valid when flag true)
+
+      boolean has_geopose;
+      spatial::core::GeoPose geopose;    // current geo-position (valid when flag true)
+
+      // Resource levels (optional -- agent-type dependent)
+      boolean has_battery_pct;
+      float   battery_pct;               // [0..1] remaining charge
+
+      boolean has_payload_kg;
+      float   payload_kg;                // current payload mass
+      boolean has_payload_capacity_kg;
+      float   payload_capacity_kg;       // maximum payload mass
+
+      boolean has_range_remaining_m;
+      float   range_remaining_m;         // estimated remaining operational range (meters)
+
+      // Current task (if BUSY)
+      boolean has_current_task_id;
+      string  current_task_id;           // task_id of current assignment
+
+      // Queue depth -- how many tasks are queued behind the current one
+      boolean has_queue_depth;
+      uint32  queue_depth;
+
+      // Extensible metadata (sensor suite, speed limits, special equipment, etc.)
+      sequence<spatial::common::MetaKV, 16> attributes;
+
+      Time   stamp;
+      uint32 ttl_sec;                    // status expires if not refreshed
+    };
+
+
+    // ---- Task offer (agent -> coordinator) ----
+    // An agent that can handle a TaskRequest publishes a TaskOffer
+    // indicating its willingness and estimated cost. The coordinator
+    // evaluates offers and publishes a TaskAssignment.
+    //
+    // This is optional. Simple deployments can skip offers entirely
+    // and have the coordinator assign directly based on AgentStatus.
+    // Offers enable decentralized decision-making where agents have
+    // better local knowledge than the coordinator.
+    @extensibility(APPENDABLE) struct TaskOffer {
+      @key string offer_id;              // unique offer identifier
+      string task_id;                    // references TaskRequest.task_id
+      string agent_id;                   // offering agent
+
+      // Estimated cost / fitness (lower is better; semantics are deployment-defined)
+      float  cost;                       // e.g., estimated time (sec), energy (J), or normalized score
+
+      // Estimated time to reach the task target
+      boolean has_eta_sec;
+      float   eta_sec;                   // estimated seconds to reach target
+
+      // Distance to task target
+      boolean has_distance_m;
+      float   distance_m;                // straight-line or path distance (meters)
+
+      // Agent's current resource snapshot at time of offer
+      boolean has_battery_pct;
+      float   battery_pct;
+
+      // Freeform justification or constraints
+      string  params;                    // JSON string; e.g., {"route": "via-corridor-A"}
+
+      Time   stamp;
+      uint32 ttl_sec;                    // offer expires if not accepted
+    };
+
+
+    // ---- Task assignment (coordinator -> agent) ----
+    // The coordinator evaluates AgentStatus and/or TaskOffer messages
+    // and publishes a TaskAssignment binding a task to a specific agent.
+    // The assigned agent should respond with TaskStatus(ACCEPTED).
+    //
+    // Keyed by task_id -- at most one assignment per task.
+    @extensibility(APPENDABLE) struct TaskAssignment {
+      @key string task_id;               // references TaskRequest.task_id
+      string agent_id;                   // assigned agent
+      string coordinator_id;             // who made the assignment
+
+      // Optional: selected offer reference
+      boolean has_offer_id;
+      string  offer_id;                  // references TaskOffer.offer_id (if offer-based)
+
+      // Optional: override or refinement of the original TaskRequest params
+      boolean has_params_override;
+      string  params_override;           // JSON string; merged with TaskRequest.params
+
+      Time   stamp;
+    };
+
+
+    // ---- Task handoff ----
+    // When an agent cannot complete a task (low battery, leaving coverage,
+    // hardware fault), it publishes a TaskHandoff before or alongside
+    // TaskStatus(FAILED/CANCELLED). The coordinator uses this to
+    // re-assign the task with context preserved.
+    @extensibility(APPENDABLE) struct TaskHandoff {
+      @key string handoff_id;            // unique handoff identifier
+      string task_id;                    // original task being handed off
+      string from_agent_id;              // agent releasing the task
+      string reason;                     // human-readable (e.g., "battery below 15%")
+
+      // Progress context for the next agent
+      boolean has_progress;
+      float   progress;                  // [0..1] how far the task got
+
+      // Where the task was left off
+      boolean has_last_pose;
+      PoseSE3 last_pose;                 // agent's pose at handoff
+      boolean has_last_frame;
+      FrameRef last_frame;               // frame for last_pose
+
+      // Task-specific continuation context -- whatever the next agent needs
+      // to pick up where this one left off.
+      string  context;                   // JSON string; e.g., {"waypoints_remaining": [...]}
+
+      // Optional: preferred successor
+      boolean has_preferred_agent_id;
+      string  preferred_agent_id;        // agent the handoff prefers as successor
+
+      Time   stamp;
+    };
+
   }; // module agent
 };
 
@@ -4090,6 +4263,119 @@ Task Status:
   "has_result_uri": false,
   "diagnostic": "",
   "stamp": { "sec": 1714071200, "nanosec": 0 }
+}
+```
+
+**Topic Layout**
+
+| Type | Topic | QoS | Notes |
+|---|---|---|---|
+| `TaskRequest` | `spatialdds/agent/tasks/task_request/v1` | RELIABLE + TRANSIENT_LOCAL, KEEP_LAST(1) per key | Coordinator publishes tasks. |
+| `TaskStatus` | `spatialdds/agent/tasks/task_status/v1` | RELIABLE + VOLATILE, KEEP_LAST(1) per key | Agent reports lifecycle state. |
+| `AgentStatus` | `spatialdds/agent/fleet/agent_status/v1` | RELIABLE + TRANSIENT_LOCAL, KEEP_LAST(1) per key | Agent advertises availability. Late joiners see all agents. |
+| `TaskOffer` | `spatialdds/agent/fleet/task_offer/v1` | RELIABLE + VOLATILE, KEEP_LAST(1) per key | Optional: agent bids on a task. |
+| `TaskAssignment` | `spatialdds/agent/fleet/task_assignment/v1` | RELIABLE + TRANSIENT_LOCAL, KEEP_LAST(1) per key | Coordinator assigns task to agent. |
+| `TaskHandoff` | `spatialdds/agent/fleet/task_handoff/v1` | RELIABLE + VOLATILE, KEEP_ALL | Agent requests task transfer with context. |
+
+**QoS defaults for agent topics**
+
+| Topic | Reliability | Durability | History |
+|---|---|---|---|
+| `task_request` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `task_status` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `agent_status` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `task_offer` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `task_assignment` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `task_handoff` | RELIABLE | VOLATILE | KEEP_ALL |
+
+Agent Status:
+```json
+{
+  "agent_id": "drone/unit-14",
+  "name": "Drone Unit 14",
+  "state": "IDLE",
+  "capable_tasks": ["NAVIGATE", "OBSERVE", "MAP"],
+  "has_pose": true,
+  "pose": {
+    "t": [12.5, -3.2, 1.1],
+    "q": [0.0, 0.0, 0.0, 1.0]
+  },
+  "has_frame_ref": true,
+  "frame_ref": {
+    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
+    "fqn": "facility-west/enu"
+  },
+  "has_geopose": false,
+  "has_battery_pct": true,
+  "battery_pct": 0.72,
+  "has_payload_kg": true,
+  "payload_kg": 0.0,
+  "has_payload_capacity_kg": true,
+  "payload_capacity_kg": 2.5,
+  "has_range_remaining_m": true,
+  "range_remaining_m": 4200.0,
+  "has_current_task_id": false,
+  "has_queue_depth": true,
+  "queue_depth": 0,
+  "stamp": { "sec": 1714071000, "nanosec": 0 },
+  "ttl_sec": 30
+}
+```
+
+Task Offer:
+```json
+{
+  "offer_id": "offer/unit-14/survey-block-7",
+  "task_id": "task/survey-block-7",
+  "agent_id": "drone/unit-14",
+  "cost": 142.5,
+  "has_eta_sec": true,
+  "eta_sec": 45.0,
+  "has_distance_m": true,
+  "distance_m": 310.0,
+  "has_battery_pct": true,
+  "battery_pct": 0.72,
+  "params": "{\"route\": \"direct\", \"estimated_energy_pct\": 0.18}",
+  "stamp": { "sec": 1714071005, "nanosec": 0 },
+  "ttl_sec": 30
+}
+```
+
+Task Assignment:
+```json
+{
+  "task_id": "task/survey-block-7",
+  "agent_id": "drone/unit-14",
+  "coordinator_id": "planner/fleet-coordinator",
+  "has_offer_id": true,
+  "offer_id": "offer/unit-14/survey-block-7",
+  "has_params_override": false,
+  "stamp": { "sec": 1714071010, "nanosec": 0 }
+}
+```
+
+Task Handoff:
+```json
+{
+  "task_id": "task/survey-block-7",
+  "handoff_id": "handoff/unit-14/survey-block-7/001",
+  "from_agent_id": "drone/unit-14",
+  "reason": "battery below 15%",
+  "has_progress": true,
+  "progress": 0.63,
+  "has_last_pose": true,
+  "last_pose": {
+    "t": [45.2, 12.8, 30.0],
+    "q": [0.0, 0.0, 0.38, 0.92]
+  },
+  "has_last_frame": true,
+  "last_frame": {
+    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
+    "fqn": "earth-fixed"
+  },
+  "context": "{\"waypoints_remaining\": [[50.1, 15.0, 30.0], [55.3, 18.2, 30.0]], \"images_captured\": 147}",
+  "has_preferred_agent_id": false,
+  "stamp": { "sec": 1714072800, "nanosec": 0 }
 }
 ```
 
@@ -4971,3 +5257,4 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Fleet robotics with heterogeneous sensors | Either; complementary |
 | Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |
 | Zone-based spatial alerting and smart infrastructure events | SpatialDDS |
+| Fleet task allocation with spatial capability discovery | SpatialDDS |

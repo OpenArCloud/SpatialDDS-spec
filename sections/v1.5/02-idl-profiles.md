@@ -399,6 +399,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
+| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL |
+| `task_offer` | Agent bid on a task | Volatile offer with TTL |
+| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 

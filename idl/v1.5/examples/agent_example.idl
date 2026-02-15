@@ -115,5 +115,172 @@ module spatial {
       Time stamp;                        // Status update time
     };
 
+    // ================================================================
+    // FLEET COORDINATION
+    // ================================================================
+    //
+    // Types that enable multi-agent task allocation over the DDS bus.
+    // These define the information agents and coordinators exchange,
+    // not the allocation algorithm. A round-robin dispatcher, a
+    // market-based auction, and a centralized optimizer all consume
+    // the same typed messages.
+
+    // ---- Agent operational state ----
+    enum AgentState {
+      @value(0) IDLE,             // available for new tasks
+      @value(1) BUSY,             // executing a task
+      @value(2) CHARGING,         // recharging / refueling
+      @value(3) RETURNING,        // returning to base / staging area
+      @value(4) ERROR,            // fault condition -- not available
+      @value(5) OFFLINE           // graceful shutdown / maintenance
+    };
+
+    // ---- Agent status advertisement ----
+    // Each agent publishes its current status at regular intervals.
+    // Keyed by agent_id; KEEP_LAST(1) per key with TRANSIENT_LOCAL
+    // so new coordinators immediately see all active agents.
+    //
+    // This is the fleet-level complement to disco::Announce. Announce
+    // tells you "a service exists with these profiles and coverage."
+    // AgentStatus tells you "this specific agent is available, here's
+    // what it can do right now, and here's its current state."
+    @extensibility(APPENDABLE) struct AgentStatus {
+      @key string agent_id;              // unique agent identifier
+
+      string name;                       // human-readable (e.g., "Drone Unit 14")
+      AgentState state;                  // current operational state
+
+      // Capabilities -- which task types this agent can execute
+      sequence<TaskType, 16> capable_tasks;
+
+      // Current position and coverage
+      boolean has_pose;
+      PoseSE3 pose;                      // current pose (valid when flag true)
+      boolean has_frame_ref;
+      FrameRef frame_ref;                // frame for pose (valid when flag true)
+
+      boolean has_geopose;
+      spatial::core::GeoPose geopose;    // current geo-position (valid when flag true)
+
+      // Resource levels (optional -- agent-type dependent)
+      boolean has_battery_pct;
+      float   battery_pct;               // [0..1] remaining charge
+
+      boolean has_payload_kg;
+      float   payload_kg;                // current payload mass
+      boolean has_payload_capacity_kg;
+      float   payload_capacity_kg;       // maximum payload mass
+
+      boolean has_range_remaining_m;
+      float   range_remaining_m;         // estimated remaining operational range (meters)
+
+      // Current task (if BUSY)
+      boolean has_current_task_id;
+      string  current_task_id;           // task_id of current assignment
+
+      // Queue depth -- how many tasks are queued behind the current one
+      boolean has_queue_depth;
+      uint32  queue_depth;
+
+      // Extensible metadata (sensor suite, speed limits, special equipment, etc.)
+      sequence<spatial::common::MetaKV, 16> attributes;
+
+      Time   stamp;
+      uint32 ttl_sec;                    // status expires if not refreshed
+    };
+
+
+    // ---- Task offer (agent -> coordinator) ----
+    // An agent that can handle a TaskRequest publishes a TaskOffer
+    // indicating its willingness and estimated cost. The coordinator
+    // evaluates offers and publishes a TaskAssignment.
+    //
+    // This is optional. Simple deployments can skip offers entirely
+    // and have the coordinator assign directly based on AgentStatus.
+    // Offers enable decentralized decision-making where agents have
+    // better local knowledge than the coordinator.
+    @extensibility(APPENDABLE) struct TaskOffer {
+      @key string offer_id;              // unique offer identifier
+      string task_id;                    // references TaskRequest.task_id
+      string agent_id;                   // offering agent
+
+      // Estimated cost / fitness (lower is better; semantics are deployment-defined)
+      float  cost;                       // e.g., estimated time (sec), energy (J), or normalized score
+
+      // Estimated time to reach the task target
+      boolean has_eta_sec;
+      float   eta_sec;                   // estimated seconds to reach target
+
+      // Distance to task target
+      boolean has_distance_m;
+      float   distance_m;                // straight-line or path distance (meters)
+
+      // Agent's current resource snapshot at time of offer
+      boolean has_battery_pct;
+      float   battery_pct;
+
+      // Freeform justification or constraints
+      string  params;                    // JSON string; e.g., {"route": "via-corridor-A"}
+
+      Time   stamp;
+      uint32 ttl_sec;                    // offer expires if not accepted
+    };
+
+
+    // ---- Task assignment (coordinator -> agent) ----
+    // The coordinator evaluates AgentStatus and/or TaskOffer messages
+    // and publishes a TaskAssignment binding a task to a specific agent.
+    // The assigned agent should respond with TaskStatus(ACCEPTED).
+    //
+    // Keyed by task_id -- at most one assignment per task.
+    @extensibility(APPENDABLE) struct TaskAssignment {
+      @key string task_id;               // references TaskRequest.task_id
+      string agent_id;                   // assigned agent
+      string coordinator_id;             // who made the assignment
+
+      // Optional: selected offer reference
+      boolean has_offer_id;
+      string  offer_id;                  // references TaskOffer.offer_id (if offer-based)
+
+      // Optional: override or refinement of the original TaskRequest params
+      boolean has_params_override;
+      string  params_override;           // JSON string; merged with TaskRequest.params
+
+      Time   stamp;
+    };
+
+
+    // ---- Task handoff ----
+    // When an agent cannot complete a task (low battery, leaving coverage,
+    // hardware fault), it publishes a TaskHandoff before or alongside
+    // TaskStatus(FAILED/CANCELLED). The coordinator uses this to
+    // re-assign the task with context preserved.
+    @extensibility(APPENDABLE) struct TaskHandoff {
+      @key string handoff_id;            // unique handoff identifier
+      string task_id;                    // original task being handed off
+      string from_agent_id;              // agent releasing the task
+      string reason;                     // human-readable (e.g., "battery below 15%")
+
+      // Progress context for the next agent
+      boolean has_progress;
+      float   progress;                  // [0..1] how far the task got
+
+      // Where the task was left off
+      boolean has_last_pose;
+      PoseSE3 last_pose;                 // agent's pose at handoff
+      boolean has_last_frame;
+      FrameRef last_frame;               // frame for last_pose
+
+      // Task-specific continuation context -- whatever the next agent needs
+      // to pick up where this one left off.
+      string  context;                   // JSON string; e.g., {"waypoints_remaining": [...]}
+
+      // Optional: preferred successor
+      boolean has_preferred_agent_id;
+      string  preferred_agent_id;        // agent the handoff prefers as successor
+
+      Time   stamp;
+    };
+
   }; // module agent
 };

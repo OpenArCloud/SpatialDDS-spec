@@ -168,3 +168,4 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Fleet robotics with heterogeneous sensors | Either; complementary |
 | Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |
 | Zone-based spatial alerting and smart infrastructure events | SpatialDDS |
+| Fleet task allocation with spatial capability discovery | SpatialDDS |
