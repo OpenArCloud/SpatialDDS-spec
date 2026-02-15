@@ -105,7 +105,7 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 
   The twin registry validates the anchor reference, signs a manifest (Appendix A), and updates the canonical record.
 
-- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing alerts and AR overlays back through SpatialDDS.
+- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing `SpatialEvent` alerts (type: DWELL_TIMEOUT or ANOMALY) and AR overlays back through SpatialDDS. Zone monitors subscribe to `Detection3DSet` and `SpatialZone`, evaluating zone rules in real time and publishing typed events that fleet managers and safety dashboards consume.
 - **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
 
 (See Appendix A for extended twin manifests and analytics payloads.)

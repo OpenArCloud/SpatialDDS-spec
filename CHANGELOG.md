@@ -34,6 +34,9 @@
 - Added the Mapping extension profile (`spatial.mapping/1.5`) with `MapMeta`, `mapping::Edge`, `MapAlignment`, and `MapEvent` in Appendix D.
 - Added `map_meta`, `map_alignment`, and `map_event` to the Typed Topics Registry and `MAP_META` to the QoS profile table.
 - Updated profile summaries, profile matrix, future directions, and ROS 2 scenario table to include collaborative mapping.
+- Added the Spatial Events extension profile (`spatial.events/1.5`) with `SpatialZone`, `SpatialEvent`, and `ZoneState`.
+- Added `spatial_zone`, `spatial_event`, and `zone_state` to the Typed Topics Registry and `ZONE_META` / `EVENT_RT` to the QoS profile table.
+- Updated profile summaries, profile matrix, Appendix J, Appendix H, and Future Directions to include spatial events.
 - Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
 - Added `Edge.T_from_to` relative pose to core pose-graph edges.
 - Removed the empty `spatial.geometry` module and its `geometry.idl` include guard from the core IDL.

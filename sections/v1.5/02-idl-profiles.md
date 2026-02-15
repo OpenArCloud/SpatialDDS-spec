@@ -396,6 +396,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL |
 | `map_event` | Map lifecycle event | Lightweight notifications |
+| `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
+| `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
+| `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -417,6 +420,8 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
 | `MAP_META` | Reliable | Ordered | 1000 ms | Map descriptors, alignments, events |
+| `ZONE_META` | Reliable | Ordered | 1000 ms | Zone definitions, zone state |
+| `EVENT_RT` | Reliable | Ordered | 100 ms | Spatial events and alerts |
 
 ###### Notes
 
@@ -518,6 +523,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
   * **Mapping Profile**: Map lifecycle descriptors (`MapMeta`), extended multi-source edge types, inter-map alignment transforms (`MapAlignment`), and lifecycle events for multi-agent map exchange.
+  * **Spatial Events Profile**: Typed zone definitions (`SpatialZone`), spatially-scoped events (`SpatialEvent`), and periodic zone state summaries (`ZoneState`) for smart infrastructure and safety monitoring.
 * **Provisional Extensions (Optional)**
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
   * **Agent Profile**: Generic task and status messages for AI agents and planners.
@@ -539,5 +545,6 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.vio/1.5
 - spatial.semantics/1.5
 - spatial.mapping/1.5
+- spatial.events/1.5
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.

@@ -741,6 +741,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL |
 | `map_event` | Map lifecycle event | Lightweight notifications |
+| `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
+| `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
+| `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 
@@ -762,6 +765,8 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
 | `MAP_META` | Reliable | Ordered | 1000 ms | Map descriptors, alignments, events |
+| `ZONE_META` | Reliable | Ordered | 1000 ms | Zone definitions, zone state |
+| `EVENT_RT` | Reliable | Ordered | 100 ms | Spatial events and alerts |
 
 ###### Notes
 
@@ -863,6 +868,7 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
   * **AR+Geo Profile**: GeoPose, frame transforms, and geo-anchoring structures for global alignment and persistent AR content.
   * **Mapping Profile**: Map lifecycle descriptors (`MapMeta`), extended multi-source edge types, inter-map alignment transforms (`MapAlignment`), and lifecycle events for multi-agent map exchange.
+  * **Spatial Events Profile**: Typed zone definitions (`SpatialZone`), spatially-scoped events (`SpatialEvent`), and periodic zone state summaries (`ZoneState`) for smart infrastructure and safety monitoring.
 * **Provisional Extensions (Optional)**
   * **Neural Profile**: Metadata for neural fields (e.g., NeRFs, Gaussian splats) and optional view-synthesis requests.
   * **Agent Profile**: Generic task and status messages for AI agents and planners.
@@ -884,6 +890,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.vio/1.5
 - spatial.semantics/1.5
 - spatial.mapping/1.5
+- spatial.events/1.5
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
@@ -903,7 +910,7 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
 * **Reference Implementations**  
   Open-source libraries and bridges to existing ecosystems (e.g., ROS 2, OpenXR, OGC APIs) would make it easier for developers to adopt SpatialDDS in robotics, AR, and twin platforms.  
 * **Semantic Enrichment**  
-  Extending beyond 2D/3D detections, future work could align with ontologies and scene graphs to enable richer machine-readable semantics for AI world models and analytics.  
+  Extending beyond 2D/3D detections and spatial events, future work could align with ontologies, scene graphs, and complex event processing patterns to enable richer machine-readable semantics for AI world models and analytics.  
 * **Neural Integration**  
   Provisional support for neural fields (NeRFs, Gaussian splats) could mature into a stable profile, ensuring consistent ways to stream and query neural representations across devices and services.  
 * **Agent Interoperability**  
@@ -1971,7 +1978,7 @@ module spatial {
 
 ## **Appendix D: Extension Profiles**
 
-*These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile provides detection-centric radar metadata and per-frame detection sets, plus a tensor transport path for raw or processed radar data cubes used in ISAC and ML workloads. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content. The Mapping profile provides map lifecycle metadata, multi-source pose graph edge types, inter-map alignment primitives, and lifecycle events for multi-agent collaborative mapping.*
+*These extensions provide domain-specific capabilities beyond the Core profile. The **Sensing Common** module supplies reusable sensing metadata, ROI negotiation structures, and codec/payload descriptors that the specialized sensor profiles build upon. The VIO profile carries raw and fused IMU/magnetometer samples. The Vision profile shares camera metadata, encoded frames, and optional feature tracks for perception pipelines. The SLAM Frontend profile adds features and keyframes for SLAM and SfM pipelines. The Semantics profile allows 2D and 3D object detections to be exchanged for AR, robotics, and analytics use cases. The Radar profile provides detection-centric radar metadata and per-frame detection sets, plus a tensor transport path for raw or processed radar data cubes used in ISAC and ML workloads. The Lidar profile transports compressed point clouds, associated metadata, and optional detections for mapping and perception workloads. The AR+Geo profile adds GeoPose, frame transforms, and geo-anchoring structures, which allow clients to align local coordinate systems with global reference frames and support persistent AR content. The Mapping profile provides map lifecycle metadata, multi-source pose graph edge types, inter-map alignment primitives, and lifecycle events for multi-agent collaborative mapping. The Spatial Events profile provides typed, spatially-scoped events, zone definitions, and zone state summaries for smart infrastructure alerting, anomaly detection, and capacity management.*
 
 > Common type aliases and geometry primitives are defined once in Appendix A. Extension modules import those shared definitions and MUST NOT re-declare them.
 
@@ -3460,6 +3467,313 @@ module spatial {
 };   // module spatial
 ```
 
+### **Spatial Events Extension**
+
+*Typed, spatially-scoped events for zone monitoring, anomaly detection, and smart infrastructure alerting. Bridges perception streams (Detection3DSet) and application logic (fleet management, building automation, safety systems).*
+
+The Semantics profile provides spatial facts — "what is where." This extension adds spatial interpretations — "something happened that matters." Events are derived from perception streams plus zone definitions plus temporal rules (dwell thresholds, speed limits, capacity caps). They are typed, severity-graded, tied to triggering detections, and scoped to named spatial zones.
+
+The profile defines three types:
+
+- **`SpatialZone`** — named spatial regions with rules (restricted, speed-limited, capacity-capped). Published latched so all participants know the zone layout.
+- **`SpatialEvent`** — typed event tied to a zone, triggering detection, optional media evidence, and severity.
+- **`ZoneState`** — periodic zone occupancy and status snapshot for dashboards and capacity management.
+
+**Integration with Discovery:** Zone publishers announce via `disco::Announce` with `kind: OTHER` (or a future `ZONE_MANAGER` kind) and `coverage` matching the zone's spatial extent. Consumers use `CoverageQuery` filtered by `module_id_in: ["spatial.events/1.5"]` to discover event sources in a region. `SpatialZone` geometry reuses the same `Aabb3` and `FrameRef` primitives as `CoverageElement`, ensuring consistent spatial reasoning.
+
+**Topic Layout**
+
+| Type | Topic | QoS | Notes |
+|---|---|---|---|
+| `SpatialZone` | `spatialdds/<scene>/events/zone/v1` | RELIABLE + TRANSIENT\_LOCAL, KEEP\_LAST(1) per key | Latched zone definitions. Late joiners get full zone set. |
+| `SpatialEvent` | `spatialdds/<scene>/events/event/v1` | RELIABLE, KEEP\_LAST(64) | Event stream. Consumers filter by zone\_id, severity, event type. |
+| `ZoneState` | `spatialdds/<scene>/events/zone\_state/v1` | BEST\_EFFORT, KEEP\_LAST(1) per key | Periodic zone status snapshots. |
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Spatial Events Extension 1.5
+//
+// Typed, spatially-scoped events for zone monitoring, anomaly detection,
+// and smart infrastructure alerting.
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module events {
+
+    const string MODULE_ID = "spatial.events/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3   PoseSE3;
+    typedef spatial::core::FrameRef  FrameRef;
+    typedef spatial::core::Aabb3     Aabb3;
+    typedef spatial::core::BlobRef   BlobRef;
+    typedef spatial::common::MetaKV  MetaKV;
+
+
+    // ================================================================
+    // 1. SPATIAL ZONES
+    // ================================================================
+
+    // Zone classification — what kind of spatial region this is.
+    enum ZoneKind {
+      @value(0) RESTRICTED,       // entry prohibited or requires authorization
+      @value(1) SPEED_LIMITED,    // maximum speed enforced
+      @value(2) CAPACITY_LIMITED, // maximum occupancy enforced
+      @value(3) ONE_WAY,          // directional traffic constraint
+      @value(4) LOADING,          // loading/unloading area with dwell rules
+      @value(5) HAZARD,           // known hazard zone (chemical, height, machinery)
+      @value(6) MONITORING,       // general observation zone (no specific constraint)
+      @value(7) GEOFENCE,         // boundary-crossing detection only
+      @value(8) OTHER
+    };
+
+    // Named spatial region with associated rules.
+    // Published with RELIABLE + TRANSIENT_LOCAL so late joiners
+    // receive the full zone layout.
+    @extensibility(APPENDABLE) struct SpatialZone {
+      @key string zone_id;              // unique zone identifier
+
+      string name;                      // human-readable name (e.g., "Loading Bay 3")
+      ZoneKind kind;                    // zone classification
+      FrameRef frame_ref;               // coordinate frame for geometry
+
+      // Zone geometry (axis-aligned in frame_ref)
+      Aabb3 bounds;                     // 3D bounding box
+
+      // Optional geo-anchor for earth-fixed zones
+      boolean has_geopose;
+      spatial::core::GeoPose geopose;   // zone center in WGS84
+
+      // Zone rules (optional per kind)
+      boolean has_speed_limit_mps;
+      float   speed_limit_mps;          // max speed in m/s (for SPEED_LIMITED)
+
+      boolean has_capacity;
+      uint32  capacity;                 // max occupancy count (for CAPACITY_LIMITED)
+
+      boolean has_dwell_limit_sec;
+      float   dwell_limit_sec;          // max dwell time in seconds (for LOADING, RESTRICTED)
+
+      // Applicable object classes — which detection class_ids trigger events.
+      // Empty means all classes.
+      sequence<string, 32> class_filter;
+
+      // Schedule (optional) — zone is only active during specified hours.
+      // Format: ISO 8601 recurring interval or cron-like string in attributes.
+      boolean has_schedule;
+      string  schedule;                 // e.g., "R/2024-01-01T06:00:00/PT12H" or deployment-specific
+
+      // Owner / authority
+      string provider_id;               // who defines this zone
+      Time   stamp;                     // last update time
+
+      // Extensible metadata
+      sequence<MetaKV, 16> attributes;
+
+      string schema_version;            // MUST be "spatial.events/1.5"
+    };
+
+
+    // ================================================================
+    // 2. SPATIAL EVENTS
+    // ================================================================
+
+    // Event type — what happened.
+    enum EventType {
+      @value(0)  ZONE_ENTRY,      // object entered the zone
+      @value(1)  ZONE_EXIT,       // object exited the zone
+      @value(2)  DWELL_TIMEOUT,   // object exceeded dwell time limit
+      @value(3)  SPEED_VIOLATION, // object exceeded speed limit
+      @value(4)  CAPACITY_BREACH, // zone occupancy exceeded capacity
+      @value(5)  WRONG_WAY,       // object traveling against one-way direction
+      @value(6)  PROXIMITY_ALERT, // two tracked objects closer than safe distance
+      @value(7)  UNATTENDED,      // object stationary without associated person
+      @value(8)  ANOMALY,         // general anomaly (ML-detected, pattern deviation)
+      @value(9)  LINE_CROSS,      // object crossed a defined trip line
+      @value(10) LOITERING,       // person/object lingering beyond threshold
+      @value(11) TAILGATING,      // unauthorized entry following authorized person
+      @value(12) OTHER
+    };
+
+    // Severity level.
+    enum Severity {
+      @value(0) INFO,             // informational (logging, analytics)
+      @value(1) WARNING,          // advisory — may require attention
+      @value(2) ALERT,            // actionable — requires human review
+      @value(3) CRITICAL          // immediate intervention required
+    };
+
+    // Event lifecycle state.
+    enum EventState {
+      @value(0) ACTIVE,           // event is ongoing
+      @value(1) RESOLVED,         // condition cleared (e.g., person left zone)
+      @value(2) ACKNOWLEDGED,     // human acknowledged the event
+      @value(3) SUPPRESSED        // suppressed by rule or operator
+    };
+
+    // A spatially-grounded event.
+    //
+    // Keyed by event_id. Publishers update the same event_id as state
+    // changes (ACTIVE → RESOLVED). Subscribers use KEEP_LAST per key
+    // to see the latest state of each event.
+    @extensibility(APPENDABLE) struct SpatialEvent {
+      @key string event_id;             // unique event identifier
+
+      EventType  type;                  // what happened
+      Severity   severity;              // how urgent
+      EventState state;                 // lifecycle state
+
+      // Where — zone reference (optional; not all events are zone-scoped)
+      boolean has_zone_id;
+      string  zone_id;                  // references SpatialZone.zone_id
+
+      // Where — 3D position of the event (in the zone's or scene's frame_ref)
+      boolean has_position;
+      spatial::common::Vec3 position;   // event location (meters)
+      FrameRef frame_ref;               // coordinate frame for position
+
+      // What — triggering detection(s)
+      boolean has_trigger_det_id;
+      string  trigger_det_id;           // primary triggering Detection3D.det_id
+
+      boolean has_trigger_track_id;
+      string  trigger_track_id;         // tracked object ID (from Detection3D.track_id)
+
+      string  trigger_class_id;         // class of triggering object (e.g., "person", "forklift")
+
+      // Who — secondary object for relational events (PROXIMITY_ALERT, TAILGATING)
+      boolean has_secondary_det_id;
+      string  secondary_det_id;
+
+      // Measured values (populated per event type)
+      boolean has_measured_speed_mps;
+      float   measured_speed_mps;       // for SPEED_VIOLATION
+
+      boolean has_measured_dwell_sec;
+      float   measured_dwell_sec;       // for DWELL_TIMEOUT, LOITERING, UNATTENDED
+
+      boolean has_measured_distance_m;
+      float   measured_distance_m;      // for PROXIMITY_ALERT
+
+      boolean has_zone_occupancy;
+      uint32  zone_occupancy;           // current count for CAPACITY_BREACH
+
+      // Confidence
+      float   confidence;               // [0..1] — event detection confidence
+
+      // Evidence — optional media snapshot or clip
+      boolean has_evidence;
+      BlobRef evidence;                 // reference to snapshot image or video clip
+
+      // Narrative — optional human-readable description
+      boolean has_description;
+      string  description;              // e.g., "Forklift stopped in pedestrian corridor
+                                        //  near anchor loading-bay-3 for 4 minutes"
+
+      // Timing
+      Time   event_start;               // when the event condition began
+      Time   stamp;                     // latest update time (may differ from event_start)
+
+      // Producer
+      string source_id;                 // who detected this event
+
+      // Extensible metadata
+      sequence<MetaKV, 8> attributes;
+
+      string schema_version;            // MUST be "spatial.events/1.5"
+    };
+
+
+    // ================================================================
+    // 3. ZONE STATE (periodic summary)
+    // ================================================================
+
+    // Lightweight periodic snapshot of a zone's current status.
+    // Enables dashboards and capacity management without maintaining
+    // event counters client-side.
+    @extensibility(APPENDABLE) struct ZoneState {
+      @key string zone_id;              // references SpatialZone.zone_id
+
+      uint32 current_occupancy;         // number of tracked objects currently in zone
+      boolean has_capacity;
+      uint32  capacity;                 // echoed from SpatialZone for convenience
+
+      // Active alert count by severity
+      uint32 active_info;
+      uint32 active_warning;
+      uint32 active_alert;
+      uint32 active_critical;
+
+      // Class breakdown (optional — top N classes present)
+      sequence<MetaKV, 8> class_counts; // namespace = class_id, json = {"count": N}
+
+      Time   stamp;
+      string source_id;
+    };
+
+  }; // module events
+};   // module spatial
+```
+
+**Example JSON (Informative)**
+
+Zone Definition:
+```json
+{
+  "zone_id": "zone/facility-west/pedestrian-corridor-B",
+  "name": "Pedestrian Corridor B",
+  "kind": "RESTRICTED",
+  "frame_ref": { "uuid": "f1a2b3c4-...", "fqn": "facility-west/enu" },
+  "bounds": { "min_xyz": [10.0, 0.0, 0.0], "max_xyz": [25.0, 5.0, 3.0] },
+  "has_geopose": false,
+  "has_speed_limit_mps": false,
+  "has_capacity": false,
+  "has_dwell_limit_sec": true,
+  "dwell_limit_sec": 120.0,
+  "class_filter": ["forklift", "agv", "pallet_truck"],
+  "has_schedule": true,
+  "schedule": "R/2024-01-01T06:00:00/PT14H",
+  "provider_id": "safety/zone-manager",
+  "stamp": { "sec": 1714070400, "nanosec": 0 },
+  "schema_version": "spatial.events/1.5"
+}
+```
+
+Event:
+```json
+{
+  "event_id": "evt/facility-west/2024-04-26T12:05:00Z/001",
+  "type": "DWELL_TIMEOUT",
+  "severity": "ALERT",
+  "state": "ACTIVE",
+  "has_zone_id": true,
+  "zone_id": "zone/facility-west/pedestrian-corridor-B",
+  "has_position": true,
+  "position": [17.2, 2.1, 0.5],
+  "frame_ref": { "uuid": "f1a2b3c4-...", "fqn": "facility-west/enu" },
+  "has_trigger_det_id": true,
+  "trigger_det_id": "det/fused/forklift-07",
+  "has_trigger_track_id": true,
+  "trigger_track_id": "track/forklift-07",
+  "trigger_class_id": "forklift",
+  "has_measured_dwell_sec": true,
+  "measured_dwell_sec": 247.0,
+  "confidence": 0.94,
+  "has_evidence": true,
+  "evidence": { "blob_id": "snap-20240426-120500-cam3", "role": "evidence/jpeg", "checksum": "sha256:ab12..." },
+  "has_description": true,
+  "description": "Forklift stopped in pedestrian corridor B near loading-bay-3 for 4 min 7 sec",
+  "event_start": { "sec": 1714131653, "nanosec": 0 },
+  "stamp": { "sec": 1714131900, "nanosec": 0 },
+  "source_id": "analytics/zone-monitor",
+  "schema_version": "spatial.events/1.5"
+}
+```
+
 ## **Appendix E: Provisional Extension Examples**
 
 These provisional extensions are intentionally minimal and subject to breaking changes in future versions. Implementers SHOULD treat all struct layouts as unstable and MUST NOT assume wire compatibility across spec revisions.
@@ -4199,7 +4513,7 @@ A facilities digital twin service subscribes to the same DDS topics to maintain 
 
   The twin registry validates the anchor reference, signs a manifest (Appendix A), and updates the canonical record.
 
-- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing alerts and AR overlays back through SpatialDDS.
+- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing `SpatialEvent` alerts (type: DWELL_TIMEOUT or ANOMALY) and AR overlays back through SpatialDDS. Zone monitors subscribe to `Detection3DSet` and `SpatialZone`, evaluating zone rules in real time and publishing typed events that fleet managers and safety dashboards consume.
 - **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
 
 (See Appendix A for extended twin manifests and analytics payloads.)
@@ -4656,3 +4970,4 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | ISAC / V2X beam management and 5G/6G sensing | SpatialDDS |
 | Fleet robotics with heterogeneous sensors | Either; complementary |
 | Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |
+| Zone-based spatial alerting and smart infrastructure events | SpatialDDS |
