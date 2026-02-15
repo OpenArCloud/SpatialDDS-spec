@@ -4,7 +4,7 @@
 
 **Version**: 1.5 (Draft)
 
-**Date**: TBD
+**Date**: 2025-XX-XX
 
 **Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 

@@ -235,6 +235,10 @@ Topic naming: following `spatialdds/<domain>/<stream>/<type>/<version>`:
 | `ViewSynthesisResponse` | Uses `reply_topic` from request |
 | `TaskRequest` | `spatialdds/agent/tasks/task_request/v1` |
 | `TaskStatus` | `spatialdds/agent/tasks/task_status/v1` |
+| `AgentStatus` | `spatialdds/agent/fleet/agent_status/v1` |
+| `TaskOffer` | `spatialdds/agent/fleet/task_offer/v1` |
+| `TaskAssignment` | `spatialdds/agent/fleet/task_assignment/v1` |
+| `TaskHandoff` | `spatialdds/agent/fleet/task_handoff/v1` |
 
 QoS suggestions (informative):
 
@@ -245,5 +249,9 @@ QoS suggestions (informative):
 | `ViewSynthesisResponse` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
 | `TaskRequest` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `TaskStatus` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `AgentStatus` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `TaskOffer` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `TaskAssignment` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `TaskHandoff` | RELIABLE | VOLATILE | KEEP_ALL |
 
-Profile matrix: Do NOT add these to the Profile Matrix table in §3.5 yet. They remain in Appendix E as provisional. When promoted to stable in a future version, they move to Appendix D and enter the matrix.
+Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, and `spatial.sensing.rf_beam/1.5` remain in Appendix E as provisional and are not listed in the Profile Matrix in §3.5. When promoted to stable in a future version, they move to Appendix D and enter the matrix. (`spatial.mapping/1.5` and `spatial.events/1.5` are stable Appendix D extensions and are already listed in the matrix.)

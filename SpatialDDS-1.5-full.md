@@ -4,7 +4,7 @@
 
 **Version**: 1.5 (Draft)
 
-**Date**: TBD
+**Date**: 2025-XX-XX
 
 **Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
@@ -738,17 +738,17 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `radar_detection` | Per-frame detection set | Structured radar detections |
 | `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube |
 | `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements |
+| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
+| `desc_array` | Feature descriptor sets | Vector or embedding batches |
 | `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL |
 | `map_event` | Map lifecycle event | Lightweight notifications |
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
-| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL |
-| `task_offer` | Agent bid on a task | Volatile offer with TTL |
-| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL |
-| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
-| `desc_array` | Feature descriptor sets | Vector or embedding batches |
+| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) |
+| `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) |
+| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
@@ -895,6 +895,8 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.mapping/1.5
 - spatial.events/1.5
 
+> `spatial.manifest/1.5` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional extensions (`spatial.neural/1.5`, `spatial.agent/1.5`, `spatial.sensing.rf_beam/1.5`) are not listed here; see Appendix E.
+
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
 ## **4. Operational Scenarios: From SLAM to AI World Models**
@@ -903,8 +905,7 @@ Informative narratives, mermaid diagrams, and long-form JSON walkthroughs now li
 
 ## **5. Conclusion**
 
-SpatialDDS provides a lightweight, standards-based framework for exchanging real-world spatial data over DDS. By organizing schemas into modular profiles — with Core, Discovery, and Anchors as the foundation and Extensions adding domain-specific capabilities — it supports everything from SLAM pipelines and AR clients to digital twins, smart city infrastructure, and AI-driven world models. Core elements such as pose graphs, geometry tiles, anchors, and discovery give devices and services a shared language for building and aligning live models of the world, while provisional extensions like Neural and Agent point toward richer semantics and autonomous agents. Taken together, SpatialDDS positions itself as a practical foundation for real-time spatial computing—interoperable, codec-agnostic, and ready to serve as the data bus for AI and human experiences grounded in the physical world.
-
+SpatialDDS provides a lightweight, standards-based framework for exchanging real-world spatial data over DDS. By organizing schemas into modular profiles — with Core, Discovery, and Anchors as the foundation and Extensions adding domain-specific capabilities — it supports everything from SLAM pipelines and AR clients to digital twins, smart city infrastructure, and AI-driven world models. Core elements such as pose graphs, geometry tiles, anchors, and discovery give devices and services a shared language for building and aligning live models of the world. The Mapping and Spatial Events extensions add multi-agent map exchange and zone-based alerting for fleet robotics and smart infrastructure, while provisional extensions like Neural and Agent point toward richer semantics and autonomous agents. Taken together, SpatialDDS positions itself as a practical foundation for real-time spatial computing—interoperable, codec-agnostic, and ready to serve as the data bus for AI and human experiences grounded in the physical world.
 
 ## **6. Future Directions**
 
@@ -3218,6 +3219,7 @@ module spatial {
     typedef spatial::core::CovMatrix  CovMatrix;
     typedef spatial::core::BlobRef    BlobRef;
     typedef spatial::common::MetaKV   MetaKV;
+    typedef spatial::core::GeoPose   GeoPose;
 
 
     // ================================================================
@@ -3294,7 +3296,7 @@ module spatial {
 
       // Geo-anchor: where this map sits on Earth (when known)
       boolean has_geopose;
-      spatial::core::GeoPose geopose;   // map origin in WGS84
+      GeoPose geopose;                  // map origin in WGS84
 
       // Versioning — aligns with core Node/Edge graph_epoch
       uint64  graph_epoch;              // increments on major rebases / merges
@@ -3403,7 +3405,7 @@ module spatial {
 
       string map_id_from;               // source map
       string map_id_to;                 // target map (reference)
-      PoseSE3 T_to_from;               // transform: map_id_from frame → map_id_to frame
+      PoseSE3 T_from_to;               // transform: map_id_from frame → map_id_to frame
       CovMatrix cov;                    // uncertainty of the alignment
 
       AlignmentMethod method;           // how the alignment was computed
@@ -3514,6 +3516,7 @@ module spatial {
     typedef spatial::core::FrameRef  FrameRef;
     typedef spatial::core::Aabb3     Aabb3;
     typedef spatial::core::BlobRef   BlobRef;
+    typedef spatial::core::GeoPose   GeoPose;
     typedef spatial::common::MetaKV  MetaKV;
 
 
@@ -3545,11 +3548,12 @@ module spatial {
       FrameRef frame_ref;               // coordinate frame for geometry
 
       // Zone geometry (axis-aligned in frame_ref)
-      Aabb3 bounds;                     // 3D bounding box
+      boolean has_bounds;
+      Aabb3 bounds;                     // 3D bounding box (valid when has_bounds == true)
 
       // Optional geo-anchor for earth-fixed zones
       boolean has_geopose;
-      spatial::core::GeoPose geopose;   // zone center in WGS84
+      GeoPose geopose;                  // zone center in WGS84
 
       // Zone rules (optional per kind)
       boolean has_speed_limit_mps;
@@ -3716,6 +3720,8 @@ module spatial {
 
       Time   stamp;
       string source_id;
+      // schema_version intentionally omitted: ZoneState is a lightweight
+      // summary; version is inferred from the accompanying SpatialZone.
     };
 
   }; // module events
@@ -4548,6 +4554,10 @@ Topic naming: following `spatialdds/<domain>/<stream>/<type>/<version>`:
 | `ViewSynthesisResponse` | Uses `reply_topic` from request |
 | `TaskRequest` | `spatialdds/agent/tasks/task_request/v1` |
 | `TaskStatus` | `spatialdds/agent/tasks/task_status/v1` |
+| `AgentStatus` | `spatialdds/agent/fleet/agent_status/v1` |
+| `TaskOffer` | `spatialdds/agent/fleet/task_offer/v1` |
+| `TaskAssignment` | `spatialdds/agent/fleet/task_assignment/v1` |
+| `TaskHandoff` | `spatialdds/agent/fleet/task_handoff/v1` |
 
 QoS suggestions (informative):
 
@@ -4558,8 +4568,12 @@ QoS suggestions (informative):
 | `ViewSynthesisResponse` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
 | `TaskRequest` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `TaskStatus` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `AgentStatus` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `TaskOffer` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
+| `TaskAssignment` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `TaskHandoff` | RELIABLE | VOLATILE | KEEP_ALL |
 
-Profile matrix: Do NOT add these to the Profile Matrix table in §3.5 yet. They remain in Appendix E as provisional. When promoted to stable in a future version, they move to Appendix D and enter the matrix.
+Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, and `spatial.sensing.rf_beam/1.5` remain in Appendix E as provisional and are not listed in the Profile Matrix in §3.5. When promoted to stable in a future version, they move to Appendix D and enter the matrix. (`spatial.mapping/1.5` and `spatial.events/1.5` are stable Appendix D extensions and are already listed in the matrix.)
 
 ## **Appendix F: SpatialDDS URI Scheme (ABNF)**
 

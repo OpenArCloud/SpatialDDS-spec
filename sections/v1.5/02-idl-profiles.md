@@ -393,17 +393,17 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `radar_detection` | Per-frame detection set | Structured radar detections |
 | `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube |
 | `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements |
+| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
+| `desc_array` | Feature descriptor sets | Vector or embedding batches |
 | `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL |
 | `map_event` | Map lifecycle event | Lightweight notifications |
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
-| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL |
-| `task_offer` | Agent bid on a task | Volatile offer with TTL |
-| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL |
-| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
-| `desc_array` | Feature descriptor sets | Vector or embedding batches |
+| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) |
+| `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) |
+| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
@@ -549,5 +549,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.semantics/1.5
 - spatial.mapping/1.5
 - spatial.events/1.5
+
+> `spatial.manifest/1.5` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional extensions (`spatial.neural/1.5`, `spatial.agent/1.5`, `spatial.sensing.rf_beam/1.5`) are not listed here; see Appendix E.
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.

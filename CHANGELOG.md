@@ -38,6 +38,10 @@
 - Added `spatial_zone`, `spatial_event`, and `zone_state` to the Typed Topics Registry and `ZONE_META` / `EVENT_RT` to the QoS profile table.
 - Updated profile summaries, profile matrix, Appendix J, Appendix H, and Future Directions to include spatial events.
 - Extended the provisional Agent profile with fleet coordination types (AgentStatus, TaskOffer, TaskAssignment, TaskHandoff) plus new topic/QoS tables and JSON examples.
+- Updated conclusion and Appendix E integration notes to reflect Mapping/Events and fleet coordination topics.
+- Reordered the Typed Topics Registry, added provisional markers for agent entries, and clarified the Profile Matrix footnote.
+- Aligned mapping/events snippets with GeoPose typedefs, MapAlignment naming, and optional SpatialZone bounds.
+- Set the 1.5 draft publication date placeholder to 2025-XX-XX.
 - Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
 - Added `Edge.T_from_to` relative pose to core pose-graph edges.
 - Removed the empty `spatial.geometry` module and its `geometry.idl` include guard from the core IDL.

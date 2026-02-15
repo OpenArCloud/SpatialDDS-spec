@@ -216,6 +216,7 @@ module spatial {
     typedef spatial::core::CovMatrix  CovMatrix;
     typedef spatial::core::BlobRef    BlobRef;
     typedef spatial::common::MetaKV   MetaKV;
+    typedef spatial::core::GeoPose   GeoPose;
 
 
     // ================================================================
@@ -292,7 +293,7 @@ module spatial {
 
       // Geo-anchor: where this map sits on Earth (when known)
       boolean has_geopose;
-      spatial::core::GeoPose geopose;   // map origin in WGS84
+      GeoPose geopose;                  // map origin in WGS84
 
       // Versioning — aligns with core Node/Edge graph_epoch
       uint64  graph_epoch;              // increments on major rebases / merges
@@ -401,7 +402,7 @@ module spatial {
 
       string map_id_from;               // source map
       string map_id_to;                 // target map (reference)
-      PoseSE3 T_to_from;               // transform: map_id_from frame → map_id_to frame
+      PoseSE3 T_from_to;               // transform: map_id_from frame → map_id_to frame
       CovMatrix cov;                    // uncertainty of the alignment
 
       AlignmentMethod method;           // how the alignment was computed
@@ -512,6 +513,7 @@ module spatial {
     typedef spatial::core::FrameRef  FrameRef;
     typedef spatial::core::Aabb3     Aabb3;
     typedef spatial::core::BlobRef   BlobRef;
+    typedef spatial::core::GeoPose   GeoPose;
     typedef spatial::common::MetaKV  MetaKV;
 
 
@@ -543,11 +545,12 @@ module spatial {
       FrameRef frame_ref;               // coordinate frame for geometry
 
       // Zone geometry (axis-aligned in frame_ref)
-      Aabb3 bounds;                     // 3D bounding box
+      boolean has_bounds;
+      Aabb3 bounds;                     // 3D bounding box (valid when has_bounds == true)
 
       // Optional geo-anchor for earth-fixed zones
       boolean has_geopose;
-      spatial::core::GeoPose geopose;   // zone center in WGS84
+      GeoPose geopose;                  // zone center in WGS84
 
       // Zone rules (optional per kind)
       boolean has_speed_limit_mps;
@@ -714,6 +717,8 @@ module spatial {
 
       Time   stamp;
       string source_id;
+      // schema_version intentionally omitted: ZoneState is a lightweight
+      // summary; version is inferred from the accompanying SpatialZone.
     };
 
   }; // module events
