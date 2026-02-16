@@ -161,10 +161,141 @@ When a source provides only `t_start`, producers SHOULD compute `t_end` as `t_st
 
 ### **AR + Geo Extension**
 
-*Geo-fixed nodes for easy consumption by AR clients & multi-agent alignment.*
+*Multi-frame geo-referenced nodes for AR clients, VPS services, and multi-agent alignment.*
+
+`NodeGeo` extends `core::Node` with an array of metric poses in different coordinate frames and an optional geographic anchor. A VPS service localizing a client against multiple overlapping maps returns one `NodeGeo` carrying poses in each map's frame. In hierarchical spaces (building → floor → room → table), the same message carries poses at every level of the hierarchy. Consumers select the frame they need; producers include only the frames they can compute.
+
+The `poses` array uses `core::FramedPose` — each entry is self-contained with its own frame reference and covariance. This replaces the previous pattern of a single bare `PoseSE3` with frame_ref and cov as sibling fields, which could only express one local pose and left the relationship between the top-level cov and the geopose's cov ambiguous.
 
 ```idl
-{{include:idl/v1.5/argeo.idl}}
+// SPDX-License-Identifier: MIT
+// SpatialDDS AR+Geo 1.5
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module argeo {
+
+    const string MODULE_ID = "spatial.argeo/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3    PoseSE3;
+    typedef spatial::core::FramedPose FramedPose;
+    typedef spatial::core::GeoPose    GeoPose;
+    typedef spatial::core::CovMatrix  CovMatrix;
+    typedef spatial::common::FrameRef FrameRef;
+
+    // A pose-graph node with one or more metric-frame poses and an
+    // optional geographic anchor.
+    //
+    // Keyed by node_id (same key as core::Node). Published alongside
+    // core::Node when geo-referencing is available.
+    //
+    // poses[] carries the node's position in one or more local/metric
+    // coordinate frames. Each FramedPose is self-contained (pose +
+    // frame_ref + cov + stamp). Typical entries:
+    //   - SLAM map frame (always present)
+    //   - ENU frame anchored to a surveyed point
+    //   - Building / floor / room frames in hierarchical spaces
+    //   - Alternative map frames when multiple maps overlap
+    //
+    // geopose provides the WGS84 anchor (lat/lon/alt) when known.
+    // It remains a separate field because geographic coordinates use
+    // degrees, not meters — they cannot share the FramedPose type.
+    @extensibility(APPENDABLE) struct NodeGeo {
+      string map_id;
+      @key string node_id;               // same id as core::Node
+
+      // One or more metric poses in different frames.
+      // The first entry SHOULD be the primary SLAM map frame.
+      // Additional entries provide the same physical pose expressed
+      // in alternative coordinate frames (other maps, hierarchical
+      // spaces, ENU anchors). Consumers select by frame_ref.
+      sequence<FramedPose, 8> poses;
+
+      // Geographic anchor (optional — absent for indoor-only maps)
+      boolean has_geopose;
+      GeoPose geopose;
+
+      string  source_id;
+      uint64  seq;                       // per-source monotonic
+      uint64  graph_epoch;               // increments on major rebases/merges
+    };
+
+  }; // module argeo
+};
+
+```
+
+**Usage scenarios (informative):**
+
+*Multi-map localization:* A VPS service localizes a client against three overlapping maps and returns:
+```json
+{
+  "node_id": "vps-fix/client-42/0017",
+  "map_id": "mall-west",
+  "poses": [
+    {
+      "pose": { "t": [12.3, -4.1, 1.5], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "aaa-...", "fqn": "mall-west/lidar-map" },
+      "cov": { "type": "COV_POSE6", "pose": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    },
+    {
+      "pose": { "t": [12.1, -4.3, 1.5], "q": [0, 0, 0.01, 1] },
+      "frame_ref": { "uuid": "bbb-...", "fqn": "mall-west/photo-map" },
+      "cov": { "type": "COV_POSE6", "pose": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    }
+  ],
+  "has_geopose": true,
+  "geopose": {
+    "lat_deg": 37.7749, "lon_deg": -122.4194, "alt_m": 15.0,
+    "q": [0, 0, 0, 1], "frame_kind": "ENU",
+    "frame_ref": { "uuid": "ccc-...", "fqn": "earth-fixed/enu" },
+    "stamp": { "sec": 1714071000, "nanosec": 0 },
+    "cov": { "type": "COV_POS3", "pos": [ ... ] }
+  },
+  "source_id": "vps/mall-west-service",
+  "seq": 17,
+  "graph_epoch": 3
+}
+```
+
+*Hierarchical spaces:* A localization service returns poses in building, floor, and room frames:
+```json
+{
+  "node_id": "vps-fix/headset-07/0042",
+  "map_id": "building-west",
+  "poses": [
+    {
+      "pose": { "t": [45.2, 22.1, 9.3], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "bld-...", "fqn": "building-west/enu" },
+      "cov": { "type": "COV_POS3", "pos": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    },
+    {
+      "pose": { "t": [15.2, 8.1, 0.3], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "fl3-...", "fqn": "building-west/floor-3" },
+      "cov": { "type": "COV_POS3", "pos": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    },
+    {
+      "pose": { "t": [3.2, 2.1, 0.3], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "rmB-...", "fqn": "building-west/floor-3/room-B" },
+      "cov": { "type": "COV_POS3", "pos": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    }
+  ],
+  "has_geopose": true,
+  "geopose": { "lat_deg": 37.7750, "lon_deg": -122.4190, "alt_m": 24.3, "..." : "..." },
+  "source_id": "vps/building-west-indoor",
+  "seq": 42,
+  "graph_epoch": 1
+}
 ```
 
 ### **Mapping Extension**

@@ -17,6 +17,7 @@ module spatial {
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::FramedPose FramedPose;
     typedef spatial::common::FrameRef FrameRef;
     typedef string SpatialUri;
 
@@ -153,11 +154,10 @@ module spatial {
       // Capabilities -- which task types this agent can execute
       sequence<TaskType, 16> capable_tasks;
 
-      // Current position and coverage
+      // Current position (optional)
       boolean has_pose;
-      PoseSE3 pose;                      // current pose (valid when flag true)
-      boolean has_frame_ref;
-      FrameRef frame_ref;                // frame for pose (valid when flag true)
+      FramedPose pose;                   // current pose with frame and uncertainty
+                                         // (valid when has_pose == true)
 
       boolean has_geopose;
       spatial::core::GeoPose geopose;    // current geo-position (valid when flag true)
@@ -267,9 +267,8 @@ module spatial {
 
       // Where the task was left off
       boolean has_last_pose;
-      PoseSE3 last_pose;                 // agent's pose at handoff
-      boolean has_last_frame;
-      FrameRef last_frame;               // frame for last_pose
+      FramedPose last_pose;              // agent's pose at handoff, with frame and uncertainty
+                                         // (valid when has_last_pose == true)
 
       // Task-specific continuation context -- whatever the next agent needs
       // to pick up where this one left off.

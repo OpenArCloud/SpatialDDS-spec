@@ -104,6 +104,18 @@ module spatial {
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
     };
 
+    // A metric pose bundled with its coordinate frame, uncertainty, and
+    // timestamp. This is the self-contained local-coordinate counterpart
+    // to GeoPose (which uses geographic coordinates). Use FramedPose
+    // wherever a "located pose" is needed — it avoids scattering pose,
+    // frame_ref, cov, and stamp across sibling fields on the parent struct.
+    @extensibility(APPENDABLE) struct FramedPose {
+      PoseSE3   pose;       // translation + orientation
+      FrameRef  frame_ref;  // which coordinate frame this pose is expressed in
+      CovMatrix cov;        // uncertainty (COV_NONE when absent)
+      Time      stamp;      // when this pose was valid
+    };
+
     @extensibility(APPENDABLE) struct Node {
       string map_id;
       @key string node_id;     // unique keyframe id

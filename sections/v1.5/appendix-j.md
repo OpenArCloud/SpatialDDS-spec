@@ -33,6 +33,7 @@ Both systems use `(x, y, z, w)` quaternion component order. Orientation data flo
 | Geo-anchoring | First-class: `GeoAnchor`, GeoPose, VPS integration | GPS via `NavSatFix`; geo-transforms are custom |
 | Handedness | Not prescribed; semantics defined by transform chains | REP-0103: right-handed, X-forward/Y-left/Z-up |
 | Convention table | §2 maps nuScenes, Eigen, Unity, Unreal, OpenXR, glTF | No formal conversion table |
+| Bundled pose | `FramedPose` (pose + frame + cov + stamp in one struct) | No standard; `PoseWithCovarianceStamped` closest but lacks frame identity |
 
 SpatialDDS's `FrameRef` model with UUIDs is designed for multi-device environments where string collisions between independent participants would be problematic. ROS 2's string-based `frame_id` is simpler and sufficient for single-robot or tightly coordinated fleets.
 

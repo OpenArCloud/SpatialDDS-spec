@@ -37,6 +37,7 @@ SpatialDDS uses `(x, y, z, w)` component order for all quaternion fields, aligni
 - Mutually exclusive payloads SHALL be modeled as discriminated unions; do not overload presence flags to signal exclusivity.
 - Schema evolution leverages `@extensibility(APPENDABLE)`; omit fields only when the IDL version removes them, never as an on-wire sentinel.
 - See `CovMatrix` in Appendix A for the reference discriminated union pattern used for covariance.
+- See `FramedPose` in Appendix A for the reference bundled-pose pattern. Prefer `FramedPose` over scattering `PoseSE3` + `FrameRef` + `CovMatrix` + `Time` as sibling fields on a struct.
 
 ### **2.3 Numeric Validity & NaN Deprecation**
 

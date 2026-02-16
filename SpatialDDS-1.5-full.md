@@ -246,6 +246,7 @@ SpatialDDS uses `(x, y, z, w)` component order for all quaternion fields, aligni
 - Mutually exclusive payloads SHALL be modeled as discriminated unions; do not overload presence flags to signal exclusivity.
 - Schema evolution leverages `@extensibility(APPENDABLE)`; omit fields only when the IDL version removes them, never as an on-wire sentinel.
 - See `CovMatrix` in Appendix A for the reference discriminated union pattern used for covariance.
+- See `FramedPose` in Appendix A for the reference bundled-pose pattern. Prefer `FramedPose` over scattering `PoseSE3` + `FrameRef` + `CovMatrix` + `Time` as sibling fields on a struct.
 
 ### **2.3 Numeric Validity & NaN Deprecation**
 
@@ -1544,6 +1545,18 @@ module spatial {
       case spatial::common::COV_NONE: uint8 none;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
+    };
+
+    // A metric pose bundled with its coordinate frame, uncertainty, and
+    // timestamp. This is the self-contained local-coordinate counterpart
+    // to GeoPose (which uses geographic coordinates). Use FramedPose
+    // wherever a "located pose" is needed — it avoids scattering pose,
+    // frame_ref, cov, and stamp across sibling fields on the parent struct.
+    @extensibility(APPENDABLE) struct FramedPose {
+      PoseSE3   pose;       // translation + orientation
+      FrameRef  frame_ref;  // which coordinate frame this pose is expressed in
+      CovMatrix cov;        // uncertainty (COV_NONE when absent)
+      Time      stamp;      // when this pose was valid
     };
 
     @extensibility(APPENDABLE) struct Node {
@@ -3131,7 +3144,11 @@ module spatial { module sensing { module lidar {
 
 ### **AR + Geo Extension**
 
-*Geo-fixed nodes for easy consumption by AR clients & multi-agent alignment.*
+*Multi-frame geo-referenced nodes for AR clients, VPS services, and multi-agent alignment.*
+
+`NodeGeo` extends `core::Node` with an array of metric poses in different coordinate frames and an optional geographic anchor. A VPS service localizing a client against multiple overlapping maps returns one `NodeGeo` carrying poses in each map's frame. In hierarchical spaces (building → floor → room → table), the same message carries poses at every level of the hierarchy. Consumers select the frame they need; producers include only the frames they can compute.
+
+The `poses` array uses `core::FramedPose` — each entry is self-contained with its own frame reference and covariance. This replaces the previous pattern of a single bare `PoseSE3` with frame_ref and cov as sibling fields, which could only express one local pose and left the relationship between the top-level cov and the geopose's cov ambiguous.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -3148,26 +3165,120 @@ module spatial {
     const string MODULE_ID = "spatial.argeo/1.5";
 
     typedef builtin::Time Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
-    typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::core::PoseSE3    PoseSE3;
+    typedef spatial::core::FramedPose FramedPose;
+    typedef spatial::core::GeoPose    GeoPose;
+    typedef spatial::core::CovMatrix  CovMatrix;
     typedef spatial::common::FrameRef FrameRef;
 
+    // A pose-graph node with one or more metric-frame poses and an
+    // optional geographic anchor.
+    //
+    // Keyed by node_id (same key as core::Node). Published alongside
+    // core::Node when geo-referencing is available.
+    //
+    // poses[] carries the node's position in one or more local/metric
+    // coordinate frames. Each FramedPose is self-contained (pose +
+    // frame_ref + cov + stamp). Typical entries:
+    //   - SLAM map frame (always present)
+    //   - ENU frame anchored to a surveyed point
+    //   - Building / floor / room frames in hierarchical spaces
+    //   - Alternative map frames when multiple maps overlap
+    //
+    // geopose provides the WGS84 anchor (lat/lon/alt) when known.
+    // It remains a separate field because geographic coordinates use
+    // degrees, not meters — they cannot share the FramedPose type.
     @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;
-      @key string node_id;      // same id as core::Node
-      PoseSE3 pose;             // local pose in map frame
-      GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
-      spatial::core::CovMatrix cov; // covariance payload (COV_NONE when absent)
-      Time    stamp;
-      FrameRef frame_ref;       // local frame
+      @key string node_id;               // same id as core::Node
+
+      // One or more metric poses in different frames.
+      // The first entry SHOULD be the primary SLAM map frame.
+      // Additional entries provide the same physical pose expressed
+      // in alternative coordinate frames (other maps, hierarchical
+      // spaces, ENU anchors). Consumers select by frame_ref.
+      sequence<FramedPose, 8> poses;
+
+      // Geographic anchor (optional — absent for indoor-only maps)
+      boolean has_geopose;
+      GeoPose geopose;
+
       string  source_id;
-      uint64  seq;
-      uint64  graph_epoch;
+      uint64  seq;                       // per-source monotonic
+      uint64  graph_epoch;               // increments on major rebases/merges
     };
 
   }; // module argeo
 };
 
+```
+
+**Usage scenarios (informative):**
+
+*Multi-map localization:* A VPS service localizes a client against three overlapping maps and returns:
+```json
+{
+  "node_id": "vps-fix/client-42/0017",
+  "map_id": "mall-west",
+  "poses": [
+    {
+      "pose": { "t": [12.3, -4.1, 1.5], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "aaa-...", "fqn": "mall-west/lidar-map" },
+      "cov": { "type": "COV_POSE6", "pose": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    },
+    {
+      "pose": { "t": [12.1, -4.3, 1.5], "q": [0, 0, 0.01, 1] },
+      "frame_ref": { "uuid": "bbb-...", "fqn": "mall-west/photo-map" },
+      "cov": { "type": "COV_POSE6", "pose": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    }
+  ],
+  "has_geopose": true,
+  "geopose": {
+    "lat_deg": 37.7749, "lon_deg": -122.4194, "alt_m": 15.0,
+    "q": [0, 0, 0, 1], "frame_kind": "ENU",
+    "frame_ref": { "uuid": "ccc-...", "fqn": "earth-fixed/enu" },
+    "stamp": { "sec": 1714071000, "nanosec": 0 },
+    "cov": { "type": "COV_POS3", "pos": [ ... ] }
+  },
+  "source_id": "vps/mall-west-service",
+  "seq": 17,
+  "graph_epoch": 3
+}
+```
+
+*Hierarchical spaces:* A localization service returns poses in building, floor, and room frames:
+```json
+{
+  "node_id": "vps-fix/headset-07/0042",
+  "map_id": "building-west",
+  "poses": [
+    {
+      "pose": { "t": [45.2, 22.1, 9.3], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "bld-...", "fqn": "building-west/enu" },
+      "cov": { "type": "COV_POS3", "pos": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    },
+    {
+      "pose": { "t": [15.2, 8.1, 0.3], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "fl3-...", "fqn": "building-west/floor-3" },
+      "cov": { "type": "COV_POS3", "pos": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    },
+    {
+      "pose": { "t": [3.2, 2.1, 0.3], "q": [0, 0, 0, 1] },
+      "frame_ref": { "uuid": "rmB-...", "fqn": "building-west/floor-3/room-B" },
+      "cov": { "type": "COV_POS3", "pos": [ ... ] },
+      "stamp": { "sec": 1714071000, "nanosec": 0 }
+    }
+  ],
+  "has_geopose": true,
+  "geopose": { "lat_deg": 37.7750, "lon_deg": -122.4190, "alt_m": 24.3, "..." : "..." },
+  "source_id": "vps/building-west-indoor",
+  "seq": 42,
+  "graph_epoch": 1
+}
 ```
 
 ### **Mapping Extension**
@@ -3960,6 +4071,7 @@ module spatial {
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::FramedPose FramedPose;
     typedef spatial::common::FrameRef FrameRef;
     typedef string SpatialUri;
 
@@ -4096,11 +4208,10 @@ module spatial {
       // Capabilities -- which task types this agent can execute
       sequence<TaskType, 16> capable_tasks;
 
-      // Current position and coverage
+      // Current position (optional)
       boolean has_pose;
-      PoseSE3 pose;                      // current pose (valid when flag true)
-      boolean has_frame_ref;
-      FrameRef frame_ref;                // frame for pose (valid when flag true)
+      FramedPose pose;                   // current pose with frame and uncertainty
+                                         // (valid when has_pose == true)
 
       boolean has_geopose;
       spatial::core::GeoPose geopose;    // current geo-position (valid when flag true)
@@ -4210,9 +4321,8 @@ module spatial {
 
       // Where the task was left off
       boolean has_last_pose;
-      PoseSE3 last_pose;                 // agent's pose at handoff
-      boolean has_last_frame;
-      FrameRef last_frame;               // frame for last_pose
+      FramedPose last_pose;              // agent's pose at handoff, with frame and uncertainty
+                                         // (valid when has_last_pose == true)
 
       // Task-specific continuation context -- whatever the next agent needs
       // to pick up where this one left off.
@@ -4303,13 +4413,10 @@ Agent Status:
   "capable_tasks": ["NAVIGATE", "OBSERVE", "MAP"],
   "has_pose": true,
   "pose": {
-    "t": [12.5, -3.2, 1.1],
-    "q": [0.0, 0.0, 0.0, 1.0]
-  },
-  "has_frame_ref": true,
-  "frame_ref": {
-    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
-    "fqn": "facility-west/enu"
+    "pose": { "t": [12.5, -3.2, 1.1], "q": [0.0, 0.0, 0.0, 1.0] },
+    "frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "facility-west/enu" },
+    "cov": { "type": "COV_NONE" },
+    "stamp": { "sec": 1714071000, "nanosec": 0 }
   },
   "has_geopose": false,
   "has_battery_pct": true,
@@ -4371,13 +4478,10 @@ Task Handoff:
   "progress": 0.63,
   "has_last_pose": true,
   "last_pose": {
-    "t": [45.2, 12.8, 30.0],
-    "q": [0.0, 0.0, 0.38, 0.92]
-  },
-  "has_last_frame": true,
-  "last_frame": {
-    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
-    "fqn": "earth-fixed"
+    "pose": { "t": [45.2, 12.8, 30.0], "q": [0.0, 0.0, 0.38, 0.92] },
+    "frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "earth-fixed" },
+    "cov": { "type": "COV_NONE" },
+    "stamp": { "sec": 1714072800, "nanosec": 0 }
   },
   "context": "{\"waypoints_remaining\": [[50.1, 15.0, 30.0], [55.3, 18.2, 30.0]], \"images_captured\": 147}",
   "has_preferred_agent_id": false,
@@ -5136,6 +5240,7 @@ Both systems use `(x, y, z, w)` quaternion component order. Orientation data flo
 | Geo-anchoring | First-class: `GeoAnchor`, GeoPose, VPS integration | GPS via `NavSatFix`; geo-transforms are custom |
 | Handedness | Not prescribed; semantics defined by transform chains | REP-0103: right-handed, X-forward/Y-left/Z-up |
 | Convention table | §2 maps nuScenes, Eigen, Unity, Unreal, OpenXR, glTF | No formal conversion table |
+| Bundled pose | `FramedPose` (pose + frame + cov + stamp in one struct) | No standard; `PoseWithCovarianceStamped` closest but lacks frame identity |
 
 SpatialDDS's `FrameRef` model with UUIDs is designed for multi-device environments where string collisions between independent participants would be problematic. ROS 2's string-based `frame_id` is simpler and sufficient for single-robot or tightly coordinated fleets.
 

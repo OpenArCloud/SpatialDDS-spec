@@ -132,13 +132,10 @@ Agent Status:
   "capable_tasks": ["NAVIGATE", "OBSERVE", "MAP"],
   "has_pose": true,
   "pose": {
-    "t": [12.5, -3.2, 1.1],
-    "q": [0.0, 0.0, 0.0, 1.0]
-  },
-  "has_frame_ref": true,
-  "frame_ref": {
-    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
-    "fqn": "facility-west/enu"
+    "pose": { "t": [12.5, -3.2, 1.1], "q": [0.0, 0.0, 0.0, 1.0] },
+    "frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "facility-west/enu" },
+    "cov": { "type": "COV_NONE" },
+    "stamp": { "sec": 1714071000, "nanosec": 0 }
   },
   "has_geopose": false,
   "has_battery_pct": true,
@@ -200,13 +197,10 @@ Task Handoff:
   "progress": 0.63,
   "has_last_pose": true,
   "last_pose": {
-    "t": [45.2, 12.8, 30.0],
-    "q": [0.0, 0.0, 0.38, 0.92]
-  },
-  "has_last_frame": true,
-  "last_frame": {
-    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
-    "fqn": "earth-fixed"
+    "pose": { "t": [45.2, 12.8, 30.0], "q": [0.0, 0.0, 0.38, 0.92] },
+    "frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "earth-fixed" },
+    "cov": { "type": "COV_NONE" },
+    "stamp": { "sec": 1714072800, "nanosec": 0 }
   },
   "context": "{\"waypoints_remaining\": [[50.1, 15.0, 30.0], [55.3, 18.2, 30.0]], \"images_captured\": 147}",
   "has_preferred_agent_id": false,

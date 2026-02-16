@@ -42,6 +42,8 @@
 - Reordered the Typed Topics Registry, added provisional markers for agent entries, and clarified the Profile Matrix footnote.
 - Aligned mapping/events snippets with GeoPose typedefs, MapAlignment naming, and optional SpatialZone bounds.
 - Set the 1.5 draft publication date placeholder to 2025-XX-XX.
+- Added `FramedPose` as a core bundled-pose primitive and redesigned `NodeGeo` to carry multiple framed poses plus optional GeoPose.
+- Simplified agent fleet messages to use `FramedPose` and updated agent JSON examples and integration notes.
 - Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
 - Added `Edge.T_from_to` relative pose to core pose-graph edges.
 - Removed the empty `spatial.geometry` module and its `geometry.idl` include guard from the core IDL.
