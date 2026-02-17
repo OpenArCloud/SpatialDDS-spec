@@ -1,18 +1,19 @@
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against three public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, and coordination profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against four public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against three complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against four complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
 
 | Dataset | Focus | Modalities Stressed |
 |---|---|---|
 | **nuScenes** (Motional / nuTonomy) | Perception → semantics | Camera (6×), lidar, radar detections (5×), 3D annotations, coordinate conventions |
 | **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal → perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
 | **S3E** (Sun Yat-sen University / HKUST) | Multi-agent coordination | 3 UGVs × (lidar, stereo, IMU), UWB inter-robot ranging, RTK-GNSS, collaborative SLAM |
+| **ScanNet** (TU Munich / Princeton) | Indoor scene understanding | RGB-D depth frames, 3D surface mesh, instance segmentation (NYU40), room-level zones, 20 scene types |
 
-nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2.
+nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary.
 
 The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
@@ -32,7 +33,7 @@ For each dataset, a conformance harness was constructed as a self-contained Pyth
 
 4. **Reports a per-modality scorecard.**
 
-Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E conformance (§I.3) was performed as a manual schema analysis following the same check structure; a scripted harness is planned for a future revision.
+Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E (§I.3) and ScanNet (§I.4) conformance sections were performed as manual schema analyses following the same check structure; scripted harnesses are planned for a future revision.
 
 ---
 
@@ -389,6 +390,148 @@ This end-to-end scenario is precisely what ROS 2's `nav_msgs` and `sensor_msgs` 
 
 ---
 
+### **I.4 ScanNet Conformance (Indoor Scene Understanding)**
+
+#### Reference Dataset
+
+**ScanNet** (TU Munich / Princeton) is an RGB-D video dataset of indoor scenes containing:
+
+| Dimension | Value |
+|---|---|
+| Scenes | 1,513 (707 unique spaces, multiple rescans) |
+| RGB-D sensor | Structure.io depth + iPad color camera |
+| Depth format | 16-bit unsigned integer, millimeters, 640×480 @ 30 Hz |
+| Color format | JPEG-compressed RGB, 1296×968 @ 30 Hz |
+| Camera poses | Per-frame 4×4 camera-to-world extrinsics via BundleFusion |
+| IMU | Embedded IMU data in `.sens` stream |
+| Surface reconstruction | Dense triangle mesh (PLY) via BundleFusion |
+| Semantic annotations | Instance-level labels (NYU40 label set, 40 classes) |
+| Instance annotations | Per-vertex segment IDs + aggregated object instances |
+| Scene types | 20 categories (bathroom, bedroom, kitchen, living room, office, etc.) |
+| Axis alignment | Per-scene 4×4 gravity-alignment matrix |
+| Coordinate convention | Right-handed; +Z up in aligned frame |
+
+ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, exercises depth sensing absent from all three prior conformance datasets, and provides room-level semantic structure that naturally maps to the Spatial Events extension — the only SpatialDDS extension not yet tested by conformance.
+
+#### Checks Performed (35)
+
+##### RGB-D Sensing — Color (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NC-01 | Color meta | `VisionMeta` with `pix = RGB8`, `codec = JPEG`, `CamIntrinsics` (fx, fy, cx, cy at 1296×968). |
+| NC-02 | Color frame | `VisionFrame` per RGB image with `frame_seq`, `hdr.stamp`, blob reference to JPEG payload. |
+| NC-03 | Per-scene stream isolation | Topic `spatialdds/<scene_id>/vision/<stream_id>/frame/v1` with unique `stream_id` per scan. |
+| NC-04 | Rig linkage | `VisionMeta.rig_id` shared between color and depth streams for spatial association. |
+
+##### RGB-D Sensing — Depth (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| ND-01 | Depth meta | `VisionMeta` with `pix = DEPTH16`, `codec = NONE` (raw 16-bit), `CamIntrinsics` for depth camera. |
+| ND-02 | Depth pixel format | `PixFormat.DEPTH16` explicitly identifies 16-bit millimeter depth. **Requires SN-1.** |
+| ND-03 | Depth frame | `VisionFrame` per depth image with `frame_seq` matching co-located color frame. |
+| ND-04 | Invalid depth convention | Zero-valued pixels denote no measurement, consistent with `DEPTH16` normative note. |
+| ND-05 | Depth unit | Default millimeter unit; no `depth_unit` attribute required for ScanNet's Structure.io sensor. |
+
+##### IMU (2 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NI-01 | IMU sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s) covers 6-axis IMU embedded in `.sens` stream. |
+| NI-02 | Temporal ordering | `ImuSample.seq` provides monotonic ordering within the scan. |
+
+##### Camera Pose & Frames (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NP-01 | Per-frame pose | Camera-to-world 4×4 matrix maps to `FrameHeader.sensor_pose` (PoseSE3: translation + quaternion). |
+| NP-02 | Axis-alignment transform | Per-scene gravity-alignment matrix published as `FrameTransform` from sensor frame to aligned frame. |
+| NP-03 | Frame hierarchy | Aligned frame FQN follows §2.2 pattern: `<scene_id>/aligned`. |
+| NP-04 | Quaternion convention | ScanNet uses 4×4 rotation matrices; decomposition to (x,y,z,w) quaternion per §2 convention table. |
+
+##### Mesh Reconstruction (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NM-01 | Map kind | `MapMeta` with `kind = MESH` for BundleFusion surface reconstruction. |
+| NM-02 | Map lifecycle | `MapMeta.state` = STABLE for completed reconstructions (offline dataset; no BUILDING phase observed). |
+| NM-03 | Mesh payload | `BlobRef` referencing PLY mesh file. SpatialDDS carries mesh references, not inline mesh data. |
+| NM-04 | Vertex count metadata | `MapMeta.attributes` carries vertex/face count as MetaKV for consumers to assess mesh complexity. |
+
+##### 3D Instance Segmentation — Semantics (6 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NS-01 | 3D detection | `Detection3D` per annotated object instance, with `class_id` from NYU40 label set (e.g., "chair", "table", "door"). |
+| NS-02 | Instance ID | `Detection3D.det_id` unique per object instance within a scene (maps from ScanNet's `objectId`). |
+| NS-03 | Oriented bounding box | `Detection3D.center` + `size` + `q` cover ScanNet's axis-aligned bounding boxes (identity quaternion in aligned frame). |
+| NS-04 | Track ID | `Detection3D.track_id` groups the same physical object across multiple rescans of the same space. |
+| NS-05 | Visibility | `Detection3D.visibility` (0–1) maps from ScanNet annotation coverage ratio. |
+| NS-06 | Class vocabulary | `class_id` as free-form string covers all 40 NYU40 categories without a closed enum — consistent with SpatialDDS's ontology-agnostic design. |
+
+##### Spatial Events — Indoor Zones (6 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NZ-01 | Room as zone | `SpatialZone` per ScanNet scene, with `zone_id` = scene ID, `name` = human-readable scene name. |
+| NZ-02 | Zone kind | `ZoneKind.MONITORING` for general-purpose room observation (no access restriction implied). |
+| NZ-03 | Zone bounds | `SpatialZone.bounds` (Aabb3) enclosing the room extent, derived from mesh bounding box in aligned frame. |
+| NZ-04 | Scene type as attribute | ScanNet `sceneType` (bathroom, bedroom, kitchen, etc.) carried as `MetaKV` in `SpatialZone.attributes` with `namespace = "scene_type"`, `json = {"type": "kitchen"}`. |
+| NZ-05 | Class filter | `SpatialZone.class_filter` populated with object classes of interest (e.g., `["person", "chair", "table"]`) for selective event triggering. |
+| NZ-06 | Zone frame | `SpatialZone.frame_ref` references the gravity-aligned frame established by the axis-alignment transform (NP-02). |
+
+##### Spatial Events — Object Events (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| NE-01 | Zone entry | `SpatialEvent` with `event_type = ZONE_ENTRY` when a Detection3D instance is first observed within a SpatialZone's bounds. |
+| NE-02 | Trigger linkage | `SpatialEvent.trigger_det_id` references the triggering `Detection3D.det_id`; `trigger_class_id` carries the NYU40 label. |
+| NE-03 | Zone state | `ZoneState` with `zone_occupancy` count reflecting the number of annotated object instances within the room. |
+| NE-04 | Class counts | `ZoneState.class_counts` (sequence of MetaKV) carries per-class occupancy (e.g., `{"count": 4}` for class "chair"). |
+
+#### Results
+
+All 35 ScanNet checks pass.
+
+| Modality | Checks | Pass | Remaining Gaps |
+|---|---|---|---|
+| Color (RGB) | 4 | 4 | 0 |
+| Depth (RGBD) | 5 | 5 | 0 |
+| IMU | 2 | 2 | 0 |
+| Camera Pose & Frames | 4 | 4 | 0 |
+| Mesh Reconstruction | 4 | 4 | 0 |
+| 3D Instance Segmentation | 6 | 6 | 0 |
+| Spatial Events — Zones | 6 | 6 | 0 |
+| Spatial Events — Object Events | 4 | 4 | 0 |
+| **Total** | **35** | **35** | **0** |
+
+#### ScanNet Scenario Narrative (Informative)
+
+The ScanNet "apartment" scan sequence illustrates how SpatialDDS types map to a complete indoor scene understanding pipeline:
+
+1. **Scan ingestion.** An operator walks through a kitchen with an iPad running the ScanNet capture app. Color frames are published as `VisionFrame` (pix=RGB8, codec=JPEG) and depth frames as `VisionFrame` (pix=DEPTH16, codec=NONE) on paired streams linked by `rig_id`. `ImuSample` streams concurrently from the embedded IMU.
+
+2. **Pose estimation.** BundleFusion produces per-frame camera poses, published as `FrameHeader.sensor_pose` on each VisionFrame. The per-scene axis-alignment matrix is published as a `FrameTransform` from the sensor coordinate system to a gravity-aligned room frame.
+
+3. **Mesh reconstruction.** The completed surface mesh is registered as `MapMeta` with `kind = MESH`, `state = STABLE`. The PLY file is referenced via `BlobRef`. Vertex/face counts are carried in `MapMeta.attributes`.
+
+4. **Zone definition.** The kitchen is defined as a `SpatialZone` with `kind = MONITORING`, `bounds` enclosing the room extent, and `attributes` carrying `scene_type = "kitchen"`. The `frame_ref` points to the gravity-aligned frame.
+
+5. **3D instance detection.** Crowdsourced annotations produce `Detection3D` instances for each labeled object: chairs with `class_id = "chair"`, tables with `class_id = "table"`, a refrigerator with `class_id = "refrigerator"` — each with an oriented bounding box in the aligned frame.
+
+6. **Spatial events.** A zone monitoring service evaluates which Detection3D instances fall within the kitchen SpatialZone's bounds and publishes `SpatialEvent` (ZONE_ENTRY) for each. `ZoneState` is published periodically with `zone_occupancy = 12` (total instances) and `class_counts` listing per-class breakdowns.
+
+This pipeline exercises the Spatial Events extension end-to-end — from zone definition through detection to event generation — a capability path untested by nuScenes (no zones), DeepSense 6G (no zones), or S3E (no zones or semantics).
+
+#### Deferred Items
+
+- **Per-vertex semantic labels.** ScanNet provides per-vertex class labels on the reconstructed mesh. SpatialDDS has no per-vertex label type; the labeled mesh PLY is carried as a `BlobRef`. A future per-vertex or per-point semantic annotation type could make this data first-class.
+- **CAD model alignment.** ScanNet aligns ShapeNet CAD models to detected objects. The ShapeNet model ID can be carried in `Detection3D.attributes` as a MetaKV, but there is no first-class CAD reference type.
+- **2D projected labels.** ScanNet provides per-frame 2D semantic/instance label images. These can be published as `VisionFrame` with a label-specific `stream_id` and `pix = RAW16` (16-bit label IDs), but a dedicated label pixel format is not defined.
+
+---
+
 ### **Reproducing the Tests**
 
 The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 scripts with no external dependencies.
@@ -411,6 +554,8 @@ Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, 
 
 **S3E conformance**: The 38 S3E checks documented in §I.3 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/s3e_harness_v1.py`) following the same pattern as the nuScenes and DeepSense 6G scripts is planned for a future revision.
 
+**ScanNet conformance**: The 35 ScanNet checks documented in §I.4 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/scannet_harness_v1.py`) is planned for a future revision.
+
 No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
 
 ### **Limitations**
@@ -420,6 +565,6 @@ This testing validates schema expressiveness -- whether every dataset field has 
 - **Wire interoperability** -- actual DDS serialization/deserialization round-trips.
 - **Performance** -- throughput, latency, or memory footprint under real sensor loads.
 - **Semantic correctness** -- whether a particular producer's mapping preserves the intended meaning of each field.
-- **Multi-dataset coverage** -- datasets with different sensor configurations (e.g., solid-state lidar, event cameras, ultrasonic sensors) or deployment patterns (e.g., indoor hierarchical spaces, aerial-ground cooperation, dense pedestrian tracking) may surface additional gaps. S3E covers three-robot outdoor coordination; larger fleet sizes, degraded-communication environments, and heterogeneous robot types (ground + aerial) remain untested.
+- **Multi-dataset coverage** -- datasets with different sensor configurations (e.g., solid-state lidar, event cameras, ultrasonic sensors) or deployment patterns (e.g., multi-floor hierarchical spaces, aerial-ground cooperation, dense pedestrian tracking) may surface additional gaps. S3E covers three-robot outdoor coordination; ScanNet covers single-room indoor scenes. Larger fleet sizes, degraded-communication environments, multi-floor buildings, and heterogeneous robot types (ground + aerial) remain untested.
 
 These areas are appropriate targets for future conformance work.

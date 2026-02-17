@@ -53,10 +53,26 @@ module spatial { module sensing { module vision {
     @value(2)  RGB8,
     @value(3)  BGR8,
     @value(4)  RGBA8,
+    @value(5)  DEPTH16,           // 16-bit unsigned depth image (mm)
     @value(10) RAW10,
     @value(12) RAW12,
     @value(16) RAW16
   };
+  // DEPTH16 frames carry per-pixel unsigned 16-bit depth values. The default
+  // unit is millimeters (range 0-65535 mm ~= 0-65.5 m), consistent with
+  // OpenNI, RealSense SDK, and ARKit conventions. A value of 0 denotes no
+  // measurement (invalid/missing depth). Publishers using a different unit
+  // (e.g., 100 um for sub-millimeter sensors) MUST include a depth_unit key in
+  // the corresponding VisionMeta.base.attributes sequence with json value
+  // {"unit": "100um"} (or "mm", "m"). When depth_unit is absent, consumers
+  // MUST assume millimeters.
+  //
+  // A depth stream is published as a separate VisionMeta + VisionFrame pair
+  // with pix = DEPTH16 and a stream_id distinct from the co-located color
+  // stream. The rig_id field links the depth and color streams for spatial
+  // alignment; CamIntrinsics carries the depth camera's intrinsic calibration.
+  // For sensors with factory-aligned depth and color (e.g., iPhone LiDAR),
+  // both streams share the same CamIntrinsics and FrameRef.
   enum ColorSpace {
     @value(0)  SRGB,
     @value(1)  REC709,
