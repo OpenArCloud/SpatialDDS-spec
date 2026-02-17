@@ -5317,20 +5317,20 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 #### Results
 
-37 of 38 checks pass. 1 check passes with the IDL additions proposed in this document.
+All 38 S3E checks pass.
 
-| Modality | Checks | Pass (pre-edit) | Pass (post-edit) | Notes |
-|---|---|---|---|---|
-| LiDAR | 5 | 5 | 5 | Covered by Lidar profile. |
-| Vision | 4 | 4 | 4 | Covered by Vision profile. |
-| IMU | 3 | 3 | 3 | Covered by VIO profile. |
-| GNSS/RTK | 3 | 3 | 3 | Covered by Core geo-anchoring. |
-| UWB (inter-robot range) | 4 | 0 | 4 | **Requires S3E-1..3: RANGE edge type.** |
-| Core Pose Graph | 5 | 5 | 5 | Covered by Core profile. |
-| Mapping (multi-agent) | 8 | 8 | 8 | Covered by Mapping extension. |
-| Discovery & Coordination | 3 | 3 | 3 | Covered by Discovery + AR+Geo profiles. |
-| Cross-cutting | 3 | 3 | 3 | Conventions match. |
-| **Total** | **38** | **34** | **38** | **4 checks require RANGE addition.** |
+| Modality | Checks | Pass | Remaining Gaps |
+|---|---|---|---|
+| LiDAR | 5 | 5 | 0 |
+| Vision | 4 | 4 | 0 |
+| IMU | 3 | 3 | 0 |
+| GNSS/RTK | 3 | 3 | 0 |
+| UWB (inter-robot range) | 4 | 4 | 0 |
+| Core Pose Graph | 5 | 5 | 0 |
+| Mapping (multi-agent) | 8 | 8 | 0 |
+| Discovery & Coordination | 3 | 3 | 0 |
+| Cross-cutting | 3 | 3 | 0 |
+| **Total** | **38** | **38** | **0** |
 
 #### S3E Scenario Narrative (Informative)
 
