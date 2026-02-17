@@ -4942,20 +4942,21 @@ This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared ancho
 
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against two public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing and semantics profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against three public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, and coordination profiles and directly informed several normative additions to this specification.*
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 extension profiles were validated against two complementary datasets that together exercise the full signal-to-semantics pipeline:
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against three complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
 
 | Dataset | Focus | Modalities Stressed |
 |---|---|---|
-| **nuScenes** (Motional / nuTonomy) | Perception -> semantics | Camera (6x), lidar, radar detections (5x), 3D annotations, coordinate conventions |
-| **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal -> perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
+| **nuScenes** (Motional / nuTonomy) | Perception → semantics | Camera (6×), lidar, radar detections (5×), 3D annotations, coordinate conventions |
+| **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal → perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
+| **S3E** (Sun Yat-sen University / HKUST) | Multi-agent coordination | 3 UGVs × (lidar, stereo, IMU), UWB inter-robot ranging, RTK-GNSS, collaborative SLAM |
 
-nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets.
+nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2.
 
-The goal was not to certify particular datasets but to answer a concrete question: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?*
+The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
 ### **Methodology**
 
@@ -4973,7 +4974,7 @@ For each dataset, a conformance harness was constructed as a self-contained Pyth
 
 4. **Reports a per-modality scorecard.**
 
-Neither harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment.
+Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E conformance (§I.3) was performed as a manual schema analysis following the same check structure; a scripted harness is planned for a future revision.
 
 ---
 
@@ -5186,30 +5187,6 @@ DeepSense 6G conformance has no remaining schema gaps. Future ISAC extensions (e
 
 ---
 
-### **Reproducing the Tests**
-
-Both conformance harnesses are self-contained Python 3 scripts with no external dependencies.
-
-**nuScenes harness** (`scripts/nuscenes_harness_v2.py`):
-
-```bash
-python3 scripts/nuscenes_harness_v2.py
-```
-
-Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
-
-**DeepSense 6G harness** (`scripts/deepsense6g_harness_v3.py`):
-
-```bash
-python3 scripts/deepsense6g_harness_v3.py
-```
-
-Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file.
-
-No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet) to validate coverage for sensor configurations or multi-agent scenarios not present in nuScenes, DeepSense 6G, or S3E.
-
----
-
 ### **I.3 S3E Conformance (Multi-Robot Collaborative SLAM)**
 
 #### Reference Dataset
@@ -5352,6 +5329,32 @@ The S3E "teaching building" outdoor sequence illustrates the full multi-agent li
 
 This end-to-end scenario is precisely what ROS 2's `nav_msgs` and `sensor_msgs` cannot express: there is no ROS 2 standard for map lifecycle, inter-map alignment, range-only constraints, or multi-agent discovery with spatial coverage.
 
+---
+
+### **Reproducing the Tests**
+
+The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 scripts with no external dependencies.
+
+**nuScenes harness** (`scripts/nuscenes_harness_v2.py`):
+
+```bash
+python3 scripts/nuscenes_harness_v2.py
+```
+
+Mirrors the SpatialDDS 1.5 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
+
+**DeepSense 6G harness** (`scripts/deepsense6g_harness_v3.py`):
+
+```bash
+python3 scripts/deepsense6g_harness_v3.py
+```
+
+Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file.
+
+**S3E conformance**: The 38 S3E checks documented in §I.3 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/s3e_harness_v1.py`) following the same pattern as the nuScenes and DeepSense 6G scripts is planned for a future revision.
+
+No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
+
 ### **Limitations**
 
 This testing validates schema expressiveness -- whether every dataset field has a lossless SpatialDDS mapping. It does not validate:
@@ -5359,7 +5362,7 @@ This testing validates schema expressiveness -- whether every dataset field has 
 - **Wire interoperability** -- actual DDS serialization/deserialization round-trips.
 - **Performance** -- throughput, latency, or memory footprint under real sensor loads.
 - **Semantic correctness** -- whether a particular producer's mapping preserves the intended meaning of each field.
-- **Multi-dataset coverage** -- datasets with different sensor configurations (e.g., solid-state lidar, event cameras, ultrasonic sensors) or deployment patterns (e.g., heterogeneous robot fleets, indoor hierarchical spaces, aerial-ground cooperation) may surface additional gaps.
+- **Multi-dataset coverage** -- datasets with different sensor configurations (e.g., solid-state lidar, event cameras, ultrasonic sensors) or deployment patterns (e.g., indoor hierarchical spaces, aerial-ground cooperation, dense pedestrian tracking) may surface additional gaps. S3E covers three-robot outdoor coordination; larger fleet sizes, degraded-communication environments, and heterogeneous robot types (ground + aerial) remain untested.
 
 These areas are appropriate targets for future conformance work.
 

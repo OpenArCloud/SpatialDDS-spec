@@ -16,6 +16,7 @@
 - Conformance and examples: added nuScenes + DeepSense harnesses, refreshed Appendix I, and updated examples/consistency across appendices.
 - Documentation polish: new conceptual overview, improved profiles/footnotes/tables, and broad cleanup of formatting and consistency issues.
 - Mapping extension updates: added RANGE constraints in `mapping::EdgeType`, RANGE_COARSE alignment method, and S3E conformance coverage in Appendix I.
+- Appendix I framing: updated to a three-dataset conformance suite (nuScenes, DeepSense 6G, S3E), moved the reproducing section to follow I.3, and clarified the manual S3E analysis and updated limitations.
 
 ## Version 1.4 - 2026-02-07
 
