@@ -10,47 +10,11 @@
 
 ## Version 1.5 - TBD
 
-- Initialized directories and stub documents for the 1.5 drafting cycle.
-- Added structured `CoverageFilter` and deprecated freeform `expr` for discovery queries.
-- Defined pagination, announce lifecycle, and well-known discovery topic names/QoS.
-- Added a normative security model, `auth_hint` semantics, and DDS/HTTPS security bindings.
-- Added bootstrap manifest and DNS-SD / `.well-known` bindings for Layer 1 discovery.
-- Clarified coexistence of `/.well-known/spatialdds` (bootstrap) and `/.well-known/spatialdds-resolver` (resolver metadata).
-- Added normative `spatial.manifest@1.5` schema with type-specific blocks and JSON Schema.
-- Added normative blob reassembly guidance for `BlobChunk` delivery.
-- Replaced the radar extension with a detection-centric profile (`RadSensorMeta`, expanded `RadDetection`, `RadDetectionSet`) and removed tensor-centric structs.
-- Updated vision, lidar, and semantics profiles with detection-centric and dataset-aligned fields (RigRole expansion, BIN_INTERLEAVED, per-point timestamps, Detection3D attributes/visibility/evidence) plus supporting normative guidance.
-- Added Appendix I documenting dataset conformance testing and the resulting profile changes.
-- Added Appendix J comparing SpatialDDS 1.5 with ROS 2 across architecture and message design.
-- Restored radar tensor transport alongside detection-centric radar types (RadTensorMeta/RadTensorFrame and `radar_tensor` topic type).
-- Added 360° rig roles (`PANORAMIC`, `EQUIRECTANGULAR`) and lidar wavelength metadata; documented DeepSense 6G harness in Appendix I.
-- Added provisional RF beam sensing extension (Appendix E) plus discovery type `rf_beam` and QoS `RF_BEAM_RT`.
-- Reworked Appendix I to separate nuScenes and DeepSense 6G conformance with independent methodologies and results.
-- Updated Appendix I with DeepSense 6G v2 harness results and mmWave beam checks.
-- Added core GNSS diagnostics (`NavSatStatus`, `GnssFixType`, `GnssService`) and updated DeepSense conformance to v3 harness.
-- Updated Appendix I to reflect GNSS checks passing and full DeepSense coverage.
-- Expanded Appendix J with RF beam / ISAC comparison and added an ISAC scenario row in the deployment table.
-- Wrapped the high-level layering diagram in a code fence for consistent rendering.
-- Added the Mapping extension profile (`spatial.mapping/1.5`) with `MapMeta`, `mapping::Edge`, `MapAlignment`, and `MapEvent` in Appendix D.
-- Added `map_meta`, `map_alignment`, and `map_event` to the Typed Topics Registry and `MAP_META` to the QoS profile table.
-- Updated profile summaries, profile matrix, future directions, and ROS 2 scenario table to include collaborative mapping.
-- Added the Spatial Events extension profile (`spatial.events/1.5`) with `SpatialZone`, `SpatialEvent`, and `ZoneState`.
-- Added `spatial_zone`, `spatial_event`, and `zone_state` to the Typed Topics Registry and `ZONE_META` / `EVENT_RT` to the QoS profile table.
-- Updated profile summaries, profile matrix, Appendix J, Appendix H, and Future Directions to include spatial events.
-- Extended the provisional Agent profile with fleet coordination types (AgentStatus, TaskOffer, TaskAssignment, TaskHandoff) plus new topic/QoS tables and JSON examples.
-- Updated conclusion and Appendix E integration notes to reflect Mapping/Events and fleet coordination topics.
-- Reordered the Typed Topics Registry, added provisional markers for agent entries, and clarified the Profile Matrix footnote.
-- Aligned mapping/events snippets with GeoPose typedefs, MapAlignment naming, and optional SpatialZone bounds.
-- Set the 1.5 draft publication date placeholder to 2025-XX-XX.
-- Added `FramedPose` as a core bundled-pose primitive and redesigned `NodeGeo` to carry multiple framed poses plus optional GeoPose.
-- Simplified agent fleet messages to use `FramedPose` and updated agent JSON examples and integration notes.
-- Fixed spec issues: quaternion order examples, manifest diff artifacts, CovMatrix JSON, `nsec`→`nanosec`, and clarified DDS domain_id range.
-- Added `Edge.T_from_to` relative pose to core pose-graph edges.
-- Removed the empty `spatial.geometry` module and its `geometry.idl` include guard from the core IDL.
-- Marked §3.3 abridged IDL snippets as non-normative and clarified a large-rotation quaternion example in Appendix H.
-- Added §1.1 Conceptual Overview and refined introduction/profile summaries.
-- Added provisional Neural and Agent example profiles in Appendix E.
-- Added discovery topic `ContentAnnounce` well-known name and reply-topic QoS guidance.
+- Core and IDL: added `FramedPose`, redesigned `NodeGeo`, expanded pose-graph/mapping/event types, and clarified core patterns (covariance, ordering, optionality).
+- Discovery/URIs/Manifests: structured CoverageQuery, defined pagination and topic/QoS conventions, added security + resolver rules, and formalized manifest schema and resolution.
+- Extensions: major updates across sensing (vision/lidar/radar, including tensor + detection paths), plus new Mapping and Spatial Events extensions; provisional Neural/Agent/rf_beam expanded.
+- Conformance and examples: added nuScenes + DeepSense harnesses, refreshed Appendix I, and updated examples/consistency across appendices.
+- Documentation polish: new conceptual overview, improved profiles/footnotes/tables, and broad cleanup of formatting and consistency issues.
 
 ## Version 1.4 - 2026-02-07
 
