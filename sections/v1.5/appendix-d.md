@@ -324,6 +324,8 @@ This extension adds the **map lifecycle layer** — the metadata and coordinatio
 
 Core `Node` and `Edge` topics remain unchanged. Agents that produce cross-map constraints publish on the `mapping/edge` topic; agents that only produce intra-map odometry/loop closures continue using core topics. Consumers that need cross-map awareness subscribe to both.
 
+**Range-only constraints:** When `type == RANGE`, the edge carries a scalar distance measurement between `from_id` and `to_id` in the `range_m` / `range_std_m` fields. The `T_from_to` and `information` fields SHOULD be set to identity / zero respectively. Pose graph optimizers that encounter a RANGE edge SHOULD treat it as a distance-only factor: `||pos(from_id) - pos(to_id)|| = range_m`. Common sources include UWB inter-robot ranging, acoustic ranging (underwater), and BLE RSSI-derived distances. Range edges may reference nodes in different maps (with `has_from_map_id` / `has_to_map_id` populated), enabling range-assisted inter-map alignment.
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS Mapping Extension 1.5
@@ -471,7 +473,8 @@ module spatial {
       @value(7)  PLANE,           // planar constraint (e.g., ground plane)
       @value(8)  SEMANTIC,        // semantic co-observation ("both see the same door")
       @value(9)  MANUAL,          // human-provided alignment
-      @value(10) OTHER
+      @value(10) RANGE,           // range-only distance constraint (UWB, acoustic, BLE)
+      @value(11) OTHER
     };
 
     // Extended edge that carries the richer EdgeType plus provenance.
@@ -502,6 +505,16 @@ module spatial {
       float   match_score;              // similarity / inlier ratio [0..1]
       boolean has_inlier_count;
       uint32  inlier_count;             // feature inliers supporting this edge
+
+      // Range-only constraint (populated when type == RANGE)
+      // For range-only edges, T_from_to and information are unused (set to
+      // identity/zero); the scalar range_m is the primary payload.
+      // The optimizer treats this as a distance-only factor between from_id
+      // and to_id: ||pos(from_id) - pos(to_id)|| = range_m ± range_std_m.
+      boolean has_range_m;
+      float   range_m;                  // measured distance (meters)
+      boolean has_range_std_m;
+      float   range_std_m;              // 1-sigma distance uncertainty (meters)
     };
 
 
@@ -511,14 +524,15 @@ module spatial {
 
     // How an alignment was established.
     enum AlignmentMethod {
-      @value(0) VISUAL_LOOP,      // feature-based visual loop closure
+      @value(0) VISUAL_LOOP,      // feature-based visual closure
       @value(1) LIDAR_ICP,        // point cloud registration (ICP / NDT)
       @value(2) ANCHOR_MATCH,     // shared anchor recognition
       @value(3) GPS_COARSE,       // GPS-derived coarse alignment
       @value(4) SEMANTIC_MATCH,   // semantic landmark co-observation
       @value(5) MANUAL,           // operator-provided ground truth
       @value(6) MULTI_METHOD,     // combination of methods
-      @value(7) OTHER
+      @value(7) RANGE_COARSE,     // range-only (UWB, acoustic) coarse alignment
+      @value(8) OTHER
     };
 
     // Inter-map transform: aligns map_id_from's frame to map_id_to's frame,

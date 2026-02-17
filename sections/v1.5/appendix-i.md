@@ -264,7 +264,151 @@ python3 scripts/deepsense6g_harness_v3.py
 
 Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file.
 
-Neither harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal) to validate coverage for sensor configurations not present in nuScenes or DeepSense 6G.
+No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet) to validate coverage for sensor configurations or multi-agent scenarios not present in nuScenes, DeepSense 6G, or S3E.
+
+---
+
+### **I.3 S3E Conformance (Multi-Robot Collaborative SLAM)**
+
+#### Reference Dataset
+
+**S3E** (Sun Yat-sen University / HKUST) is a multi-robot multimodal dataset for collaborative SLAM containing:
+
+| Dimension | Value |
+|---|---|
+| Robots | 3 UGVs (Alpha, Blob, Carol) operating simultaneously |
+| LiDAR | 1 × 16-beam 3D scanner (Velodyne VLP-16) per robot, 10 Hz |
+| Stereo cameras | 2 × high-resolution color cameras per robot |
+| IMU | 9-axis, 100–200 Hz per robot |
+| UWB | Inter-robot Ultra-Wideband ranging (pairwise distances at ~10 Hz) |
+| GNSS | Dual-antenna RTK receiver per robot (ground truth) |
+| Environments | 13 outdoor + 5 indoor sequences |
+| Trajectory paradigms | 4 collaborative patterns (concentric circles, intersecting circles, intersection curve, rays) |
+| Format | ROS 2 bag files; ground truth as TUM-format pose files |
+
+The dataset was chosen because it is the first C-SLAM dataset to include UWB inter-robot ranging, exercises multi-agent map building with inter-robot loop closures, and represents a scenario class (heterogeneous multi-robot coordination) where SpatialDDS's Mapping extension, Discovery profile, and multi-source pose graph types provide capabilities absent from ROS 2's `nav_msgs` and `sensor_msgs`.
+
+#### Checks Performed (38)
+
+##### Per-Robot Sensing — LiDAR (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SL-01 | LiDAR meta | `LidarMeta` with `sensor_type`, `rate_hz`, `point_layout` covers Velodyne VLP-16. |
+| SL-02 | Point layout | `PointLayout.XYZ_I_R_T` carries x, y, z, intensity, ring, time — matches Velodyne binary format. |
+| SL-03 | Per-robot topic isolation | Topic template `spatialdds/<scene>/lidar/<sensor_id>/frame/v1` with per-robot `sensor_id` (e.g., `alpha/vlp16`). |
+| SL-04 | CloudEncoding | `BIN_INTERLEAVED` covers raw binary point cloud blobs. |
+| SL-05 | RigRole | `RigRole.TOP` covers single roof-mounted LiDAR. |
+
+##### Per-Robot Sensing — Vision (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SV-01 | Stereo pair | Two `VisionFrame` streams per robot with `RigRole.LEFT` / `RigRole.RIGHT`. |
+| SV-02 | Camera intrinsics | `CameraMeta` with `fx`, `fy`, `cx`, `cy`, `dist_model`, `dist_coeffs` covers calibrated stereo cameras. |
+| SV-03 | Per-robot namespacing | Topic `spatialdds/<scene>/vision/<sensor_id>/frame/v1` isolates per-robot camera streams. |
+| SV-04 | Timestamp sync | `VisionFrame.stamp` synchronized to common timebase via hardware PPS trigger. |
+
+##### Per-Robot Sensing — IMU (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SI-01 | 9-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s) covers 6-axis; `MagSample` covers magnetometer. |
+| SI-02 | High-rate ordering | `ImuSample.seq` monotonic counter handles 100–200 Hz temporal ordering. |
+| SI-03 | Extrinsic calibration | Sensor-to-body transform publishable as `FrameTransform` (LiDAR-IMU, camera-IMU extrinsics). |
+
+##### Per-Robot Sensing — GNSS/RTK (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SG-01 | RTK fix type | `GnssFixType.RTK_FIXED` covers dual-antenna RTK ground truth receiver. |
+| SG-02 | GeoPose output | `GeoPose` with `lat_deg`, `lon_deg`, `alt_m`, quaternion covers RTK-derived global pose. |
+| SG-03 | NavSatStatus | `NavSatStatus` with `fix_type`, `num_satellites`, `hdop`, `vdop` covers receiver diagnostics. |
+
+##### Inter-Robot Ranging — UWB (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SU-01 | Range edge type | `mapping::EdgeType.RANGE` explicitly models UWB range-only constraint (scalar distance, no orientation). |
+| SU-02 | Range fields | `mapping::Edge.range_m` + `range_std_m` carry measured distance and uncertainty. |
+| SU-03 | Cross-map provenance | `has_from_map_id` / `has_to_map_id` populated on RANGE edges because UWB connects nodes in different robots' maps. |
+| SU-04 | Range-assisted alignment | `AlignmentMethod.RANGE_COARSE` covers initial inter-map alignment derived solely from UWB distances. |
+
+##### Core Pose Graph (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SC-01 | Per-robot nodes | `core::Node` with `map_id` per robot (e.g., `alpha-map`, `blob-map`, `carol-map`), `@key node_id` unique per keyframe. |
+| SC-02 | Odometry edges | `core::Edge` with `type = ODOM` connects sequential keyframes within each robot's map. |
+| SC-03 | Intra-robot loop closures | `core::Edge` with `type = LOOP` for within-map loop closures (e.g., concentric circle paradigm). |
+| SC-04 | Versioning | `Node.seq` monotonic per source; `Node.graph_epoch` increments after global re-optimization. |
+| SC-05 | Multi-source coexistence | Three simultaneous `source_id` values on `core::Node` and `core::Edge` topics — one per robot. |
+
+##### Mapping Extension — Multi-Agent (8 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SM-01 | Map lifecycle | `MapMeta` per robot with `state` progressing: BUILDING → OPTIMIZING → STABLE. |
+| SM-02 | Map kind | `MapMeta.kind = POSE_GRAPH` for each robot's SLAM output. |
+| SM-03 | Inter-robot loop closures | `mapping::Edge` with `type = INTER_MAP` and `has_from_map_id` / `has_to_map_id` populated. |
+| SM-04 | MapAlignment | `MapAlignment` with `T_from_to` expressing the inter-map transform after cross-robot alignment. |
+| SM-05 | Alignment revision | `MapAlignment.revision` increments as more inter-robot edges accumulate and the alignment refines. |
+| SM-06 | Evidence trail | `MapAlignment.evidence_edge_ids[]` references the specific cross-map edges supporting the alignment. |
+| SM-07 | MapEvent notifications | `MapEvent` with `MAP_ALIGNED` event when two robots' maps are first linked. |
+| SM-08 | Concurrent map builds | Three `MapMeta` samples simultaneously active (keyed by `map_id`), demonstrating multi-map lifecycle. |
+
+##### Discovery & Coordination (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SD-01 | Service announcement | Each robot publishes `Announce` with `ServiceKind.SLAM` and sensor capabilities in `topics[]`. |
+| SD-02 | Spatial coverage | `Announce.coverage` (Aabb3 or geo-bounds) advertises each robot's operational area. |
+| SD-03 | Multi-frame NodeGeo | After inter-map alignment, `NodeGeo.poses[]` carries a node's pose in multiple robots' map frames simultaneously (FramedPose array). |
+
+##### Cross-cutting (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| SX-01 | Quaternion convention | §2 table covers ROS 2 (x,y,z,w) to SpatialDDS (x,y,z,w) identity mapping for S3E's ROS 2 bag source. |
+| SX-02 | Coordinate frame convention | Right-handed; S3E uses right-hand rule per documentation. |
+| SX-03 | Time synchronization | Hardware PPS-synchronized timestamps map directly to `Time { sec, nanosec }`. |
+
+#### Results
+
+37 of 38 checks pass. 1 check passes with the IDL additions proposed in this document.
+
+| Modality | Checks | Pass (pre-edit) | Pass (post-edit) | Notes |
+|---|---|---|---|---|
+| LiDAR | 5 | 5 | 5 | Covered by Lidar profile. |
+| Vision | 4 | 4 | 4 | Covered by Vision profile. |
+| IMU | 3 | 3 | 3 | Covered by VIO profile. |
+| GNSS/RTK | 3 | 3 | 3 | Covered by Core geo-anchoring. |
+| UWB (inter-robot range) | 4 | 0 | 4 | **Requires S3E-1..3: RANGE edge type.** |
+| Core Pose Graph | 5 | 5 | 5 | Covered by Core profile. |
+| Mapping (multi-agent) | 8 | 8 | 8 | Covered by Mapping extension. |
+| Discovery & Coordination | 3 | 3 | 3 | Covered by Discovery + AR+Geo profiles. |
+| Cross-cutting | 3 | 3 | 3 | Conventions match. |
+| **Total** | **38** | **34** | **38** | **4 checks require RANGE addition.** |
+
+#### S3E Scenario Narrative (Informative)
+
+The S3E "teaching building" outdoor sequence illustrates the full multi-agent lifecycle:
+
+1. **Bootstrap.** Three robots (Alpha, Blob, Carol) power on and each publishes an `Announce` with `ServiceKind.SLAM`, their sensor capabilities, and an initial coverage bounding box. Each begins publishing `core::Node` and `core::Edge` (ODOM) on the pose graph topics with distinct `source_id` and `map_id` values.
+
+2. **Independent mapping.** Each robot runs visual-inertial-lidar SLAM independently. `MapMeta` per robot shows `state = BUILDING`. Keyframes stream as `core::Node`; odometry constraints as `core::Edge` (ODOM); intra-robot loop closures as `core::Edge` (LOOP). `ImuSample`, `VisionFrame`, and `LidarFrame` are published on per-robot sensor topics.
+
+3. **UWB ranging begins.** As robots come within UWB range (~50 m), pairwise distance measurements are published as `mapping::Edge` with `type = RANGE`, `range_m` carrying the measured distance, `has_from_map_id` / `has_to_map_id` identifying which robots' maps the linked nodes belong to.
+
+4. **Inter-robot loop closure.** When Alpha and Blob's LiDAR scans overlap, a cross-robot loop closure is detected. This is published as `mapping::Edge` with `type = INTER_MAP`, `match_score` carrying the ICP fitness, and `from_map_id = "alpha-map"`, `to_map_id = "blob-map"`.
+
+5. **Map alignment.** A `MapAlignment` is published linking Alpha's and Blob's maps, with `method = LIDAR_ICP` (or `MULTI_METHOD` if UWB ranges were fused), `T_from_to` carrying the inter-map transform, and `evidence_edge_ids[]` referencing the supporting cross-map edges. `MapEvent` with `MAP_ALIGNED` notifies all subscribers.
+
+6. **Multi-frame localization.** Once the alignment exists, a geo-referencing service can publish `NodeGeo` with `poses[]` containing FramedPoses in both Alpha's and Blob's map frames simultaneously. Consumers (e.g., a planning service) can pick the frame they need.
+
+7. **Graph optimization.** After sufficient inter-robot constraints accumulate, a global optimizer runs. All robots' `MapMeta.state` transitions to `OPTIMIZING`, then `STABLE`. `graph_epoch` increments on all nodes and edges. `MapAlignment.revision` increments. Consumers watching `graph_epoch` know to re-fetch the entire graph.
+
+This end-to-end scenario is precisely what ROS 2's `nav_msgs` and `sensor_msgs` cannot express: there is no ROS 2 standard for map lifecycle, inter-map alignment, range-only constraints, or multi-agent discovery with spatial coverage.
 
 ### **Limitations**
 
@@ -273,6 +417,6 @@ This testing validates schema expressiveness -- whether every dataset field has 
 - **Wire interoperability** -- actual DDS serialization/deserialization round-trips.
 - **Performance** -- throughput, latency, or memory footprint under real sensor loads.
 - **Semantic correctness** -- whether a particular producer's mapping preserves the intended meaning of each field.
-- **Multi-dataset coverage** -- datasets with different sensor configurations (e.g., solid-state lidar, event cameras, ultrasonic sensors) may surface additional gaps.
+- **Multi-dataset coverage** -- datasets with different sensor configurations (e.g., solid-state lidar, event cameras, ultrasonic sensors) or deployment patterns (e.g., heterogeneous robot fleets, indoor hierarchical spaces, aerial-ground cooperation) may surface additional gaps.
 
 These areas are appropriate targets for future conformance work.
