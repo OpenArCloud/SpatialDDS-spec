@@ -44,21 +44,22 @@ Each Transform expresses a pose that maps coordinates from the `from` frame into
 
 ### **3.3 Discovery**
 
-Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Think of it as a built-in directory that rides the same bus: nodes announce, others filter and subscribe.
+Discovery is how SpatialDDS peers **find each other**, **advertise what they publish**, and **select compatible streams**. Deployments can expose discovery using a **DDS binding** (query/announce on well-known topics), an **HTTP binding** (a REST endpoint that accepts spatial queries and returns service manifests), or both. HTTP resolvers may act as gateways to a DDS bus without changing the client-facing contract.
 
 #### How it works (at a glance)
-1. **Announce** — each node periodically publishes an announcement with capabilities and topics.
-2. **Query** — clients publish simple filters (by profile version, type, QoS) to narrow results.
+1. **Announce** — each node periodically publishes an announcement with capabilities and topics (DDS), or registers its manifest with an HTTP discovery service.
+2. **Query** — clients publish spatial filters on the DDS bus (`CoverageQuery`), or issue an HTTP search request to `/.well-known/spatialdds/search`.
 3. **Select** — clients subscribe to chosen topics; negotiation picks the highest compatible minor per profile.
 
 #### **3.3.0 Discovery Layers & Bootstrap (Normative)**
 
-SpatialDDS distinguishes two discovery layers:
+SpatialDDS distinguishes three discovery layers:
 
-- **Layer 1 — Network Bootstrap:** how a device discovers that a SpatialDDS DDS domain exists and obtains connection parameters. This is transport and access-network dependent.
-- **Layer 2 — On-Bus Discovery:** how a device, once connected to a DDS domain, discovers services, coverage, and streams. This is what the Discovery profile defines.
+- **Layer 1 — Network Bootstrap:** how a device discovers that a SpatialDDS deployment exists and obtains initial connection parameters. This is transport and access-network dependent (mDNS, Geospatial DNS-SD, QR codes, HTTPS well-known path).
+- **Layer 1.5 — HTTP Discovery (optional):** how a device, without joining a DDS domain, queries for services by spatial region via an HTTP endpoint. This is the bridge between bootstrap and on-bus discovery for Internet-scale deployments where the client and service may be on different networks.
+- **Layer 2 — On-Bus Discovery:** how a device, once connected to a DDS domain, discovers services, coverage, and streams via DDS topics. This is what the Discovery profile's IDL types define.
 
-Layer 1 mechanisms deliver a **Bootstrap Manifest** that provides the parameters needed to transition to Layer 2.
+Layer 1 mechanisms deliver a **Bootstrap Manifest** that provides the parameters needed to transition to Layer 1.5 or Layer 2. Layer 1.5 delivers **Service Manifests** (§8.2.3) that provide the DDS connection parameters needed to transition to Layer 2. Clients MAY skip Layer 1.5 if Layer 1 already provides sufficient connection information (e.g., local mDNS bootstrap on the venue LAN).
 
 ##### **Bootstrap Manifest (Normative)**
 
@@ -110,7 +111,167 @@ https://{authority}/.well-known/spatialdds
 
 The response MUST be `application/json` using the bootstrap manifest schema. Servers SHOULD set `Cache-Control` headers appropriate to their deployment (e.g., `max-age=300`).
 
-**Note:** The bootstrap path `/.well-known/spatialdds` and the resolver metadata path `/.well-known/spatialdds-resolver` serve distinct functions and MAY coexist on the same authority. The bootstrap path returns a Bootstrap Manifest (this section), while the resolver path returns resolver metadata for URI resolution (§7.5.2).
+**Note:** Three well-known paths are defined under the `/.well-known/spatialdds` namespace. The bootstrap path (`/.well-known/spatialdds`) returns a Bootstrap Manifest. The resolver metadata path (`/.well-known/spatialdds-resolver`) returns resolver metadata for URI resolution (§7.5.2). The search path (`/.well-known/spatialdds/search`) accepts spatial discovery queries and returns matching service manifests. All three serve distinct functions and MAY coexist on the same authority.
+
+##### **HTTP Discovery Search Binding (Normative)**
+
+The HTTP discovery search binding allows clients to query for SpatialDDS services by spatial region without joining a DDS domain. It mirrors the on-bus `CoverageQuery` / `CoverageResponse` pattern over HTTP, using the same coverage semantics (§3.3.4) and returning standard service manifests (§8.2.3).
+
+**Endpoint:**
+
+```
+POST https://{authority}/.well-known/spatialdds/search
+Content-Type: application/json
+```
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `coverage` | array of CoverageElement | REQUIRED | One or more spatial regions of interest. Uses the same `CoverageElement` schema as `CoverageQuery.coverage` — `type`, `bbox`, `aabb`, `crs`, `frame_ref`, `global`. |
+| `filter` | CoverageFilter | OPTIONAL | Structured filter matching `CoverageFilter` — `type_in`, `qos_profile_in`, `module_id_in`. Empty arrays mean "match all." |
+| `kind` | array of string | OPTIONAL | Filter by service kind: `"VPS"`, `"MAPPING"`, `"RELOCAL"`, `"SEMANTICS"`, `"STORAGE"`, `"CONTENT"`, `"ANCHOR_REGISTRY"`, `"OTHER"`. Empty or absent means all kinds. |
+| `geohash` | string | OPTIONAL | Geohash string (3–7 characters). Shorthand for an earth-fixed bbox query. When present, the server expands the geohash to its bounding box and treats it as an additional coverage element. |
+| `max_results` | integer | OPTIONAL | Maximum number of results to return (default: server-defined, recommended ≤100). |
+| `page_token` | string | OPTIONAL | Opaque token from a previous response for pagination. |
+
+**Minimal example — query by geohash:**
+
+```http
+POST /.well-known/spatialdds/search
+Content-Type: application/json
+
+{
+  "geohash": "9q8yy"
+}
+```
+
+**Full example — query by bbox with service kind filter:**
+
+```http
+POST /.well-known/spatialdds/search
+Content-Type: application/json
+
+{
+  "coverage": [
+    {
+      "type": "bbox",
+      "crs": "EPSG:4979",
+      "bbox": [-122.420, 37.785, -122.405, 37.800]
+    }
+  ],
+  "kind": ["VPS"],
+  "filter": {
+    "type_in": ["geopose"],
+    "qos_profile_in": [],
+    "module_id_in": []
+  },
+  "max_results": 10
+}
+```
+
+**Response body:**
+
+On success, the server MUST return HTTP `200 OK` with `Content-Type: application/json`. The body is a JSON object:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `results` | array of Manifest | REQUIRED | Array of service manifests (§8.2.3 schema). Empty array if no services match. |
+| `next_page_token` | string | OPTIONAL | Opaque token for fetching the next page. Absent or empty string means no more results. |
+
+```json
+{
+  "results": [
+    {
+      "id": "spatialdds://acme-vps.example/sf-downtown/service/vps-main",
+      "profile": "spatial.manifest@1.5",
+      "rtype": "service",
+      "service": {
+        "service_id": "vps-main",
+        "kind": "VPS",
+        "name": "SF Downtown Visual Positioning",
+        "org": "acme-vps.example",
+        "version": "2025-q4",
+        "connection": {
+          "domain_id": 100,
+          "initial_peers": ["tcpv4://vps.acme-vps.example:7400"],
+          "partitions": ["sf/downtown"]
+        },
+        "topics": [
+          { "name": "spatialdds/vps/query/v1", "type": "vps_query", "version": "v1", "qos_profile": "VPS_REQ" },
+          { "name": "spatialdds/vps/result/v1", "type": "geopose", "version": "v1", "qos_profile": "VPS_RESP" }
+        ]
+      },
+      "coverage": {
+        "frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "earth-fixed" },
+        "has_bbox": true,
+        "bbox": [-122.420, 37.785, -122.405, 37.800],
+        "global": false
+      },
+      "stamp": { "sec": 1735689600, "nanosec": 0 },
+      "ttl_sec": 3600
+    }
+  ],
+  "next_page_token": ""
+}
+```
+
+**GET convenience form:**
+
+For simple geohash-based queries (e.g., from a Geospatial DNS-SD `muri`), servers MUST also support:
+
+```
+GET https://{authority}/.well-known/spatialdds/search?geohash={geohash}
+GET https://{authority}/.well-known/spatialdds/search?geohash={geohash}&kind={kind}
+```
+
+The GET form is equivalent to a POST with `{"geohash": "{geohash}"}` (and optional `kind` filter). The response format is identical.
+
+**Spatial matching semantics:**
+
+The server evaluates spatial overlap using the same *intersects* predicate as the on-bus `CoverageQuery`: a service matches if its coverage region intersects any of the requested coverage elements. When `geohash` is provided, the server expands it to its bounding box and applies the same intersection test. Services with `coverage.global == true` match all queries.
+
+**Error handling:**
+
+| Status | Meaning |
+|---|---|
+| `200` | Success. Body contains results (may be empty). |
+| `400` | Malformed request (invalid geohash, missing coverage, bad JSON). |
+| `401` / `403` | Authentication required or insufficient. |
+| `404` | The `/.well-known/spatialdds/search` endpoint is not supported by this authority. |
+| `429` | Rate limited. Client SHOULD retry with exponential backoff. |
+| `5xx` | Server error. |
+
+**Normative rules:**
+
+- Servers implementing the HTTP discovery search binding MUST support the POST form. The GET convenience form is also REQUIRED for interoperability with the Geospatial DNS-SD binding.
+- The response MUST use the §8.2.3 service manifest schema for each result. Clients MUST be able to extract `service.connection` from any result and use it to join the service's DDS domain.
+- Servers MUST respect the Coverage Model (§3.3.4) when evaluating spatial overlap: `coverage_frame_ref`, `bbox`, `aabb`, and `global` flags all apply.
+- Servers SHOULD set `Cache-Control` headers appropriate to the deployment. Responses to geohash queries at precision 5 (city-district scale) MAY be cached for 60–300 seconds.
+- Pagination follows the same contract as on-bus `CoverageResponse`: tokens are opaque, results are best-effort, and an empty `next_page_token` means no further pages.
+- Servers MAY return results for all resource types (services, content, anchor sets) or restrict to services only. When `kind` is absent, servers SHOULD return services only unless the client explicitly requests other types via the `filter` field.
+- The HTTP search endpoint and the on-bus `CoverageQuery` are independent mechanisms. Servers MAY implement one or both. Servers that implement both SHOULD return consistent results for equivalent queries.
+- HTTPS with TLS is REQUIRED. Authentication follows the same rules as §7.5.4.
+
+**Relationship to other well-known paths:**
+
+| Path | Function | Returns |
+|---|---|---|
+| `/.well-known/spatialdds` | Bootstrap manifest | Bootstrap Manifest (domain_id, peers, partitions) |
+| `/.well-known/spatialdds-resolver` | Resolver metadata | Resolver metadata (https_base, cache_ttl) |
+| `/.well-known/spatialdds/search` | **Spatial discovery query** | **Array of service manifests** |
+
+All three paths MAY coexist on the same authority. They serve distinct functions and do not conflict.
+
+**Relationship to Geospatial DNS-SD:**
+
+The Geospatial DNS-SD binding's `muri` TXT record value SHOULD point to the search endpoint's GET convenience form:
+
+```
+muri=https://discovery.example.org/.well-known/spatialdds/search?geohash=9q8yy
+```
+
+This directly connects the DNS bootstrap (Layer 1) to HTTP discovery (Layer 1.5) without requiring any intermediate resolution step.
 
 ##### **DNS-SD Binding (Normative)**
 

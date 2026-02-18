@@ -39,7 +39,7 @@ Every spatial message exists in a reference frame — a coordinate system identi
 Finding things happens in two stages:
 
 1. Network bootstrap answers "where is the DDS domain?" A device arriving at a venue, connecting to a network, or scanning a QR code obtains a small bootstrap manifest containing a domain ID and initial peer addresses. On-premises mechanisms include mDNS-based DNS-SD, a well-known HTTPS path, QR codes, and BLE beacons. For Internet-scale discovery, a geospatial DNS-SD binding allows clients with only a GPS fix to locate services by encoding their position as a geohash subdomain. (See §3.3.0 for the full bootstrap specification.)
-2. On-bus discovery answers "what's available on this domain?" Once connected, the device subscribes to well-known discovery topics and receives announcements from services and content providers, each describing their capabilities, spatial coverage, and available data streams. The device filters for what it needs and subscribes.
+2. Service discovery answers "what's available near me?" For Internet-scale deployments, an HTTP search endpoint (`/.well-known/spatialdds/search`) accepts spatial queries and returns service manifests with DDS connection hints — no bus membership required. For on-premises deployments, the device subscribes to well-known DDS discovery topics and receives announcements directly. Both paths expose the same spatial coverage model.
 
 #### URIs and Manifests
 

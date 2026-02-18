@@ -19,6 +19,7 @@
 - Appendix I framing: updated to a three-dataset conformance suite (nuScenes, DeepSense 6G, S3E), moved the reproducing section to follow I.3, and clarified the manual S3E analysis and updated limitations.
 - Vision + conformance: added `PixFormat.DEPTH16` with normative depth semantics and introduced ScanNet indoor RGB-D conformance (Spatial Events, mesh, instance segmentation, depth).
 - Discovery bootstrap: added geospatial DNS-SD binding with geohash subdomains, updated bootstrap flow diagram, and referenced DNS-SD/SRV RFCs.
+- Discovery HTTP binding: restored `/.well-known/spatialdds/search` with CoverageQuery-equivalent semantics, GET geohash convenience, and updated discovery layering and Appendix B preamble.
 
 ## Version 1.4 - 2026-02-07
 
