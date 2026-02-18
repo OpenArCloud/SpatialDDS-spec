@@ -22,6 +22,10 @@
 
 \[8\] Geohash. *Wikipedia Entry.* Available: [https://en.wikipedia.org/wiki/Geohash](https://en.wikipedia.org/wiki/Geohash)
 
+\[8a\] Cheshire, S. & Krochmal, M. *DNS-Based Service Discovery.* IETF RFC 6763. Available: [https://www.rfc-editor.org/rfc/rfc6763](https://www.rfc-editor.org/rfc/rfc6763)
+
+\[8b\] Gulbrandsen, A., Vixie, P., & Esibov, L. *A DNS RR for specifying the location of services (DNS SRV).* IETF RFC 2782. Available: [https://www.rfc-editor.org/rfc/rfc2782](https://www.rfc-editor.org/rfc/rfc2782)
+
 ### **SLAM, SfM & AI World Models**
 
 \[9\] Mur-Artal, R., Montiel, J. M. M., & Tardós, J. D. (2015). *ORB-SLAM: A Versatile and Accurate Monocular SLAM System.* IEEE Transactions on Robotics, 31(5), 1147–1163.
@@ -31,4 +35,3 @@
 \[11\] Sarlin, P.-E., Unagar, A., Larsson, M., et al. (2020). *From Coarse to Fine: Robust Hierarchical Localization at Large Scale.* In IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 12716–12725.
 
 \[12\] Google Research. *ARCore Geospatial API & Visual Positioning Service.* Developer Documentation. Available: [https://developers.google.com/ar](https://developers.google.com/ar)
-

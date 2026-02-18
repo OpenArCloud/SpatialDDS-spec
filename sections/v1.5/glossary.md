@@ -6,6 +6,8 @@
 
 **DDS** – Data Distribution Service (OMG standard middleware)
 
+**DNS-SD** – DNS-Based Service Discovery (IETF RFC 6763)
+
 **GSMA** – GSM Association (global mobile industry group)
 
 **IMU** – Inertial Measurement Unit
@@ -39,4 +41,3 @@
 **W3C** – World Wide Web Consortium
 
 **XR** – Extended Reality (umbrella term including AR, VR, MR)
-

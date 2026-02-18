@@ -141,6 +141,136 @@ DNS-SD is the recommended first binding for local bootstrap.
 - The SRV target and port MUST resolve to a reachable DDS peer locator.
 - If `muri` is present, clients SHOULD resolve it after joining the domain to obtain full deployment metadata.
 
+##### **Geospatial DNS-SD Binding (Normative)**
+
+The geospatial DNS-SD binding allows a client with a GPS fix to discover SpatialDDS services by encoding its location as a geohash subdomain. This binding targets Internet-scale deployments where clients and services are on different networks.
+
+**Subdomain pattern:**
+
+```
+_spatialdds._udp.<geohash>.geo.<authority>
+```
+
+where `<geohash>` is a standard base32 geohash [8] of the client's position and `<authority>` is the DNS zone hosting the discovery registry.
+
+**Geohash precision levels**
+
+| Characters | Cell size (approx.) | Typical use |
+|---|---|---|
+| 3 | ~156 km × 156 km | Metro region / country subdivision |
+| 4 | ~39 km × 20 km | City |
+| 5 | ~5 km × 5 km | District / neighborhood |
+| 6 | ~1.2 km × 0.6 km | Block / venue cluster |
+| 7 | ~153 m × 153 m | Single venue |
+
+Clients SHOULD query at precision 5 (neighborhood scale) by default. Finer precision (6–7) is appropriate when the client has high-accuracy GNSS (RTK or similar).
+
+**TXT record keys**
+
+The TXT record uses the same key set as the local DNS-SD binding, with one addition:
+
+| Key | Required | Description |
+|---|---|---|
+| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.5`) |
+| `did` | OPTIONAL | DDS domain ID. OPTIONAL because the geospatial binding's primary role is to hand off to an HTTP discovery service via `muri`, not to provide direct DDS connection. |
+| `muri` | REQUIRED | HTTPS URL or `spatialdds://` URI for the discovery service, with the geohash passed as a query parameter or path segment. |
+| `part` | OPTIONAL | DDS partition hint (comma-separated). |
+
+**Resolution flow**
+
+1. Client obtains its position (GPS, network location, or manual entry).
+2. Client computes the base32 geohash at precision 5 (e.g., `37.7749°N, 122.4194°W` → `9q8yy`).
+3. Client issues a DNS TXT query for `_spatialdds._udp.9q8yy.geo.<authority>`.
+4. If the query returns `NXDOMAIN`, the client truncates to precision 4 (`9q8y`) and retries. This continues down to precision 3. If precision 3 also returns `NXDOMAIN`, bootstrap fails for this authority.
+5. On success, the client extracts `muri` from the TXT record.
+6. Client issues an HTTPS GET to the `muri` URL, which returns one or more SpatialDDS service manifests (§8.2.3) for services covering that geohash cell.
+7. Client selects a service and connects using the `connection` hints in the manifest.
+
+**Example DNS records (Route 53 / authoritative DNS)**
+
+```
+;; San Francisco downtown (~5 km² cell)
+_spatialdds._udp.9q8yy.geo.spatialdds.example.org.  TXT  "ver=1.5" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yy"
+
+;; San Francisco marina district
+_spatialdds._udp.9q8yk.geo.spatialdds.example.org.  TXT  "ver=1.5" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yk"
+
+;; London Soho
+_spatialdds._udp.gcpvj.geo.spatialdds.example.org.  TXT  "ver=1.5" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=gcpvj"
+```
+
+**Example HTTPS response** (from the `muri` endpoint)
+
+The discovery service returns an array of standard SpatialDDS service manifests (§8.2.3):
+
+```json
+[
+  {
+    "id": "spatialdds://provider-a.example/sf-downtown/service/vps-main",
+    "profile": "spatial.manifest@1.5",
+    "rtype": "service",
+    "service": {
+      "service_id": "vps-main",
+      "kind": "VPS",
+      "name": "SF Downtown Visual Positioning",
+      "org": "provider-a.example",
+      "connection": {
+        "domain_id": 100,
+        "initial_peers": ["tcpv4://vps.provider-a.example:7400"]
+      },
+      "topics": [
+        { "name": "spatialdds/vps/pose/v1", "type": "geopose", "version": "v1", "qos_profile": "POSE_RT" }
+      ]
+    },
+    "coverage": {
+      "frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "earth-fixed" },
+      "has_bbox": true,
+      "bbox": [-122.420, 37.785, -122.405, 37.800],
+      "global": false
+    },
+    "stamp": { "sec": 1714070400, "nanosec": 0 },
+    "ttl_sec": 3600
+  }
+]
+```
+
+**DNS zone delegation for federated operation**
+
+Operators MAY delegate geohash-prefixed subdomains to independent authorities, enabling federated discovery where different organizations manage different geographic regions:
+
+```
+;; Top-level authority delegates San Francisco (geohash prefix "9q8") to provider A
+9q8.geo.spatialdds.example.org.   NS  ns1.provider-a.example.
+
+;; Top-level authority delegates London (geohash prefix "gcpv") to provider B
+gcpv.geo.spatialdds.example.org.  NS  ns1.provider-b.example.
+```
+
+Each delegate manages all geohash cells under its prefix using standard DNS zone management. This mirrors the hierarchical structure of the DNS itself.
+
+**Normative rules**
+
+- `muri` is REQUIRED in the TXT record for geospatial bindings. The geospatial binding's purpose is to locate an HTTP discovery endpoint; direct DDS connection via `did` + SRV alone is NOT sufficient because the client's network path to the DDS domain is not implied by geographic proximity.
+- `ver` is REQUIRED and MUST match the local DNS-SD binding's version key.
+- The geohash MUST be a valid base32 geohash [8] of 3–7 characters. Clients MUST reject TXT records found under geohash subdomains shorter than 3 characters or longer than 7 characters.
+- The fallback-to-shorter-prefix algorithm MUST NOT retry below precision 3 to avoid excessive DNS queries.
+- The `muri` endpoint MUST return `application/json` containing either a single service manifest (§8.2.3) or a JSON array of service manifests. An empty array indicates no services in the requested cell.
+- DNS operators SHOULD populate records at precision 5 for general use. Finer precision (6–7) MAY be added for dense urban areas with multiple providers per neighborhood.
+- Clients MUST validate the `coverage` field in returned manifests against their actual position. A geohash cell is an approximation; the manifest's `bbox` or `coverage` elements are authoritative for determining whether a service actually covers the client's location.
+- DNS TTLs SHOULD be set appropriately for the deployment's dynamism. Static deployments (fixed VPS infrastructure) MAY use TTLs of 3600 seconds or more. Dynamic deployments (pop-up events, temporary coverage) SHOULD use shorter TTLs (60–300 seconds).
+
+**Relationship to local DNS-SD**
+
+The geospatial and local DNS-SD bindings serve different deployment scales and MAY coexist:
+
+| Binding | Network scope | Client prerequisite | Primary output |
+|---|---|---|---|
+| Local DNS-SD (mDNS) | Same LAN | WiFi connection | DDS domain_id + peer locator |
+| Local DNS-SD (wide-area) | Known authority | Domain name (from QR, app config) | DDS domain_id + peer locator |
+| Geospatial DNS-SD | Internet | GPS fix | HTTP discovery URL → service manifests |
+
+A client arriving at a venue MAY try local mDNS first (fastest, no Internet dependency), fall back to geospatial DNS if mDNS yields no results (works over cellular, finds services across networks), and finally fall back to the HTTPS well-known path if a venue domain is available.
+
 ##### **Other Bootstrap Mechanisms (Informative)**
 
 - **DHCP:** vendor-specific option carrying a URL to the bootstrap manifest.
@@ -149,13 +279,15 @@ DNS-SD is the recommended first binding for local bootstrap.
 
 ##### **Complete Bootstrap Chain (Informative)**
 
+**Path A — Local bootstrap (same LAN)**
+
 ```
 Access Network           Bootstrap              DDS Domain            On-Bus Discovery
      │                      │                       │                       │
      │  WiFi/5G/BLE/QR      │                       │                       │
      ├─────────────────────► │                       │                       │
-     │                       │  DNS-SD / HTTPS /     │                       │
-     │                       │  .well-known lookup   │                       │
+     │                       │  DNS-SD (mDNS) /      │                       │
+     │                       │  .well-known / QR      │                       │
      │                       ├─────────────────────► │                       │
      │                       │  Bootstrap Manifest   │                       │
      │                       │  (domain_id, peers,   │                       │
@@ -166,10 +298,35 @@ Access Network           Bootstrap              DDS Domain            On-Bus Dis
      │                       │                       │  Subscribe to         │
      │                       │                       │  .../announce/v1      │
      │                       │                       │  Receive Announce     │
-     │                       │                       │  messages             │
      │                       │                       │  Issue CoverageQuery  │
      │                       │                       │  Select streams       │
      │                       │                       │  Begin operation      │
+```
+
+**Path B — Internet bootstrap (cross-network, geospatial)**
+
+```
+GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
+  │                      │                       │                       │
+  │  Compute geohash     │                       │                       │
+  ├─────────────────────►│                       │                       │
+  │                      │  TXT query:           │                       │
+  │                      │  _spatialdds._udp     │                       │
+  │                      │  .<geohash>.geo.<auth> │                       │
+  │                      ├──────────────────────►│                       │
+  │                      │  TXT: muri=https://…  │                       │
+  │                      │◄──────────────────────┤                       │
+  │                      │                       │                       │
+  │  HTTPS GET muri      │                       │                       │
+  ├──────────────────────────────────────────────►│                       │
+  │                      │                       │  Service manifest(s)  │
+  │                      │                       │  (domain_id, peers,   │
+  │                      │                       │   topics, coverage)   │
+  │◄──────────────────────────────────────────────┤                       │
+  │                      │                       │                       │
+  │  Select service, connect via TCP/TLS         │                       │
+  ├──────────────────────────────────────────────────────────────────────►│
+  │                      │                       │  Begin operation      │
 ```
 
 
