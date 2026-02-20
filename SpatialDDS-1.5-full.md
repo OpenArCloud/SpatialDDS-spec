@@ -4003,23 +4003,76 @@ module spatial {
     typedef spatial::core::GeoPose   GeoPose;
     typedef spatial::common::MetaKV  MetaKV;
 
+    // ================================================================
+    // ENUMS (scoped to avoid literal collisions in IDL compilers)
+    // ================================================================
+
+    module enums {
+      module zone_kind_enum {
+        // Zone classification — what kind of spatial region this is.
+        enum ZoneKind {
+          @value(0) RESTRICTED,       // entry prohibited or requires authorization
+          @value(1) SPEED_LIMITED,    // maximum speed enforced
+          @value(2) CAPACITY_LIMITED, // maximum occupancy enforced
+          @value(3) ONE_WAY,          // directional traffic constraint
+          @value(4) LOADING,          // loading/unloading area with dwell rules
+          @value(5) HAZARD,           // known hazard zone (chemical, height, machinery)
+          @value(6) MONITORING,       // general observation zone (no specific constraint)
+          @value(7) GEOFENCE,         // boundary-crossing detection only
+          @value(8) OTHER
+        };
+      };
+
+      module event_type_enum {
+        // Event type — what happened.
+        enum EventType {
+          @value(0)  ZONE_ENTRY,      // object entered the zone
+          @value(1)  ZONE_EXIT,       // object exited the zone
+          @value(2)  DWELL_TIMEOUT,   // object exceeded dwell time limit
+          @value(3)  SPEED_VIOLATION, // object exceeded speed limit
+          @value(4)  CAPACITY_BREACH, // zone occupancy exceeded capacity
+          @value(5)  WRONG_WAY,       // object traveling against one-way direction
+          @value(6)  PROXIMITY_ALERT, // two tracked objects closer than safe distance
+          @value(7)  UNATTENDED,      // object stationary without associated person
+          @value(8)  ANOMALY,         // general anomaly (ML-detected, pattern deviation)
+          @value(9)  LINE_CROSS,      // object crossed a defined trip line
+          @value(10) LOITERING,       // person/object lingering beyond threshold
+          @value(11) TAILGATING,      // unauthorized entry following authorized person
+          @value(12) OTHER
+        };
+      };
+
+      module severity_enum {
+        // Severity level.
+        enum Severity {
+          @value(0) INFO,             // informational (logging, analytics)
+          @value(1) WARNING,          // advisory — may require attention
+          @value(2) ALERT,            // actionable — requires human review
+          @value(3) CRITICAL          // immediate intervention required
+        };
+      };
+
+      module event_state_enum {
+        // Event lifecycle state.
+        enum EventState {
+          @value(0) ACTIVE,           // event is ongoing
+          @value(1) RESOLVED,         // condition cleared (e.g., person left zone)
+          @value(2) ACKNOWLEDGED,     // human acknowledged the event
+          @value(3) SUPPRESSED        // suppressed by rule or operator
+        };
+      };
+    };
+
+    typedef enums::zone_kind_enum::ZoneKind ZoneKind;
+    typedef enums::event_type_enum::EventType EventType;
+    typedef enums::severity_enum::Severity Severity;
+    typedef enums::event_state_enum::EventState EventState;
 
     // ================================================================
     // 1. SPATIAL ZONES
     // ================================================================
 
-    // Zone classification — what kind of spatial region this is.
-    enum ZoneKind {
-      @value(0) RESTRICTED,       // entry prohibited or requires authorization
-      @value(1) SPEED_LIMITED,    // maximum speed enforced
-      @value(2) CAPACITY_LIMITED, // maximum occupancy enforced
-      @value(3) ONE_WAY,          // directional traffic constraint
-      @value(4) LOADING,          // loading/unloading area with dwell rules
-      @value(5) HAZARD,           // known hazard zone (chemical, height, machinery)
-      @value(6) MONITORING,       // general observation zone (no specific constraint)
-      @value(7) GEOFENCE,         // boundary-crossing detection only
-      @value(8) ZONE_OTHER
-    };
+    // (ZoneKind enum is defined in enums submodule; typedef above)
 
     // Named spatial region with associated rules.
     // Published with RELIABLE + TRANSIENT_LOCAL so late joiners
@@ -4073,38 +4126,7 @@ module spatial {
     // 2. SPATIAL EVENTS
     // ================================================================
 
-    // Event type — what happened.
-    enum EventType {
-      @value(0)  ZONE_ENTRY,      // object entered the zone
-      @value(1)  ZONE_EXIT,       // object exited the zone
-      @value(2)  DWELL_TIMEOUT,   // object exceeded dwell time limit
-      @value(3)  SPEED_VIOLATION, // object exceeded speed limit
-      @value(4)  CAPACITY_BREACH, // zone occupancy exceeded capacity
-      @value(5)  WRONG_WAY,       // object traveling against one-way direction
-      @value(6)  PROXIMITY_ALERT, // two tracked objects closer than safe distance
-      @value(7)  UNATTENDED,      // object stationary without associated person
-      @value(8)  ANOMALY,         // general anomaly (ML-detected, pattern deviation)
-      @value(9)  LINE_CROSS,      // object crossed a defined trip line
-      @value(10) LOITERING,       // person/object lingering beyond threshold
-      @value(11) TAILGATING,      // unauthorized entry following authorized person
-      @value(12) EVENT_OTHER
-    };
-
-    // Severity level.
-    enum Severity {
-      @value(0) INFO,             // informational (logging, analytics)
-      @value(1) WARNING,          // advisory — may require attention
-      @value(2) ALERT,            // actionable — requires human review
-      @value(3) CRITICAL          // immediate intervention required
-    };
-
-    // Event lifecycle state.
-    enum EventState {
-      @value(0) ACTIVE,           // event is ongoing
-      @value(1) RESOLVED,         // condition cleared (e.g., person left zone)
-      @value(2) ACKNOWLEDGED,     // human acknowledged the event
-      @value(3) SUPPRESSED        // suppressed by rule or operator
-    };
+    // (EventType, Severity, EventState enums are defined in enums submodule; typedefs above)
 
     // A spatially-grounded event.
     //
