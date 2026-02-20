@@ -3671,30 +3671,97 @@ module spatial {
     // 1. MAP METADATA
     // ================================================================
 
-    // Representation kind — what type of spatial map this describes.
-    // The enum identifies the high-level representation; the actual
-    // encoding and codec live in TileMeta.encoding as today.
-    enum MapKind {
-      @value(0) POSE_GRAPH,       // sparse keyframe graph (Node + Edge)
-      @value(1) OCCUPANCY_GRID,   // 2D or 2.5D grid (nav planning)
-      @value(2) POINT_CLOUD,      // dense 3D point cloud
-      @value(3) MESH,             // triangle mesh / surface
-      @value(4) TSDF,             // truncated signed distance field
-      @value(5) VOXEL,            // volumetric voxel grid
-      @value(6) NEURAL_FIELD,     // NeRF, 3DGS, neural SDF (see neural profile)
-      @value(7) FEATURE_MAP,      // visual place recognition / bag-of-words
-      @value(8) SEMANTIC_MAP,     // semantic / panoptic map layer
-      @value(9) MAP_OTHER
+    // Enums are placed in a nested module to avoid literal collisions
+    // at the module scope in IDL compilers.
+    module enums {
+      module map_kind {
+        // Representation kind — what type of spatial map this describes.
+        // The enum identifies the high-level representation; the actual
+        // encoding and codec live in TileMeta.encoding as today.
+        enum MapKind {
+          @value(0) POSE_GRAPH,       // sparse keyframe graph (Node + Edge)
+          @value(1) OCCUPANCY_GRID,   // 2D or 2.5D grid (nav planning)
+          @value(2) POINT_CLOUD,      // dense 3D point cloud
+          @value(3) MESH,             // triangle mesh / surface
+          @value(4) TSDF,             // truncated signed distance field
+          @value(5) VOXEL,            // volumetric voxel grid
+          @value(6) NEURAL_FIELD,     // NeRF, 3DGS, neural SDF (see neural profile)
+          @value(7) FEATURE_MAP,      // visual place recognition / bag-of-words
+          @value(8) SEMANTIC,         // semantic / panoptic map layer
+          @value(9) OTHER
+        };
+      };
+
+      module map_status {
+        // Map status — lifecycle state.
+        enum MapStatus {
+          @value(0) BUILDING,         // actively being constructed (SLAM running)
+          @value(1) OPTIMIZING,       // global optimization / bundle adjustment in progress
+          @value(2) STABLE,           // optimized and not actively changing
+          @value(3) FROZEN,           // immutable reference map (no further updates)
+          @value(4) DEPRECATED        // superseded by a newer map; consumers should migrate
+        };
+      };
+
+      module edge_type {
+        // Extends core::EdgeTypeCore (ODOM=0, LOOP=1) with constraint types
+        // needed for multi-agent, multi-sensor pose graph optimization.
+        //
+        // Values 0-1 are identical to EdgeTypeCore. Core consumers that
+        // only understand ODOM/LOOP can safely downcast by treating
+        // unknown values as LOOP.
+        enum EdgeType {
+          @value(0)  ODOM,            // odometry (sequential)
+          @value(1)  LOOP,            // intra-map loop closure
+          @value(2)  INTER_MAP,       // cross-map loop closure (between two agents' maps)
+          @value(3)  GPS,             // absolute pose from GNSS
+          @value(4)  ANCHOR,          // constraint from recognizing a shared anchor
+          @value(5)  IMU_PREINT,      // IMU pre-integration factor
+          @value(6)  GRAVITY,         // gravity direction prior
+          @value(7)  PLANE,           // planar constraint (e.g., ground plane)
+          @value(8)  SEMANTIC,        // semantic co-observation ("both see the same door")
+          @value(9)  MANUAL,          // human-provided alignment
+          @value(10) RANGE,           // range-only distance constraint (UWB, acoustic, BLE)
+          @value(11) OTHER
+        };
+      };
+
+      module alignment_method {
+        // How an alignment was established.
+        enum AlignmentMethod {
+          @value(0) VISUAL_LOOP,      // feature-based visual closure
+          @value(1) LIDAR_ICP,        // point cloud registration (ICP / NDT)
+          @value(2) ANCHOR_MATCH,     // shared anchor recognition
+          @value(3) GPS_COARSE,       // GPS-derived coarse alignment
+          @value(4) SEMANTIC_MATCH,   // semantic landmark co-observation
+          @value(5) MANUAL,           // operator-provided ground truth
+          @value(6) MULTI_METHOD,     // combination of methods
+          @value(7) RANGE_COARSE,     // range-only (UWB, acoustic) coarse alignment
+          @value(8) OTHER
+        };
+      };
+
+      module map_event_kind {
+        // Lightweight event published when a map undergoes a significant
+        // lifecycle transition. Subscribers (fleet managers, UI dashboards,
+        // data pipelines) can react without polling MapMeta.
+        enum MapEventKind {
+          @value(0) CREATED,          // new map started
+          @value(1) EPOCH_ADVANCE,    // graph_epoch incremented (rebase / merge)
+          @value(2) STATUS_CHANGE,    // status field changed (e.g., BUILDING → STABLE)
+          @value(3) ALIGNMENT_NEW,    // new MapAlignment published involving this map
+          @value(4) ALIGNMENT_UPDATE, // existing MapAlignment revised
+          @value(5) DEPRECATED,       // map marked deprecated
+          @value(6) DELETED           // map data removed from bus
+        };
+      };
     };
 
-    // Map status — lifecycle state.
-    enum MapStatus {
-      @value(0) BUILDING,         // actively being constructed (SLAM running)
-      @value(1) OPTIMIZING,       // global optimization / bundle adjustment in progress
-      @value(2) STABLE,           // optimized and not actively changing
-      @value(3) FROZEN,           // immutable reference map (no further updates)
-      @value(4) STATUS_DEPRECATED // superseded by a newer map; consumers should migrate
-    };
+    typedef enums::map_kind::MapKind MapKind;
+    typedef enums::map_status::MapStatus MapStatus;
+    typedef enums::edge_type::EdgeType EdgeType;
+    typedef enums::alignment_method::AlignmentMethod AlignmentMethod;
+    typedef enums::map_event_kind::MapEventKind MapEventKind;
 
     // Quality metrics — optional per-map health indicators.
     // All fields are optional via has_* flags to avoid mandating
@@ -3771,26 +3838,7 @@ module spatial {
     // 2. EXTENDED EDGE TYPES
     // ================================================================
 
-    // Extends core::EdgeTypeCore (ODOM=0, LOOP=1) with constraint types
-    // needed for multi-agent, multi-sensor pose graph optimization.
-    //
-    // Values 0-1 are identical to EdgeTypeCore. Core consumers that
-    // only understand ODOM/LOOP can safely downcast by treating
-    // unknown values as LOOP.
-    enum EdgeType {
-      @value(0)  ODOM,            // odometry (sequential)
-      @value(1)  LOOP,            // intra-map loop closure
-      @value(2)  INTER_MAP,       // cross-map loop closure (between two agents' maps)
-      @value(3)  GPS,             // absolute pose from GNSS
-      @value(4)  ANCHOR,          // constraint from recognizing a shared anchor
-      @value(5)  IMU_PREINT,      // IMU pre-integration factor
-      @value(6)  GRAVITY,         // gravity direction prior
-      @value(7)  PLANE,           // planar constraint (e.g., ground plane)
-      @value(8)  SEMANTIC_EDGE,   // semantic co-observation ("both see the same door")
-      @value(9)  EDGE_MANUAL,     // human-provided alignment
-      @value(10) RANGE,           // range-only distance constraint (UWB, acoustic, BLE)
-      @value(11) EDGE_OTHER
-    };
+    // (EdgeType enum is defined in enums submodule; typedef above)
 
     // Extended edge that carries the richer EdgeType plus provenance.
     // Supplements core::Edge — publishers that produce multi-source
@@ -3837,18 +3885,7 @@ module spatial {
     // 3. MAP ALIGNMENT
     // ================================================================
 
-    // How an alignment was established.
-    enum AlignmentMethod {
-      @value(0) VISUAL_LOOP,      // feature-based visual closure
-      @value(1) LIDAR_ICP,        // point cloud registration (ICP / NDT)
-      @value(2) ANCHOR_MATCH,     // shared anchor recognition
-      @value(3) GPS_COARSE,       // GPS-derived coarse alignment
-      @value(4) SEMANTIC_MATCH,   // semantic landmark co-observation
-      @value(5) ALIGN_MANUAL,     // operator-provided ground truth
-      @value(6) MULTI_METHOD,     // combination of methods
-      @value(7) RANGE_COARSE,     // range-only (UWB, acoustic) coarse alignment
-      @value(8) ALIGN_OTHER
-    };
+    // (AlignmentMethod enum is defined in enums submodule; typedef above)
 
     // Inter-map transform: aligns map_id_from's frame to map_id_to's frame,
     // with provenance and quality metadata.
@@ -3891,18 +3928,7 @@ module spatial {
     // 4. MAP LIFECYCLE EVENTS
     // ================================================================
 
-    // Lightweight event published when a map undergoes a significant
-    // lifecycle transition. Subscribers (fleet managers, UI dashboards,
-    // data pipelines) can react without polling MapMeta.
-    enum MapEventKind {
-      @value(0) CREATED,          // new map started
-      @value(1) EPOCH_ADVANCE,    // graph_epoch incremented (rebase / merge)
-      @value(2) STATUS_CHANGE,    // status field changed (e.g., BUILDING → STABLE)
-      @value(3) ALIGNMENT_NEW,    // new MapAlignment published involving this map
-      @value(4) ALIGNMENT_UPDATE, // existing MapAlignment revised
-      @value(5) EVENT_DEPRECATED, // map marked deprecated
-      @value(6) DELETED           // map data removed from bus
-    };
+    // (MapEventKind enum is defined in enums submodule; typedef above)
 
     @extensibility(APPENDABLE) struct MapEvent {
       @key string map_id;

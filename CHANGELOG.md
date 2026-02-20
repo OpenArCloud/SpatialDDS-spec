@@ -20,7 +20,7 @@
 - Vision + conformance: added `PixFormat.DEPTH16` with normative depth semantics and introduced ScanNet indoor RGB-D conformance (Spatial Events, mesh, instance segmentation, depth).
 - Discovery bootstrap: added geospatial DNS-SD binding with geohash subdomains, updated bootstrap flow diagram, and referenced DNS-SD/SRV RFCs.
 - Discovery HTTP binding: restored `/.well-known/spatialdds/search` with CoverageQuery-equivalent semantics, GET geohash convenience, and updated discovery layering and Appendix B preamble.
-- Mapping/Events IDLs: added `mapping.idl` and `events.idl` files and normalized enum literal names to avoid IDL scope collisions.
+- Mapping/Events IDLs: added `mapping.idl` and `events.idl` files and isolated mapping enums in submodules to avoid IDL literal collisions.
 
 ## Version 1.4 - 2026-02-07
 
