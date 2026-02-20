@@ -31,6 +31,7 @@ nav:
           - Lidar: v1.5/appendix-d/#lidar-extension
           - AR + Geo: v1.5/appendix-d/#ar-geo-extension
           - Mapping: v1.5/appendix-d/#mapping-extension
+          - Spatial Events: v1.5/appendix-d/#spatial-events-extension
       - Appendix E - Provisional Extension Examples: v1.5/appendix-e.md
       - Appendix F - SpatialDDS URI Scheme (ABNF): v1.5/appendix-f.md
       - Appendix F.X - Discovery Query Expression (ABNF): v1.5/appendix-fx-discovery-query-expression.md

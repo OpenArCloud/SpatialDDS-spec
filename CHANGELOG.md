@@ -16,7 +16,7 @@
 - Conformance and examples: added nuScenes + DeepSense harnesses, refreshed Appendix I, and updated examples/consistency across appendices.
 - Documentation polish: new conceptual overview, improved profiles/footnotes/tables, and broad cleanup of formatting and consistency issues.
 - Mapping extension updates: added RANGE constraints in `mapping::EdgeType`, RANGE_COARSE alignment method, and S3E conformance coverage in Appendix I.
-- Appendix I framing: updated to a three-dataset conformance suite (nuScenes, DeepSense 6G, S3E), moved the reproducing section to follow I.3, and clarified the manual S3E analysis and updated limitations.
+- Appendix I framing: updated to a four-dataset conformance suite (nuScenes, DeepSense 6G, S3E, ScanNet), moved the reproducing section to follow I.4, and clarified the manual S3E/ScanNet analysis and updated limitations.
 - Vision + conformance: added `PixFormat.DEPTH16` with normative depth semantics and introduced ScanNet indoor RGB-D conformance (Spatial Events, mesh, instance segmentation, depth).
 - Discovery bootstrap: added geospatial DNS-SD binding with geohash subdomains, updated bootstrap flow diagram, and referenced DNS-SD/SRV RFCs.
 - Discovery HTTP binding: restored `/.well-known/spatialdds/search` with CoverageQuery-equivalent semantics, GET geohash convenience, and updated discovery layering and Appendix B preamble.
