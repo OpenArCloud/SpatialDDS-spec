@@ -1,0 +1,231 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Spatial Events Extension 1.5
+//
+// Typed, spatially-scoped events for zone monitoring, anomaly detection,
+// and smart infrastructure alerting.
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module events {
+
+    const string MODULE_ID = "spatial.events/1.5";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::PoseSE3   PoseSE3;
+    typedef spatial::core::FrameRef  FrameRef;
+    typedef spatial::core::Aabb3     Aabb3;
+    typedef spatial::core::BlobRef   BlobRef;
+    typedef spatial::core::GeoPose   GeoPose;
+    typedef spatial::common::MetaKV  MetaKV;
+
+
+    // ================================================================
+    // 1. SPATIAL ZONES
+    // ================================================================
+
+    // Zone classification — what kind of spatial region this is.
+    enum ZoneKind {
+      @value(0) RESTRICTED,       // entry prohibited or requires authorization
+      @value(1) SPEED_LIMITED,    // maximum speed enforced
+      @value(2) CAPACITY_LIMITED, // maximum occupancy enforced
+      @value(3) ONE_WAY,          // directional traffic constraint
+      @value(4) LOADING,          // loading/unloading area with dwell rules
+      @value(5) HAZARD,           // known hazard zone (chemical, height, machinery)
+      @value(6) MONITORING,       // general observation zone (no specific constraint)
+      @value(7) GEOFENCE,         // boundary-crossing detection only
+      @value(8) ZONE_OTHER
+    };
+
+    // Named spatial region with associated rules.
+    // Published with RELIABLE + TRANSIENT_LOCAL so late joiners
+    // receive the full zone layout.
+    @extensibility(APPENDABLE) struct SpatialZone {
+      @key string zone_id;              // unique zone identifier
+
+      string name;                      // human-readable name (e.g., "Loading Bay 3")
+      ZoneKind kind;                    // zone classification
+      FrameRef frame_ref;               // coordinate frame for geometry
+
+      // Zone geometry (axis-aligned in frame_ref)
+      boolean has_bounds;
+      Aabb3 bounds;                     // 3D bounding box (valid when has_bounds == true)
+
+      // Optional geo-anchor for earth-fixed zones
+      boolean has_geopose;
+      GeoPose geopose;                  // zone center in WGS84
+
+      // Zone rules (optional per kind)
+      boolean has_speed_limit_mps;
+      float   speed_limit_mps;          // max speed in m/s (for SPEED_LIMITED)
+
+      boolean has_capacity;
+      uint32  capacity;                 // max occupancy count (for CAPACITY_LIMITED)
+
+      boolean has_dwell_limit_sec;
+      float   dwell_limit_sec;          // max dwell time in seconds (for LOADING, RESTRICTED)
+
+      // Applicable object classes — which detection class_ids trigger events.
+      // Empty means all classes.
+      sequence<string, 32> class_filter;
+
+      // Schedule (optional) — zone is only active during specified hours.
+      // Format: ISO 8601 recurring interval or cron-like string in attributes.
+      boolean has_schedule;
+      string  schedule;                 // e.g., "R/2024-01-01T06:00:00/PT12H" or deployment-specific
+
+      // Owner / authority
+      string provider_id;               // who defines this zone
+      Time   stamp;                     // last update time
+
+      // Extensible metadata
+      sequence<MetaKV, 16> attributes;
+
+      string schema_version;            // MUST be "spatial.events/1.5"
+    };
+
+
+    // ================================================================
+    // 2. SPATIAL EVENTS
+    // ================================================================
+
+    // Event type — what happened.
+    enum EventType {
+      @value(0)  ZONE_ENTRY,      // object entered the zone
+      @value(1)  ZONE_EXIT,       // object exited the zone
+      @value(2)  DWELL_TIMEOUT,   // object exceeded dwell time limit
+      @value(3)  SPEED_VIOLATION, // object exceeded speed limit
+      @value(4)  CAPACITY_BREACH, // zone occupancy exceeded capacity
+      @value(5)  WRONG_WAY,       // object traveling against one-way direction
+      @value(6)  PROXIMITY_ALERT, // two tracked objects closer than safe distance
+      @value(7)  UNATTENDED,      // object stationary without associated person
+      @value(8)  ANOMALY,         // general anomaly (ML-detected, pattern deviation)
+      @value(9)  LINE_CROSS,      // object crossed a defined trip line
+      @value(10) LOITERING,       // person/object lingering beyond threshold
+      @value(11) TAILGATING,      // unauthorized entry following authorized person
+      @value(12) EVENT_OTHER
+    };
+
+    // Severity level.
+    enum Severity {
+      @value(0) INFO,             // informational (logging, analytics)
+      @value(1) WARNING,          // advisory — may require attention
+      @value(2) ALERT,            // actionable — requires human review
+      @value(3) CRITICAL          // immediate intervention required
+    };
+
+    // Event lifecycle state.
+    enum EventState {
+      @value(0) ACTIVE,           // event is ongoing
+      @value(1) RESOLVED,         // condition cleared (e.g., person left zone)
+      @value(2) ACKNOWLEDGED,     // human acknowledged the event
+      @value(3) SUPPRESSED        // suppressed by rule or operator
+    };
+
+    // A spatially-grounded event.
+    //
+    // Keyed by event_id. Publishers update the same event_id as state
+    // changes (ACTIVE → RESOLVED). Subscribers use KEEP_LAST per key
+    // to see the latest state of each event.
+    @extensibility(APPENDABLE) struct SpatialEvent {
+      @key string event_id;             // unique event identifier
+
+      EventType  type;                  // what happened
+      Severity   severity;              // how urgent
+      EventState state;                 // lifecycle state
+
+      // Where — zone reference (optional; not all events are zone-scoped)
+      boolean has_zone_id;
+      string  zone_id;                  // references SpatialZone.zone_id
+
+      // Where — 3D position of the event (in the zone's or scene's frame_ref)
+      boolean has_position;
+      spatial::common::Vec3 position;   // event location (meters)
+      FrameRef frame_ref;               // coordinate frame for position
+
+      // What — triggering detection(s)
+      boolean has_trigger_det_id;
+      string  trigger_det_id;           // primary triggering Detection3D.det_id
+
+      boolean has_trigger_track_id;
+      string  trigger_track_id;         // tracked object ID (from Detection3D.track_id)
+
+      string  trigger_class_id;         // class of triggering object (e.g., "person", "forklift")
+
+      // Who — secondary object for relational events (PROXIMITY_ALERT, TAILGATING)
+      boolean has_secondary_det_id;
+      string  secondary_det_id;
+
+      // Measured values (populated per event type)
+      boolean has_measured_speed_mps;
+      float   measured_speed_mps;       // for SPEED_VIOLATION
+
+      boolean has_measured_dwell_sec;
+      float   measured_dwell_sec;       // for DWELL_TIMEOUT, LOITERING, UNATTENDED
+
+      boolean has_measured_distance_m;
+      float   measured_distance_m;      // for PROXIMITY_ALERT
+
+      boolean has_zone_occupancy;
+      uint32  zone_occupancy;           // current count for CAPACITY_BREACH
+
+      // Confidence
+      float   confidence;               // [0..1] — event detection confidence
+
+      // Evidence — optional media snapshot or clip
+      boolean has_evidence;
+      BlobRef evidence;                 // reference to snapshot image or video clip
+
+      // Narrative — optional human-readable description
+      boolean has_description;
+      string  description;              // e.g., "Forklift stopped in pedestrian corridor
+                                        //  near anchor loading-bay-3 for 4 minutes"
+
+      // Timing
+      Time   event_start;               // when the event condition began
+      Time   stamp;                     // latest update time (may differ from event_start)
+
+      // Producer
+      string source_id;                 // who detected this event
+
+      // Extensible metadata
+      sequence<MetaKV, 8> attributes;
+
+      string schema_version;            // MUST be "spatial.events/1.5"
+    };
+
+
+    // ================================================================
+    // 3. ZONE STATE (periodic summary)
+    // ================================================================
+
+    // Lightweight periodic snapshot of a zone's current status.
+    // Enables dashboards and capacity management without maintaining
+    // event counters client-side.
+    @extensibility(APPENDABLE) struct ZoneState {
+      @key string zone_id;              // references SpatialZone.zone_id
+
+      uint32 current_occupancy;         // number of tracked objects currently in zone
+      boolean has_capacity;
+      uint32  capacity;                 // echoed from SpatialZone for convenience
+
+      // Active alert count by severity
+      uint32 active_info;
+      uint32 active_warning;
+      uint32 active_alert;
+      uint32 active_critical;
+
+      // Class breakdown (optional — top N classes present)
+      sequence<MetaKV, 8> class_counts; // namespace = class_id, json = {"count": N}
+
+      Time   stamp;
+      string source_id;
+      // schema_version intentionally omitted: ZoneState is a lightweight
+      // summary; version is inferred from the accompanying SpatialZone.
+    };
+
+  }; // module events
+};   // module spatial

@@ -3683,8 +3683,8 @@ module spatial {
       @value(5) VOXEL,            // volumetric voxel grid
       @value(6) NEURAL_FIELD,     // NeRF, 3DGS, neural SDF (see neural profile)
       @value(7) FEATURE_MAP,      // visual place recognition / bag-of-words
-      @value(8) SEMANTIC,         // semantic / panoptic map layer
-      @value(9) OTHER
+      @value(8) SEMANTIC_MAP,     // semantic / panoptic map layer
+      @value(9) MAP_OTHER
     };
 
     // Map status — lifecycle state.
@@ -3693,7 +3693,7 @@ module spatial {
       @value(1) OPTIMIZING,       // global optimization / bundle adjustment in progress
       @value(2) STABLE,           // optimized and not actively changing
       @value(3) FROZEN,           // immutable reference map (no further updates)
-      @value(4) DEPRECATED        // superseded by a newer map; consumers should migrate
+      @value(4) STATUS_DEPRECATED // superseded by a newer map; consumers should migrate
     };
 
     // Quality metrics — optional per-map health indicators.
@@ -3786,10 +3786,10 @@ module spatial {
       @value(5)  IMU_PREINT,      // IMU pre-integration factor
       @value(6)  GRAVITY,         // gravity direction prior
       @value(7)  PLANE,           // planar constraint (e.g., ground plane)
-      @value(8)  SEMANTIC,        // semantic co-observation ("both see the same door")
-      @value(9)  MANUAL,          // human-provided alignment
+      @value(8)  SEMANTIC_EDGE,   // semantic co-observation ("both see the same door")
+      @value(9)  EDGE_MANUAL,     // human-provided alignment
       @value(10) RANGE,           // range-only distance constraint (UWB, acoustic, BLE)
-      @value(11) OTHER
+      @value(11) EDGE_OTHER
     };
 
     // Extended edge that carries the richer EdgeType plus provenance.
@@ -3844,10 +3844,10 @@ module spatial {
       @value(2) ANCHOR_MATCH,     // shared anchor recognition
       @value(3) GPS_COARSE,       // GPS-derived coarse alignment
       @value(4) SEMANTIC_MATCH,   // semantic landmark co-observation
-      @value(5) MANUAL,           // operator-provided ground truth
+      @value(5) ALIGN_MANUAL,     // operator-provided ground truth
       @value(6) MULTI_METHOD,     // combination of methods
       @value(7) RANGE_COARSE,     // range-only (UWB, acoustic) coarse alignment
-      @value(8) OTHER
+      @value(8) ALIGN_OTHER
     };
 
     // Inter-map transform: aligns map_id_from's frame to map_id_to's frame,
@@ -3900,7 +3900,7 @@ module spatial {
       @value(2) STATUS_CHANGE,    // status field changed (e.g., BUILDING → STABLE)
       @value(3) ALIGNMENT_NEW,    // new MapAlignment published involving this map
       @value(4) ALIGNMENT_UPDATE, // existing MapAlignment revised
-      @value(5) DEPRECATED,       // map marked deprecated
+      @value(5) EVENT_DEPRECATED, // map marked deprecated
       @value(6) DELETED           // map data removed from bus
     };
 
@@ -3927,6 +3927,7 @@ module spatial {
 
   }; // module mapping
 };   // module spatial
+
 ```
 
 ### **Spatial Events Extension**
@@ -3991,7 +3992,7 @@ module spatial {
       @value(5) HAZARD,           // known hazard zone (chemical, height, machinery)
       @value(6) MONITORING,       // general observation zone (no specific constraint)
       @value(7) GEOFENCE,         // boundary-crossing detection only
-      @value(8) OTHER
+      @value(8) ZONE_OTHER
     };
 
     // Named spatial region with associated rules.
@@ -4060,7 +4061,7 @@ module spatial {
       @value(9)  LINE_CROSS,      // object crossed a defined trip line
       @value(10) LOITERING,       // person/object lingering beyond threshold
       @value(11) TAILGATING,      // unauthorized entry following authorized person
-      @value(12) OTHER
+      @value(12) EVENT_OTHER
     };
 
     // Severity level.
@@ -4183,6 +4184,7 @@ module spatial {
 
   }; // module events
 };   // module spatial
+
 ```
 
 **Example JSON (Informative)**
