@@ -919,7 +919,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
-* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `radar_tensor`, `seg_mask`, `desc_array`, `rf_beam`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`, `RF_BEAM_RT`}.
+* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `radar_tensor`, `seg_mask`, `desc_array`, `rf_beam`, `radio_scan`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`, `RF_BEAM_RT`, `RADIO_SCAN_RT`}.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
 * `FeatureFlag` is a struct (not a raw string) to allow future appended fields (e.g., version or parameters) without breaking wire compatibility.
@@ -1057,6 +1057,7 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `radar_detection` | Per-frame detection set | Structured radar detections |
 | `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube |
 | `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements |
+| `radio_scan` | Per-scan radio observations | WiFi/BLE/UWB/cellular fingerprint observations |
 | `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches |
 | `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
@@ -1084,6 +1085,7 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `VIDEO_ARCHIVE` | Reliable | Ordered | 200 ms | Replay or stored media |
 | `RADAR_RT` | Partial | Ordered | 20 ms | Real-time radar data (detections or tensors) |
 | `RF_BEAM_RT` | Best-effort | Ordered | 20 ms | Real-time beam sweep data |
+| `RADIO_SCAN_RT` | Best-effort | Ordered | 500 ms | Radio fingerprint scans (WiFi/BLE/UWB) |
 | `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
 | `DESC_BATCH` | Reliable | Ordered | 100 ms | Descriptor or feature batches |
 | `MAP_META` | Reliable | Ordered | 1000 ms | Map descriptors, alignments, events |
@@ -1184,7 +1186,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet`/`RadTensorMeta`/`RadTensorFrame` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. The provisional `rf_beam` extension adds `RfBeamMeta`/`RfBeamFrame`/`RfBeamArraySet` for phased-array beam power measurements. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet`/`RadTensorMeta`/`RadTensorFrame` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. The provisional `rf_beam` extension adds `RfBeamMeta`/`RfBeamFrame`/`RfBeamArraySet` for phased-array beam power measurements, and the provisional `radio` extension adds `RadioSensorMeta`/`RadioScan` for WiFi/BLE/UWB fingerprint transport. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
@@ -1213,8 +1215,12 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 - spatial.semantics/1.5
 - spatial.mapping/1.5
 - spatial.events/1.5
+- spatial.neural/1.5 (Provisional; Appendix E)
+- spatial.agent/1.5 (Provisional; Appendix E)
+- spatial.sensing.rf_beam/1.5 (Provisional; Appendix E)
+- spatial.sensing.radio/1.5 (Provisional; Appendix E)
 
-> `spatial.manifest/1.5` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional extensions (`spatial.neural/1.5`, `spatial.agent/1.5`, `spatial.sensing.rf_beam/1.5`) are not listed here; see Appendix E.
+> `spatial.manifest/1.5` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
@@ -5041,6 +5047,291 @@ module spatial { module sensing { module rf_beam {
 
 ```
 
+### **Example: Radio Fingerprint Extension (Provisional)**
+
+This profile provides typed transport for radio-environment observations used by radio-assisted localization and indoor positioning pipelines. It targets commodity radios (WiFi, BLE, UWB, cellular) and closes the "radio via freeform metadata only" gap by introducing schema-enforced observation structs.
+
+The profile defines transport only. It does not define positioning, trilateration, filtering, or sensor-fusion algorithms.
+
+**Module ID:** `spatial.sensing.radio/1.5`  
+**Dependency:** `spatial.sensing.common@1.x`  
+**Status:** Provisional (K-R1 maturity gate)
+
+#### **Overview**
+
+`RadioSensorMeta` follows the static Meta pattern (RELIABLE + TRANSIENT_LOCAL) and publishes sensor capabilities. `RadioScan` is the streaming message carrying per-scan observations. Each scan is a snapshot of visible transmitters for one radio technology at one scan instant/window.
+
+#### **Relationship to `sensing.rf_beam`**
+
+`sensing.rf_beam` covers phased-array mmWave beam power vectors and ISAC-style beam management.  
+`sensing.radio` covers commodity radio fingerprints and ranging observations (WiFi/BLE/UWB/cellular).  
+They are complementary and may be published together by the same node.
+
+| Profile | Scope | Typical Frequency | Key Measurement |
+|---|---|---|---|
+| `sensing.rf_beam` | mmWave phased arrays (28/60/140 GHz) | 10 Hz per sweep | Per-beam power vector |
+| `sensing.radio` | WiFi/BLE/UWB/cellular | 0.1–10 Hz per scan | Per-transmitter RSSI/RTT/AoA/Range |
+
+#### **IDL (Provisional)**
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Radio Fingerprint (sensing.radio) 1.5 — Provisional Extension
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial { module sensing { module radio {
+
+  const string MODULE_ID = "spatial.sensing.radio/1.5";
+
+  typedef builtin::Time                          Time;
+  typedef spatial::core::PoseSE3                 PoseSE3;
+  typedef spatial::common::FrameRef              FrameRef;
+  typedef spatial::common::MetaKV                MetaKV;
+  typedef spatial::sensing::common::StreamMeta   StreamMeta;
+
+  enum RadioType {
+    @value(0)   WIFI,
+    @value(1)   BLE,
+    @value(2)   BT_CLASSIC,
+    @value(3)   UWB,
+    @value(4)   CELLULAR,
+    @value(5)   LORA,
+    @value(255) OTHER_RADIO
+  };
+
+  enum WifiBand {
+    @value(0) BAND_UNKNOWN,
+    @value(1) BAND_2_4GHZ,
+    @value(2) BAND_5GHZ,
+    @value(3) BAND_6GHZ,
+    @value(4) BAND_60GHZ
+  };
+
+  enum RadioMeasurementKind {
+    @value(0)  RSSI,
+    @value(1)  RTT_NS,
+    @value(2)  AOA_DEG,
+    @value(3)  RANGE_M,
+    @value(4)  RSRP,
+    @value(5)  CSI_REF,
+    @value(255) OTHER_MEASURE
+  };
+
+  @extensibility(APPENDABLE) struct RadioObservation {
+    string               identifier;
+    RadioMeasurementKind measurement_kind;
+    float                value;
+
+    boolean  has_frequency;
+    float    frequency_mhz;
+    boolean  has_band;
+    WifiBand band;
+    boolean  has_ssid;
+    string   ssid;
+    boolean  has_channel;
+    uint16   channel;
+
+    boolean  has_major_minor;
+    uint16   major;
+    uint16   minor;
+    boolean  has_tx_power;
+    int8     tx_power_dbm;
+
+    boolean  has_range;
+    float    range_m;
+    boolean  has_range_std;
+    float    range_std_m;
+
+    boolean  has_aoa_azimuth;
+    float    aoa_azimuth_deg;
+    boolean  has_aoa_elevation;
+    float    aoa_elevation_deg;
+
+    boolean  has_noise_floor;
+    float    noise_floor_dbm;
+    boolean  has_measurement_count;
+    uint8    measurement_count;
+  };
+
+  @extensibility(APPENDABLE) struct RadioScan {
+    @key string sensor_id;
+    RadioType   radio_type;
+    uint64      scan_seq;
+    Time        stamp;
+
+    boolean     has_scan_duration;
+    float       scan_duration_s;
+
+    sequence<RadioObservation, 256> observations;
+
+    boolean     has_aggregation_window;
+    float       aggregation_window_s;
+
+    string      source_id;
+
+    boolean     has_sensor_pose;
+    PoseSE3     sensor_pose;
+    FrameRef    pose_frame_ref;
+
+    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+  };
+
+  @extensibility(APPENDABLE) struct RadioSensorMeta {
+    @key string sensor_id;
+    StreamMeta  base;
+
+    RadioType   radio_type;
+
+    boolean     has_rssi;
+    boolean     has_rtt;
+    boolean     has_aoa;
+    boolean     has_csi;
+
+    boolean     has_wifi_bands;
+    sequence<WifiBand, 4> supported_bands;
+
+    boolean     has_ble_version;
+    string      ble_version;
+
+    string      device_model;
+    string      platform;
+
+    boolean     has_max_observations;
+    uint16      max_observations;
+    boolean     has_typical_scan_duration;
+    float       typical_scan_duration_s;
+
+    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+  };
+
+}; }; };
+
+```
+
+#### **Observation Semantics (Normative)**
+
+`measurement_kind` determines the unit and interpretation of `RadioObservation.value`.
+
+| Kind | Value Units | Typical Source |
+|---|---|---|
+| `RSSI` | dBm | WiFi and BLE scans |
+| `RTT_NS` | nanoseconds | WiFi FTM, UWB TWR |
+| `AOA_DEG` | degrees | UWB/BLE AoA |
+| `RANGE_M` | meters | Derived range |
+| `RSRP` | dBm | Cellular |
+| `CSI_REF` | n/a (`value` unused) | CSI blob reference workflows |
+
+A single `RadioScan` MAY include mixed `measurement_kind` values.
+
+#### **Identifier Conventions (Normative)**
+
+| RadioType | Identifier Format | Example |
+|---|---|---|
+| `WIFI` | BSSID, lowercase colon-separated hex | `aa:bb:cc:dd:ee:ff` |
+| `BLE` | UUID (uppercase with hyphens) or MAC | `12345678-1234-1234-1234-123456789ABC` |
+| `UWB` | Short address or session ID | `0x1A2B` |
+| `CELLULAR` | MCC-MNC-LAC-CID | `310-260-12345-67890` |
+
+Consumers performing fingerprint matching SHOULD normalize identifiers before comparison.
+
+#### **Scan Timing and Aggregation (Normative)**
+
+- `stamp` MUST represent the midpoint of the scan window.
+- If `has_scan_duration == true`, `scan_duration_s` MUST report the full scan-window duration.
+- If `has_aggregation_window == true`, `aggregation_window_s` reports the total time window used to aggregate observations from multiple scans.
+- Producers publishing raw scans SHOULD leave `has_aggregation_window = false`.
+
+#### **Privacy Considerations (Normative Guidance)**
+
+Radio identifiers can expose device/network identity. Producers in privacy-sensitive deployments SHOULD:
+- anonymize or hash identifiers where permitted,
+- avoid publishing SSIDs unless explicitly needed, and
+- document identifier handling and retention policy.
+
+#### **Topic Patterns**
+
+| Topic | Message Type | QoS |
+|---|---|---|
+| `spatialdds/<scene>/radio/<sensor_id>/scan/v1` | `RadioScan` | `RADIO_SCAN_RT` |
+| `spatialdds/<scene>/radio/<sensor_id>/meta/v1` | `RadioSensorMeta` | RELIABLE + TRANSIENT_LOCAL |
+
+#### **Example JSON (Informative)**
+
+WiFi scan:
+```json
+{
+  "sensor_id": "hololens2-wifi-01",
+  "radio_type": "WIFI",
+  "scan_seq": 42,
+  "stamp": { "sec": 1714071012, "nanosec": 500000000 },
+  "has_scan_duration": true,
+  "scan_duration_s": 2.1,
+  "observations": [
+    {
+      "identifier": "aa:bb:cc:dd:ee:01",
+      "measurement_kind": "RSSI",
+      "value": -52.0,
+      "has_frequency": true,
+      "frequency_mhz": 5180.0,
+      "has_band": true,
+      "band": "BAND_5GHZ",
+      "has_ssid": true,
+      "ssid": "ETH-WiFi",
+      "has_channel": true,
+      "channel": 36
+    }
+  ],
+  "has_aggregation_window": true,
+  "aggregation_window_s": 4.0,
+  "source_id": "lamar-cab-hololens-session-17",
+  "schema_version": "spatial.sensing.radio/1.5"
+}
+```
+
+UWB ranging round:
+```json
+{
+  "sensor_id": "uwb-tag-reader-01",
+  "radio_type": "UWB",
+  "scan_seq": 5017,
+  "stamp": { "sec": 1714071020, "nanosec": 250000000 },
+  "observations": [
+    {
+      "identifier": "0x1A2B",
+      "measurement_kind": "RANGE_M",
+      "value": 3.21,
+      "has_range": true,
+      "range_m": 3.21,
+      "has_range_std": true,
+      "range_std_m": 0.08,
+      "has_aoa_azimuth": true,
+      "aoa_azimuth_deg": 23.5
+    }
+  ],
+  "source_id": "warehouse-uwb-reader-alpha",
+  "schema_version": "spatial.sensing.radio/1.5"
+}
+```
+
+#### **Maturity Gate (K-R1)**
+
+Promotion to stable requires:
+1. At least one conformance dataset exercising WiFi and BLE paths with at least 20 checks passing.
+2. At least one independent implementation ingesting reference WiFi/BLE files through `RadioScan`.
+3. No breaking IDL changes for six months after initial publication.
+
 ### **Integration Notes (Informative)**
 
 Discovery integration: Neural and agent services advertise via `Announce` with `ServiceKind::OTHER`. To signal neural or agent capabilities, services SHOULD include feature flags in `caps.features` such as `neural.field_meta`, `neural.view_synth`, or `agent.tasking`.
@@ -5058,6 +5349,8 @@ Topic naming: following `spatialdds/<domain>/<stream>/<type>/<version>`:
 | `TaskOffer` | `spatialdds/agent/fleet/task_offer/v1` |
 | `TaskAssignment` | `spatialdds/agent/fleet/task_assignment/v1` |
 | `TaskHandoff` | `spatialdds/agent/fleet/task_handoff/v1` |
+| `RadioSensorMeta` | `spatialdds/<scene>/radio/<sensor_id>/meta/v1` |
+| `RadioScan` | `spatialdds/<scene>/radio/<sensor_id>/scan/v1` |
 
 QoS suggestions (informative):
 
@@ -5072,8 +5365,10 @@ QoS suggestions (informative):
 | `TaskOffer` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
 | `TaskAssignment` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `TaskHandoff` | RELIABLE | VOLATILE | KEEP_ALL |
+| `RadioSensorMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `RadioScan` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) |
 
-Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, and `spatial.sensing.rf_beam/1.5` remain in Appendix E as provisional and are not listed in the Profile Matrix in §3.5. When promoted to stable in a future version, they move to Appendix D and enter the matrix. (`spatial.mapping/1.5` and `spatial.events/1.5` are stable Appendix D extensions and are already listed in the matrix.)
+Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, `spatial.sensing.rf_beam/1.5`, and `spatial.sensing.radio/1.5` are provisional Appendix E profiles. When promoted to stable in a future version, they move to Appendix D.
 
 ## **Appendix F: SpatialDDS URI Scheme (ABNF)**
 
@@ -5324,11 +5619,11 @@ This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared ancho
 
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against four public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against four complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
 
 | Dataset | Focus | Modalities Stressed |
 |---|---|---|
@@ -5336,8 +5631,9 @@ Sensor-data specifications risk becoming disconnected from real-world workloads 
 | **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal → perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
 | **S3E** (Sun Yat-sen University / HKUST) | Multi-agent coordination | 3 UGVs × (lidar, stereo, IMU), UWB inter-robot ranging, RTK-GNSS, collaborative SLAM |
 | **ScanNet** (TU Munich / Princeton) | Indoor scene understanding | RGB-D depth frames, 3D surface mesh, instance segmentation (NYU40), room-level zones, 20 scene types |
+| **LaMAR** (CVG ETH Zurich / Microsoft) | AR localization with radio assistance | WiFi scans (`wifi.txt`), Bluetooth scans (`bt.txt`), RGB images, AR trajectories, visual localization metadata |
 
-nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary.
+nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary. LaMAR was chosen because it provides paired visual and radio observations (WiFi/Bluetooth) for AR localization and directly tests whether radio fingerprints can be represented as first-class typed streams rather than ad hoc JSON metadata.
 
 The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
@@ -5856,6 +6152,79 @@ This pipeline exercises the Spatial Events extension end-to-end — from zone de
 
 ---
 
+### **I.5 LaMAR Conformance (AR Localization with Radio Fingerprints)**
+
+#### Reference Dataset
+
+**LaMAR** (CVG ETH Zurich / Microsoft) is an AR localization benchmark containing aligned visual and radio observations:
+
+| Dimension | Value |
+|---|---|
+| Captures | Indoor/outdoor smartphone + HoloLens trajectories |
+| Visual data | RGB image streams for retrieval/localization |
+| Radio data | WiFi scans (`wifi.txt`) and Bluetooth scans (`bt.txt`) |
+| Targets | Visual localization recall under radio-assisted retrieval |
+| Notable finding | WiFi/BT-assisted retrieval improves localization recall (+4.6% to +17.5%) |
+
+LaMAR was selected to validate radio-assisted AR workflows and close the prior LM-1 gap where radio observations were carried only as ad hoc `MetaKV` JSON payloads.
+
+#### Checks Performed (22)
+
+##### Radio Profile Coverage (12 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LM-01 | Typed per-scan container | `RadioScan` carries one scan event with `sensor_id`, `radio_type`, `scan_seq`, and `stamp`. |
+| LM-02 | Typed per-observation container | `RadioObservation` carries one transmitter measurement (`identifier`, `measurement_kind`, `value`). |
+| LM-03 | WiFi identifier format | BSSID maps to lowercase colon-separated `identifier`. |
+| LM-04 | BLE identifier format | Beacon UUID/MAC maps to canonical `identifier`. |
+| LM-05 | RSSI representation | RSSI maps to `measurement_kind = RSSI`, `value` in dBm. |
+| LM-06 | WiFi frequency/channel | `frequency_mhz`, `band`, and `channel` map with `has_*` guards. |
+| LM-07 | BLE major/minor | iBeacon major/minor maps with `has_major_minor`. |
+| LM-08 | BLE Tx power | Advertised Tx power maps with `has_tx_power`. |
+| LM-09 | Scan duration | Variable scan-window duration maps to `scan_duration_s`. |
+| LM-10 | Aggregation window | ±window aggregation maps to `aggregation_window_s`. |
+| LM-11 | Sensor metadata | `RadioSensorMeta` captures capability flags and adapter metadata. |
+| LM-12 | Schema tag | `schema_version` set to `spatial.sensing.radio/1.5`. |
+
+##### Discovery and QoS Integration (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LD-01 | Registered type | Discovery type registry includes `radio_scan`. |
+| LD-02 | QoS profile | `RADIO_SCAN_RT` available for radio scan topics. |
+| LD-03 | Topic naming | Topic pattern `spatialdds/<scene>/radio/<sensor_id>/scan/v1` is valid under §3.3.1. |
+| LD-04 | Meta durability | `RadioSensorMeta` uses RELIABLE + TRANSIENT_LOCAL semantics. |
+| LD-05 | Optional fields | Radio optional values consistently follow `has_*` guard pattern. |
+
+##### Interop and Privacy (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LP-01 | Multi-technology support | A device can publish separate WiFi and BLE scan streams with shared timebase. |
+| LP-02 | Fingerprint matching readiness | Canonical identifier formats support stable join keys across sessions. |
+| LP-03 | Pose association | Optional `sensor_pose` + `pose_frame_ref` supports radio-visual alignment. |
+| LP-04 | Privacy guidance | Identifier anonymization guidance documented for sensitive deployments. |
+| LP-05 | No algorithm coupling | Profile transports observations only; no positioning algorithm mandated. |
+
+#### Results
+
+All 22 LaMAR checks pass.
+
+| Modality | Checks | Pass | Gap | Missing | Notes |
+|---|---|---|---|---|---|
+| Radio profile | 12 | 12 | 0 | 0 | LM-1 closed via `RadioScan`/`RadioSensorMeta` |
+| Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
+| Interop + privacy | 5 | 5 | 0 | 0 | Identifier and anonymization guidance documented |
+| **Total** | **22** | **22** | **0** | **0** | **100% coverage** |
+
+#### Deferred Items
+
+- **CSI/CIR first-class payloads.** `CSI_REF` currently points to external payloads. A future extension may define typed CSI/CIR transport.
+- **Multi-band coexistence metadata.** Additional fields for scan policy and dwell-time scheduling may be needed for dense AP environments.
+
+---
+
 ### **Reproducing the Tests**
 
 The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 scripts with no external dependencies.
@@ -5880,7 +6249,9 @@ Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, 
 
 **ScanNet conformance**: The 35 ScanNet checks documented in §I.4 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/scannet_harness_v1.py`) is planned for a future revision.
 
-No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
+**LaMAR conformance**: The 22 LaMAR checks documented in §I.5 were performed as a manual schema-vs-schema analysis against the published `wifi.txt` and `bt.txt` field layouts and the radio-assisted retrieval workflow described by the benchmark. A scripted harness (`scripts/lamar_harness_v1.py`) is planned for a future revision.
+
+No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet, LaMAR) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
 
 ### **Limitations**
 
@@ -6005,6 +6376,22 @@ ROS 2 `vision_msgs` supports multi-hypothesis detections; SpatialDDS provides ri
 
 ROS 2 has no standard messages for phased-array beam sensing, mmWave communication metadata, or ISAC workloads. Teams working on 5G/6G sensing, V2X beam management, or joint radar-communication systems currently define custom ROS 2 messages or bypass ROS entirely. SpatialDDS's `rf_beam` profile provides a typed, discoverable transport path for these modalities -- validated against the DeepSense 6G dataset's 60 GHz phased-array beam power measurements (see Appendix I).
 
+#### Radio Fingerprint / Indoor Positioning
+
+| Dimension | SpatialDDS `sensing.radio` | ROS 2 |
+|---|---|---|
+| Radio types | `RadioType` enum: WIFI, BLE, UWB, CELLULAR, LORA | Not present in standard packages |
+| Measurement types | `RadioMeasurementKind` enum: RSSI, RTT, AoA, RANGE_M, RSRP, CSI_REF | Not present |
+| WiFi observations | Per-AP: BSSID, RSSI, frequency, band, SSID, channel | Not present |
+| BLE observations | Per-beacon: UUID/MAC, RSSI, major/minor, tx_power | Not present |
+| UWB/ranging | Per-tag: `range_m`, `range_std_m`, AoA azimuth/elevation | Not present |
+| Scan timing | `stamp` + `scan_duration_s` + `aggregation_window_s` | Not present |
+| Sensor metadata | `RadioSensorMeta`: capabilities, bands, device model/platform | Not present |
+| Privacy guidance | Normative anonymization guidance for identifiers | Not present |
+| Discovery | Registered type `radio_scan` with `RADIO_SCAN_RT` QoS profile | Not present |
+
+ROS 2 has no standard message set for radio environment observations used by WiFi/BLE fingerprint localization and commodity-radio indoor positioning pipelines. Teams typically create custom `wifi_scan` or `bluetooth_scan` messages. SpatialDDS `sensing.radio` provides a typed, discoverable transport path validated against LaMAR-style WiFi/BLE observation workflows (Appendix I).
+
 ---
 
 ### **J.4 Discovery & Spatial Awareness**
@@ -6061,6 +6448,7 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Manipulation and arm control | ROS 2 |
 | Cross-domain interop (city, IoT, AR, robotics on one bus) | SpatialDDS |
 | ISAC / V2X beam management and 5G/6G sensing | SpatialDDS |
+| Radio-assisted AR localization (WiFi/BLE fingerprinting) | SpatialDDS |
 | Fleet robotics with heterogeneous sensors | Either; complementary |
 | Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |
 | Zone-based spatial alerting and smart infrastructure events | SpatialDDS |

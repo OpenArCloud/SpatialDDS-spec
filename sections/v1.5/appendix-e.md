@@ -216,6 +216,149 @@ This profile provides typed transport for phased-array beam power measurements u
 {{include:idl/v1.5/examples/rf_beam_example.idl}}
 ```
 
+### **Example: Radio Fingerprint Extension (Provisional)**
+
+This profile provides typed transport for radio-environment observations used by radio-assisted localization and indoor positioning pipelines. It targets commodity radios (WiFi, BLE, UWB, cellular) and closes the "radio via freeform metadata only" gap by introducing schema-enforced observation structs.
+
+The profile defines transport only. It does not define positioning, trilateration, filtering, or sensor-fusion algorithms.
+
+**Module ID:** `spatial.sensing.radio/1.5`  
+**Dependency:** `spatial.sensing.common@1.x`  
+**Status:** Provisional (K-R1 maturity gate)
+
+#### **Overview**
+
+`RadioSensorMeta` follows the static Meta pattern (RELIABLE + TRANSIENT_LOCAL) and publishes sensor capabilities. `RadioScan` is the streaming message carrying per-scan observations. Each scan is a snapshot of visible transmitters for one radio technology at one scan instant/window.
+
+#### **Relationship to `sensing.rf_beam`**
+
+`sensing.rf_beam` covers phased-array mmWave beam power vectors and ISAC-style beam management.  
+`sensing.radio` covers commodity radio fingerprints and ranging observations (WiFi/BLE/UWB/cellular).  
+They are complementary and may be published together by the same node.
+
+| Profile | Scope | Typical Frequency | Key Measurement |
+|---|---|---|---|
+| `sensing.rf_beam` | mmWave phased arrays (28/60/140 GHz) | 10 Hz per sweep | Per-beam power vector |
+| `sensing.radio` | WiFi/BLE/UWB/cellular | 0.1–10 Hz per scan | Per-transmitter RSSI/RTT/AoA/Range |
+
+#### **IDL (Provisional)**
+
+```idl
+{{include:idl/v1.5/examples/radio_example.idl}}
+```
+
+#### **Observation Semantics (Normative)**
+
+`measurement_kind` determines the unit and interpretation of `RadioObservation.value`.
+
+| Kind | Value Units | Typical Source |
+|---|---|---|
+| `RSSI` | dBm | WiFi and BLE scans |
+| `RTT_NS` | nanoseconds | WiFi FTM, UWB TWR |
+| `AOA_DEG` | degrees | UWB/BLE AoA |
+| `RANGE_M` | meters | Derived range |
+| `RSRP` | dBm | Cellular |
+| `CSI_REF` | n/a (`value` unused) | CSI blob reference workflows |
+
+A single `RadioScan` MAY include mixed `measurement_kind` values.
+
+#### **Identifier Conventions (Normative)**
+
+| RadioType | Identifier Format | Example |
+|---|---|---|
+| `WIFI` | BSSID, lowercase colon-separated hex | `aa:bb:cc:dd:ee:ff` |
+| `BLE` | UUID (uppercase with hyphens) or MAC | `12345678-1234-1234-1234-123456789ABC` |
+| `UWB` | Short address or session ID | `0x1A2B` |
+| `CELLULAR` | MCC-MNC-LAC-CID | `310-260-12345-67890` |
+
+Consumers performing fingerprint matching SHOULD normalize identifiers before comparison.
+
+#### **Scan Timing and Aggregation (Normative)**
+
+- `stamp` MUST represent the midpoint of the scan window.
+- If `has_scan_duration == true`, `scan_duration_s` MUST report the full scan-window duration.
+- If `has_aggregation_window == true`, `aggregation_window_s` reports the total time window used to aggregate observations from multiple scans.
+- Producers publishing raw scans SHOULD leave `has_aggregation_window = false`.
+
+#### **Privacy Considerations (Normative Guidance)**
+
+Radio identifiers can expose device/network identity. Producers in privacy-sensitive deployments SHOULD:
+- anonymize or hash identifiers where permitted,
+- avoid publishing SSIDs unless explicitly needed, and
+- document identifier handling and retention policy.
+
+#### **Topic Patterns**
+
+| Topic | Message Type | QoS |
+|---|---|---|
+| `spatialdds/<scene>/radio/<sensor_id>/scan/v1` | `RadioScan` | `RADIO_SCAN_RT` |
+| `spatialdds/<scene>/radio/<sensor_id>/meta/v1` | `RadioSensorMeta` | RELIABLE + TRANSIENT_LOCAL |
+
+#### **Example JSON (Informative)**
+
+WiFi scan:
+```json
+{
+  "sensor_id": "hololens2-wifi-01",
+  "radio_type": "WIFI",
+  "scan_seq": 42,
+  "stamp": { "sec": 1714071012, "nanosec": 500000000 },
+  "has_scan_duration": true,
+  "scan_duration_s": 2.1,
+  "observations": [
+    {
+      "identifier": "aa:bb:cc:dd:ee:01",
+      "measurement_kind": "RSSI",
+      "value": -52.0,
+      "has_frequency": true,
+      "frequency_mhz": 5180.0,
+      "has_band": true,
+      "band": "BAND_5GHZ",
+      "has_ssid": true,
+      "ssid": "ETH-WiFi",
+      "has_channel": true,
+      "channel": 36
+    }
+  ],
+  "has_aggregation_window": true,
+  "aggregation_window_s": 4.0,
+  "source_id": "lamar-cab-hololens-session-17",
+  "schema_version": "spatial.sensing.radio/1.5"
+}
+```
+
+UWB ranging round:
+```json
+{
+  "sensor_id": "uwb-tag-reader-01",
+  "radio_type": "UWB",
+  "scan_seq": 5017,
+  "stamp": { "sec": 1714071020, "nanosec": 250000000 },
+  "observations": [
+    {
+      "identifier": "0x1A2B",
+      "measurement_kind": "RANGE_M",
+      "value": 3.21,
+      "has_range": true,
+      "range_m": 3.21,
+      "has_range_std": true,
+      "range_std_m": 0.08,
+      "has_aoa_azimuth": true,
+      "aoa_azimuth_deg": 23.5
+    }
+  ],
+  "source_id": "warehouse-uwb-reader-alpha",
+  "schema_version": "spatial.sensing.radio/1.5"
+}
+```
+
+#### **Maturity Gate (K-R1)**
+
+Promotion to stable requires:
+1. At least one conformance dataset exercising WiFi and BLE paths with at least 20 checks passing.
+2. At least one independent implementation ingesting reference WiFi/BLE files through `RadioScan`.
+3. No breaking IDL changes for six months after initial publication.
+
 ### **Integration Notes (Informative)**
 
 Discovery integration: Neural and agent services advertise via `Announce` with `ServiceKind::OTHER`. To signal neural or agent capabilities, services SHOULD include feature flags in `caps.features` such as `neural.field_meta`, `neural.view_synth`, or `agent.tasking`.
@@ -233,6 +376,8 @@ Topic naming: following `spatialdds/<domain>/<stream>/<type>/<version>`:
 | `TaskOffer` | `spatialdds/agent/fleet/task_offer/v1` |
 | `TaskAssignment` | `spatialdds/agent/fleet/task_assignment/v1` |
 | `TaskHandoff` | `spatialdds/agent/fleet/task_handoff/v1` |
+| `RadioSensorMeta` | `spatialdds/<scene>/radio/<sensor_id>/meta/v1` |
+| `RadioScan` | `spatialdds/<scene>/radio/<sensor_id>/scan/v1` |
 
 QoS suggestions (informative):
 
@@ -247,5 +392,7 @@ QoS suggestions (informative):
 | `TaskOffer` | RELIABLE | VOLATILE | KEEP_LAST(1) per key |
 | `TaskAssignment` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `TaskHandoff` | RELIABLE | VOLATILE | KEEP_ALL |
+| `RadioSensorMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
+| `RadioScan` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) |
 
-Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, and `spatial.sensing.rf_beam/1.5` remain in Appendix E as provisional and are not listed in the Profile Matrix in §3.5. When promoted to stable in a future version, they move to Appendix D and enter the matrix. (`spatial.mapping/1.5` and `spatial.events/1.5` are stable Appendix D extensions and are already listed in the matrix.)
+Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, `spatial.sensing.rf_beam/1.5`, and `spatial.sensing.radio/1.5` are provisional Appendix E profiles. When promoted to stable in a future version, they move to Appendix D.

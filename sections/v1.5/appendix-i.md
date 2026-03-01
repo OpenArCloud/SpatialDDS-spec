@@ -1,10 +1,10 @@
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against four public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.5 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against four complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.5 profiles were validated against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
 
 | Dataset | Focus | Modalities Stressed |
 |---|---|---|
@@ -12,8 +12,9 @@ Sensor-data specifications risk becoming disconnected from real-world workloads 
 | **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal → perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
 | **S3E** (Sun Yat-sen University / HKUST) | Multi-agent coordination | 3 UGVs × (lidar, stereo, IMU), UWB inter-robot ranging, RTK-GNSS, collaborative SLAM |
 | **ScanNet** (TU Munich / Princeton) | Indoor scene understanding | RGB-D depth frames, 3D surface mesh, instance segmentation (NYU40), room-level zones, 20 scene types |
+| **LaMAR** (CVG ETH Zurich / Microsoft) | AR localization with radio assistance | WiFi scans (`wifi.txt`), Bluetooth scans (`bt.txt`), RGB images, AR trajectories, visual localization metadata |
 
-nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary.
+nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary. LaMAR was chosen because it provides paired visual and radio observations (WiFi/Bluetooth) for AR localization and directly tests whether radio fingerprints can be represented as first-class typed streams rather than ad hoc JSON metadata.
 
 The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.5 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
@@ -532,6 +533,79 @@ This pipeline exercises the Spatial Events extension end-to-end — from zone de
 
 ---
 
+### **I.5 LaMAR Conformance (AR Localization with Radio Fingerprints)**
+
+#### Reference Dataset
+
+**LaMAR** (CVG ETH Zurich / Microsoft) is an AR localization benchmark containing aligned visual and radio observations:
+
+| Dimension | Value |
+|---|---|
+| Captures | Indoor/outdoor smartphone + HoloLens trajectories |
+| Visual data | RGB image streams for retrieval/localization |
+| Radio data | WiFi scans (`wifi.txt`) and Bluetooth scans (`bt.txt`) |
+| Targets | Visual localization recall under radio-assisted retrieval |
+| Notable finding | WiFi/BT-assisted retrieval improves localization recall (+4.6% to +17.5%) |
+
+LaMAR was selected to validate radio-assisted AR workflows and close the prior LM-1 gap where radio observations were carried only as ad hoc `MetaKV` JSON payloads.
+
+#### Checks Performed (22)
+
+##### Radio Profile Coverage (12 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LM-01 | Typed per-scan container | `RadioScan` carries one scan event with `sensor_id`, `radio_type`, `scan_seq`, and `stamp`. |
+| LM-02 | Typed per-observation container | `RadioObservation` carries one transmitter measurement (`identifier`, `measurement_kind`, `value`). |
+| LM-03 | WiFi identifier format | BSSID maps to lowercase colon-separated `identifier`. |
+| LM-04 | BLE identifier format | Beacon UUID/MAC maps to canonical `identifier`. |
+| LM-05 | RSSI representation | RSSI maps to `measurement_kind = RSSI`, `value` in dBm. |
+| LM-06 | WiFi frequency/channel | `frequency_mhz`, `band`, and `channel` map with `has_*` guards. |
+| LM-07 | BLE major/minor | iBeacon major/minor maps with `has_major_minor`. |
+| LM-08 | BLE Tx power | Advertised Tx power maps with `has_tx_power`. |
+| LM-09 | Scan duration | Variable scan-window duration maps to `scan_duration_s`. |
+| LM-10 | Aggregation window | ±window aggregation maps to `aggregation_window_s`. |
+| LM-11 | Sensor metadata | `RadioSensorMeta` captures capability flags and adapter metadata. |
+| LM-12 | Schema tag | `schema_version` set to `spatial.sensing.radio/1.5`. |
+
+##### Discovery and QoS Integration (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LD-01 | Registered type | Discovery type registry includes `radio_scan`. |
+| LD-02 | QoS profile | `RADIO_SCAN_RT` available for radio scan topics. |
+| LD-03 | Topic naming | Topic pattern `spatialdds/<scene>/radio/<sensor_id>/scan/v1` is valid under §3.3.1. |
+| LD-04 | Meta durability | `RadioSensorMeta` uses RELIABLE + TRANSIENT_LOCAL semantics. |
+| LD-05 | Optional fields | Radio optional values consistently follow `has_*` guard pattern. |
+
+##### Interop and Privacy (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LP-01 | Multi-technology support | A device can publish separate WiFi and BLE scan streams with shared timebase. |
+| LP-02 | Fingerprint matching readiness | Canonical identifier formats support stable join keys across sessions. |
+| LP-03 | Pose association | Optional `sensor_pose` + `pose_frame_ref` supports radio-visual alignment. |
+| LP-04 | Privacy guidance | Identifier anonymization guidance documented for sensitive deployments. |
+| LP-05 | No algorithm coupling | Profile transports observations only; no positioning algorithm mandated. |
+
+#### Results
+
+All 22 LaMAR checks pass.
+
+| Modality | Checks | Pass | Gap | Missing | Notes |
+|---|---|---|---|---|---|
+| Radio profile | 12 | 12 | 0 | 0 | LM-1 closed via `RadioScan`/`RadioSensorMeta` |
+| Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
+| Interop + privacy | 5 | 5 | 0 | 0 | Identifier and anonymization guidance documented |
+| **Total** | **22** | **22** | **0** | **0** | **100% coverage** |
+
+#### Deferred Items
+
+- **CSI/CIR first-class payloads.** `CSI_REF` currently points to external payloads. A future extension may define typed CSI/CIR transport.
+- **Multi-band coexistence metadata.** Additional fields for scan policy and dwell-time scheduling may be needed for dense AP environments.
+
+---
+
 ### **Reproducing the Tests**
 
 The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 scripts with no external dependencies.
@@ -556,7 +630,9 @@ Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, 
 
 **ScanNet conformance**: The 35 ScanNet checks documented in §I.4 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/scannet_harness_v1.py`) is planned for a future revision.
 
-No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
+**LaMAR conformance**: The 22 LaMAR checks documented in §I.5 were performed as a manual schema-vs-schema analysis against the published `wifi.txt` and `bt.txt` field layouts and the radio-assisted retrieval workflow described by the benchmark. A scripted harness (`scripts/lamar_harness_v1.py`) is planned for a future revision.
+
+No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet, LaMAR) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
 
 ### **Limitations**
 

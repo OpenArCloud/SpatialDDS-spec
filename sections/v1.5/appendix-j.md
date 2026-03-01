@@ -110,6 +110,22 @@ ROS 2 `vision_msgs` supports multi-hypothesis detections; SpatialDDS provides ri
 
 ROS 2 has no standard messages for phased-array beam sensing, mmWave communication metadata, or ISAC workloads. Teams working on 5G/6G sensing, V2X beam management, or joint radar-communication systems currently define custom ROS 2 messages or bypass ROS entirely. SpatialDDS's `rf_beam` profile provides a typed, discoverable transport path for these modalities -- validated against the DeepSense 6G dataset's 60 GHz phased-array beam power measurements (see Appendix I).
 
+#### Radio Fingerprint / Indoor Positioning
+
+| Dimension | SpatialDDS `sensing.radio` | ROS 2 |
+|---|---|---|
+| Radio types | `RadioType` enum: WIFI, BLE, UWB, CELLULAR, LORA | Not present in standard packages |
+| Measurement types | `RadioMeasurementKind` enum: RSSI, RTT, AoA, RANGE_M, RSRP, CSI_REF | Not present |
+| WiFi observations | Per-AP: BSSID, RSSI, frequency, band, SSID, channel | Not present |
+| BLE observations | Per-beacon: UUID/MAC, RSSI, major/minor, tx_power | Not present |
+| UWB/ranging | Per-tag: `range_m`, `range_std_m`, AoA azimuth/elevation | Not present |
+| Scan timing | `stamp` + `scan_duration_s` + `aggregation_window_s` | Not present |
+| Sensor metadata | `RadioSensorMeta`: capabilities, bands, device model/platform | Not present |
+| Privacy guidance | Normative anonymization guidance for identifiers | Not present |
+| Discovery | Registered type `radio_scan` with `RADIO_SCAN_RT` QoS profile | Not present |
+
+ROS 2 has no standard message set for radio environment observations used by WiFi/BLE fingerprint localization and commodity-radio indoor positioning pipelines. Teams typically create custom `wifi_scan` or `bluetooth_scan` messages. SpatialDDS `sensing.radio` provides a typed, discoverable transport path validated against LaMAR-style WiFi/BLE observation workflows (Appendix I).
+
 ---
 
 ### **J.4 Discovery & Spatial Awareness**
@@ -166,6 +182,7 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Manipulation and arm control | ROS 2 |
 | Cross-domain interop (city, IoT, AR, robotics on one bus) | SpatialDDS |
 | ISAC / V2X beam management and 5G/6G sensing | SpatialDDS |
+| Radio-assisted AR localization (WiFi/BLE fingerprinting) | SpatialDDS |
 | Fleet robotics with heterogeneous sensors | Either; complementary |
 | Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |
 | Zone-based spatial alerting and smart infrastructure events | SpatialDDS |

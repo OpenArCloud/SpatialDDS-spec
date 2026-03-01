@@ -1,0 +1,142 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Radio Fingerprint (sensing.radio) 1.5 — Provisional Extension
+//
+// PROVISIONAL: This profile is subject to breaking changes in future
+// versions. Implementers SHOULD treat all struct layouts as unstable
+// and MUST NOT assume wire compatibility across spec revisions.
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial { module sensing { module radio {
+
+  const string MODULE_ID = "spatial.sensing.radio/1.5";
+
+  typedef builtin::Time                          Time;
+  typedef spatial::core::PoseSE3                 PoseSE3;
+  typedef spatial::common::FrameRef              FrameRef;
+  typedef spatial::common::MetaKV                MetaKV;
+  typedef spatial::sensing::common::StreamMeta   StreamMeta;
+
+  enum RadioType {
+    @value(0)   WIFI,
+    @value(1)   BLE,
+    @value(2)   BT_CLASSIC,
+    @value(3)   UWB,
+    @value(4)   CELLULAR,
+    @value(5)   LORA,
+    @value(255) OTHER_RADIO
+  };
+
+  enum WifiBand {
+    @value(0) BAND_UNKNOWN,
+    @value(1) BAND_2_4GHZ,
+    @value(2) BAND_5GHZ,
+    @value(3) BAND_6GHZ,
+    @value(4) BAND_60GHZ
+  };
+
+  enum RadioMeasurementKind {
+    @value(0)  RSSI,
+    @value(1)  RTT_NS,
+    @value(2)  AOA_DEG,
+    @value(3)  RANGE_M,
+    @value(4)  RSRP,
+    @value(5)  CSI_REF,
+    @value(255) OTHER_MEASURE
+  };
+
+  @extensibility(APPENDABLE) struct RadioObservation {
+    string               identifier;
+    RadioMeasurementKind measurement_kind;
+    float                value;
+
+    boolean  has_frequency;
+    float    frequency_mhz;
+    boolean  has_band;
+    WifiBand band;
+    boolean  has_ssid;
+    string   ssid;
+    boolean  has_channel;
+    uint16   channel;
+
+    boolean  has_major_minor;
+    uint16   major;
+    uint16   minor;
+    boolean  has_tx_power;
+    int8     tx_power_dbm;
+
+    boolean  has_range;
+    float    range_m;
+    boolean  has_range_std;
+    float    range_std_m;
+
+    boolean  has_aoa_azimuth;
+    float    aoa_azimuth_deg;
+    boolean  has_aoa_elevation;
+    float    aoa_elevation_deg;
+
+    boolean  has_noise_floor;
+    float    noise_floor_dbm;
+    boolean  has_measurement_count;
+    uint8    measurement_count;
+  };
+
+  @extensibility(APPENDABLE) struct RadioScan {
+    @key string sensor_id;
+    RadioType   radio_type;
+    uint64      scan_seq;
+    Time        stamp;
+
+    boolean     has_scan_duration;
+    float       scan_duration_s;
+
+    sequence<RadioObservation, 256> observations;
+
+    boolean     has_aggregation_window;
+    float       aggregation_window_s;
+
+    string      source_id;
+
+    boolean     has_sensor_pose;
+    PoseSE3     sensor_pose;
+    FrameRef    pose_frame_ref;
+
+    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+  };
+
+  @extensibility(APPENDABLE) struct RadioSensorMeta {
+    @key string sensor_id;
+    StreamMeta  base;
+
+    RadioType   radio_type;
+
+    boolean     has_rssi;
+    boolean     has_rtt;
+    boolean     has_aoa;
+    boolean     has_csi;
+
+    boolean     has_wifi_bands;
+    sequence<WifiBand, 4> supported_bands;
+
+    boolean     has_ble_version;
+    string      ble_version;
+
+    string      device_model;
+    string      platform;
+
+    boolean     has_max_observations;
+    uint16      max_observations;
+    boolean     has_typical_scan_duration;
+    float       typical_scan_duration_s;
+
+    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+  };
+
+}; }; };
