@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS SLAM Frontend 1.5
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+module spatial {
+  module slam_frontend {
+
+    const string MODULE_ID = "spatial.slam_frontend/1.5";
+
+    // Reuse core: Time, etc.
+    typedef builtin::Time Time;
+    typedef spatial::common::FrameRef FrameRef;
+
+    // Camera calibration
+    enum DistortionModelKind {
+      @value(0) NONE,
+      @value(1) RADTAN,
+      @value(2) EQUIDISTANT,
+      @value(3) KANNALA_BRANDT
+    };
+
+    @extensibility(APPENDABLE) struct CameraInfo {
+      @key string camera_id;
+      uint32 width;  uint32 height;   // pixels
+      double fx; double fy;           // focal (px)
+      double cx; double cy;           // principal point (px)
+      DistortionModelKind dist_kind;
+      sequence<double, 8> dist;       // model params (bounded)
+      FrameRef frame_ref;             // camera frame
+      Time   stamp;                   // calib time (or 0 if static)
+    };
+
+    // 2D features & descriptors per keyframe
+    @extensibility(APPENDABLE) struct Feature2D {
+      double u; double v;     // pixel coords
+      float  scale;           // px
+      float  angle;           // rad [0,2π)
+      float  score;           // detector response
+    };
+
+    @extensibility(APPENDABLE) struct KeyframeFeatures {
+      @key string node_id;                  // keyframe id
+      string camera_id;
+      string desc_type;                     // "ORB32","BRISK64","SPT256Q",...
+      uint32 desc_len;                      // bytes per descriptor
+      boolean row_major;                    // layout hint
+      sequence<Feature2D, 4096> keypoints;  // ≤4096
+      sequence<uint8, 1048576> descriptors; // ≤1 MiB packed bytes
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+    // Optional cross-frame matches
+    @extensibility(APPENDABLE) struct FeatureMatch {
+      string node_id_a;  uint32 idx_a;
+      string node_id_b;  uint32 idx_b;
+      float  score;      // similarity or distance
+    };
+
+    @extensibility(APPENDABLE) struct MatchSet {
+      @key string match_id;                // e.g., "kf_12<->kf_18"
+      sequence<FeatureMatch, 8192> matches;
+      Time   stamp;
+      string source_id;
+    };
+
+    // Sparse 3D landmarks & tracks (optional)
+    @extensibility(APPENDABLE) struct Landmark {
+      @key string lm_id;
+      string map_id;
+      spatial::common::Vec3 p;
+      boolean has_cov;
+      spatial::common::Mat3x3  cov;        // 3x3 pos covariance (row-major)
+      sequence<uint8, 4096> desc;          // descriptor bytes
+      string desc_type;
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+    @extensibility(APPENDABLE) struct TrackObs {
+      string node_id;                      // observing keyframe
+      double u; double v;                  // pixel coords
+    };
+
+    @extensibility(APPENDABLE) struct Tracklet {
+      @key string track_id;
+      boolean has_lm_id;                   // true when lm_id is populated
+      string  lm_id;                       // link to Landmark when present
+      sequence<TrackObs, 64> obs;          // ≤64 obs
+      string source_id;
+      Time   stamp;
+    };
+
+  }; // module slam_frontend
+};

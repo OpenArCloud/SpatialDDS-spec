@@ -1,0 +1,241 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Radar (sensing.rad) 1.5 - Extension profile
+// Detection-centric radar for automotive, industrial, and robotics sensors.
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial { module sensing { module rad {
+
+  // Module identifier for discovery and schema registration
+  const string MODULE_ID = "spatial.sensing.rad/1.5";
+
+  // Reuse Core + Sensing Common types
+  typedef builtin::Time                          Time;
+  typedef spatial::core::PoseSE3                 PoseSE3;
+  typedef spatial::core::BlobRef                 BlobRef;
+  typedef spatial::common::FrameRef              FrameRef;
+
+  typedef spatial::sensing::common::Codec        Codec;
+  typedef spatial::sensing::common::StreamMeta   StreamMeta;
+  typedef spatial::sensing::common::FrameHeader  FrameHeader;
+  typedef spatial::sensing::common::FrameQuality FrameQuality;
+  typedef spatial::sensing::common::Axis         Axis;
+  typedef spatial::sensing::common::SampleType   SampleType;
+  typedef spatial::sensing::common::PayloadKind  PayloadKind;
+  typedef spatial::sensing::common::ROI          ROI;
+  typedef spatial::sensing::common::ROIRequest   ROIRequest;
+  typedef spatial::sensing::common::ROIReply     ROIReply;
+
+  // ---- Radar sensor type ----
+  enum RadSensorType {
+    @value(0) SHORT_RANGE,       // e.g., corner/parking radar, ~30m
+    @value(1) MEDIUM_RANGE,      // e.g., blind-spot, ~80m
+    @value(2) LONG_RANGE,        // e.g., forward-facing, ~200m+
+    @value(3) IMAGING_4D,        // 4D imaging radar (range/az/el/doppler)
+    @value(4) SAR,               // synthetic aperture radar
+    @value(255) OTHER
+  };
+
+  // ---- Dynamic property per detection ----
+  enum RadDynProp {
+    @value(0) UNKNOWN,
+    @value(1) MOVING,
+    @value(2) STATIONARY,
+    @value(3) ONCOMING,
+    @value(4) CROSSING_LEFT,
+    @value(5) CROSSING_RIGHT,
+    @value(6) STOPPED            // was moving, now stationary
+  };
+
+  // ---- Static sensor description ----
+  // RELIABLE + TRANSIENT_LOCAL (late joiners receive the latest meta)
+  @extensibility(APPENDABLE) struct RadSensorMeta {
+    @key string stream_id;               // stable id for this radar stream
+    StreamMeta base;                     // frame_ref, T_bus_sensor, nominal_rate_hz
+
+    RadSensorType sensor_type;           // range class of this radar
+
+    // Detection-space limits (from sensor datasheet)
+    boolean has_range_limits;
+    float   min_range_m;                 // valid when has_range_limits == true
+    float   max_range_m;
+
+    boolean has_azimuth_fov;
+    float   az_fov_min_deg;              // valid when has_azimuth_fov == true
+    float   az_fov_max_deg;
+
+    boolean has_elevation_fov;
+    float   el_fov_min_deg;              // valid when has_elevation_fov == true
+    float   el_fov_max_deg;
+
+    boolean has_velocity_limits;
+    float   v_min_mps;                   // valid when has_velocity_limits == true
+    float   v_max_mps;                   // max unambiguous radial velocity
+
+    // Max detections per frame (informative hint for subscriber allocation)
+    uint32  max_detections_per_frame;
+
+    // Processing chain description (informative)
+    string  proc_chain;                  // e.g., "CFAR -> clustering -> tracking"
+
+    string  schema_version;              // MUST be "spatial.sensing.rad/1.5"
+  };
+
+  // ---- Per-detection data ----
+  @extensibility(APPENDABLE) struct RadDetection {
+    // Position in sensor frame (meters)
+    spatial::common::Vec3 xyz_m;
+
+    // Velocity: Cartesian vector preferred; scalar radial as fallback.
+    // Producers SHOULD populate velocity_xyz when available.
+    // When only radial velocity is known, set has_velocity_xyz = false
+    // and use v_r_mps.
+    boolean has_velocity_xyz;
+    spatial::common::Vec3 velocity_xyz;  // m/s in frame_ref (valid when has_velocity_xyz == true)
+
+    boolean has_v_r_mps;
+    double  v_r_mps;                     // scalar radial velocity (valid when has_v_r_mps == true)
+
+    // Ego-motion compensated velocity (optional)
+    boolean has_velocity_comp_xyz;
+    spatial::common::Vec3 velocity_comp_xyz; // ego-compensated, m/s (valid when has_velocity_comp_xyz == true)
+
+    // Radar cross-section in physical units
+    boolean has_rcs_dbm2;
+    float   rcs_dbm2;                    // dBm^2 (valid when has_rcs_dbm2 == true)
+
+    // Generic intensity / magnitude (0..1 normalized, for renderers)
+    float   intensity;
+
+    // Per-detection quality / confidence (0..1)
+    float   quality;
+
+    // Dynamic property classification
+    boolean has_dyn_prop;
+    RadDynProp dyn_prop;                 // valid when has_dyn_prop == true
+
+    // Per-detection position uncertainty (optional)
+    boolean has_pos_rms;
+    float   x_rms_m;                     // valid when has_pos_rms == true
+    float   y_rms_m;
+    float   z_rms_m;
+
+    // Per-detection velocity uncertainty (optional)
+    boolean has_vel_rms;
+    float   vx_rms_mps;                  // valid when has_vel_rms == true
+    float   vy_rms_mps;
+    float   vz_rms_mps;
+
+    // Ambiguity state (radar-specific; 0 = unambiguous)
+    boolean has_ambig_state;
+    uint8   ambig_state;                 // valid when has_ambig_state == true
+
+    // False alarm probability hint (0 = high confidence, higher = less certain)
+    boolean has_false_alarm_prob;
+    float   false_alarm_prob;            // valid when has_false_alarm_prob == true
+
+    // Optional tracking ID assigned by the radar firmware
+    boolean has_sensor_track_id;
+    uint32  sensor_track_id;             // valid when has_sensor_track_id == true
+  };
+
+  // ---- Detection set (per-frame batch) ----
+  // BEST_EFFORT + KEEP_LAST=1
+  @extensibility(APPENDABLE) struct RadDetectionSet {
+    @key string stream_id;
+    uint64 frame_seq;
+    FrameRef frame_ref;                  // coordinate frame of xyz_m
+
+    sequence<RadDetection, spatial::sensing::common::SZ_XL> dets;
+
+    Time   stamp;
+    string source_id;
+    uint64 seq;
+
+    // Processing provenance
+    string proc_chain;                   // e.g., "ARS408-CFAR" or "OS-CFAR->cluster"
+
+    // Frame-level quality
+    boolean has_quality;
+    FrameQuality quality;                // valid when has_quality == true
+  };
+
+  // ==============================================================
+  // RAD TENSOR TYPES (for raw/processed radar cubes)
+  // ==============================================================
+
+  // Layout of the RAD tensor - axis ordering convention
+  enum RadTensorLayout {
+    @value(0)   RA_D,             // [range, azimuth, doppler]
+    @value(1)   R_AZ_EL_D,        // [range, azimuth, elevation, doppler]
+    @value(2)   CH_FAST_SLOW,     // [channel/Rx, fast_time, slow_time] - raw FMCW
+    @value(3)   CH_R_D,           // [channel, range, doppler] - post range-doppler FFT
+    @value(255) CUSTOM            // axes[] defines the order explicitly
+  };
+
+  // Static tensor description - RELIABLE + TRANSIENT_LOCAL
+  // Publishes once; late joiners receive current state.
+  @extensibility(APPENDABLE) struct RadTensorMeta {
+    @key string stream_id;                 // stable id for this radar tensor stream
+    StreamMeta base;                       // frame_ref, T_bus_sensor, nominal_rate_hz
+
+    RadSensorType sensor_type;             // reuse existing enum (SHORT_RANGE, IMAGING_4D, etc.)
+
+    // Tensor shape description
+    RadTensorLayout layout;                // axis ordering convention
+    sequence<Axis, 8> axes;                // axis definitions (range/az/el/doppler/channel/time)
+
+    SampleType voxel_type;                 // pre-compression sample type (e.g., CF32)
+    string physical_meaning;               // e.g., "raw FMCW I/Q", "post 3D-FFT complex baseband"
+
+    // Antenna configuration (informative, for MIMO systems)
+    boolean has_antenna_config;
+    uint16  num_tx;                        // valid when has_antenna_config == true
+    uint16  num_rx;                        // valid when has_antenna_config == true
+    uint16  num_virtual_channels;          // num_tx * num_rx (informative)
+
+    // Waveform parameters (informative)
+    boolean has_waveform_params;
+    float   bandwidth_hz;                  // valid when has_waveform_params == true
+    float   center_freq_hz;                // valid when has_waveform_params == true
+    float   chirp_duration_s;              // valid when has_waveform_params == true
+    uint32  samples_per_chirp;             // valid when has_waveform_params == true
+    uint32  chirps_per_frame;              // valid when has_waveform_params == true
+
+    // Default payload settings for frames
+    PayloadKind payload_kind;              // DENSE_TILES, SPARSE_COO, or LATENT
+    Codec       codec;                     // LZ4, ZSTD, CODEC_NONE, etc.
+    boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
+    uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
+
+    string  schema_version;                // MUST be "spatial.sensing.rad/1.5"
+  };
+
+  // Per-frame tensor index - BEST_EFFORT + KEEP_LAST=1
+  // Heavy payload referenced via FrameHeader.blobs[]
+  @extensibility(APPENDABLE) struct RadTensorFrame {
+    @key string stream_id;
+    uint64 frame_seq;
+
+    FrameHeader hdr;                       // t_start/t_end, optional sensor_pose, blobs[]
+
+    // Per-frame overrides (may differ from RadTensorMeta defaults)
+    PayloadKind payload_kind;
+    Codec       codec;
+    SampleType  voxel_type_after_decode;   // post-decode type (e.g., CF32 -> MAG_F16)
+    boolean     has_quant_scale;
+    float       quant_scale;               // valid when has_quant_scale == true
+
+    FrameQuality quality;                  // SNR/valid%/health note
+    string proc_chain;                     // e.g., "raw", "FFT3D->hann", "FFT3D->OS-CFAR"
+  };
+
+}; }; };
