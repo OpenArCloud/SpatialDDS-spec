@@ -102,6 +102,8 @@ module spatial {
       case spatial::common::COV_NONE: uint8 none;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
+      case spatial::common::COV_ROT3:  spatial::common::Mat3x3 rot;          // added in 1.6
+      case spatial::common::COV_POSE6_TWIST6: spatial::common::Mat12x12 pose_twist; // added in 1.6
     };
 
     // A metric pose bundled with its coordinate frame, uncertainty, and
@@ -114,6 +116,86 @@ module spatial {
       FrameRef  frame_ref;  // which coordinate frame this pose is expressed in
       CovMatrix cov;        // uncertainty (COV_NONE when absent)
       Time      stamp;      // when this pose was valid
+    };
+
+    // PlannedTrajectory carries a sequence of future poses representing
+    // an agent's intended path. It is the planning counterpart to a
+    // perception trajectory: both are sequences of poses, but a
+    // PlannedTrajectory extends into the future and is conditioned on
+    // intended actions rather than past measurements.
+    //
+    // Consumers MAY use PlannedTrajectory for:
+    // - Cooperative collision avoidance (avoid other agents' plans)
+    // - Intent visualization in digital twins
+    // - Predictive resource allocation (anticipate coverage changes)
+    //
+    // Topic: spatialdds/<scene>/plan/<agent_id>/trajectory/v1
+    // QoS:   EVENT_RT (RELIABLE, ordered, ~100 ms deadline)
+    @extensibility(APPENDABLE) struct PlannedWaypoint {
+      PoseSE3   pose;                   // planned pose at this waypoint
+      Time      stamp;                  // planned arrival time
+      boolean   has_velocity;
+      spatial::common::Vec3 velocity;   // planned velocity (m/s)
+      boolean   has_uncertainty;
+      float     position_uncertainty_m; // 1-sigma position uncertainty
+      boolean   has_confidence;
+      float     confidence;             // planner confidence [0,1]
+    };
+
+    @extensibility(APPENDABLE) struct PlannedTrajectory {
+      @key string agent_id;             // who is planning
+      string  plan_id;                  // unique plan identifier (changes on replan)
+      uint32  plan_revision;            // increments on each replan
+
+      FrameRef frame_ref;               // coordinate frame for all waypoints
+
+      sequence<PlannedWaypoint, 256> waypoints;
+
+      // Planning metadata
+      boolean has_goal_pose;
+      PoseSE3 goal_pose;                // final destination (may differ from last waypoint)
+
+      boolean has_horizon_sec;
+      float   horizon_sec;              // planning horizon in seconds
+
+      boolean has_replan_rate_hz;
+      float   replan_rate_hz;           // how often the plan is updated
+
+      Time    stamp;                    // when this plan was computed
+      string  schema_version;           // "spatial.core/1.6"
+    };
+
+    // EntityBinding correlates messages across different SpatialDDS topics
+    // that refer to the same physical entity. It is the minimal primitive
+    // for scene graph construction: consumers receive bindings and assemble
+    // their own entity hierarchies.
+    //
+    // Example: a fused track, a geometry tile, and a SpatialZone occupant
+    // entry all describe the same vehicle. An EntityBinding links them
+    // by their respective keys.
+    //
+    // Topic: spatialdds/<scene>/entity/binding/v1
+    // QoS:   RELIABLE + TRANSIENT_LOCAL (late joiners receive current bindings)
+    @extensibility(APPENDABLE) struct ComponentRef {
+      string topic;                     // topic name (e.g., "spatialdds/.../fusion/track/v1")
+      string key;                       // key value on that topic (e.g., track_id = "fused-42")
+    };
+
+    @extensibility(APPENDABLE) struct EntityBinding {
+      @key string entity_id;            // stable entity identifier
+
+      string entity_class;              // semantic class (e.g., "vehicle", "pedestrian", "drone")
+
+      sequence<ComponentRef, 16> components; // references to messages on other topics
+
+      // Optional: entity's authoritative pose (convenience — same as the pose
+      // on one of the component topics, but saves a lookup).
+      boolean    has_pose;
+      FramedPose pose;
+
+      Time   stamp;
+      string source_id;                 // who published this binding (e.g., fusion service)
+      string schema_version;            // "spatial.core/1.6"
     };
 
     @extensibility(APPENDABLE) struct Node {
@@ -208,7 +290,7 @@ module spatial {
       uint16  diff_station_id;  // reference station ID
 
       Time   stamp;             // should match the associated GeoPose.stamp
-      string schema_version;    // e.g., "1.5.0"
+      string schema_version;    // e.g., "1.6.0"
     };
 
     @extensibility(APPENDABLE) struct GeoAnchor {

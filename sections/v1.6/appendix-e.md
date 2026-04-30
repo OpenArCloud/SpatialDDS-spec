@@ -2,16 +2,20 @@
 
 These provisional extensions are intentionally minimal and subject to breaking changes in future versions. Implementers SHOULD treat all struct layouts as unstable and MUST NOT assume wire compatibility across spec revisions.
 
-### **Example: Neural Extension (Provisional)**
+### **Neural Scene Representations (Informative Example)**
 
-This profile describes neural scene representations — such as NeRFs, Gaussian splats, and neural SDFs — and provides a request/reply pattern for view synthesis. A mapping service might publish a `NeuralFieldMeta` describing a Gaussian splat covering part of a city block, and an AR client could request novel views from arbitrary camera poses.
+The following IDL illustrates how neural scene representations (NeRFs, Gaussian splats, neural SDFs) could be described and queried through SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.6 normative specification.** Implementations MUST NOT assume wire compatibility with this IDL across spec revisions.
+
+The Neural profile is retained as a design reference for future standardization. It is not included in the Profile Matrix (§3.5) and does not have a registered type, QoS profile, or topic pattern.
+
+A mapping service might publish a `NeuralFieldMeta` describing a Gaussian splat covering part of a city block, and an AR client could request novel views from arbitrary camera poses.
 
 The profile intentionally avoids prescribing model internals. `model_format` is a freeform string that identifies the training framework and version; model weights ride as blobs. This keeps the schema stable across the rapid evolution of neural representation research while giving consumers enough metadata to discover fields, check coverage, and request renders.
 
 `NeuralFieldMeta` follows the same static-meta pattern as `RadSensorMeta` and `LidarMeta`: publish once with RELIABLE + TRANSIENT_LOCAL QoS so late joiners receive the current state. `ViewSynthesisRequest` and `ViewSynthesisResponse` follow the request/reply pattern used by `SnapshotRequest` and `SnapshotResponse`.
 
 ```idl
-{{include:idl/v1.5/examples/neural_example.idl}}
+{{include:idl/v1.6/examples/neural_example.idl}}
 ```
 
 **Example JSON (Informative)**
@@ -44,9 +48,13 @@ The profile intentionally avoids prescribing model internals. `model_format` is 
 }
 ```
 
-### **Example: Agent Extension (Provisional)**
+### **Agent Task Coordination (Informative Example)**
 
-This profile provides lightweight task coordination for AI agents and planners operating over the SpatialDDS bus. It covers two layers:
+The following IDL illustrates how spatial task coordination between agents, robots, and planners could be structured over SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.6 normative specification.**
+
+Agent task coordination is retained as a design reference. The types shown here are not registered in the Profile Matrix, the registered types table, or the QoS profiles table. Deployments requiring agent coordination SHOULD treat this IDL as a starting point and define deployment-specific extensions.
+
+This example covers two layers:
 
 - **Single-task lifecycle.** A planner publishes `TaskRequest` messages describing spatial tasks — navigate to a location, observe a region, build a map — and agents claim and report progress via `TaskStatus`.
 - **Fleet coordination.** Agents advertise availability and capabilities via `AgentStatus`. When multiple agents can handle a task, they may publish `TaskOffer` bids. The coordinator selects an agent via `TaskAssignment`. If an agent cannot finish, it publishes `TaskHandoff` with continuation context so the next agent picks up where it left off.
@@ -56,7 +64,7 @@ The design is deliberately minimal. Task-specific parameters are carried as free
 The profile defines **what information agents and coordinators exchange**, not **how allocation decisions are made**. A round-robin dispatcher, a market-based auction, a centralized optimizer, and a human dispatcher all consume the same typed messages. The allocation algorithm is an application-layer concern.
 
 ```idl
-{{include:idl/v1.5/examples/agent_example.idl}}
+{{include:idl/v1.6/examples/agent_example.idl}}
 ```
 
 **Example JSON (Informative)**
@@ -213,7 +221,7 @@ Task Handoff:
 This profile provides typed transport for phased-array beam power measurements used in ISAC research. It defines static array metadata (`RfBeamMeta`), per-sweep power vectors (`RfBeamFrame`), and multi-array batches (`RfBeamArraySet`). The design follows the Meta/Frame pattern used elsewhere in the sensing profiles and is intentionally provisional.
 
 ```idl
-{{include:idl/v1.5/examples/rf_beam_example.idl}}
+{{include:idl/v1.6/examples/rf_beam_example.idl}}
 ```
 
 ### **Example: Radio Fingerprint Extension (Provisional)**
@@ -244,7 +252,7 @@ They are complementary and may be published together by the same node.
 #### **IDL (Provisional)**
 
 ```idl
-{{include:idl/v1.5/examples/radio_example.idl}}
+{{include:idl/v1.6/examples/radio_example.idl}}
 ```
 
 #### **Observation Semantics (Normative)**

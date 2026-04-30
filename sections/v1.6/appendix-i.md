@@ -2,6 +2,18 @@
 
 *This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.6 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
 
+### **Scope and Limitations**
+
+The conformance tests in this appendix validate **schema expressiveness** — whether every field in a reference dataset has a lossless mapping to a SpatialDDS type. They are performed as static schema-vs-schema analyses and do NOT validate:
+
+- **Wire-level interoperability** between DDS implementations (e.g., CycloneDDS ↔ Fast DDS ↔ RTI Connext).
+- **Runtime correctness** of publish/subscribe delivery, QoS enforcement, or temporal ordering.
+- **End-to-end data fidelity** of encode → transmit → decode round-trips.
+
+Wire-level interop tests across at least two DDS vendors are planned for a future revision (see §6 Future Directions).
+
+Pass rates reported below reflect expressiveness coverage. A "pass" means the dataset field has a complete, lossless mapping to SpatialDDS types. A "gap" means no suitable type exists and an extension is needed. Deferred items are fields that can be carried (e.g., via `MetaKV`) but lack first-class typed support.
+
 ### **Motivation**
 
 Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.6 profiles were validated against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
@@ -112,14 +124,16 @@ Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime
 
 All 27 nuScenes checks pass.
 
-| Modality | Checks | Pass | Remaining Gaps |
-|---|---|---|---|
-| Radar (detections) | 6 | 6 | 0 |
-| Vision | 5 | 5 | 0 |
-| Lidar | 6 | 6 | 0 |
-| Semantics | 5 | 5 | 0 |
-| Common / Core | 5 | 5 | 0 |
-| **Total** | **27** | **27** | **0** |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
+|---|---|---|---|---|---|
+| Radar (detections) | 6 | 6 | 0 | 0 | — |
+| Vision | 5 | 5 | 0 | 0 | — |
+| Lidar | 6 | 6 | 0 | 0 | — |
+| Semantics | 5 | 5 | 0 | 0 | — |
+| Common / Core | 5 | 5 | 0 | 0 | — |
+| **Total** | **27** | **27** | **0** | **0** | — |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 ---
 
@@ -230,7 +244,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`, and mmWave Beam checks pass against the provisional `rf_beam` profile (Appendix E).
 
-| Modality | Checks | Pass | Gap | Missing | Notes |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
 | Radar (tensor) | 8 | 8 | 0 | 0 | — |
 | Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles |
@@ -240,6 +254,8 @@ All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`,
 | mmWave Beam | 8 | 8 | 0 | 0 | Provisional rf_beam profile (K-B1) |
 | Semantics | 4 | 4 | 0 | 0 | Beam labels via rf_beam |
 | **Total** | **44** | **44** | **0** | **0** | **100% coverage** |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### Deferred Items
 
@@ -356,18 +372,20 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 All 38 S3E checks pass.
 
-| Modality | Checks | Pass | Remaining Gaps |
-|---|---|---|---|
-| LiDAR | 5 | 5 | 0 |
-| Vision | 4 | 4 | 0 |
-| IMU | 3 | 3 | 0 |
-| GNSS/RTK | 3 | 3 | 0 |
-| UWB (inter-robot range) | 4 | 4 | 0 |
-| Core Pose Graph | 5 | 5 | 0 |
-| Mapping (multi-agent) | 8 | 8 | 0 |
-| Discovery & Coordination | 3 | 3 | 0 |
-| Cross-cutting | 3 | 3 | 0 |
-| **Total** | **38** | **38** | **0** |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
+|---|---|---|---|---|---|
+| LiDAR | 5 | 5 | 0 | 0 | — |
+| Vision | 4 | 4 | 0 | 0 | — |
+| IMU | 3 | 3 | 0 | 0 | — |
+| GNSS/RTK | 3 | 3 | 0 | 0 | — |
+| UWB (inter-robot range) | 4 | 4 | 0 | 0 | — |
+| Core Pose Graph | 5 | 5 | 0 | 0 | — |
+| Mapping (multi-agent) | 8 | 8 | 0 | 0 | — |
+| Discovery & Coordination | 3 | 3 | 0 | 0 | — |
+| Cross-cutting | 3 | 3 | 0 | 0 | — |
+| **Total** | **38** | **38** | **0** | **0** | — |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### S3E Scenario Narrative (Informative)
 
@@ -495,17 +513,19 @@ ScanNet was chosen because it is the definitive indoor RGB-D scene understanding
 
 All 35 ScanNet checks pass.
 
-| Modality | Checks | Pass | Remaining Gaps |
-|---|---|---|---|
-| Color (RGB) | 4 | 4 | 0 |
-| Depth (RGBD) | 5 | 5 | 0 |
-| IMU | 2 | 2 | 0 |
-| Camera Pose & Frames | 4 | 4 | 0 |
-| Mesh Reconstruction | 4 | 4 | 0 |
-| 3D Instance Segmentation | 6 | 6 | 0 |
-| Spatial Events — Zones | 6 | 6 | 0 |
-| Spatial Events — Object Events | 4 | 4 | 0 |
-| **Total** | **35** | **35** | **0** |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
+|---|---|---|---|---|---|
+| Color (RGB) | 4 | 4 | 0 | 1 | 2D label image format deferred |
+| Depth (RGBD) | 5 | 5 | 0 | 0 | — |
+| IMU | 2 | 2 | 0 | 0 | — |
+| Camera Pose & Frames | 4 | 4 | 0 | 0 | — |
+| Mesh Reconstruction | 4 | 4 | 0 | 1 | Per-vertex semantic labels deferred |
+| 3D Instance Segmentation | 6 | 6 | 0 | 1 | First-class CAD reference deferred |
+| Spatial Events — Zones | 6 | 6 | 0 | 0 | — |
+| Spatial Events — Object Events | 4 | 4 | 0 | 0 | — |
+| **Total** | **35** | **35** | **0** | **3** | — |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### ScanNet Scenario Narrative (Informative)
 
@@ -592,12 +612,14 @@ LaMAR was selected to validate radio-assisted AR workflows and close the prior L
 
 All 22 LaMAR checks pass.
 
-| Modality | Checks | Pass | Gap | Missing | Notes |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
-| Radio profile | 12 | 12 | 0 | 0 | LM-1 closed via `RadioScan`/`RadioSensorMeta` |
+| Radio profile | 12 | 12 | 0 | 1 | CSI/CIR first-class transport deferred |
 | Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
-| Interop + privacy | 5 | 5 | 0 | 0 | Identifier and anonymization guidance documented |
-| **Total** | **22** | **22** | **0** | **0** | **100% coverage** |
+| Interop + privacy | 5 | 5 | 0 | 1 | Multi-band coexistence metadata deferred |
+| **Total** | **22** | **22** | **0** | **2** | **100% coverage** |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### Deferred Items
 

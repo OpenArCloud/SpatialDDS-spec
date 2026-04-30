@@ -24,7 +24,21 @@ The Core profile defines the essential building blocks for representing and shar
 
 **GNSS diagnostics (Normative):** `NavSatStatus` is a companion to `GeoPose` that carries GNSS receiver diagnostics (fix type, DOP, satellite count, ground velocity) on a parallel topic. It is published alongside GNSS-derived GeoPoses and MUST NOT be used to annotate non-GNSS localization outputs.
 
-**NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct and identifies the GNSS receiver. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream. Producers publishing GNSS-derived GeoPoses SHOULD co-publish NavSatStatus at the same cadence. NavSatStatus is not a registered discovery type and does not require a `TopicMeta` entry in `Announce.topics[]`.
+**NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream.
+
+NavSatStatus is registered as type `navsat_status` in the registered types table (§3.3.2). Producers publishing GNSS-derived GeoPoses SHOULD include a `TopicMeta` entry for NavSatStatus in their `Announce.topics[]`. Consumers MAY discover NavSatStatus topics through standard discovery mechanisms.
+
+**Planned Trajectory (Normative):** `PlannedTrajectory` represents an agent's intended future path. It is published at the agent's replan rate (typically 1–10 Hz) and superseded by each new plan revision. Consumers MUST use the most recent `plan_revision` for a given `agent_id` and discard older revisions.
+
+Waypoint timestamps represent planned arrival times in the future. Consumers SHOULD treat these as estimates subject to replanning. The `position_uncertainty_m` field, when present, indicates the planner's confidence in the waypoint position and typically grows with distance from the current state.
+
+PlannedTrajectory is registered as type `planned_trajectory` in §3.3.2 and SHOULD be advertised on the topic `spatialdds/<scene>/plan/<agent_id>/trajectory/v1` using the `EVENT_RT` QoS profile.
+
+**Entity Binding (Normative):** `EntityBinding` provides cross-topic correlation without imposing a scene graph hierarchy. Multiple publishers MAY publish bindings for the same `entity_id`; consumers MUST merge component lists and resolve conflicts (e.g., by preferring the binding with the most recent `stamp` or the highest-confidence source).
+
+EntityBinding is intentionally flat — it does not express parent-child relationships, ownership, or transform inheritance. Consumers requiring hierarchical scene graph semantics SHOULD build their own entity hierarchy from the bindings received.
+
+EntityBinding is registered as type `entity_binding` in §3.3.2 and SHOULD be advertised on the topic `spatialdds/<scene>/entity/binding/v1`. Publishers SHOULD use RELIABLE + TRANSIENT_LOCAL QoS so that late-joining consumers receive the current set of entity correlations.
 
 #### **Blob Reassembly (Normative)**
 
@@ -581,7 +595,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 * Empty sequences in `CoverageFilter` mean “match all” for that field.
 * When multiple filter fields are populated, they are ANDed; a result MUST match at least one value in every non-empty sequence.
 * Version range matching stays in profile negotiation (`supported_profiles` with `min_minor`/`max_minor`), not in coverage queries.
-* `CoverageQuery.expr` is deprecated in 1.5. If `has_filter` is true, responders MUST ignore `expr`.
+* `CoverageQuery.expr` is **deprecated** in 1.5 and **will be removed in 2.0**. If `has_filter` is true, responders MUST ignore `expr`. New implementations MUST NOT generate `expr`; they MUST use `filter` exclusively. Implementations supporting `expr` for backward compatibility SHOULD log a deprecation warning.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
 #### **Pagination Contract (Normative)**
@@ -702,6 +716,15 @@ spatialdds/<domain>/<stream>/<type>/<version>
 }
 ```
 
+##### Topic Version Stability (Normative)
+
+The version segment in topic names (e.g., `/v1`) corresponds to the **profile MAJOR version**, not the MINOR version. Topic names change only when a profile increments its MAJOR version number. Concretely:
+
+- `spatial.sensing.vision/1.5` → `spatial.sensing.vision/1.6`: topic names remain `/v1` (same MAJOR).
+- `spatial.sensing.vision/1.5` → `spatial.sensing.vision/2.0`: topic names change to `/v2` (MAJOR incremented).
+
+Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change topic names. This guarantees that consumers subscribing to `/v1` topics continue to receive messages after MINOR-version updates without resubscribing.
+
 #### **3.3.2 Typed Topics Registry**
 
 | Type | Typical Payload | Notes |
@@ -723,6 +746,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) |
 | `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) |
 | `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) |
+| `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose |
+| `planned_trajectory` | Future agent trajectory with waypoints | Intent sharing, cooperative planning |
+| `entity_binding` | Cross-topic entity correlation | Scene graph construction, digital twins |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
@@ -768,6 +794,9 @@ Consumers use these three keys to match and filter streams without inspecting pa
 
 - `coverage_frame_ref` is the canonical frame for an announcement. `CoverageElement.frame_ref` MAY override it, but SHOULD be used sparingly (e.g., mixed local frames). If absent, consumers MUST use `coverage_frame_ref`.
 - When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage_frame_ref`.
+- When `CoverageElement.has_coverage_window` is true, the coverage geometry is valid only between `coverage_window_start` and `coverage_window_end`. Consumers MUST NOT assume coverage outside this window. Producers advertising moving coverage (e.g., patrol routes, fleet trajectories) SHOULD publish updated `Announce` messages as coverage windows expire.
+- When `has_coverage_window` is false, the coverage is persistent (time-invariant) and remains valid until the `Announce` is superseded or the participant leaves the domain.
+- `coverage_eval_time` and `coverage_window` serve different purposes: `coverage_eval_time` specifies *when to evaluate time-varying transforms*; `coverage_window` specifies *when the coverage itself is valid*. Both MAY be present simultaneously.
 - `global == true` means worldwide coverage regardless of regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
 - When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
 - Manifests MAY provide any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox` and `aabb`. Consumers SHALL treat all hints consistently according to the Coverage Model.
@@ -855,24 +884,28 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 
 #### **Profile Matrix (SpatialDDS 1.6)**
 
-- spatial.core/1.6
-- spatial.discovery/1.6
-- spatial.anchors/1.5
-- spatial.manifest/1.6 (manifest schema profile for SpatialDDS 1.6)
-- spatial.argeo/1.5
-- spatial.sensing.common/1.6
-- spatial.sensing.rad/1.5
-- spatial.sensing.lidar/1.5
-- spatial.sensing.vision/1.5
-- spatial.slam_frontend/1.5
-- spatial.vio/1.5
-- spatial.semantics/1.5
-- spatial.mapping/1.5
-- spatial.events/1.5
-- spatial.neural/1.5 (Provisional; Appendix E)
-- spatial.agent/1.5 (Provisional; Appendix E)
-- spatial.sensing.rf_beam/1.5 (Provisional; Appendix E)
-- spatial.sensing.radio/1.5 (Provisional; Appendix E)
+| Profile | Version in 1.6 | Status | 1.6 Change |
+|---|---|---|---|
+| spatial.core | 1.6 | Stable | Added `PlannedTrajectory`, `EntityBinding` |
+| spatial.discovery | 1.6 | Stable | Added `CoverageElement.coverage_window` |
+| spatial.sensing.common | 1.6 | Stable | Added `COV_ROT3`, `COV_POSE6_TWIST6`, `Mat12x12` |
+| spatial.manifest | 1.6 | Stable | Manifest schema bumped with spec |
+| spatial.anchors | 1.5 | Stable | No change |
+| spatial.argeo | 1.5 | Stable | No change |
+| spatial.sensing.rad | 1.5 | Stable | No change |
+| spatial.sensing.lidar | 1.5 | Stable | No change |
+| spatial.sensing.vision | 1.5 | Stable | No change |
+| spatial.slam_frontend | 1.5 | Stable | No change |
+| spatial.vio | 1.5 | Stable | No change |
+| spatial.semantics | 1.5 | Stable | No change |
+| spatial.mapping | 1.5 | Stable | No change |
+| spatial.events | 1.5 | Stable | No change |
+| spatial.sensing.rf_beam | 1.5 | Provisional (Appendix E) | No change |
+| spatial.sensing.radio | 1.5 | Provisional (Appendix E) | No change |
+| spatial.neural | 1.5 | Informative example (Appendix E) | Demoted from Provisional — design reference only |
+| spatial.agent | 1.5 | Informative example (Appendix E) | Demoted from Provisional — design reference only |
+
+Profiles whose IDL is unchanged in 1.6 retain their `/1.5` `schema_version` and `MODULE_ID` strings. Topic names continue to use the `/v1` segment per §3.3.1 Topic Version Stability — minor profile bumps do not change topic names.
 
 > `spatial.manifest/1.6` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
 

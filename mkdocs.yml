@@ -36,9 +36,10 @@ nav:
       - Appendix F - SpatialDDS URI Scheme (ABNF): v1.6/appendix-f.md
       - Appendix F.X - Discovery Query Expression (ABNF): v1.6/appendix-fx-discovery-query-expression.md
       - Appendix G - Frame Identifiers (Normative): v1.6/appendix-g-frame-identifiers.md
-      - Appendix H - Operational Scenarios: v1.6/appendix-h-operational-scenarios.md
+      - Appendix H - World Model Grounding (Informative): v1.6/appendix-h-operational-scenarios.md
       - Appendix I - Dataset Conformance Testing: v1.6/appendix-i.md
       - Appendix J - Comparison with ROS 2: v1.6/appendix-j.md
+      - Appendix K - IDL Package Layout: v1.6/appendix-k-idl-package-layout.md
       - Full Spec (single page): SpatialDDS-1.6-full.md
   - SpatialDDS 1.5:
       - 1. Introduction: v1.5/01-introduction.md

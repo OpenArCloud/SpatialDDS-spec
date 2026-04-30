@@ -121,12 +121,13 @@ SpatialDDS distinguishes among:
 Implementations **SHOULD** enforce TTL and timestamps to mitigate replay. Where TTL exists (e.g., in Discovery messages), recipients **SHOULD** discard messages outside the declared validity interval.
 
 #### **2.7.5 DDS Security Binding (Normative)**
-SpatialDDS deployments that require authentication, authorization, integrity, or confidentiality over DDS **MUST** use **OMG DDS Security**.
+SpatialDDS deployments that require authentication, authorization, integrity, or confidentiality over DDS **MUST** use **OMG DDS Security** as the minimum on-bus security contract. This includes:
 
-**Minimum conformance profile:**
 - **Authentication:** PKI-based authentication as defined by DDS Security.
 - **Access control:** governance and permissions documents configured per DDS Security.
-- **Cryptographic protection:** when confidentiality or integrity is required by policy, endpoints **MUST** enable DDS Security cryptographic plugins to provide message protection.
+- **Cryptographic protection:** when confidentiality or integrity is required by policy, endpoints **MUST** enable DDS Security cryptographic plugins.
+
+Cloud and enterprise authorization mechanisms (OAuth 2.0/OIDC, SPIFFE/SPIRE, mutual TLS) MAY be layered via the `auth_hint` field. `auth_hint` extends the authorization model to HTTP-resolved resources (manifests, blob stores, service APIs) without replacing the on-bus DDS Security contract.
 
 **Operational mapping (non-exhaustive):**
 - Participants join a DDS **Domain**; security configuration applies to DomainParticipants and topics as governed by DDS Security governance rules.
@@ -134,3 +135,60 @@ SpatialDDS deployments that require authentication, authorization, integrity, or
 
 **Interoperability note (informative):**
 This specification does not redefine DDS Security. Implementations should use vendor-compatible DDS Security configuration mechanisms.
+
+#### **2.7.6 Spatial Privacy (Normative Guidance)**
+
+SpatialDDS streams carrying `GeoPose`, `FramedPose`, or ego-pose trajectories constitute personal location data when they describe individual users or devices. Deployments operating under privacy regulations (GDPR, CCPA, or equivalent) SHOULD apply the following mitigations:
+
+- **Pose quantization.** Reduce pose precision to the minimum required by the application (e.g., 1 m position, 5° orientation for building-level occupancy; full precision for SLAM).
+- **Trajectory truncation.** Limit the temporal extent of published pose histories. Fixed-lag smoothing windows (sensing profiles) naturally bound trajectory length; persistent storage of full trajectories requires explicit consent.
+- **Pseudonymization.** Use rotating `source_id` values that cannot be linked across sessions without a key held by the data controller.
+- **Consent and purpose limitation.** Operators publishing ego-pose streams to shared SpatialDDS domains MUST ensure that participants have consented to the spatial data sharing arrangement and that the data is used only for the stated purpose (e.g., collaborative SLAM, fleet coordination).
+
+These mitigations are normative guidance (SHOULD), not normative requirements (MUST), because privacy requirements vary by jurisdiction, deployment context, and application domain. Implementers are responsible for compliance with applicable privacy regulations.
+
+### **2.8 Enum Serialization (Normative)**
+
+When SpatialDDS types are serialized to JSON (manifests, HTTP payloads, diagnostic logs), enum values MUST be emitted as their IDL identifier string (e.g., `"GAUSSIAN_SPLAT"`, not `1`). Decoders MUST accept both the string identifier and the integer `@value` form. Unknown string identifiers MUST be rejected; unknown integer values MUST be treated as the enum's highest-numbered fallback value (e.g., `OTHER_RADIO`, `CUSTOM`) if one exists, or rejected otherwise.
+
+On the DDS wire (CDR encoding), enum values use their integer `@value(N)` per OMG IDL specification. This rule applies only to JSON serialization contexts.
+
+### **2.9 Time Semantics (Normative)**
+
+All `Time` values in SpatialDDS MUST represent UTC seconds since the Unix epoch (1970-01-01T00:00:00Z), excluding leap seconds (i.e., POSIX time / `clock_gettime(CLOCK_REALTIME)`). `nanosec` MUST be in the range `[0, 999999999]`.
+
+Producers operating in environments with hardware time synchronization SHOULD document their clock source via a `MetaKV` entry on the associated meta type with `namespace = "time"` and the following keys:
+
+| Key | Values | Example |
+|-----|--------|---------|
+| `clock_source` | `ptp`, `pps`, `gnss`, `ntp`, `system` | `"ptp"` |
+| `clock_accuracy_ns` | estimated accuracy in nanoseconds | `"1000"` |
+| `leap_second_mode` | `posix` (default), `tai`, `utc_with_leap` | `"posix"` |
+
+Consumers performing cross-device temporal association (e.g., multi-robot loop closure, multi-operator fusion) SHOULD verify that all sources share a common clock domain before assuming sub-millisecond time alignment. When clock domains differ, consumers MUST estimate and compensate clock offsets before temporal association.
+
+**Default assumption:** If no `time` metadata is present, consumers MUST assume `clock_source = "system"` with no accuracy guarantee.
+
+### **2.10 Bounding Box Ordering (Normative)**
+
+- **Geographic CRS (WGS84):** `bbox` arrays MUST use GeoJSON ordering: `[lon_min, lat_min, lon_max, lat_max]` (2D) or `[lon_min, lat_min, alt_min, lon_max, lat_max, alt_max]` (3D).
+- **Local / ENU CRS:** `Aabb3` uses `{min_xyz, max_xyz}` where each is a `Vec3` in the local coordinate frame.
+
+JSON examples throughout this specification MUST follow these conventions. Where a `CoverageElement` uses `crs = "EPSG:4326"`, the `bbox` array uses GeoJSON ordering. Where `crs` is absent or local, the `aabb` field uses `Aabb3` semantics.
+
+### **2.11 Schema Stability Signaling (Normative)**
+
+The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.5"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
+
+For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. Consumers in production deployments MAY use this flag to filter or warn on provisional data.
+
+Example:
+
+```json
+{
+  "namespace": "schema",
+  "json": "{\"stability\": \"provisional\"}"
+}
+```
+
+Additionally, the `caps.features` field in `Announce` MAY carry feature flags prefixed with `provisional.` (e.g., `"provisional.rf_beam"`, `"provisional.radio"`). Consumers MAY filter `Announce` messages to exclude provisional features in production deployments.

@@ -114,3 +114,13 @@ Clients **MUST** treat any non-200 response as resolution failure.
 1. If a `spatialdds://` URI is resolved using HTTP(S), the client **MUST** use **HTTPS** and **MUST** validate the server’s TLS identity (WebPKI or pinned keys by deployment policy).
 2. If OAuth2 is used, clients **SHOULD** present bearer tokens using the standard `Authorization: Bearer <token>` header.
 3. Implementations **MAY** use a local cache for resolution, but cached artifacts **MUST** be bound to an authenticated origin (e.g., obtained over HTTPS/TLS or validated signature) and **MUST** respect TTL/expiration.
+
+#### 7.5.6 Authority Expiry and Resolution Failure (Normative)
+
+When URI resolution fails (DNS failure, HTTP timeout, 404/410 response), clients MUST apply the following fallback chain:
+
+1. **Local cache.** If a cached manifest exists and its `cache_ttl` has not expired, the client MAY use the cached version.
+2. **Content-addressed fallback.** If the cached manifest or a previously-received `BlobRef` includes a `checksum` field, the client MAY resolve the content by checksum from any available content-addressed store (e.g., a peer cache or IPFS gateway). Content-addressed resolution is valid only when the checksum matches.
+3. **Graceful degradation.** If neither cache nor content-addressed resolution succeeds, the client MUST treat the resource as unavailable. Clients MUST NOT fabricate or guess resource content from expired or failed URIs.
+
+Anchor registries and content providers SHOULD design URIs with long-lived authorities. When authority transfer occurs (e.g., organization merger, domain sale), the new authority SHOULD maintain HTTP redirects from the old authority for at least 12 months.

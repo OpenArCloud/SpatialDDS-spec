@@ -38,6 +38,7 @@
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.6/appendix-f.md)
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.6/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.6/appendix-g-frame-identifiers.md)
-    - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.6/appendix-h-operational-scenarios.md)
+    - [Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)](sections/v1.6/appendix-h-operational-scenarios.md)
     - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.6/appendix-i.md)
     - [Appendix J: Comparison with ROS 2 (Informative)](sections/v1.6/appendix-j.md)
+    - [Appendix K: IDL Package Layout (Informative)](sections/v1.6/appendix-k-idl-package-layout.md)

@@ -38,9 +38,10 @@
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.6/appendix-f.md)
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.6/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.6/appendix-g-frame-identifiers.md)
-    - [Appendix H: Operational Scenarios & AI World Model Ladder (Informative)](sections/v1.6/appendix-h-operational-scenarios.md)
+    - [Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)](sections/v1.6/appendix-h-operational-scenarios.md)
     - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.6/appendix-i.md)
     - [Appendix J: Comparison with ROS 2 (Informative)](sections/v1.6/appendix-j.md)
+    - [Appendix K: IDL Package Layout (Informative)](sections/v1.6/appendix-k-idl-package-layout.md)
 
 ## **1\. Introduction**
 
@@ -330,12 +331,13 @@ SpatialDDS distinguishes among:
 Implementations **SHOULD** enforce TTL and timestamps to mitigate replay. Where TTL exists (e.g., in Discovery messages), recipients **SHOULD** discard messages outside the declared validity interval.
 
 #### **2.7.5 DDS Security Binding (Normative)**
-SpatialDDS deployments that require authentication, authorization, integrity, or confidentiality over DDS **MUST** use **OMG DDS Security**.
+SpatialDDS deployments that require authentication, authorization, integrity, or confidentiality over DDS **MUST** use **OMG DDS Security** as the minimum on-bus security contract. This includes:
 
-**Minimum conformance profile:**
 - **Authentication:** PKI-based authentication as defined by DDS Security.
 - **Access control:** governance and permissions documents configured per DDS Security.
-- **Cryptographic protection:** when confidentiality or integrity is required by policy, endpoints **MUST** enable DDS Security cryptographic plugins to provide message protection.
+- **Cryptographic protection:** when confidentiality or integrity is required by policy, endpoints **MUST** enable DDS Security cryptographic plugins.
+
+Cloud and enterprise authorization mechanisms (OAuth 2.0/OIDC, SPIFFE/SPIRE, mutual TLS) MAY be layered via the `auth_hint` field. `auth_hint` extends the authorization model to HTTP-resolved resources (manifests, blob stores, service APIs) without replacing the on-bus DDS Security contract.
 
 **Operational mapping (non-exhaustive):**
 - Participants join a DDS **Domain**; security configuration applies to DomainParticipants and topics as governed by DDS Security governance rules.
@@ -343,6 +345,63 @@ SpatialDDS deployments that require authentication, authorization, integrity, or
 
 **Interoperability note (informative):**
 This specification does not redefine DDS Security. Implementations should use vendor-compatible DDS Security configuration mechanisms.
+
+#### **2.7.6 Spatial Privacy (Normative Guidance)**
+
+SpatialDDS streams carrying `GeoPose`, `FramedPose`, or ego-pose trajectories constitute personal location data when they describe individual users or devices. Deployments operating under privacy regulations (GDPR, CCPA, or equivalent) SHOULD apply the following mitigations:
+
+- **Pose quantization.** Reduce pose precision to the minimum required by the application (e.g., 1 m position, 5° orientation for building-level occupancy; full precision for SLAM).
+- **Trajectory truncation.** Limit the temporal extent of published pose histories. Fixed-lag smoothing windows (sensing profiles) naturally bound trajectory length; persistent storage of full trajectories requires explicit consent.
+- **Pseudonymization.** Use rotating `source_id` values that cannot be linked across sessions without a key held by the data controller.
+- **Consent and purpose limitation.** Operators publishing ego-pose streams to shared SpatialDDS domains MUST ensure that participants have consented to the spatial data sharing arrangement and that the data is used only for the stated purpose (e.g., collaborative SLAM, fleet coordination).
+
+These mitigations are normative guidance (SHOULD), not normative requirements (MUST), because privacy requirements vary by jurisdiction, deployment context, and application domain. Implementers are responsible for compliance with applicable privacy regulations.
+
+### **2.8 Enum Serialization (Normative)**
+
+When SpatialDDS types are serialized to JSON (manifests, HTTP payloads, diagnostic logs), enum values MUST be emitted as their IDL identifier string (e.g., `"GAUSSIAN_SPLAT"`, not `1`). Decoders MUST accept both the string identifier and the integer `@value` form. Unknown string identifiers MUST be rejected; unknown integer values MUST be treated as the enum's highest-numbered fallback value (e.g., `OTHER_RADIO`, `CUSTOM`) if one exists, or rejected otherwise.
+
+On the DDS wire (CDR encoding), enum values use their integer `@value(N)` per OMG IDL specification. This rule applies only to JSON serialization contexts.
+
+### **2.9 Time Semantics (Normative)**
+
+All `Time` values in SpatialDDS MUST represent UTC seconds since the Unix epoch (1970-01-01T00:00:00Z), excluding leap seconds (i.e., POSIX time / `clock_gettime(CLOCK_REALTIME)`). `nanosec` MUST be in the range `[0, 999999999]`.
+
+Producers operating in environments with hardware time synchronization SHOULD document their clock source via a `MetaKV` entry on the associated meta type with `namespace = "time"` and the following keys:
+
+| Key | Values | Example |
+|-----|--------|---------|
+| `clock_source` | `ptp`, `pps`, `gnss`, `ntp`, `system` | `"ptp"` |
+| `clock_accuracy_ns` | estimated accuracy in nanoseconds | `"1000"` |
+| `leap_second_mode` | `posix` (default), `tai`, `utc_with_leap` | `"posix"` |
+
+Consumers performing cross-device temporal association (e.g., multi-robot loop closure, multi-operator fusion) SHOULD verify that all sources share a common clock domain before assuming sub-millisecond time alignment. When clock domains differ, consumers MUST estimate and compensate clock offsets before temporal association.
+
+**Default assumption:** If no `time` metadata is present, consumers MUST assume `clock_source = "system"` with no accuracy guarantee.
+
+### **2.10 Bounding Box Ordering (Normative)**
+
+- **Geographic CRS (WGS84):** `bbox` arrays MUST use GeoJSON ordering: `[lon_min, lat_min, lon_max, lat_max]` (2D) or `[lon_min, lat_min, alt_min, lon_max, lat_max, alt_max]` (3D).
+- **Local / ENU CRS:** `Aabb3` uses `{min_xyz, max_xyz}` where each is a `Vec3` in the local coordinate frame.
+
+JSON examples throughout this specification MUST follow these conventions. Where a `CoverageElement` uses `crs = "EPSG:4326"`, the `bbox` array uses GeoJSON ordering. Where `crs` is absent or local, the `aabb` field uses `Aabb3` semantics.
+
+### **2.11 Schema Stability Signaling (Normative)**
+
+The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.5"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
+
+For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. Consumers in production deployments MAY use this flag to filter or warn on provisional data.
+
+Example:
+
+```json
+{
+  "namespace": "schema",
+  "json": "{\"stability\": \"provisional\"}"
+}
+```
+
+Additionally, the `caps.features` field in `Announce` MAY carry feature flags prefixed with `provisional.` (e.g., `"provisional.rf_beam"`, `"provisional.radio"`). Consumers MAY filter `Announce` messages to exclude provisional features in production deployments.
 
 // SPDX-License-Identifier: MIT
 // SpatialDDS Specification 1.6 (© Open AR Cloud Initiative)
@@ -370,7 +429,21 @@ The Core profile defines the essential building blocks for representing and shar
 
 **GNSS diagnostics (Normative):** `NavSatStatus` is a companion to `GeoPose` that carries GNSS receiver diagnostics (fix type, DOP, satellite count, ground velocity) on a parallel topic. It is published alongside GNSS-derived GeoPoses and MUST NOT be used to annotate non-GNSS localization outputs.
 
-**NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct and identifies the GNSS receiver. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream. Producers publishing GNSS-derived GeoPoses SHOULD co-publish NavSatStatus at the same cadence. NavSatStatus is not a registered discovery type and does not require a `TopicMeta` entry in `Announce.topics[]`.
+**NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream.
+
+NavSatStatus is registered as type `navsat_status` in the registered types table (§3.3.2). Producers publishing GNSS-derived GeoPoses SHOULD include a `TopicMeta` entry for NavSatStatus in their `Announce.topics[]`. Consumers MAY discover NavSatStatus topics through standard discovery mechanisms.
+
+**Planned Trajectory (Normative):** `PlannedTrajectory` represents an agent's intended future path. It is published at the agent's replan rate (typically 1–10 Hz) and superseded by each new plan revision. Consumers MUST use the most recent `plan_revision` for a given `agent_id` and discard older revisions.
+
+Waypoint timestamps represent planned arrival times in the future. Consumers SHOULD treat these as estimates subject to replanning. The `position_uncertainty_m` field, when present, indicates the planner's confidence in the waypoint position and typically grows with distance from the current state.
+
+PlannedTrajectory is registered as type `planned_trajectory` in §3.3.2 and SHOULD be advertised on the topic `spatialdds/<scene>/plan/<agent_id>/trajectory/v1` using the `EVENT_RT` QoS profile.
+
+**Entity Binding (Normative):** `EntityBinding` provides cross-topic correlation without imposing a scene graph hierarchy. Multiple publishers MAY publish bindings for the same `entity_id`; consumers MUST merge component lists and resolve conflicts (e.g., by preferring the binding with the most recent `stamp` or the highest-confidence source).
+
+EntityBinding is intentionally flat — it does not express parent-child relationships, ownership, or transform inheritance. Consumers requiring hierarchical scene graph semantics SHOULD build their own entity hierarchy from the bindings received.
+
+EntityBinding is registered as type `entity_binding` in §3.3.2 and SHOULD be advertised on the topic `spatialdds/<scene>/entity/binding/v1`. Publishers SHOULD use RELIABLE + TRANSIENT_LOCAL QoS so that late-joining consumers receive the current set of entity correlations.
 
 #### **Blob Reassembly (Normative)**
 
@@ -927,7 +1000,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 * Empty sequences in `CoverageFilter` mean “match all” for that field.
 * When multiple filter fields are populated, they are ANDed; a result MUST match at least one value in every non-empty sequence.
 * Version range matching stays in profile negotiation (`supported_profiles` with `min_minor`/`max_minor`), not in coverage queries.
-* `CoverageQuery.expr` is deprecated in 1.5. If `has_filter` is true, responders MUST ignore `expr`.
+* `CoverageQuery.expr` is **deprecated** in 1.5 and **will be removed in 2.0**. If `has_filter` is true, responders MUST ignore `expr`. New implementations MUST NOT generate `expr`; they MUST use `filter` exclusively. Implementations supporting `expr` for backward compatibility SHOULD log a deprecation warning.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
 #### **Pagination Contract (Normative)**
@@ -1048,6 +1121,15 @@ spatialdds/<domain>/<stream>/<type>/<version>
 }
 ```
 
+##### Topic Version Stability (Normative)
+
+The version segment in topic names (e.g., `/v1`) corresponds to the **profile MAJOR version**, not the MINOR version. Topic names change only when a profile increments its MAJOR version number. Concretely:
+
+- `spatial.sensing.vision/1.5` → `spatial.sensing.vision/1.6`: topic names remain `/v1` (same MAJOR).
+- `spatial.sensing.vision/1.5` → `spatial.sensing.vision/2.0`: topic names change to `/v2` (MAJOR incremented).
+
+Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change topic names. This guarantees that consumers subscribing to `/v1` topics continue to receive messages after MINOR-version updates without resubscribing.
+
 #### **3.3.2 Typed Topics Registry**
 
 | Type | Typical Payload | Notes |
@@ -1069,6 +1151,9 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) |
 | `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) |
 | `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) |
+| `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose |
+| `planned_trajectory` | Future agent trajectory with waypoints | Intent sharing, cooperative planning |
+| `entity_binding` | Cross-topic entity correlation | Scene graph construction, digital twins |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
@@ -1114,6 +1199,9 @@ Consumers use these three keys to match and filter streams without inspecting pa
 
 - `coverage_frame_ref` is the canonical frame for an announcement. `CoverageElement.frame_ref` MAY override it, but SHOULD be used sparingly (e.g., mixed local frames). If absent, consumers MUST use `coverage_frame_ref`.
 - When `coverage_eval_time` is present, consumers SHALL evaluate any referenced transforms at that instant before interpreting `coverage_frame_ref`.
+- When `CoverageElement.has_coverage_window` is true, the coverage geometry is valid only between `coverage_window_start` and `coverage_window_end`. Consumers MUST NOT assume coverage outside this window. Producers advertising moving coverage (e.g., patrol routes, fleet trajectories) SHOULD publish updated `Announce` messages as coverage windows expire.
+- When `has_coverage_window` is false, the coverage is persistent (time-invariant) and remains valid until the `Announce` is superseded or the participant leaves the domain.
+- `coverage_eval_time` and `coverage_window` serve different purposes: `coverage_eval_time` specifies *when to evaluate time-varying transforms*; `coverage_window` specifies *when the coverage itself is valid*. Both MAY be present simultaneously.
 - `global == true` means worldwide coverage regardless of regional hints. Producers MAY omit `bbox`, `geohash`, or `elements` in that case.
 - When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
 - Manifests MAY provide any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox` and `aabb`. Consumers SHALL treat all hints consistently according to the Coverage Model.
@@ -1201,32 +1289,38 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 
 #### **Profile Matrix (SpatialDDS 1.6)**
 
-- spatial.core/1.6
-- spatial.discovery/1.6
-- spatial.anchors/1.5
-- spatial.manifest/1.6 (manifest schema profile for SpatialDDS 1.6)
-- spatial.argeo/1.5
-- spatial.sensing.common/1.6
-- spatial.sensing.rad/1.5
-- spatial.sensing.lidar/1.5
-- spatial.sensing.vision/1.5
-- spatial.slam_frontend/1.5
-- spatial.vio/1.5
-- spatial.semantics/1.5
-- spatial.mapping/1.5
-- spatial.events/1.5
-- spatial.neural/1.5 (Provisional; Appendix E)
-- spatial.agent/1.5 (Provisional; Appendix E)
-- spatial.sensing.rf_beam/1.5 (Provisional; Appendix E)
-- spatial.sensing.radio/1.5 (Provisional; Appendix E)
+| Profile | Version in 1.6 | Status | 1.6 Change |
+|---|---|---|---|
+| spatial.core | 1.6 | Stable | Added `PlannedTrajectory`, `EntityBinding` |
+| spatial.discovery | 1.6 | Stable | Added `CoverageElement.coverage_window` |
+| spatial.sensing.common | 1.6 | Stable | Added `COV_ROT3`, `COV_POSE6_TWIST6`, `Mat12x12` |
+| spatial.manifest | 1.6 | Stable | Manifest schema bumped with spec |
+| spatial.anchors | 1.5 | Stable | No change |
+| spatial.argeo | 1.5 | Stable | No change |
+| spatial.sensing.rad | 1.5 | Stable | No change |
+| spatial.sensing.lidar | 1.5 | Stable | No change |
+| spatial.sensing.vision | 1.5 | Stable | No change |
+| spatial.slam_frontend | 1.5 | Stable | No change |
+| spatial.vio | 1.5 | Stable | No change |
+| spatial.semantics | 1.5 | Stable | No change |
+| spatial.mapping | 1.5 | Stable | No change |
+| spatial.events | 1.5 | Stable | No change |
+| spatial.sensing.rf_beam | 1.5 | Provisional (Appendix E) | No change |
+| spatial.sensing.radio | 1.5 | Provisional (Appendix E) | No change |
+| spatial.neural | 1.5 | Informative example (Appendix E) | Demoted from Provisional — design reference only |
+| spatial.agent | 1.5 | Informative example (Appendix E) | Demoted from Provisional — design reference only |
+
+Profiles whose IDL is unchanged in 1.6 retain their `/1.5` `schema_version` and `MODULE_ID` strings. Topic names continue to use the `/v1` segment per §3.3.1 Topic Version Stability — minor profile bumps do not change topic names.
 
 > `spatial.manifest/1.6` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.
 
-## **4. Operational Scenarios: From SLAM to AI World Models**
+## **4. Operational Scenarios**
 
-Informative narratives, mermaid diagrams, and long-form JSON walkthroughs now live in Appendix H. See Appendix H for the full “local → shared → global → AI” ladder and device-to-AI examples.
+SpatialDDS targets a wide range of operational scenarios — local SLAM, shared anchors, VPS-driven global localization, digital twin aggregation, multi-agent collaborative mapping, zone-scoped event monitoring, and AI/ML grounding. Each profile in this specification is exercised by at least one such scenario; the conformance appendix (Appendix I) records the public datasets used to validate them.
+
+For an informative discussion of how these capabilities serve as a grounding layer for AI world models, see **Appendix H**. For a long-form digital-twin narrative, see the Mapping and Spatial Events sections of Appendix D and the dataset walkthroughs (S3E, ScanNet, LaMAR) in Appendix I.
 
 ## **5. Conclusion**
 
@@ -1248,6 +1342,28 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
   The Mapping extension enables multi-agent map discovery, alignment, and lifecycle coordination. Future work could formalize map merge protocols, distributed optimization coordination, and standardized map quality benchmarks for fleet-scale deployments.  
 * **Standards Alignment**  
   Ongoing coordination with OGC, Khronos, W3C, and GSMA initiatives will help ensure SpatialDDS complements existing geospatial, XR, and telecom standards rather than duplicating them.
+
+### Wire-Level Interop Testing
+
+Appendix I validates schema expressiveness through static conformance checks. Future revisions will add wire-level interoperability tests across at least two DDS implementations (CycloneDDS and Fast DDS minimum) to validate end-to-end publish/subscribe fidelity, QoS enforcement, and CDR encoding compatibility.
+
+### Transport-Agnostic Semantic Layer
+
+The spatial semantics defined by SpatialDDS — `FrameRef`-by-UUID, the Coverage Model, manifests, the URI scheme, and the dataset conformance methodology — are conceptually separable from the DDS transport binding. Future work will explore canonical bindings to additional transports (gRPC, MCAP files, Arrow Flight) while preserving the semantic layer unchanged. This would position SpatialDDS as an open semantic standard for spatial data, with DDS as the primary real-time binding and additional bindings for offline recording, cloud integration, and ML pipeline ingestion.
+
+### Factor Graph Interchange
+
+SpatialDDS's pose-graph types (`Node`, `Edge`, `MapMeta`) carry SLAM factor graph results. A dedicated factor graph interchange format — analogous to ONNX for neural networks — would enable portable exchange of arbitrary factor graph structures between solvers. SpatialDDS would reference such graphs via `BlobRef`, with `MapMeta` carrying optimization state metadata. This is a complementary effort, not a SpatialDDS extension.
+
+### Bridges to AI/ML Ecosystems
+
+Priority bridges for connecting SpatialDDS to ML training and inference pipelines:
+
+- SpatialDDS ↔ MCAP recorder/replayer
+- SpatialDDS ↔ Gymnasium observation space adapter
+- SpatialDDS ↔ ROS 2 bridge (reference implementation)
+
+These bridges are implementation artifacts, not spec extensions. They will be maintained in the SpatialDDS-demo repository.
 
 Together, these directions point toward a future where SpatialDDS is not just a protocol but a foundation for an open, interoperable ecosystem of real-time world models.
 
@@ -1369,6 +1485,16 @@ Clients **MUST** treat any non-200 response as resolution failure.
 1. If a `spatialdds://` URI is resolved using HTTP(S), the client **MUST** use **HTTPS** and **MUST** validate the server’s TLS identity (WebPKI or pinned keys by deployment policy).
 2. If OAuth2 is used, clients **SHOULD** present bearer tokens using the standard `Authorization: Bearer <token>` header.
 3. Implementations **MAY** use a local cache for resolution, but cached artifacts **MUST** be bound to an authenticated origin (e.g., obtained over HTTPS/TLS or validated signature) and **MUST** respect TTL/expiration.
+
+#### 7.5.6 Authority Expiry and Resolution Failure (Normative)
+
+When URI resolution fails (DNS failure, HTTP timeout, 404/410 response), clients MUST apply the following fallback chain:
+
+1. **Local cache.** If a cached manifest exists and its `cache_ttl` has not expired, the client MAY use the cached version.
+2. **Content-addressed fallback.** If the cached manifest or a previously-received `BlobRef` includes a `checksum` field, the client MAY resolve the content by checksum from any available content-addressed store (e.g., a peer cache or IPFS gateway). Content-addressed resolution is valid only when the checksum matches.
+3. **Graceful degradation.** If neither cache nor content-addressed resolution succeeds, the client MUST treat the resource as unavailable. Clients MUST NOT fabricate or guess resource content from expired or failed URIs.
+
+Anchor registries and content providers SHOULD design URIs with long-lived authorities. When authority transfer occurs (e.g., organization merger, domain sale), the new authority SHOULD maintain HTTP redirects from the old authority for at least 12 months.
 
 ## 8. Manifest Schema (Normative)
 
@@ -1731,12 +1857,15 @@ module spatial {
     typedef double Vec3[3];
     typedef double Mat3x3[9];
     typedef double Mat6x6[36];
+    typedef double Mat12x12[144];
     typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
 
     enum CovarianceType {
       @value(0) COV_NONE,
-      @value(3) COV_POS3,
-      @value(6) COV_POSE6
+      @value(3) COV_POS3,           // 3x3 position covariance
+      @value(6) COV_POSE6,          // 6x6 pose covariance (pos + rot)
+      @value(9) COV_ROT3,           // 3x3 orientation-only covariance (added in 1.6)
+      @value(12) COV_POSE6_TWIST6   // 12x12 pose + velocity covariance (added in 1.6)
     };
 
     // Stable, typo-proof frame identity shared across all profiles.
@@ -1873,6 +2002,8 @@ module spatial {
       case spatial::common::COV_NONE: uint8 none;
       case spatial::common::COV_POS3:  spatial::common::Mat3x3 pos;
       case spatial::common::COV_POSE6: spatial::common::Mat6x6 pose;
+      case spatial::common::COV_ROT3:  spatial::common::Mat3x3 rot;          // added in 1.6
+      case spatial::common::COV_POSE6_TWIST6: spatial::common::Mat12x12 pose_twist; // added in 1.6
     };
 
     // A metric pose bundled with its coordinate frame, uncertainty, and
@@ -1885,6 +2016,86 @@ module spatial {
       FrameRef  frame_ref;  // which coordinate frame this pose is expressed in
       CovMatrix cov;        // uncertainty (COV_NONE when absent)
       Time      stamp;      // when this pose was valid
+    };
+
+    // PlannedTrajectory carries a sequence of future poses representing
+    // an agent's intended path. It is the planning counterpart to a
+    // perception trajectory: both are sequences of poses, but a
+    // PlannedTrajectory extends into the future and is conditioned on
+    // intended actions rather than past measurements.
+    //
+    // Consumers MAY use PlannedTrajectory for:
+    // - Cooperative collision avoidance (avoid other agents' plans)
+    // - Intent visualization in digital twins
+    // - Predictive resource allocation (anticipate coverage changes)
+    //
+    // Topic: spatialdds/<scene>/plan/<agent_id>/trajectory/v1
+    // QoS:   EVENT_RT (RELIABLE, ordered, ~100 ms deadline)
+    @extensibility(APPENDABLE) struct PlannedWaypoint {
+      PoseSE3   pose;                   // planned pose at this waypoint
+      Time      stamp;                  // planned arrival time
+      boolean   has_velocity;
+      spatial::common::Vec3 velocity;   // planned velocity (m/s)
+      boolean   has_uncertainty;
+      float     position_uncertainty_m; // 1-sigma position uncertainty
+      boolean   has_confidence;
+      float     confidence;             // planner confidence [0,1]
+    };
+
+    @extensibility(APPENDABLE) struct PlannedTrajectory {
+      @key string agent_id;             // who is planning
+      string  plan_id;                  // unique plan identifier (changes on replan)
+      uint32  plan_revision;            // increments on each replan
+
+      FrameRef frame_ref;               // coordinate frame for all waypoints
+
+      sequence<PlannedWaypoint, 256> waypoints;
+
+      // Planning metadata
+      boolean has_goal_pose;
+      PoseSE3 goal_pose;                // final destination (may differ from last waypoint)
+
+      boolean has_horizon_sec;
+      float   horizon_sec;              // planning horizon in seconds
+
+      boolean has_replan_rate_hz;
+      float   replan_rate_hz;           // how often the plan is updated
+
+      Time    stamp;                    // when this plan was computed
+      string  schema_version;           // "spatial.core/1.6"
+    };
+
+    // EntityBinding correlates messages across different SpatialDDS topics
+    // that refer to the same physical entity. It is the minimal primitive
+    // for scene graph construction: consumers receive bindings and assemble
+    // their own entity hierarchies.
+    //
+    // Example: a fused track, a geometry tile, and a SpatialZone occupant
+    // entry all describe the same vehicle. An EntityBinding links them
+    // by their respective keys.
+    //
+    // Topic: spatialdds/<scene>/entity/binding/v1
+    // QoS:   RELIABLE + TRANSIENT_LOCAL (late joiners receive current bindings)
+    @extensibility(APPENDABLE) struct ComponentRef {
+      string topic;                     // topic name (e.g., "spatialdds/.../fusion/track/v1")
+      string key;                       // key value on that topic (e.g., track_id = "fused-42")
+    };
+
+    @extensibility(APPENDABLE) struct EntityBinding {
+      @key string entity_id;            // stable entity identifier
+
+      string entity_class;              // semantic class (e.g., "vehicle", "pedestrian", "drone")
+
+      sequence<ComponentRef, 16> components; // references to messages on other topics
+
+      // Optional: entity's authoritative pose (convenience — same as the pose
+      // on one of the component topics, but saves a lookup).
+      boolean    has_pose;
+      FramedPose pose;
+
+      Time   stamp;
+      string source_id;                 // who published this binding (e.g., fusion service)
+      string schema_version;            // "spatial.core/1.6"
     };
 
     @extensibility(APPENDABLE) struct Node {
@@ -1979,7 +2190,7 @@ module spatial {
       uint16  diff_station_id;  // reference station ID
 
       Time   stamp;             // should match the associated GeoPose.stamp
-      string schema_version;    // e.g., "1.5.0"
+      string schema_version;    // e.g., "1.6.0"
     };
 
     @extensibility(APPENDABLE) struct GeoAnchor {
@@ -2128,6 +2339,13 @@ module spatial {
       // Optional per-element frame override. If has_frame_ref == false, this element MUST use coverage_frame_ref.
       boolean has_frame_ref;
       FrameRef frame_ref;       // Use sparingly to mix a few local frames within one announcement.
+
+      // Time-varying coverage (optional, added in 1.6)
+      // When present, coverage is valid only within this window.
+      // Absent means coverage is persistent / time-invariant.
+      boolean has_coverage_window;
+      Time    coverage_window_start;
+      Time    coverage_window_end;
     };
 
     // Validity window for time-bounded transforms.
@@ -4300,9 +4518,13 @@ Event:
 
 These provisional extensions are intentionally minimal and subject to breaking changes in future versions. Implementers SHOULD treat all struct layouts as unstable and MUST NOT assume wire compatibility across spec revisions.
 
-### **Example: Neural Extension (Provisional)**
+### **Neural Scene Representations (Informative Example)**
 
-This profile describes neural scene representations — such as NeRFs, Gaussian splats, and neural SDFs — and provides a request/reply pattern for view synthesis. A mapping service might publish a `NeuralFieldMeta` describing a Gaussian splat covering part of a city block, and an AR client could request novel views from arbitrary camera poses.
+The following IDL illustrates how neural scene representations (NeRFs, Gaussian splats, neural SDFs) could be described and queried through SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.6 normative specification.** Implementations MUST NOT assume wire compatibility with this IDL across spec revisions.
+
+The Neural profile is retained as a design reference for future standardization. It is not included in the Profile Matrix (§3.5) and does not have a registered type, QoS profile, or topic pattern.
+
+A mapping service might publish a `NeuralFieldMeta` describing a Gaussian splat covering part of a city block, and an AR client could request novel views from arbitrary camera poses.
 
 The profile intentionally avoids prescribing model internals. `model_format` is a freeform string that identifies the training framework and version; model weights ride as blobs. This keeps the schema stable across the rapid evolution of neural representation research while giving consumers enough metadata to discover fields, check coverage, and request renders.
 
@@ -4442,9 +4664,13 @@ module spatial {
 }
 ```
 
-### **Example: Agent Extension (Provisional)**
+### **Agent Task Coordination (Informative Example)**
 
-This profile provides lightweight task coordination for AI agents and planners operating over the SpatialDDS bus. It covers two layers:
+The following IDL illustrates how spatial task coordination between agents, robots, and planners could be structured over SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.6 normative specification.**
+
+Agent task coordination is retained as a design reference. The types shown here are not registered in the Profile Matrix, the registered types table, or the QoS profiles table. Deployments requiring agent coordination SHOULD treat this IDL as a starting point and define deployment-specific extensions.
+
+This example covers two layers:
 
 - **Single-task lifecycle.** A planner publishes `TaskRequest` messages describing spatial tasks — navigate to a location, observe a region, build a map — and agents claim and report progress via `TaskStatus`.
 - **Fleet coordination.** Agents advertise availability and capabilities via `AgentStatus`. When multiple agents can handle a task, they may publish `TaskOffer` bids. The coordinator selects an agent via `TaskAssignment`. If an agent cannot finish, it publishes `TaskHandoff` with continuation context so the next agent picks up where it left off.
@@ -5427,7 +5653,7 @@ spatialdds://openarcloud.org/zone:sf/tileset/city3d;v=3?lang=en
 
 ## **Appendix F.X Discovery Query Expression (Informative)**
 
-This appendix defines the boolean filter grammar used by the deprecated `disco.CoverageQuery.expr`. The language is case-sensitive,
+This appendix defines the boolean filter grammar used by the deprecated `disco.CoverageQuery.expr`. This grammar is **deprecated as of 1.5 and will be removed in 2.0**. New implementations MUST use `CoverageQuery.filter` instead. The language is case-sensitive,
 UTF-8, and whitespace-tolerant. Identifiers target announced metadata fields (for example `type`, `profile`,
 `module_id`); string literals are double-quoted and use a C-style escape subset.
 
@@ -5501,125 +5727,78 @@ Manifest entries that refer to frames MUST use a `FrameRef` object rather than r
 ### Notes
 Derived schemas (e.g. GeoPose, Anchors) SHALL refer to the Appendix A definition by reference and MUST NOT re-declare frame semantics. The conventions in §2.1 and the coverage/discovery rules in §3.3 reference this appendix for their frame requirements.
 
-## **Appendix H: Operational Scenarios & AI World Model Ladder (Informative)**
+## **Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)**
 
-SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
+### **H.1 The Grounding Problem**
 
-### **Narrative Walkthrough: Local → Shared → Global → AI**
+AI world models — whether learned latent dynamics (JEPA, Cosmos), foundation models for robotics (RT-2, π₀, Octo), digital twins, or planning agents — require structured, real-time observations of the physical world. The model needs to know what exists, where it is, how it's moving, and what the spatial context is.
 
-1. **Local SLAM on-device.** A headset, drone, or robot runs visual-inertial SLAM, generating keyframes and odometry updates in its private map frame.
-2. **Sharing a pose graph.** The device publishes `pg.node` and `pg.edge` samples (often as compact PoseGraphDelta bursts) onto the SpatialDDS bus so nearby peers or edge services can extend or optimize the map.
-3. **Anchors stabilize VIO.** By discovering the Anchor Registry, the device resolves durable anchor URIs, retrieves their manifests, and fuses those priors to keep its VIO estimate drift-free.
-4. **VPS provides a GeoPose.** When the device needs a global fix, it queries a Visual Positioning Service (VPS). The VPS uses the shared pose graph plus anchor hints to return a `geo.fix` sample that orients the local map in a world frame.
-5. **Digital twin aggregation.** Twin backends subscribe to the same streams — pose graphs, anchors, geometry, and semantics — to maintain authoritative state for places, assets, and events.
-6. **AI world models consume the twin.** Analytics engines, planning agents, and foundation models read from the digital twin feeds, grounding their predictions and experiences in the synchronized world model.
+Today, the infrastructure for connecting world models to physical reality is bespoke. Each deployment builds custom sensor pipelines, coordinate frame management, and data ingestion. The model architecture is advancing rapidly; the grounding infrastructure is not.
 
-The end result is a continuous chain: local sensing feeds a shared spatial data bus, anchors and VPS lift content into a global frame, digital twins maintain durable state, and AI systems reason over the fused model.
+SpatialDDS provides this grounding layer: typed, discoverable, multi-source spatial observations on a real-time bus. Every SpatialDDS profile answers a question a world model asks:
 
-```mermaid
-sequenceDiagram
-    participant Device
-    participant DDS as SpatialDDS Bus
-    participant VPS
-    participant Anchors as Anchor Registry
-    participant Twin as Digital Twin
-    participant AI as AI Service
-    Device->>DDS: PoseGraphDelta (pg.node/pg.edge)
-    DDS->>Anchors: Anchor manifest request
-    Anchors-->>DDS: anchors.set / anchors.delta
-    Device->>VPS: feat.keyframe / image blob
-    VPS-->>DDS: geo.fix (GeoPose)
-    DDS-->>Twin: PoseGraph, GeoPose, geom.tile.*
-    Twin-->>AI: TwinStateUpdate / analytics feed
-    AI-->>Device: Optional guidance or overlays
-```
+| World Model Question | SpatialDDS Profile | Key Types |
+|---|---|---|
+| What objects exist and where? | `spatial.semantics` | `Detection3D`, `Detection3DSet` |
+| What does it look like from here? | `spatial.sensing.vision` | `VisionFrame`, `CamIntrinsics` |
+| What's the 3D structure? | `spatial.sensing.lidar` | `LidarFrame`, `LidarMeta` |
+| What RF environment is here? | `spatial.sensing.radio` | `RadioScan` |
+| Where am I in the world? | `spatial.core` + `spatial.argeo` | `GeoPose`, `GeoAnchor` |
+| What zones exist, what's their state? | `spatial.events` | `SpatialZone`, `ZoneState` |
+| What just happened? | `spatial.events` | `SpatialEvent` |
+| What data sources exist? | `spatial.discovery` | `Announce`, `CoverageQuery` |
+| What does this agent intend to do? | `spatial.core` | `PlannedTrajectory` |
+| Which observations refer to the same thing? | `spatial.core` | `EntityBinding` |
 
-### **Example 1: Device Localization with SLAM and Anchors**
+### **H.2 Integration Patterns**
 
-A field technician’s headset begins indoors with self-contained SLAM. As it walks the “local → shared → global” ladder:
+SpatialDDS does not prescribe how world models consume spatial data. Instead, it defines typed messages that bridge naturally into existing ML and robotics ecosystems:
 
-- **Publish local mapping.** Each keyframe produces a PoseGraphDelta that streams to `pg.node` / `pg.edge`. An excerpt looks like:
+**Recording bridge (SpatialDDS → MCAP/Parquet).** A recorder subscribes to SpatialDDS topics and writes them as MCAP files or Parquet tables. Offline training pipelines (LeRobot, Open X-Embodiment) ingest these recordings as episodes. SpatialDDS's typed messages preserve spatial semantics through the recording: coordinate frames, timestamps, uncertainties, and source provenance survive the round trip.
 
-    ```json
-    {
-      "topic": "pg.node",
-      "map_id": "map/facility-west",
-      "node_id": "kf_0120",
-      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.01, -0.02, 0.03, 0.99] },
-      "frame_ref": {
-        "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
-        "fqn": "facility-west/map"
-      },
-      "stamp": { "sec": 1714070452, "nanosec": 125000000 },
-      "source_id": "device/headset-17"
-    }
-    ```
+**Gymnasium bridge (SpatialDDS → Gym observation space).** A thin adapter wraps a SpatialDDS subscription as a Gymnasium observation space. RL agents receive structured spatial observations (detections, poses, zone states) at each step. SpatialDDS's discovery profile provides the observation-space manifest: what types are available, at what rates, with what spatial coverage.
 
-- **Discover anchors.** Through `disco.service`, the headset resolves `spatialdds://facility.example.org/west/anchor/loading-bay`, fetches the manifest (Appendix A), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
-- **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
+**Inference service bridge (Model → SpatialDDS).** A world-model inference server subscribes to SpatialDDS sensor streams, runs prediction, and publishes results back to the bus as `PlannedTrajectory` or `Detection3D` predictions. The model is a SpatialDDS participant, not an external system.
 
-    ```json
-    {
-      "topic": "geo.fix",
-      "anchor_id": "spatialdds://facility.example.org/west/anchor/loading-bay",
-      "geopose": {
-        "lat_deg": 37.79341,
-        "lon_deg": -122.39412,
-        "alt_m": 12.6,
-        "q": [0.71, 0.00, 0.70, 0.05],
-        "frame_kind": "ENU",
-        "frame_ref": {
-          "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
-          "fqn": "earth-fixed"
-        }
-      },
-      "cov": { "type": "COV_POS3", "pos": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09] }
-    }
-    ```
+### **H.3 What SpatialDDS Does Not Do**
 
-*The quaternion `[0.71, 0.00, 0.70, 0.05]` is in `(x, y, z, w)` order per §2.1, representing a ~174° heading (facing roughly west in the ENU frame).*
+SpatialDDS is not an AI middleware. It does not define:
 
-- **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
+- Episode structure or step indexing (use Open X-Embodiment, LeRobot, or application-specific formats).
+- Action spaces or action vectors (use Gymnasium, Isaac Lab, or application-specific formats).
+- Latent representations or tokenized embeddings (internal to the model).
+- Reward functions or value estimates (internal to the training pipeline).
+- Model weights, checkpoints, or training configuration (use ONNX, safetensors, or framework-native formats).
 
-(See Appendix A for the full anchor and VPS manifests referenced here.)
+These concerns belong to the AI/ML ecosystem and are best served by existing, purpose-built formats. SpatialDDS's role is to provide the real-time spatial observations that these systems consume and the spatial predictions they produce — the grounding layer between the physical world and the world model.
 
-### **Example 2: Updating and Using a Digital Twin**
+### **H.4 Relationship to Factor Graphs and Scene Graphs**
 
-A facilities digital twin service subscribes to the same DDS topics to maintain a live model, while an AI analytics engine consumes the twin stream:
+SpatialDDS's pose-graph types (`Node`, `Edge`, `MapMeta`, `MapAlignment`) carry the inputs and outputs of factor graph inference. The Node/Edge structure is a pose graph — one specific application of factor graphs. Full factor graph interchange (arbitrary variable and factor types) is a separate concern best served by a dedicated interchange format.
 
-- **Twin ingestion.** The backend listens to `pg.node`, `geo.anchor`, and `geom.tile.*` to reconcile a persistent state for each asset. When a door actuator changes, an operator microservice emits:
+Similarly, SpatialDDS does not impose a scene graph. Scene graphs are deterministic hierarchical representations of entity state (parent-child transforms, component attachment). They belong in the consumer (digital twin, game engine, BIM system), not on the bus. `EntityBinding` provides the minimal cross-topic correlation that consumers need to build their own scene graphs from SpatialDDS streams.
 
-    ```json
-    {
-      "topic": "twin.state.update",
-      "uri": "spatialdds://facility.example.org/west/content/door-17",
-      "anchor_ref": "spatialdds://facility.example.org/west/anchor/loading-bay",
-      "state": {
-        "pose_local": {
-          "t": [4.21, -1.02, 0.00],
-          "q": [0, 0, 0, 1]
-        },
-        "door_status": "open",
-        "last_maintenance": "2024-03-22"
-      },
-      "stamp": { "sec": 1714070520, "nanosec": 0 }
-    }
-    ```
+The layering is:
 
-  The twin registry validates the anchor reference, signs a manifest (Appendix A), and updates the canonical record.
-
-- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing `SpatialEvent` alerts (type: DWELL_TIMEOUT or ANOMALY) and AR overlays back through SpatialDDS. Zone monitors subscribe to `Detection3DSet` and `SpatialZone`, evaluating zone rules in real time and publishing typed events that fleet managers and safety dashboards consume.
-- **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
-
-(See Appendix A for extended twin manifests and analytics payloads.)
-
-### **Why the Ladder Matters**
-
-This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
+- **Factor graphs:** inside the optimizer (GTSAM, Ceres).
+- **SpatialDDS:** carries observations and inferred state.
+- **Scene graphs:** inside the consumer (Unity, Omniverse, twin).
 
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
 *This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.6 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
+
+### **Scope and Limitations**
+
+The conformance tests in this appendix validate **schema expressiveness** — whether every field in a reference dataset has a lossless mapping to a SpatialDDS type. They are performed as static schema-vs-schema analyses and do NOT validate:
+
+- **Wire-level interoperability** between DDS implementations (e.g., CycloneDDS ↔ Fast DDS ↔ RTI Connext).
+- **Runtime correctness** of publish/subscribe delivery, QoS enforcement, or temporal ordering.
+- **End-to-end data fidelity** of encode → transmit → decode round-trips.
+
+Wire-level interop tests across at least two DDS vendors are planned for a future revision (see §6 Future Directions).
+
+Pass rates reported below reflect expressiveness coverage. A "pass" means the dataset field has a complete, lossless mapping to SpatialDDS types. A "gap" means no suitable type exists and an extension is needed. Deferred items are fields that can be carried (e.g., via `MetaKV`) but lack first-class typed support.
 
 ### **Motivation**
 
@@ -5731,14 +5910,16 @@ Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime
 
 All 27 nuScenes checks pass.
 
-| Modality | Checks | Pass | Remaining Gaps |
-|---|---|---|---|
-| Radar (detections) | 6 | 6 | 0 |
-| Vision | 5 | 5 | 0 |
-| Lidar | 6 | 6 | 0 |
-| Semantics | 5 | 5 | 0 |
-| Common / Core | 5 | 5 | 0 |
-| **Total** | **27** | **27** | **0** |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
+|---|---|---|---|---|---|
+| Radar (detections) | 6 | 6 | 0 | 0 | — |
+| Vision | 5 | 5 | 0 | 0 | — |
+| Lidar | 6 | 6 | 0 | 0 | — |
+| Semantics | 5 | 5 | 0 | 0 | — |
+| Common / Core | 5 | 5 | 0 | 0 | — |
+| **Total** | **27** | **27** | **0** | **0** | — |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 ---
 
@@ -5849,7 +6030,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`, and mmWave Beam checks pass against the provisional `rf_beam` profile (Appendix E).
 
-| Modality | Checks | Pass | Gap | Missing | Notes |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
 | Radar (tensor) | 8 | 8 | 0 | 0 | — |
 | Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles |
@@ -5859,6 +6040,8 @@ All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`,
 | mmWave Beam | 8 | 8 | 0 | 0 | Provisional rf_beam profile (K-B1) |
 | Semantics | 4 | 4 | 0 | 0 | Beam labels via rf_beam |
 | **Total** | **44** | **44** | **0** | **0** | **100% coverage** |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### Deferred Items
 
@@ -5975,18 +6158,20 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 All 38 S3E checks pass.
 
-| Modality | Checks | Pass | Remaining Gaps |
-|---|---|---|---|
-| LiDAR | 5 | 5 | 0 |
-| Vision | 4 | 4 | 0 |
-| IMU | 3 | 3 | 0 |
-| GNSS/RTK | 3 | 3 | 0 |
-| UWB (inter-robot range) | 4 | 4 | 0 |
-| Core Pose Graph | 5 | 5 | 0 |
-| Mapping (multi-agent) | 8 | 8 | 0 |
-| Discovery & Coordination | 3 | 3 | 0 |
-| Cross-cutting | 3 | 3 | 0 |
-| **Total** | **38** | **38** | **0** |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
+|---|---|---|---|---|---|
+| LiDAR | 5 | 5 | 0 | 0 | — |
+| Vision | 4 | 4 | 0 | 0 | — |
+| IMU | 3 | 3 | 0 | 0 | — |
+| GNSS/RTK | 3 | 3 | 0 | 0 | — |
+| UWB (inter-robot range) | 4 | 4 | 0 | 0 | — |
+| Core Pose Graph | 5 | 5 | 0 | 0 | — |
+| Mapping (multi-agent) | 8 | 8 | 0 | 0 | — |
+| Discovery & Coordination | 3 | 3 | 0 | 0 | — |
+| Cross-cutting | 3 | 3 | 0 | 0 | — |
+| **Total** | **38** | **38** | **0** | **0** | — |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### S3E Scenario Narrative (Informative)
 
@@ -6114,17 +6299,19 @@ ScanNet was chosen because it is the definitive indoor RGB-D scene understanding
 
 All 35 ScanNet checks pass.
 
-| Modality | Checks | Pass | Remaining Gaps |
-|---|---|---|---|
-| Color (RGB) | 4 | 4 | 0 |
-| Depth (RGBD) | 5 | 5 | 0 |
-| IMU | 2 | 2 | 0 |
-| Camera Pose & Frames | 4 | 4 | 0 |
-| Mesh Reconstruction | 4 | 4 | 0 |
-| 3D Instance Segmentation | 6 | 6 | 0 |
-| Spatial Events — Zones | 6 | 6 | 0 |
-| Spatial Events — Object Events | 4 | 4 | 0 |
-| **Total** | **35** | **35** | **0** |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
+|---|---|---|---|---|---|
+| Color (RGB) | 4 | 4 | 0 | 1 | 2D label image format deferred |
+| Depth (RGBD) | 5 | 5 | 0 | 0 | — |
+| IMU | 2 | 2 | 0 | 0 | — |
+| Camera Pose & Frames | 4 | 4 | 0 | 0 | — |
+| Mesh Reconstruction | 4 | 4 | 0 | 1 | Per-vertex semantic labels deferred |
+| 3D Instance Segmentation | 6 | 6 | 0 | 1 | First-class CAD reference deferred |
+| Spatial Events — Zones | 6 | 6 | 0 | 0 | — |
+| Spatial Events — Object Events | 4 | 4 | 0 | 0 | — |
+| **Total** | **35** | **35** | **0** | **3** | — |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### ScanNet Scenario Narrative (Informative)
 
@@ -6211,12 +6398,14 @@ LaMAR was selected to validate radio-assisted AR workflows and close the prior L
 
 All 22 LaMAR checks pass.
 
-| Modality | Checks | Pass | Gap | Missing | Notes |
+| Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
-| Radio profile | 12 | 12 | 0 | 0 | LM-1 closed via `RadioScan`/`RadioSensorMeta` |
+| Radio profile | 12 | 12 | 0 | 1 | CSI/CIR first-class transport deferred |
 | Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
-| Interop + privacy | 5 | 5 | 0 | 0 | Identifier and anonymization guidance documented |
-| **Total** | **22** | **22** | **0** | **0** | **100% coverage** |
+| Interop + privacy | 5 | 5 | 0 | 1 | Multi-band coexistence metadata deferred |
+| **Total** | **22** | **22** | **0** | **2** | **100% coverage** |
+
+Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### Deferred Items
 
@@ -6453,3 +6642,61 @@ This separation keeps the robot's internal pipeline in the well-supported ROS 2 
 | Multi-robot map exchange, alignment, and merge coordination | SpatialDDS |
 | Zone-based spatial alerting and smart infrastructure events | SpatialDDS |
 | Fleet task allocation with spatial capability discovery | SpatialDDS |
+
+## **Appendix K: IDL Package Layout (Informative)**
+
+The canonical file layout for SpatialDDS IDL is as follows. Implementations distributing the IDL as a package SHOULD preserve this directory structure so that `#include` paths and module hierarchies stay portable across projects.
+
+```
+spatialdds-idl/
+├── types.idl              # Common typedefs (Time, Vec3, Mat3x3, Mat6x6, Mat12x12, etc.)
+├── core.idl               # Core profile (PoseSE3, FramedPose, GeoPose, GeoAnchor,
+│                          #   PlannedTrajectory, EntityBinding, BlobRef, etc.)
+├── common.idl             # Sensing common (StreamMeta, FrameHeader,
+│                          #   FrameQuality, MetaKV, etc.)
+├── discovery.idl          # Discovery profile (Announce, CoverageQuery,
+│                          #   CoverageResponse, TopicMeta, etc.)
+├── anchors.idl            # Anchor registry (AnchorSet, AnchorDelta,
+│                          #   AnchorEntry, etc.)
+├── argeo.idl              # AR + Geo (NodeGeo, FrameTransform, etc.)
+├── sensing/
+│   ├── vision.idl         # Vision profile
+│   ├── lidar.idl          # LiDAR profile
+│   ├── rad.idl            # Radar profile (detection + tensor)
+│   ├── vio.idl            # IMU / VIO profile
+│   └── radio.idl          # Radio fingerprint profile (1.5+)
+├── semantics.idl          # 2D/3D detection, classification
+├── slam_frontend.idl      # SLAM front-end primitives
+├── mapping.idl            # Mapping profile (MapMeta, MapAlignment, etc.)
+├── events.idl             # Spatial events (SpatialEvent, ZoneState, etc.)
+└── provisional/
+    ├── rf_beam.idl         # RF beam profile (Provisional)
+    ├── radio.idl           # Radio fingerprint examples (Provisional)
+    ├── neural.idl          # Neural field examples (Informative only in 1.6)
+    └── agent.idl           # Agent task coordination (Informative only in 1.6)
+```
+
+This repository organizes the v1.6 IDL files in a flat layout under `idl/v1.6/` (with `examples/` for provisional and informative profiles); both organizations are valid as long as `#include` paths and module declarations match.
+
+Module namespacing follows the IDL `module` declarations:
+
+- `spatial::core` → `core.idl`
+- `spatial::common` → `common.idl` and `types.idl`
+- `spatial::disco` → `discovery.idl`
+- `spatial::sensing::vision` → `sensing/vision.idl`
+- `spatial::sensing::lidar` → `sensing/lidar.idl`
+- `spatial::sensing::rad` → `sensing/rad.idl`
+- `spatial::sensing::radio` → `sensing/radio.idl`
+- `spatial::vio` → `vio.idl`
+- `spatial::semantics` → `semantics.idl`
+- `spatial::slam_frontend` → `slam_frontend.idl`
+- `spatial::argeo` → `argeo.idl`
+- `spatial::anchors` → `anchors.idl`
+- `spatial::mapping` → `mapping.idl`
+- `spatial::events` → `events.idl`
+
+Generated language bindings SHOULD preserve this module hierarchy:
+
+- C++: `spatial::core::PoseSE3`
+- Python: `spatial.core.PoseSE3`
+- Rust: `spatial::core::PoseSE3`

@@ -2,7 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.6     | TBD        | Initialized work-in-progress 1.6 specification structure (copied forward from 1.5). |
+| 1.6     | TBD        | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
 | 1.4     | 2026-02-07 | Finalized 1.4 draft text and examples; regenerated full spec. |
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
@@ -11,7 +11,42 @@
 
 ## Version 1.6 - TBD
 
-- Initialized work-in-progress 1.6 specification structure (copied forward from 1.5).
+### Core profile (spatial.core/1.6)
+- Added `PlannedTrajectory` and `PlannedWaypoint` for cooperative planning and intent sharing (registered type `planned_trajectory`).
+- Added `EntityBinding` and `ComponentRef` for cross-topic entity correlation (registered type `entity_binding`).
+
+### Sensing common (spatial.sensing.common/1.6)
+- Extended `CovarianceType` with `COV_ROT3` (orientation-only) and `COV_POSE6_TWIST6` (12×12 pose + velocity) cases.
+- Added `Mat12x12` typedef and corresponding `CovMatrix` union cases.
+
+### Discovery (spatial.discovery/1.6)
+- Added `CoverageElement.has_coverage_window` / `coverage_window_start` / `coverage_window_end` for time-varying coverage.
+
+### New normative conventions (§2)
+- §2.7.6 Spatial Privacy (Normative Guidance) — pose quantization, trajectory truncation, pseudonymization, consent.
+- §2.8 Enum Serialization — JSON identifier strings; CDR uses integer `@value`.
+- §2.9 Time Semantics — UTC POSIX time; clock-source `MetaKV` keys.
+- §2.10 Bounding Box Ordering — GeoJSON `[lon, lat, ...]` for geographic, `Aabb3 {min_xyz, max_xyz}` for local.
+- §2.11 Schema Stability Signaling — `provisional` flag in `MetaKV` and `caps.features`.
+- §3.3.1 Topic Version Stability — `/v1` follows profile MAJOR, not MINOR.
+
+### Other normative changes
+- §2.7.5 DDS Security wording clarified to allow OAuth2/OIDC, SPIFFE/SPIRE, mutual TLS via `auth_hint`.
+- §7.5.6 Authority Expiry / Resolution Failure — cache → content-addressed → graceful-degradation fallback chain.
+- `CoverageQuery.expr` deprecation now scheduled for **removal in 2.0**; new implementations MUST use `filter` exclusively.
+- `NavSatStatus` registered as type `navsat_status` in §3.3.2; producers SHOULD include a `TopicMeta` entry.
+
+### Strategic / informative changes
+- Neural extension demoted to **Informative Example** (Appendix E); removed from Profile Matrix.
+- Agent extension demoted to **Informative Example** (Appendix E); removed from Profile Matrix.
+- Appendix H replaced with **"SpatialDDS as a Grounding Layer for World Models"** — H.1 Grounding Problem, H.2 Integration Patterns (MCAP/Gymnasium/inference bridges), H.3 What SpatialDDS Does Not Do, H.4 Factor Graphs and Scene Graphs.
+- §4 Operational Scenarios reframed; long-form examples remain in Appendix D and Appendix I dataset walkthroughs.
+- Appendix I gains a Scope and Limitations preface and a Deferred column on every results table.
+- New **Appendix K: IDL Package Layout (Informative)**.
+- §6 Future Directions adds wire-level interop testing, transport-agnostic semantic layer, factor-graph interchange, and AI/ML bridges.
+
+### Versioning model
+- Selective per-profile minor bumps: only profiles whose IDL changed (`core`, `sensing.common`, `discovery`, `manifest`) move to `/1.6`. All others retain `/1.5`. Topic names remain `/v1` per §3.3.1.
 
 ## Version 1.5 - 2026-04-29
 

@@ -1,115 +1,56 @@
-## **Appendix H: Operational Scenarios & AI World Model Ladder (Informative)**
+## **Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)**
 
-SpatialDDS supports a ladder of capabilities that begins with a single device mapping its surroundings and ends with AI systems consuming a live digital twin. Rather than enumerating isolated use cases, this section walks through one coherent flow — from local SLAM to shared anchors, to global positioning, to twin aggregation, and ultimately to AI world models.
+### **H.1 The Grounding Problem**
 
-### **Narrative Walkthrough: Local → Shared → Global → AI**
+AI world models — whether learned latent dynamics (JEPA, Cosmos), foundation models for robotics (RT-2, π₀, Octo), digital twins, or planning agents — require structured, real-time observations of the physical world. The model needs to know what exists, where it is, how it's moving, and what the spatial context is.
 
-1. **Local SLAM on-device.** A headset, drone, or robot runs visual-inertial SLAM, generating keyframes and odometry updates in its private map frame.
-2. **Sharing a pose graph.** The device publishes `pg.node` and `pg.edge` samples (often as compact PoseGraphDelta bursts) onto the SpatialDDS bus so nearby peers or edge services can extend or optimize the map.
-3. **Anchors stabilize VIO.** By discovering the Anchor Registry, the device resolves durable anchor URIs, retrieves their manifests, and fuses those priors to keep its VIO estimate drift-free.
-4. **VPS provides a GeoPose.** When the device needs a global fix, it queries a Visual Positioning Service (VPS). The VPS uses the shared pose graph plus anchor hints to return a `geo.fix` sample that orients the local map in a world frame.
-5. **Digital twin aggregation.** Twin backends subscribe to the same streams — pose graphs, anchors, geometry, and semantics — to maintain authoritative state for places, assets, and events.
-6. **AI world models consume the twin.** Analytics engines, planning agents, and foundation models read from the digital twin feeds, grounding their predictions and experiences in the synchronized world model.
+Today, the infrastructure for connecting world models to physical reality is bespoke. Each deployment builds custom sensor pipelines, coordinate frame management, and data ingestion. The model architecture is advancing rapidly; the grounding infrastructure is not.
 
-The end result is a continuous chain: local sensing feeds a shared spatial data bus, anchors and VPS lift content into a global frame, digital twins maintain durable state, and AI systems reason over the fused model.
+SpatialDDS provides this grounding layer: typed, discoverable, multi-source spatial observations on a real-time bus. Every SpatialDDS profile answers a question a world model asks:
 
-```mermaid
-sequenceDiagram
-    participant Device
-    participant DDS as SpatialDDS Bus
-    participant VPS
-    participant Anchors as Anchor Registry
-    participant Twin as Digital Twin
-    participant AI as AI Service
-    Device->>DDS: PoseGraphDelta (pg.node/pg.edge)
-    DDS->>Anchors: Anchor manifest request
-    Anchors-->>DDS: anchors.set / anchors.delta
-    Device->>VPS: feat.keyframe / image blob
-    VPS-->>DDS: geo.fix (GeoPose)
-    DDS-->>Twin: PoseGraph, GeoPose, geom.tile.*
-    Twin-->>AI: TwinStateUpdate / analytics feed
-    AI-->>Device: Optional guidance or overlays
-```
+| World Model Question | SpatialDDS Profile | Key Types |
+|---|---|---|
+| What objects exist and where? | `spatial.semantics` | `Detection3D`, `Detection3DSet` |
+| What does it look like from here? | `spatial.sensing.vision` | `VisionFrame`, `CamIntrinsics` |
+| What's the 3D structure? | `spatial.sensing.lidar` | `LidarFrame`, `LidarMeta` |
+| What RF environment is here? | `spatial.sensing.radio` | `RadioScan` |
+| Where am I in the world? | `spatial.core` + `spatial.argeo` | `GeoPose`, `GeoAnchor` |
+| What zones exist, what's their state? | `spatial.events` | `SpatialZone`, `ZoneState` |
+| What just happened? | `spatial.events` | `SpatialEvent` |
+| What data sources exist? | `spatial.discovery` | `Announce`, `CoverageQuery` |
+| What does this agent intend to do? | `spatial.core` | `PlannedTrajectory` |
+| Which observations refer to the same thing? | `spatial.core` | `EntityBinding` |
 
-### **Example 1: Device Localization with SLAM and Anchors**
+### **H.2 Integration Patterns**
 
-A field technician’s headset begins indoors with self-contained SLAM. As it walks the “local → shared → global” ladder:
+SpatialDDS does not prescribe how world models consume spatial data. Instead, it defines typed messages that bridge naturally into existing ML and robotics ecosystems:
 
-- **Publish local mapping.** Each keyframe produces a PoseGraphDelta that streams to `pg.node` / `pg.edge`. An excerpt looks like:
+**Recording bridge (SpatialDDS → MCAP/Parquet).** A recorder subscribes to SpatialDDS topics and writes them as MCAP files or Parquet tables. Offline training pipelines (LeRobot, Open X-Embodiment) ingest these recordings as episodes. SpatialDDS's typed messages preserve spatial semantics through the recording: coordinate frames, timestamps, uncertainties, and source provenance survive the round trip.
 
-    ```json
-    {
-      "topic": "pg.node",
-      "map_id": "map/facility-west",
-      "node_id": "kf_0120",
-      "pose": { "t": [0.12, 0.04, 1.53], "q": [0.01, -0.02, 0.03, 0.99] },
-      "frame_ref": {
-        "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
-        "fqn": "facility-west/map"
-      },
-      "stamp": { "sec": 1714070452, "nanosec": 125000000 },
-      "source_id": "device/headset-17"
-    }
-    ```
+**Gymnasium bridge (SpatialDDS → Gym observation space).** A thin adapter wraps a SpatialDDS subscription as a Gymnasium observation space. RL agents receive structured spatial observations (detections, poses, zone states) at each step. SpatialDDS's discovery profile provides the observation-space manifest: what types are available, at what rates, with what spatial coverage.
 
-- **Discover anchors.** Through `disco.service`, the headset resolves `spatialdds://facility.example.org/west/anchor/loading-bay`, fetches the manifest (Appendix A), and applies the returned `FrameTransform` to pin its `map` frame to a surveyed ENU.
-- **Query VPS.** When entering the yard, it uploads a `feat.keyframe` set to VPS. The service matches against the shared pose graph plus anchor hints and responds with a `geo.fix` sample:
+**Inference service bridge (Model → SpatialDDS).** A world-model inference server subscribes to SpatialDDS sensor streams, runs prediction, and publishes results back to the bus as `PlannedTrajectory` or `Detection3D` predictions. The model is a SpatialDDS participant, not an external system.
 
-    ```json
-    {
-      "topic": "geo.fix",
-      "anchor_id": "spatialdds://facility.example.org/west/anchor/loading-bay",
-      "geopose": {
-        "lat_deg": 37.79341,
-        "lon_deg": -122.39412,
-        "alt_m": 12.6,
-        "q": [0.71, 0.00, 0.70, 0.05],
-        "frame_kind": "ENU",
-        "frame_ref": {
-          "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
-          "fqn": "earth-fixed"
-        }
-      },
-      "cov": { "type": "COV_POS3", "pos": [0.04, 0, 0, 0.04, 0, 0, 0, 0, 0.09] }
-    }
-    ```
+### **H.3 What SpatialDDS Does Not Do**
 
-*The quaternion `[0.71, 0.00, 0.70, 0.05]` is in `(x, y, z, w)` order per §2.1, representing a ~174° heading (facing roughly west in the ENU frame).*
+SpatialDDS is not an AI middleware. It does not define:
 
-- **Align to world.** The headset fuses the GeoPose with its local pose graph, hands peers a globally aligned `geo.tf`, and continues publishing drift-stable updates for others to use.
+- Episode structure or step indexing (use Open X-Embodiment, LeRobot, or application-specific formats).
+- Action spaces or action vectors (use Gymnasium, Isaac Lab, or application-specific formats).
+- Latent representations or tokenized embeddings (internal to the model).
+- Reward functions or value estimates (internal to the training pipeline).
+- Model weights, checkpoints, or training configuration (use ONNX, safetensors, or framework-native formats).
 
-(See Appendix A for the full anchor and VPS manifests referenced here.)
+These concerns belong to the AI/ML ecosystem and are best served by existing, purpose-built formats. SpatialDDS's role is to provide the real-time spatial observations that these systems consume and the spatial predictions they produce — the grounding layer between the physical world and the world model.
 
-### **Example 2: Updating and Using a Digital Twin**
+### **H.4 Relationship to Factor Graphs and Scene Graphs**
 
-A facilities digital twin service subscribes to the same DDS topics to maintain a live model, while an AI analytics engine consumes the twin stream:
+SpatialDDS's pose-graph types (`Node`, `Edge`, `MapMeta`, `MapAlignment`) carry the inputs and outputs of factor graph inference. The Node/Edge structure is a pose graph — one specific application of factor graphs. Full factor graph interchange (arbitrary variable and factor types) is a separate concern best served by a dedicated interchange format.
 
-- **Twin ingestion.** The backend listens to `pg.node`, `geo.anchor`, and `geom.tile.*` to reconcile a persistent state for each asset. When a door actuator changes, an operator microservice emits:
+Similarly, SpatialDDS does not impose a scene graph. Scene graphs are deterministic hierarchical representations of entity state (parent-child transforms, component attachment). They belong in the consumer (digital twin, game engine, BIM system), not on the bus. `EntityBinding` provides the minimal cross-topic correlation that consumers need to build their own scene graphs from SpatialDDS streams.
 
-    ```json
-    {
-      "topic": "twin.state.update",
-      "uri": "spatialdds://facility.example.org/west/content/door-17",
-      "anchor_ref": "spatialdds://facility.example.org/west/anchor/loading-bay",
-      "state": {
-        "pose_local": {
-          "t": [4.21, -1.02, 0.00],
-          "q": [0, 0, 0, 1]
-        },
-        "door_status": "open",
-        "last_maintenance": "2024-03-22"
-      },
-      "stamp": { "sec": 1714070520, "nanosec": 0 }
-    }
-    ```
+The layering is:
 
-  The twin registry validates the anchor reference, signs a manifest (Appendix A), and updates the canonical record.
-
-- **AI/analytics consumption.** A predictive maintenance model subscribes to `twin.state.update` and `semantics.det.3d.set` streams. It flags abnormal open durations, publishing `SpatialEvent` alerts (type: DWELL_TIMEOUT or ANOMALY) and AR overlays back through SpatialDDS. Zone monitors subscribe to `Detection3DSet` and `SpatialZone`, evaluating zone rules in real time and publishing typed events that fleet managers and safety dashboards consume.
-- **Experience feedback.** AR clients render the AI insight, while robotics planners reuse the same URI-addressable twin objects for navigation.
-
-(See Appendix A for extended twin manifests and analytics payloads.)
-
-### **Why the Ladder Matters**
-
-This end-to-end chain demonstrates how SpatialDDS keeps local SLAM, shared anchors, VPS fixes, digital twins, and AI models in sync without bespoke gateways. Devices gain reliable localization, twins receive authoritative updates, and AI systems operate on a grounded, real-time world model.
+- **Factor graphs:** inside the optimizer (GTSAM, Ceres).
+- **SpatialDDS:** carries observations and inferred state.
+- **Scene graphs:** inside the consumer (Unity, Omniverse, twin).
