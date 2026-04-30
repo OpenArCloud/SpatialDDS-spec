@@ -36,6 +36,12 @@
 - `CoverageQuery.expr` deprecation now scheduled for **removal in 2.0**; new implementations MUST use `filter` exclusively.
 - `NavSatStatus` registered as type `navsat_status` in §3.3.2; producers SHOULD include a `TopicMeta` entry.
 
+### Conformance — Appendix I.5 LaMAR expansion
+- Replaced the 22-check radio-only LaMAR section with a 70-check multi-device version covering HoloLens 2 (vision + ToF depth + IR), iPhone/iPad (vision + LiDAR depth), NavVis scanner (multi-camera + lidar mesh), IMU, poses & trajectories, multi-session Anchors alignment (7 checks: GeoAnchor, AnchorSet, scan-to-scan, sequence-to-scan, year-long stability, refinement lifecycle), Discovery in multi-device context (5 checks: heterogeneous announcements, coverage, manifests), Cross-Device Localization (5 checks).
+- The original 22 radio checks (Radio Profile Coverage / Discovery + QoS / Interop + Privacy) are retained verbatim with prefix renames (`LD-*` → `LRD-*`, `LP-*` → `LRP-*`) to avoid ID collisions with the new HoloLens-Depth and Phone-Vision sections.
+- Reaffirmed that the original LM-1 gap (no first-class radio fingerprint type) is closed by the provisional `sensing.radio` profile in Appendix E.
+- Surfaced 6 deferred items (rolling-shutter timing model, per-frame gravity vector, visual-overlap score, CSI/CIR first-class transport, multi-band coexistence metadata, plus rolling-shutter readout direction) in the results scorecard.
+
 ### Strategic / informative changes
 - Neural extension demoted to **Informative Example** (Appendix E); removed from Profile Matrix.
 - Agent extension demoted to **Informative Example** (Appendix E); removed from Profile Matrix.

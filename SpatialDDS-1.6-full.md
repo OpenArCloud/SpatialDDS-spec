@@ -5810,9 +5810,9 @@ Sensor-data specifications risk becoming disconnected from real-world workloads 
 | **DeepSense 6G** (ASU Wireless Intelligence Lab) | Signal → perception | Raw radar I/Q tensors, 360° cameras, lidar, IMU, GPS-RTK, mmWave beam vectors |
 | **S3E** (Sun Yat-sen University / HKUST) | Multi-agent coordination | 3 UGVs × (lidar, stereo, IMU), UWB inter-robot ranging, RTK-GNSS, collaborative SLAM |
 | **ScanNet** (TU Munich / Princeton) | Indoor scene understanding | RGB-D depth frames, 3D surface mesh, instance segmentation (NYU40), room-level zones, 20 scene types |
-| **LaMAR** (CVG ETH Zurich / Microsoft) | AR localization with radio assistance | WiFi scans (`wifi.txt`), Bluetooth scans (`bt.txt`), RGB images, AR trajectories, visual localization metadata |
+| **LaMAR** (CVG ETH Zürich / Microsoft) | Multi-device AR localization & mapping | HoloLens 4-camera rig (GRAY8 + ToF depth + IR + IMU), iPad LiDAR, NavVis scanner mesh + 1080p panoramic cameras, WiFi/BT radio scans, year-long multi-session alignment, GeoAnchor reference frames |
 
-nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary. LaMAR was chosen because it provides paired visual and radio observations (WiFi/Bluetooth) for AR localization and directly tests whether radio fingerprints can be represented as first-class typed streams rather than ad hoc JSON metadata.
+nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary. LaMAR was chosen because it is the first conformance dataset to exercise cross-device heterogeneity (HoloLens, iPhone/iPad, and NavVis scanner sharing a common reference frame), the Anchors profile (cross-session alignment, year-long persistence, geo-anchored reference frames), the Discovery profile in a multi-device context (heterogeneous device announcements with distinct sensor capabilities), and the `sensing.radio` profile in a production AR workflow (typed WiFi/BT scans replacing ad hoc JSON, driving +4.6–17.5% recall improvement in image retrieval).
 
 The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.6 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
@@ -6339,25 +6339,121 @@ This pipeline exercises the Spatial Events extension end-to-end — from zone de
 
 ---
 
-### **I.5 LaMAR Conformance (AR Localization with Radio Fingerprints)**
+### **I.5 LaMAR Conformance (Multi-Device AR Localization & Mapping)**
 
 #### Reference Dataset
 
-**LaMAR** (CVG ETH Zurich / Microsoft) is an AR localization benchmark containing aligned visual and radio observations:
+**LaMAR** (ETH Zürich / Microsoft Mixed Reality & AI Lab) is a large-scale multi-device localization and mapping benchmark for augmented reality containing:
 
 | Dimension | Value |
 |---|---|
-| Captures | Indoor/outdoor smartphone + HoloLens trajectories |
-| Visual data | RGB image streams for retrieval/localization |
-| Radio data | WiFi scans (`wifi.txt`) and Bluetooth scans (`bt.txt`) |
-| Targets | Visual localization recall under radio-assisted retrieval |
-| Notable finding | WiFi/BT-assisted retrieval improves localization recall (+4.6% to +17.5%) |
+| Locations | 3 (historical building 18,000 m², office building 12,000 m², old town 15,000 m²) |
+| Total area | 45,000 m² indoor + outdoor |
+| HoloLens 2 | 4 cameras, 83° FOV, 30 Hz, VGA grayscale, global shutter; ToF depth/IR 1 Hz; IMU; Bluetooth + WiFi |
+| iPhone / iPad | 1 camera, 64° FOV, 10 Hz, 1080p RGB, rolling shutter, auto-focus; LiDAR depth 10 Hz; IMU; WiFi (partial BT) |
+| NavVis M6 / VLX | 4–6 cameras, 90–113° FOV, 1–3 m interval, 1080p RGB; lidar point cloud + dense mesh |
+| Trajectories | 100+ sessions per location, 10 participants, over 1 year |
+| Capture duration | 100+ hours, 40+ km of trajectories |
+| Radio signals | WiFi RSSI fingerprints + Bluetooth beacon scans, per-timestamp |
+| Ground truth | Laser scan alignment, cm-level pose accuracy, automated pipeline |
+| Pose convention | sensor-to-world transforms; camera-to-rig extrinsics (Kapture format, inverted convention) |
+| Data format | Custom "Capture" format: `sessions/`, `sensors.txt`, `rigs.txt`, `trajectories.txt`, `images.txt`, `depths.txt`, `wifi.txt`, `bt.txt` |
 
-LaMAR was selected to validate radio-assisted AR workflows and close the prior LM-1 gap where radio observations were carried only as ad hoc `MetaKV` JSON payloads.
+LaMAR was chosen because it is the first conformance dataset to exercise **cross-device heterogeneity** (HoloLens headset, iPhone/iPad handheld, NavVis scanner rig — three fundamentally different device classes sharing a common spatial reference), the **Anchors profile** (geo-anchored reference frames, cross-session alignment, persistent spatial landmarks), the **Discovery profile** in a multi-device context (heterogeneous service announcements with different sensor capabilities and coverage), **multi-session map alignment** (laser scans registered across year-long intervals with structural changes), and the **`sensing.radio` profile** in production AR workflows (WiFi/BT fingerprint streams driving +4.6–17.5% recall improvement). No prior conformance dataset tests these capabilities: nuScenes is single-vehicle, DeepSense 6G is single-platform, S3E has homogeneous robots, and ScanNet is single-device single-session.
 
-#### Checks Performed (22)
+#### Checks Performed (70)
+
+##### HoloLens 2 — Vision (6 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LH-01 | Multi-camera rig | `VisionMeta` per camera with distinct `stream_id`; 4 cameras per HoloLens rig linked by shared `rig_id`. |
+| LH-02 | Grayscale pixel format | `PixFormat.GRAY8` covers HoloLens VGA grayscale global-shutter cameras. |
+| LH-03 | Frame rate | `StreamMeta.nominal_rate_hz` = 30 for HoloLens camera streams. |
+| LH-04 | Rig extrinsics | Camera-to-rig transforms publishable as `FrameTransform` with `T_parent_child` (rig body → camera). |
+| LH-05 | Global shutter flag | `VisionMeta` attributes can carry `MetaKV` with shutter type (`global_shutter`). No dedicated field required — ScanNet conformance (NC-04) established `rig_id` pattern; shutter type is informational metadata. |
+| LH-06 | Camera intrinsics | `CamIntrinsics` with `fx`, `fy`, `cx`, `cy` per camera. HoloLens provides per-frame calibration from on-device tracker — `CamModel.PINHOLE` for undistorted images. |
+
+##### HoloLens 2 — Depth (4 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LD-01 | ToF depth stream | `VisionMeta` with `pix = DEPTH16` for HoloLens Time-of-Flight depth sensor. |
+| LD-02 | Depth frame rate | `StreamMeta.nominal_rate_hz` = 1 for HoloLens ToF sensor (low-rate depth). |
+| LD-03 | Depth rig linkage | `VisionMeta.rig_id` shared between depth and grayscale streams for spatial association. |
+| LD-04 | IR stream | HoloLens infrared frames publishable as `VisionFrame` with separate `stream_id` and `pix = GRAY8` or `RAW16`. |
+
+##### iPhone / iPad — Vision (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LP-01 | Single camera | `VisionMeta` with `pix = RGB8`, single `stream_id` per phone session. |
+| LP-02 | Rolling shutter | Rolling shutter metadata carriable as `MetaKV` in `VisionMeta.attributes`. |
+| LP-03 | Auto-focus intrinsics | `CamIntrinsics` per frame accommodates changing focal length from auto-focus. HoloLens provides fixed calibration; phone provides per-frame — both map to same `CamIntrinsics` struct. |
+| LP-04 | Frame rate | `StreamMeta.nominal_rate_hz` = 10 for iPhone/iPad capture rate. |
+| LP-05 | JPEG compression | `Codec.JPEG` for phone image compression. |
+
+##### iPhone / iPad — Depth (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LPD-01 | LiDAR depth | `VisionMeta` with `pix = DEPTH16` for iPad LiDAR Scanner depth frames. |
+| LPD-02 | Depth frame rate | `StreamMeta.nominal_rate_hz` = 10 for iPad LiDAR (matches color frame rate). |
+| LPD-03 | Depth rig linkage | `VisionMeta.rig_id` links LiDAR depth and color streams for factory-aligned iPad sensor pair. |
+
+##### NavVis Scanner — Vision + LiDAR (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LN-01 | Multi-camera rig | `VisionMeta` per panoramic camera (4–6 cameras); `RigRole` values cover top-mounted and side-mounted configurations. |
+| LN-02 | HD resolution | `CamIntrinsics.width` / `height` at 1080p for NavVis synchronized cameras. |
+| LN-03 | LiDAR point cloud | `MapMeta` with `kind = MESH` for processed NavVis dense mesh; `BlobRef` for PLY payload. Point cloud with 1 cm grid resolution. |
+| LN-04 | LiDAR mesh | Dense triangle mesh (Advancing Front algorithm) publishable as `MapMeta` with `kind = MESH`, `state = STABLE`. Vertex/face counts in `MapMeta.attributes`. |
+| LN-05 | Scan interval images | NavVis images captured at 1–3 m intervals (not continuous video); `VisionFrame` per capture with `frame_seq` for ordering. |
+
+##### IMU (3 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LI-01 | Multi-device IMU | `ImuSample` with accel + gyro covers HoloLens embedded IMU and iPhone CoreMotion IMU. Both publish on per-device sensor topics. |
+| LI-02 | High-rate IMU | HoloLens accelerometer/gyroscope/magnetometer at device-native rates. `ImuSample.seq` monotonic per source. |
+| LI-03 | Per-device namespace | Topic `spatialdds/<location>/imu/<device_id>/sample/v1` isolates per-device IMU streams. |
+
+##### Poses & Trajectories (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LT-01 | Sensor-to-world pose | `FrameHeader.sensor_pose` (`PoseSE3`) carries per-frame sensor-to-world transform. LaMAR's `trajectories.txt` convention (sensor-to-world) maps directly. |
+| LT-02 | VIO tracking poses | On-device tracker poses (ARKit for iPhone, HoloLens tracker) publishable as `PoseSE3` with source-specific `frame_ref`. These are relative to session start — local odometry frame. |
+| LT-03 | GT poses | Ground-truth poses from the LaMAR alignment pipeline (laser scan registration + bundle adjustment) publishable as `PoseSE3` in the GT reference world frame. |
+| LT-04 | Pose uncertainty | LaMAR provides per-frame covariance from Hessian inversion of refinement. Maps to `CovMatrix` on `FramedPose`. |
+| LT-05 | Quaternion convention | LaMAR uses 4×4 rotation matrices; decomposition to `(x,y,z,w)` quaternion per §2 convention table. Same pattern as ScanNet (NP-04). |
+
+##### Multi-Session Alignment — Anchors Profile (7 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LA-01 | Scan-to-scan alignment | Rigid transform aligning NavVis scan sessions publishable as `FrameTransform` with `T_parent_child` mapping one scan's origin to the GT world frame. |
+| LA-02 | Sequence-to-scan alignment | Per-AR-sequence rigid alignment (`wT_init_0` from voting) publishable as `FrameTransform` linking session-local tracking frame to GT reference frame. |
+| LA-03 | GeoAnchor for reference frame | The GT world frame origin publishable as `GeoAnchor` with `method = "Surveyed"` (laser scan derived), `confidence` from alignment error statistics. Bridges local map coordinates to global position. |
+| LA-04 | AnchorSet for scan landmarks | NavVis scan landmarks (e.g., QR codes detected by `run_qrcode_detection`) publishable as `AnchorSet` with per-anchor `AnchorEntry` containing `GeoAnchor` pose. `set_id` identifies the scan session's anchor collection. |
+| LA-05 | Cross-session alignment revision | `alignment_global.txt` records inter-session transforms with error statistics. Maps to `FrameTransform` with `CovMatrix` carrying alignment uncertainty. Multiple NavVis sessions → multiple `FrameTransform` instances with `transform_id` keyed per session pair. |
+| LA-06 | Alignment refinement lifecycle | LaMAR's GT pipeline progresses: initial localization → rigid alignment → pose graph optimization → bundle adjustment. Each stage improves accuracy. The final `FrameTransform` carries the refined transform; `CovMatrix` reflects reduced uncertainty at each stage. |
+| LA-07 | Year-long structural change | Scans captured over 1+ year with structural changes (construction, furniture rearrangement). Cross-session alignment still succeeds. Demonstrates `FrameTransform` stability across temporal changes — the anchor/reference frame persists even as scene content changes. |
+
+##### Discovery — Multi-Device (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LDI-01 | Heterogeneous device announcements | Each device class (HoloLens, iPhone/iPad, NavVis) publishes `Announce` with `ServiceKind.MAPPING` and distinct sensor capabilities in `topics[]`. HoloLens advertises 4-camera rig + ToF + IMU + BT + WiFi; phone advertises 1 camera + LiDAR + IMU + WiFi; NavVis advertises multi-camera rig + lidar. |
+| LDI-02 | Coverage geometry | `Announce.coverage` (Aabb3 or sphere) advertises each device's operational area within the location. NavVis covers entire building; AR sessions cover trajectory corridors. |
+| LDI-03 | Sensor capability advertisement | `Announce.topics[]` lists typed topics per device with `TopicMeta` entries: vision, depth, IMU topics for AR devices; vision + pointcloud + mesh topics for NavVis. Consumers can discover which modalities are available from each device. |
+| LDI-04 | Cross-device map reference | After alignment, all devices reference a common GT world frame. `Announce.coverage_frame_ref` references this shared `FrameRef`, enabling consumers to evaluate coverage in a common coordinate system. |
+| LDI-05 | Service manifest | `Announce.manifest_uri` references a `spatialdds://` URI resolvable to a manifest describing the mapping service's capabilities, coverage area, and data assets (mesh, point cloud, image database). |
 
 ##### Radio Profile Coverage (12 checks)
+
+The 22 radio checks in this and the next two sub-sections validate `sensing.radio` against LaMAR's `wifi.txt` / `bt.txt` data path. They subsume the four high-level "Radio Signals" checks (WiFi fingerprint, BT scan, radio-assisted retrieval, temporal aggregation) by exercising the typed transport directly.
 
 | ID | Check | Description |
 |---|---|---|
@@ -6370,46 +6466,93 @@ LaMAR was selected to validate radio-assisted AR workflows and close the prior L
 | LM-07 | BLE major/minor | iBeacon major/minor maps with `has_major_minor`. |
 | LM-08 | BLE Tx power | Advertised Tx power maps with `has_tx_power`. |
 | LM-09 | Scan duration | Variable scan-window duration maps to `scan_duration_s`. |
-| LM-10 | Aggregation window | ±window aggregation maps to `aggregation_window_s`. |
+| LM-10 | Aggregation window | ±window aggregation (LaMAR's ±2s pattern) maps to `aggregation_window_s`. |
 | LM-11 | Sensor metadata | `RadioSensorMeta` captures capability flags and adapter metadata. |
 | LM-12 | Schema tag | `schema_version` set to `spatial.sensing.radio/1.5`. |
 
-##### Discovery and QoS Integration (5 checks)
+##### Radio — Discovery and QoS Integration (5 checks)
 
 | ID | Check | Description |
 |---|---|---|
-| LD-01 | Registered type | Discovery type registry includes `radio_scan`. |
-| LD-02 | QoS profile | `RADIO_SCAN_RT` available for radio scan topics. |
-| LD-03 | Topic naming | Topic pattern `spatialdds/<scene>/radio/<sensor_id>/scan/v1` is valid under §3.3.1. |
-| LD-04 | Meta durability | `RadioSensorMeta` uses RELIABLE + TRANSIENT_LOCAL semantics. |
-| LD-05 | Optional fields | Radio optional values consistently follow `has_*` guard pattern. |
+| LRD-01 | Registered type | Discovery type registry includes `radio_scan`. |
+| LRD-02 | QoS profile | `RADIO_SCAN_RT` available for radio scan topics. |
+| LRD-03 | Topic naming | Topic pattern `spatialdds/<scene>/radio/<sensor_id>/scan/v1` is valid under §3.3.1. |
+| LRD-04 | Meta durability | `RadioSensorMeta` uses RELIABLE + TRANSIENT_LOCAL semantics. |
+| LRD-05 | Optional fields | Radio optional values consistently follow the `has_*` guard pattern. |
 
-##### Interop and Privacy (5 checks)
+##### Radio — Interop and Privacy (5 checks)
 
 | ID | Check | Description |
 |---|---|---|
-| LP-01 | Multi-technology support | A device can publish separate WiFi and BLE scan streams with shared timebase. |
-| LP-02 | Fingerprint matching readiness | Canonical identifier formats support stable join keys across sessions. |
-| LP-03 | Pose association | Optional `sensor_pose` + `pose_frame_ref` supports radio-visual alignment. |
-| LP-04 | Privacy guidance | Identifier anonymization guidance documented for sensitive deployments. |
-| LP-05 | No algorithm coupling | Profile transports observations only; no positioning algorithm mandated. |
+| LRP-01 | Multi-technology support | A device can publish separate WiFi and BLE scan streams with shared timebase. |
+| LRP-02 | Fingerprint matching readiness | Canonical identifier formats support stable join keys across sessions. |
+| LRP-03 | Pose association | Optional `sensor_pose` + `pose_frame_ref` supports radio-visual alignment for retrieval pipelines. |
+| LRP-04 | Privacy guidance | Identifier anonymization guidance documented for sensitive deployments (§2.7.6 + Appendix E radio profile). |
+| LRP-05 | No algorithm coupling | Profile transports observations only; no positioning algorithm mandated. |
+
+##### Cross-Device Localization (5 checks)
+
+| ID | Check | Description |
+|---|---|---|
+| LC-01 | Phone-to-scan localization | Phone images matched against NavVis scan-derived SfM map. 2D-3D correspondences → PnP pose. The localization result publishable as `PoseSE3` with `method` attribute indicating visual localization source. |
+| LC-02 | HoloLens-to-scan localization | HoloLens rig (4 cameras) localized using generalized GP3P solver. Rig-level pose publishable as `PoseSE3` on rig frame; per-camera poses derived from rig extrinsics. |
+| LC-03 | Cross-device map building | Maps built from HoloLens data can localize phone queries and vice versa. SpatialDDS types (`VisionMeta`, `CamIntrinsics`, `PoseSE3`) are device-agnostic — the same types serve HoloLens grayscale rigs and phone RGB frames. |
+| LC-04 | Visual overlap score | LaMAR defines per-image-pair visual overlap O ∈ [0,1] using ray-traced mesh visibility. Publishable as `MetaKV` on correspondence edges or as an attribute in a mapping `Edge` with `match_score`. |
+| LC-05 | Multi-FOV handling | HoloLens (83° × 4 cameras = ~280° rig FOV) vs phone (64° single camera). `CamIntrinsics` per sensor correctly parameterizes each; `rig_id` groups HoloLens cameras. FOV difference is captured in calibration, not in type hierarchy. |
 
 #### Results
 
-All 22 LaMAR checks pass.
+All 70 LaMAR checks pass.
 
 | Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
-| Radio profile | 12 | 12 | 0 | 1 | CSI/CIR first-class transport deferred |
-| Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
-| Interop + privacy | 5 | 5 | 0 | 1 | Multi-band coexistence metadata deferred |
-| **Total** | **22** | **22** | **0** | **2** | **100% coverage** |
+| HoloLens Vision | 6 | 6 | 0 | 1 | Rolling shutter / global shutter typed model deferred |
+| HoloLens Depth | 4 | 4 | 0 | 0 | ToF depth, IR stream |
+| Phone Vision | 5 | 5 | 0 | 1 | Rolling shutter readout-direction model deferred |
+| Phone Depth | 3 | 3 | 0 | 0 | iPad LiDAR depth |
+| NavVis Scanner | 5 | 5 | 0 | 0 | Multi-camera rig, lidar mesh, point cloud |
+| IMU | 3 | 3 | 0 | 1 | Per-frame gravity vector deferred |
+| Poses & Trajectories | 5 | 5 | 0 | 0 | VIO, GT, uncertainty, quaternion convention |
+| Multi-Session Alignment (Anchors) | 7 | 7 | 0 | 0 | Scan-to-scan, sequence-to-scan, year-long stability |
+| Discovery (Multi-Device) | 5 | 5 | 0 | 0 | Heterogeneous announcements, coverage, manifests |
+| Radio Profile Coverage | 12 | 12 | 0 | 1 | CSI/CIR first-class transport deferred |
+| Radio Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
+| Radio Interop + Privacy | 5 | 5 | 0 | 1 | Multi-band coexistence metadata deferred |
+| Cross-Device Localization | 5 | 5 | 0 | 1 | Visual-overlap score as first-class edge attribute deferred |
+| **Total** | **70** | **70** | **0** | **6** | **100% coverage** |
 
 Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
+#### Gap Analysis
+
+The original LaMAR conformance pass identified **LM-1: no first-class radio fingerprint type** as a gap, with WiFi and Bluetooth scans falling back to ad hoc `MetaKV` JSON payloads. **LM-1 is closed in 1.5+** by the provisional `sensing.radio` profile (Appendix E). The 22 radio checks in this section (Radio Profile Coverage / Discovery + QoS / Interop + Privacy) validate the closure.
+
+#### LaMAR Scenario Narrative (Informative)
+
+The LaMAR "CAB" office building sequence illustrates the full multi-device AR alignment lifecycle — the scenario class that no prior conformance dataset exercises:
+
+1. **Reference scan.** A NavVis VLX backpack scans the CAB building twice over 6 months. Each scan produces a dense lidar point cloud (1 cm grid), a triangle mesh, and panoramic images at 1–3 m intervals. Each scan session publishes an `Announce` with `ServiceKind.MAPPING`, `topics[]` listing vision + pointcloud + mesh streams, and `coverage` enclosing the scanned area. The two scan sessions are aligned by ICP on the point clouds; the rigid transform is published as `FrameTransform` linking scan-B's origin to scan-A's world frame.
+
+2. **GeoAnchor establishment.** The aligned scan pair defines the GT reference frame. A `GeoAnchor` is published anchoring the world frame origin to a WGS84 position derived from the building's surveyed coordinates. QR codes detected during scanning are published as an `AnchorSet` with per-QR `AnchorEntry` entries — persistent visual landmarks that future AR devices can recognize.
+
+3. **HoloLens session.** A participant wearing HoloLens 2 walks through the building. The headset's 4-camera tracking rig publishes `VisionFrame` (`GRAY8`, 30 Hz) on 4 parallel streams linked by `rig_id`. ToF depth publishes `VisionFrame` (`DEPTH16`, 1 Hz) on a separate stream sharing the same `rig_id`. IMU publishes `ImuSample` at device-native rate. WiFi and Bluetooth scans publish as `RadioScan` with `radio_type = WIFI` and `BLE` respectively, advertised via `RadioSensorMeta`. The on-device head tracker publishes relative poses as `PoseSE3` in the session-local tracking frame.
+
+4. **Phone session.** Another participant carries an iPad Pro through the same space at a different time. The single camera publishes `VisionFrame` (`RGB8`, JPEG, 10 Hz) with per-frame `CamIntrinsics` (varying `fx` from auto-focus). The iPad LiDAR publishes `VisionFrame` (`DEPTH16`, 10 Hz) on a paired stream linked by `rig_id`. ARKit publishes tracking poses as `PoseSE3` in the ARKit session frame. WiFi scans publish as `RadioScan` with sparse BT coverage.
+
+5. **Sequence-to-scan alignment.** For each AR session, the alignment pipeline localizes frames against the reference scan's SfM model using feature matching and PnP (phone) or GP3P (HoloLens rig). The rigid alignment from tracking frame to GT world frame is published as `FrameTransform`. Pose graph optimization refines all per-frame poses jointly — the refined poses carry `CovMatrix` uncertainty from the Hessian.
+
+6. **Cross-device localization.** A phone query image is matched against a map built from HoloLens data — or vice versa. Both devices' data flows through identical SpatialDDS types (`VisionMeta`, `CamIntrinsics`, `PoseSE3`); the types are device-agnostic. Radio fingerprints from the WiFi/BT `RadioScan` streams constrain image retrieval to spatially plausible candidates, improving recall by the +4.6–17.5% the LaMAR paper documents.
+
+7. **Global refinement.** All sessions — multiple NavVis scans, dozens of HoloLens sequences, dozens of phone sequences captured over a year — are jointly optimized. Sequence-to-sequence visual correspondences augment the scan-based constraints. The final GT poses achieve cm-level accuracy with calibrated uncertainty. The entire aligned dataset is accessible through `FrameTransform` chains rooting all device frames in the common GT world frame, which is itself geo-anchored via `GeoAnchor`.
+
+This end-to-end pipeline exercises the **Anchors profile** (`GeoAnchor`, `FrameTransform`, `AnchorSet` for QR landmarks), the **Discovery profile** (heterogeneous device announcements with different sensor capabilities), the **`sensing.radio` profile** (typed WiFi/BT transport replacing ad hoc `MetaKV`), **cross-device frame alignment** (headset, phone, and scanner all registered into a common frame through transform chains), and **multi-session temporal persistence** (year-long alignment stability) — capabilities untested by any prior conformance dataset.
+
 #### Deferred Items
 
-- **CSI/CIR first-class payloads.** `CSI_REF` currently points to external payloads. A future extension may define typed CSI/CIR transport.
+- **Rolling-shutter timing model.** SpatialDDS has no first-class rolling-shutter timing model (readout direction, row exposure time, line delay). LaMAR's phone images use rolling shutter; the shutter type is carriable as `MetaKV` but not typed.
+- **Per-frame gravity vector.** HoloLens raw data includes per-frame gravity estimates. SpatialDDS's `ImuSample` carries raw accel/gyro but not processed gravity direction. Gravity is carriable as `MetaKV` or derived downstream.
+- **Visual overlap score.** LaMAR's mesh-based visual overlap metric `O(i→j)` is a novel quantity with no SpatialDDS equivalent. A future matchability or visibility score on observation edges could make this first-class.
+- **CSI/CIR first-class payloads.** `CSI_REF` currently points to external payloads via `BlobRef`. A future radio extension may define typed CSI/CIR transport.
 - **Multi-band coexistence metadata.** Additional fields for scan policy and dwell-time scheduling may be needed for dense AP environments.
 
 ---
