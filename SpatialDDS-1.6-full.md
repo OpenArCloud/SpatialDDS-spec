@@ -38,7 +38,7 @@
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.6/appendix-f.md)
     - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.6/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.6/appendix-g-frame-identifiers.md)
-    - [Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)](sections/v1.6/appendix-h-operational-scenarios.md)
+    - [Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)](sections/v1.6/appendix-h-world-model-grounding.md)
     - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.6/appendix-i.md)
     - [Appendix J: Comparison with ROS 2 (Informative)](sections/v1.6/appendix-j.md)
     - [Appendix K: IDL Package Layout (Informative)](sections/v1.6/appendix-k-idl-package-layout.md)
@@ -107,7 +107,7 @@ Most of Part I is informative context. Three sections within it contain normativ
 * **§3.3.1 Topic Naming (Normative)** — how topic names are structured and what fields are required.
 * **§3.3.4 Coverage Model (Normative)** — how spatial coverage is declared and evaluated.
 
-In the appendices, IDL definitions (Appendices A–D) are always normative. Appendix E contains provisional extension examples and is explicitly informative. Appendix F defines the URI ABNF (normative). Appendix F.X (query expression grammar) is informative. Appendix G (frame identifiers) is an informative reference. Appendix H (operational scenarios) is informative.
+In the appendices, IDL definitions (Appendices A–D) are always normative. Appendix E contains provisional extension examples and is explicitly informative. Appendix F defines the URI ABNF (normative). Appendix F.X (query expression grammar) is informative. Appendix G (frame identifiers) is an informative reference. Appendix H (world model grounding) is informative. Appendix K (IDL package layout) is informative.
 
 When in doubt about whether something is normative: if it uses RFC 2119 keywords (MUST, SHALL, SHOULD, MAY), it's normative regardless of where it appears.
 
