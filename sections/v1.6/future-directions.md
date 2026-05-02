@@ -27,15 +27,20 @@ The spatial semantics defined by SpatialDDS — `FrameRef`-by-UUID, the Coverage
 
 SpatialDDS's pose-graph types (`Node`, `Edge`, `MapMeta`) carry SLAM factor graph results. A dedicated factor graph interchange format — analogous to ONNX for neural networks — would enable portable exchange of arbitrary factor graph structures between solvers. SpatialDDS would reference such graphs via `BlobRef`, with `MapMeta` carrying optimization state metadata. This is a complementary effort, not a SpatialDDS extension.
 
-### Bridges to AI/ML Ecosystems
+### Bridges to External Ecosystems
 
-Priority bridges for connecting SpatialDDS to ML training and inference pipelines:
+Priority bridges for connecting SpatialDDS to robotics, IoT, ML, and visualization ecosystems. These are implementation artifacts maintained in the SpatialDDS-demo repository, not spec extensions.
 
-- SpatialDDS ↔ MCAP recorder/replayer
-- SpatialDDS ↔ Gymnasium observation space adapter
-- SpatialDDS ↔ ROS 2 bridge (reference implementation)
+Implemented:
 
-These bridges are implementation artifacts, not spec extensions. They will be maintained in the SpatialDDS-demo repository.
+- SpatialDDS ↔ MCAP recorder/replayer (offline recording, Foxglove visualization, ML pipeline ingestion).
+- SpatialDDS ↔ ROS 2 bridge (`sensor_msgs`, `geometry_msgs`, `vision_msgs` translation with tf2 frame mapping).
+- SpatialDDS ↔ MQTT bridge (edge-to-cloud via Mosquitto or AWS IoT Core, with QoS mapping and per-operator topic policies).
+- SpatialDDS ↔ WebSocket bridge (browser dashboards, digital twin UIs, topic discovery, client-side subscriptions).
+
+Planned:
+
+- SpatialDDS ↔ Gymnasium observation space adapter (RL agent training on live spatial streams).
 
 Together, these directions point toward a future where SpatialDDS is not just a protocol but a foundation for an open, interoperable ecosystem of real-time world models.
 

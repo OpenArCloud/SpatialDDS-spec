@@ -49,7 +49,7 @@
 - §4 Operational Scenarios reframed; long-form examples remain in Appendix D and Appendix I dataset walkthroughs.
 - Appendix I gains a Scope and Limitations preface and a Deferred column on every results table.
 - New **Appendix K: IDL Package Layout (Informative)**.
-- §6 Future Directions adds wire-level interop testing, transport-agnostic semantic layer, factor-graph interchange, and AI/ML bridges.
+- §6 Future Directions adds wire-level interop testing, transport-agnostic semantic layer, factor-graph interchange, and "Bridges to External Ecosystems" (implemented: MCAP, ROS 2, MQTT, WebSocket; planned: Gymnasium). Appendix H.2 mirrors the bridge list with a corresponding IoT/edge MQTT integration pattern.
 
 ### Versioning model
 - Selective per-profile minor bumps: only profiles whose IDL changed (`core`, `sensing.common`, `discovery`, `manifest`) move to `/1.6`. All others retain `/1.5`. Topic names remain `/v1` per §3.3.1.

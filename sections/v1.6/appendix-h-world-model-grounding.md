@@ -31,6 +31,8 @@ SpatialDDS does not prescribe how world models consume spatial data. Instead, it
 
 **Inference service bridge (Model → SpatialDDS).** A world-model inference server subscribes to SpatialDDS sensor streams, runs prediction, and publishes results back to the bus as `PlannedTrajectory` or `Detection3D` predictions. The model is a SpatialDDS participant, not an external system.
 
+**IoT / edge bridge (SpatialDDS ↔ MQTT).** Edge devices (robots, base stations, IoT sensors) publish SpatialDDS JSON payloads on MQTT topics matching the SpatialDDS topic namespace. A bridge process relays them onto the local DDS domain. MQTT's QoS levels and retained messages map to SpatialDDS's `RELIABLE` and `TRANSIENT_LOCAL` semantics. AWS IoT Core policies provide per-operator topic authorization. This pattern enables multi-operator spatial data collection at IoT scale without requiring DDS on edge devices.
+
 ### **H.3 What SpatialDDS Does Not Do**
 
 SpatialDDS is not an AI middleware. It does not define:
