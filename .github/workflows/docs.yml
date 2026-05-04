@@ -38,6 +38,17 @@ jobs:
       - name: Build MkDocs site
         run: mkdocs build
 
+      - name: Overlay landing page
+        # Replace the MkDocs-generated site/index.html with the
+        # custom overview HTML in site_overlay/, plus any image
+        # assets it references (e.g., spatialdds-demo-screenshot.png).
+        # MkDocs spec pages under /SpatialDDS-1.6-full/, /v1.6/, etc.
+        # are unaffected.
+        run: |
+          if [ -d site_overlay ]; then
+            cp -R site_overlay/. site/
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

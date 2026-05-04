@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpatialDDS — The Typed Spatial Data Bus for Connected Systems</title>
+<meta name="description" content="SpatialDDS is an open protocol for real-time exchange of spatial world models. Typed spatial messages on DDS pub-sub for robots, vehicles, 6G base stations, AR/XR, IoT, and digital twins.">
+
+<!-- Open Graph -->
+<meta property="og:title" content="SpatialDDS — The Typed Spatial Data Bus">
+<meta property="og:description" content="Open protocol for real-time spatial data exchange. Multi-operator fusion, 6G sensing, robotics, AR/XR, digital twins.">
+<meta property="og:image" content="https://spatialdds.org/spatialdds-demo-screenshot.png">
+<meta property="og:url" content="https://spatialdds.org">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SpatialDDS — The Typed Spatial Data Bus">
+<meta name="twitter:description" content="Open protocol for real-time spatial data exchange across robots, vehicles, 6G infrastructure, and digital twins.">
+<meta name="twitter:image" content="https://spatialdds.org/spatialdds-demo-screenshot.png">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    background: #fcfbf9;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .slide { max-width: 1300px; margin: 0 auto; padding: 0 52px 32px; }
+
+  /* ── Header ── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    color: #111;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, #2a5ec7 0%, #1a8a6e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    font-size: 15.5px;
+    color: #555;
+    line-height: 1.65;
+    margin-top: 10px;
+    max-width: 640px;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 24px;
+    padding-top: 6px;
+  }
+
+  .hero-stat {
+    text-align: center;
+    min-width: 72px;
+  }
+
+  .hero-stat .val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .hero-stat .lbl {
+    font-size: 10px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* ── The Gap ── */
+  .gap-section {
+    background: #f4f3f0;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gap-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #d44a2e 0%, #e8a832 33%, #2a8a5e 66%, #2a5ec7 100%);
+  }
+
+  .gap-section h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  .gap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .gap-card {
+    background: #fff;
+    border-radius: 6px;
+    padding: 14px 16px;
+    border: 1px solid #e8e6e2;
+  }
+
+  .gap-card .gap-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #c44;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .gap-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .gap-card p {
+    font-size: 11.5px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .gap-card .fills {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    color: #2a7a5a;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #f0eeec;
+    font-weight: 500;
+  }
+
+  /* ── What SpatialDDS Provides ── */
+  .provides-section {
+    margin-bottom: 28px;
+  }
+
+  .provides-section h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    letter-spacing: -0.3px;
+  }
+
+  .provides-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .provides-card {
+    background: #fff;
+    border: 1px solid #e8e6e2;
+    border-radius: 8px;
+    padding: 18px 20px;
+    position: relative;
+  }
+
+  .provides-card .icon-bar {
+    width: 28px;
+    height: 4px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+
+  .provides-card:nth-child(1) .icon-bar { background: #2a5ec7; }
+  .provides-card:nth-child(2) .icon-bar { background: #1a8a6e; }
+  .provides-card:nth-child(3) .icon-bar { background: #c45d20; }
+  .provides-card:nth-child(4) .icon-bar { background: #8850bb; }
+  .provides-card:nth-child(5) .icon-bar { background: #c44040; }
+  .provides-card:nth-child(6) .icon-bar { background: #2a7ab0; }
+
+  .provides-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+
+  .provides-card p {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.55;
+  }
+
+  .provides-card .types {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #888;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  /* ── Bridges ── */
+  .bridges-section {
+    margin-bottom: 28px;
+  }
+
+  .bridges-section h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    letter-spacing: -0.3px;
+  }
+
+  .bridges-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 14px;
+  }
+
+  .bridge-pill {
+    background: #fff;
+    border: 1px solid #e8e6e2;
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+  }
+
+  .bridge-pill .status {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .status-built { background: #e8f5ea; color: #2d7a3e; }
+  .status-planned { background: #f0eef5; color: #7755aa; }
+
+  .bridge-pill h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .bridge-pill .direction {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+
+  .bridge-pill p {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  /* ── Architecture ── */
+  .arch-section {
+    background: #111;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    color: #ccc;
+  }
+
+  .arch-section h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 16px;
+    letter-spacing: -0.2px;
+  }
+
+  .arch-diagram {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #8a9ab0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .arch-diagram .edge { color: #e8a832; }
+  .arch-diagram .bus { color: #5aaa7a; }
+  .arch-diagram .svc { color: #7a9acc; }
+  .arch-diagram .out { color: #cc7a9a; }
+
+  /* ── Footer ── */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #bbb;
+    font-family: 'IBM Plex Mono', monospace;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+  }
+
+  .footer a {
+    color: #888;
+    text-decoration: none;
+  }
+  /* ── Nav Bar ── */
+  .topnav {
+    background: #111;
+    padding: 0 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topnav .logo {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: -0.3px;
+  }
+
+  .topnav .logo span {
+    color: #5aaa7a;
+  }
+
+  .topnav nav {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .topnav nav a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #aaa;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .topnav nav a:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+
+  .topnav nav a.primary {
+    background: #2a5ec7;
+    color: #fff;
+    font-weight: 500;
+  }
+
+  .topnav nav a.primary:hover {
+    background: #3a6ed7;
+  }
+
+  /* ── Spec Callout ── */
+  .spec-callout {
+    background: linear-gradient(135deg, #1a2a4a 0%, #0f1a30 100%);
+    border: 1px solid #2a3a5a;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .spec-callout .spec-text h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e6f0;
+    margin-bottom: 4px;
+  }
+
+  .spec-callout .spec-text p {
+    font-size: 12px;
+    color: #8a9ab0;
+    line-height: 1.5;
+  }
+
+  .spec-callout .spec-links {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .spec-callout .spec-links a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+
+  .spec-callout .spec-links a.spec-primary {
+    background: #2a5ec7;
+    color: #fff;
+  }
+
+  .spec-callout .spec-links a.spec-primary:hover {
+    background: #3a6ed7;
+  }
+
+  .spec-callout .spec-links a.spec-secondary {
+    background: rgba(255,255,255,0.06);
+    color: #aabbdd;
+    border: 1px solid #2a3a5a;
+  }
+
+  .spec-callout .spec-links a.spec-secondary:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .topnav { padding: 0 20px; }
+    .slide { padding: 0 20px 24px; }
+    .hero { grid-template-columns: 1fr; gap: 16px; }
+    .hero-stats { gap: 16px; flex-wrap: wrap; }
+    .gap-grid { grid-template-columns: 1fr 1fr; }
+    .provides-grid { grid-template-columns: 1fr 1fr; }
+    .bridges-row { grid-template-columns: 1fr 1fr; }
+    .spec-callout { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (max-width: 600px) {
+    .topnav nav a { padding: 6px 8px; font-size: 10px; }
+    .gap-grid { grid-template-columns: 1fr; }
+    .provides-grid { grid-template-columns: 1fr; }
+    .bridges-row { grid-template-columns: 1fr; }
+    .value-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<div class="topnav">
+  <a href="/" class="logo"><span>Spatial</span>DDS</a>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <a href="https://www.openarcloud.org" style="color: #ccc; text-decoration: none; font-size: 12px; font-weight: 600;">Open AR Cloud</a>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #999; cursor: pointer;" 
+          onclick="this.textContent='james.jackson@openarcloud.org'; this.style.color='#ccc';"
+          title="Click to reveal">james.jackson ✉ openarcloud</span>
+    <nav>
+      <a href="https://github.com/OpenArCloud/SpatialDDS-demo">Demo</a>
+      <a href="/SpatialDDS-1.6-full/" class="primary">Read the Spec →</a>
+    </nav>
+  </div>
+</div>
+
+<div class="slide" style="padding-top: 36px;">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div>
+      <h1>
+        <span>SpatialDDS</span> — The Typed Spatial<br>
+        Data Bus for Connected Systems
+      </h1>
+      <p>
+        Robots, vehicles, base stations, AR/XR devices, IoT sensors, and digital twins all produce spatial data — 
+        detections, poses, maps, zones. Today each domain invents its own formats and transport. 
+        SpatialDDS provides a shared, typed, open protocol so spatial data flows across domains 
+        and operators without per-integration custom work — the interoperability layer for spatial computing.
+      </p>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="val">14</div>
+        <div class="lbl">Profiles</div>
+      </div>
+      <div class="hero-stat">
+        <div class="val">214</div>
+        <div class="lbl">Conformance<br>Checks</div>
+      </div>
+      <div class="hero-stat">
+        <div class="val">5</div>
+        <div class="lbl">Datasets<br>Validated</div>
+      </div>
+      <div class="hero-stat">
+        <div class="val">4</div>
+        <div class="lbl">Bridges<br>Built</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo Showcase -->
+  <div style="background: #fff; border: 1px solid #e8e6e2; border-radius: 8px; overflow: hidden; margin-bottom: 28px;">
+    <div style="display: grid; grid-template-columns: 1fr 320px; gap: 0;">
+      <!-- Screenshot -->
+      <div style="position: relative; background: #0a0e1a; min-height: 260px;">
+        <img src="spatialdds-demo-screenshot.png" alt="SpatialDDS Multi-Operator Intersection Demo"
+             style="width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.95;">
+      </div>
+      <!-- Description -->
+      <div style="padding: 20px 22px; display: flex; flex-direction: column; justify-content: center;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; color: #aaa; margin-bottom: 8px;">Live Demo</div>
+        <h2 style="font-size: 15px; font-weight: 700; margin-bottom: 10px; line-height: 1.35; letter-spacing: -0.2px;">Multi-Operator Intersection Fusion</h2>
+        <p style="font-size: 12px; color: #555; line-height: 1.6; margin-bottom: 12px;">
+          Three vehicle fleets and a 6G base station share typed Detection3D messages on a SpatialDDS bus.
+          A fusion service correlates detections across sources, publishes fused tracks with provenance,
+          and detects trajectory conflicts in real time.
+        </p>
+        <div style="font-size: 11px; color: #666; line-height: 1.7;">
+          <span style="color: #50c878;">●</span> <span style="color: #508cff;">●</span> <span style="color: #ffa53c;">●</span> Three AV operators with different sensor mixes<br>
+          <span style="color: #dc64dc;">◇</span> Infrastructure radar with false-alarm filtering<br>
+          <span style="color: #f0f0f0;">◆</span> Fused tracks with multi-source attribution<br>
+          <span style="color: #ff2828;">⊗</span> Planned trajectory conflict detection<br>
+          <span style="color: #888;">○</span> Coverage circles + spatial discovery
+        </div>
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0eeec; display: flex; gap: 16px;">
+          <div style="text-align: center;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700;">10 Hz</div>
+            <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">Per operator</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700;">100%</div>
+            <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">Multi-source</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700;">2.9×</div>
+            <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">vs best AV</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700; color: #ff4444;">⚠ 1</div>
+            <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">Conflict</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The Gaps -->
+  <div class="gap-section">
+    <h2>Gaps SpatialDDS Addresses</h2>
+    <div class="gap-grid">
+      <div class="gap-card">
+        <div class="gap-label">Gap</div>
+        <h3>No cross-domain spatial schema</h3>
+        <p>ROS 2 has sensor_msgs, V2X has BSM/CAM, IoT has custom JSON. None define typed 3D detections, map alignments, or spatial zones that work across all three.</p>
+        <div class="fills">→ Detection3D, MapAlignment, SpatialZone, GeoPose — domain-neutral types</div>
+      </div>
+      <div class="gap-card">
+        <div class="gap-label">Gap</div>
+        <h3>No multi-operator coordination</h3>
+        <p>Existing stacks assume single-operator control. When Fleet A and Fleet B share an intersection, there's no standard for topic namespacing, provenance, or trust boundaries.</p>
+        <div class="fills">→ Per-operator namespaces, source_operator provenance, discovery with coverage</div>
+      </div>
+      <div class="gap-card">
+        <div class="gap-label">Gap</div>
+        <h3>No infrastructure sensing integration</h3>
+        <p>6G base stations will be sensors. No protocol connects their radar/beam observations to robot perception stacks. Custom APIs per vendor, per deployment.</p>
+        <div class="fills">→ RadTensorFrame, RfBeamFrame, Detection3DSet — same types for vehicles and infrastructure</div>
+      </div>
+      <div class="gap-card">
+        <div class="gap-label">Gap</div>
+        <h3>No spatial discovery</h3>
+        <p>New participants can't ask "who has mapped this area?" or "which sensors cover this intersection?" Discovery is either manual config or nonexistent.</p>
+        <div class="fills">→ Announce with coverage geometry, CoverageQuery with spatial filtering</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What SpatialDDS Provides -->
+  <div class="provides-section">
+    <h2>What SpatialDDS Provides</h2>
+    <div class="provides-grid">
+      <div class="provides-card">
+        <div class="icon-bar"></div>
+        <h3>Typed Spatial Messages</h3>
+        <p>Schema-enforced types for every spatial concept — not opaque bytes or ad hoc JSON. Every consumer knows exactly what fields exist, what they mean, and how to interpret them.</p>
+        <div class="types">Detection3D · FramedPose · GeoPose · VisionFrame · LidarFrame · RadDetectionSet · RadioScan · PlannedTrajectory</div>
+      </div>
+      <div class="provides-card">
+        <div class="icon-bar"></div>
+        <h3>Coordinate Frame DAG</h3>
+        <p>FrameRef by UUID with transform chains. Multiple maps, multiple robots, multiple operators — all linked by typed transforms with uncertainty. No more "base_link" collisions.</p>
+        <div class="types">FrameRef · FrameTransform · GeoAnchor · CovMatrix · PoseSE3</div>
+      </div>
+      <div class="provides-card">
+        <div class="icon-bar"></div>
+        <h3>Spatial Discovery & Coverage</h3>
+        <p>Participants announce what they sense and where. Consumers query by spatial region. Late joiners discover the network without manual configuration.</p>
+        <div class="types">Announce · CoverageQuery · CoverageElement · TopicMeta · ServiceKind</div>
+      </div>
+      <div class="provides-card">
+        <div class="icon-bar"></div>
+        <h3>Multi-Source Fusion Support</h3>
+        <p>Source provenance, uncertainty, entity correlation. A fusion service consumes Detection3D from N sources and publishes FusedTrack — without knowing the sources' internals.</p>
+        <div class="types">FusedTrack · EntityBinding · source_operator · confidence boosting</div>
+      </div>
+      <div class="provides-card">
+        <div class="icon-bar"></div>
+        <h3>Map & Twin Lifecycle</h3>
+        <p>Maps go from BUILDING to OPTIMIZING to STABLE. Inter-map alignments carry evidence and revision numbers. Zone state tracks occupancy in real time.</p>
+        <div class="types">MapMeta · MapAlignment · SpatialZone · ZoneState · SpatialEvent</div>
+      </div>
+      <div class="provides-card">
+        <div class="icon-bar"></div>
+        <h3>Real-Time DDS Transport</h3>
+        <p>Built on OMG DDS with configurable QoS — BEST_EFFORT for high-rate sensors, RELIABLE for detections, TRANSIENT_LOCAL for metadata. Peer-to-peer, no central broker required.</p>
+        <div class="types">RADAR_RT · VIDEO_LIVE · EVENT_RT · RADIO_SCAN_RT · BlobRef + BlobChunk</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bridges -->
+  <div class="bridges-section">
+    <h2>Ecosystem Bridges — Meet Every Community Where They Are</h2>
+    <div class="bridges-row">
+      <div class="bridge-pill">
+        <span class="status status-built">BUILT</span>
+        <h3>MCAP Recorder</h3>
+        <div class="direction">SpatialDDS ↔ MCAP files</div>
+        <p>Record multi-source spatial streams. Replay for re-analysis. Ingest into ML training pipelines (LeRobot, Open X-Embodiment). Visualize in Foxglove.</p>
+      </div>
+      <div class="bridge-pill">
+        <span class="status status-built">BUILT</span>
+        <h3>ROS 2 Bridge</h3>
+        <div class="direction">SpatialDDS ↔ ROS 2 topics</div>
+        <p>Translate sensor_msgs and vision_msgs. Operator-scoped UUIDv5 frames solve tf2 collisions. Separate DDS domains — zero interference with your robot stack.</p>
+      </div>
+      <div class="bridge-pill">
+        <span class="status status-built">BUILT</span>
+        <h3>MQTT Bridge</h3>
+        <div class="direction">SpatialDDS ↔ MQTT broker</div>
+        <p>Edge-to-cloud over Mosquitto or AWS IoT Core. QoS mapping, retained messages for metadata, per-operator topic policies. Loop prevention built in.</p>
+      </div>
+      <div class="bridge-pill">
+        <span class="status status-built">BUILT</span>
+        <h3>WebSocket Bridge</h3>
+        <div class="direction">SpatialDDS ↔ browsers</div>
+        <p>Client-driven subscriptions with glob patterns. Topic discovery. Rate limiting. Bidirectional — browser apps can publish back. Built-in debug dashboard.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deploy -->
+  <div style="background: #fff; border: 1px solid #e8e6e2; border-radius: 8px; padding: 20px 24px; margin-bottom: 28px;">
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <div style="flex-shrink: 0; width: 44px; height: 44px; background: #f0f4ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🚀</div>
+      <div style="flex: 1;">
+        <h2 style="font-size: 15px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.2px;">One-Button Deploy — Laptop to Cloud</h2>
+        <p style="font-size: 12.5px; color: #555; line-height: 1.55; margin: 0;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; background: #f5f4f2; padding: 1px 6px; border-radius: 2px; color: #444;">docker compose up</span> 
+          runs locally in 30 seconds — synthetic multi-operator intersection data, fusion service, web dashboard. 
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; background: #f5f4f2; padding: 1px 6px; border-radius: 2px; color: #444;">./deploy.sh</span> 
+          deploys the same stack to AWS Fargate in 5 minutes — ALB with WebSocket, all four bridges, ~$2.50/day. Same Docker image, same DDS domain, same dashboard.
+        </p>
+      </div>
+      <div style="display: flex; gap: 12px; flex-shrink: 0;">
+        <div style="text-align: center; padding: 8px 14px; background: #faf9f7; border-radius: 6px; border: 1px solid #eeedea;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700; color: #1a1a1a;">30s</div>
+          <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">Local</div>
+        </div>
+        <div style="text-align: center; padding: 8px 14px; background: #faf9f7; border-radius: 6px; border: 1px solid #eeedea;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700; color: #1a1a1a;">5m</div>
+          <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">AWS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spec Callout -->
+  <div class="spec-callout">
+    <div class="spec-text">
+      <h3>SpatialDDS 1.6 Specification</h3>
+      <p>
+        14 profiles · 60+ IDL types · 214 conformance checks across 5 public datasets ·
+        Core, sensing, discovery, anchors, mapping, semantics, events, and provisional profiles for
+        RF beam and radio fingerprinting.
+      </p>
+    </div>
+    <div class="spec-links">
+      <a href="/SpatialDDS-1.6-full/" class="spec-primary">Read the Full Spec →</a>
+      <a href="https://github.com/OpenArCloud/SpatialDDS-spec" class="spec-secondary">Source on GitHub</a>
+    </div>
+  </div>
+
+  <!-- World Model Grounding -->
+  <div style="background: #fff; border: 1px solid #e8e6e2; border-radius: 8px; padding: 24px 28px; margin-bottom: 28px; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #2a5ec7, #8850bb, #1a8a6e);"></div>
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 28px;">
+      <div>
+        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px;">The Grounding Layer for<br>AI World Models</h2>
+        <p style="font-size: 12.5px; color: #666; line-height: 1.6;">
+          Every world model — learned dynamics, foundation models for robotics, digital twins, planning agents — needs 
+          structured, real-time observations of the physical world. The model architecture is advancing rapidly. 
+          The infrastructure for connecting models to reality is not. SpatialDDS fills that gap.
+        </p>
+        <p style="font-size: 12px; color: #888; line-height: 1.6; margin-top: 10px; font-style: italic;">
+          SpatialDDS carries observations and predictions.<br>
+          Not episodes. Not rewards. Not latent representations.<br>
+          Those belong to the ML ecosystem — connected through bridges.
+        </p>
+      </div>
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; color: #aaa; margin-bottom: 10px;">Every profile answers a question a world model asks</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What objects exist, where?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">Detection3D, FusedTrack</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What does it look like?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">VisionFrame, CamIntrinsics</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What's the 3D structure?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">LidarFrame, GeometryTile</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What RF environment?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">RadioScan, RfBeamFrame</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">Where am I in the world?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">GeoPose, GeoAnchor</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What zones, what state?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">SpatialZone, ZoneState</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What just happened?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">SpatialEvent</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What does this agent intend?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">PlannedTrajectory</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">What data sources exist?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">Announce, CoverageQuery</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; background: #faf9f7; border-radius: 4px;">
+            <span style="font-size: 12px; color: #444; font-weight: 600; min-width: 180px;">Which messages = same thing?</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #2a5ec7;">EntityBinding</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 20px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0eeec;">
+          <div style="flex: 1; padding: 10px 14px; background: #f8f7f5; border-radius: 5px; border: 1px solid #eeedea;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; color: #999; margin-bottom: 4px;">RECORD → TRAIN</div>
+            <div style="font-size: 11.5px; color: #555; line-height: 1.5;">MCAP bridge records spatial streams → LeRobot / Open X-Embodiment ingest as episodes. Spatial semantics survive the roundtrip.</div>
+          </div>
+          <div style="flex: 1; padding: 10px 14px; background: #f8f7f5; border-radius: 5px; border: 1px solid #eeedea;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; color: #999; margin-bottom: 4px;">SUBSCRIBE → INFER</div>
+            <div style="font-size: 11.5px; color: #555; line-height: 1.5;">A model inference server subscribes to live SpatialDDS streams, runs prediction, publishes PlannedTrajectory or Detection3D back to the bus.</div>
+          </div>
+          <div style="flex: 1; padding: 10px 14px; background: #f8f7f5; border-radius: 5px; border: 1px solid #eeedea;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px; color: #999; margin-bottom: 4px;">DISCOVER → OBSERVE</div>
+            <div style="font-size: 11.5px; color: #555; line-height: 1.5;">Discovery profile provides the obs-space manifest — what types, at what rates, with what coverage. A spatial context window for embodied AI.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture + Datasets + Profiles -->
+  <div class="arch-section">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+      <!-- Left: Datasets -->
+      <div>
+        <h2 style="font-size: 13px; color: #fff; margin-bottom: 12px; letter-spacing: -0.2px;">Validated Against 5 Public Datasets</h2>
+        <div style="display: grid; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 5px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #e8a832; letter-spacing: 1px; min-width: 32px; font-weight: 500;">I.1</span>
+            <span style="font-size: 12px; color: #ccc; font-weight: 600;">nuScenes</span>
+            <span style="font-size: 11px; color: #666; flex: 1;">Autonomous driving — 6 cameras, LiDAR, 5 radars, 3D annotations</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5aaa7a;">27 checks</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 5px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #e8a832; letter-spacing: 1px; min-width: 32px; font-weight: 500;">I.2</span>
+            <span style="font-size: 12px; color: #ccc; font-weight: 600;">DeepSense 6G</span>
+            <span style="font-size: 11px; color: #666; flex: 1;">V2I beam prediction — FMCW radar, 60 GHz phased array, camera</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5aaa7a;">44 checks</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 5px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #e8a832; letter-spacing: 1px; min-width: 32px; font-weight: 500;">I.3</span>
+            <span style="font-size: 12px; color: #ccc; font-weight: 600;">S3E</span>
+            <span style="font-size: 11px; color: #666; flex: 1;">Multi-robot SLAM — 3 UGVs, LiDAR, UWB ranging, inter-robot loops</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5aaa7a;">38 checks</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 5px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #e8a832; letter-spacing: 1px; min-width: 32px; font-weight: 500;">I.4</span>
+            <span style="font-size: 12px; color: #ccc; font-weight: 600;">ScanNet</span>
+            <span style="font-size: 11px; color: #666; flex: 1;">Indoor scenes — RGB-D, semantic labels, spatial zones, events</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5aaa7a;">35 checks</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 5px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #e8a832; letter-spacing: 1px; min-width: 32px; font-weight: 500;">I.5</span>
+            <span style="font-size: 12px; color: #ccc; font-weight: 600;">LaMAR</span>
+            <span style="font-size: 11px; color: #666; flex: 1;">Multi-device AR — HoloLens, iPhone, NavVis scanner, anchors, WiFi/BT</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5aaa7a;">70 checks</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Profiles -->
+      <div>
+        <h2 style="font-size: 13px; color: #fff; margin-bottom: 12px; letter-spacing: -0.2px;">14 Profiles — Stable + Provisional</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">core</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Poses, transforms, blobs</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">sensing.vision</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Cameras, depth</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">discovery</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Announce, coverage</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">sensing.lidar</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Point clouds, meshes</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">anchors</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">GeoAnchor, AnchorSet</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">sensing.rad</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Radar detections + tensors</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">semantics</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Detection2D/3D, classes</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">sensing.imu</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Accel, gyro, mag</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">ar_geo</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">GeoPose, ENU frames</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">mapping</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Maps, alignment, lifecycle</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">events</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">Zones, alerts, state</span>
+          </div>
+          <!-- Provisional -->
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #e8a832; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">sensing.rf_beam</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">mmWave beams</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #e8a832; flex-shrink: 0;"></span>
+            <span style="font-size: 11.5px; color: #ccc; font-weight: 500;">sensing.radio</span>
+            <span style="font-size: 10px; color: #555; flex: 1;">WiFi, BLE, UWB</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #5aaa7a;"></span>
+            <span style="font-size: 10px; color: #666;">Stable</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #e8a832;"></span>
+            <span style="font-size: 10px; color: #666;">Provisional</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" style="justify-content: center; padding-top: 16px; margin-top: 8px;">
+    <span>SpatialDDS 1.6 · An <a href="https://www.openarcloud.org">Open AR Cloud</a> project · Bridges are implementation artifacts, not spec extensions</span>
+  </div>
+
+</div>
+</body>
+</html>
