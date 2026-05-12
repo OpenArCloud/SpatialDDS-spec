@@ -66,7 +66,7 @@ Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime
 | Annotation metadata | visibility tokens, attribute tokens, per-box lidar/radar point counts |
 | Coordinate convention | Right-handed; quaternions in (w, x, y, z) order |
 
-#### Checks Performed (27)
+#### Checks Performed (28)
 
 ##### Radar — Detection Path (6 checks)
 
@@ -110,7 +110,7 @@ Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime
 | S-04 | Evidence counts | `num_lidar_pts` + `num_radar_pts` with `has_num_pts` guard. |
 | S-05 | Quaternion reorder | §2 table covers annotation quaternion conversion. |
 
-##### Common / Core (5 checks)
+##### Common / Core (6 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -119,10 +119,11 @@ Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime
 | C-03 | Local-frame coverage | §3.3.4 covers local-only deployments. |
 | C-04 | has_* pattern consistency | All new optional fields use the `has_*` guard pattern uniformly. |
 | C-05 | Sequence bounds | Standard bounds table: SZ_MEDIUM (2048), SZ_SMALL (256), SZ_XL (32768), SZ_LARGE (8192). |
+| C-06 | Coord convention | nuScenes ego frame is ENU; per-camera calibrated_sensor frames follow the OpenCV `CV` convention (X-right, Y-down, Z-forward). `FrameRef.coord_convention` (§2.12) captures the per-frame axis convention so cross-frame chains apply the correct axis-swap. |
 
 #### Results
 
-All 27 nuScenes checks pass.
+All 28 nuScenes checks pass.
 
 | Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
@@ -130,8 +131,8 @@ All 27 nuScenes checks pass.
 | Vision | 5 | 5 | 0 | 0 | — |
 | Lidar | 6 | 6 | 0 | 0 | — |
 | Semantics | 5 | 5 | 0 | 0 | — |
-| Common / Core | 5 | 5 | 0 | 0 | — |
-| **Total** | **27** | **27** | **0** | **0** | — |
+| Common / Core | 6 | 6 | 0 | 0 | Includes C-06 coord-convention check |
+| **Total** | **28** | **28** | **0** | **0** | — |
 
 Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
@@ -575,7 +576,7 @@ This pipeline exercises the Spatial Events extension end-to-end — from zone de
 
 LaMAR was chosen because it is the first conformance dataset to exercise **cross-device heterogeneity** (HoloLens headset, iPhone/iPad handheld, NavVis scanner rig — three fundamentally different device classes sharing a common spatial reference), the **Anchors profile** (geo-anchored reference frames, cross-session alignment, persistent spatial landmarks), the **Discovery profile** in a multi-device context (heterogeneous service announcements with different sensor capabilities and coverage), **multi-session map alignment** (laser scans registered across year-long intervals with structural changes), and the **`sensing.radio` profile** in production AR workflows (WiFi/BT fingerprint streams driving +4.6–17.5% recall improvement). No prior conformance dataset tests these capabilities: nuScenes is single-vehicle, DeepSense 6G is single-platform, S3E has homogeneous robots, and ScanNet is single-device single-session.
 
-#### Checks Performed (70)
+#### Checks Performed (71)
 
 ##### HoloLens 2 — Vision (6 checks)
 
@@ -704,7 +705,7 @@ The 22 radio checks in this and the next two sub-sections validate `sensing.radi
 | LRP-04 | Privacy guidance | Identifier anonymization guidance documented for sensitive deployments (§2.7.6 + Appendix E radio profile). |
 | LRP-05 | No algorithm coupling | Profile transports observations only; no positioning algorithm mandated. |
 
-##### Cross-Device Localization (5 checks)
+##### Cross-Device Localization (6 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -713,10 +714,11 @@ The 22 radio checks in this and the next two sub-sections validate `sensing.radi
 | LC-03 | Cross-device map building | Maps built from HoloLens data can localize phone queries and vice versa. SpatialDDS types (`VisionMeta`, `CamIntrinsics`, `PoseSE3`) are device-agnostic — the same types serve HoloLens grayscale rigs and phone RGB frames. |
 | LC-04 | Visual overlap score | LaMAR defines per-image-pair visual overlap O ∈ [0,1] using ray-traced mesh visibility. Publishable as `MetaKV` on correspondence edges or as an attribute in a mapping `Edge` with `match_score`. |
 | LC-05 | Multi-FOV handling | HoloLens (83° × 4 cameras = ~280° rig FOV) vs phone (64° single camera). `CamIntrinsics` per sensor correctly parameterizes each; `rig_id` groups HoloLens cameras. FOV difference is captured in calibration, not in type hierarchy. |
+| LC-06 | Coord convention mismatch | hloc / colmap poses use `CV` (X-right, Y-down, Z-forward); HoloLens reports `GRAPHICS` (X-right, Y-up, Z-backward); GT world frame is `ENU`. `FrameRef.coord_convention` (§2.12) labels each frame so consumers detect and resolve mismatches automatically — the integration scenario that originally motivated the 1.6 patch. |
 
 #### Results
 
-All 70 LaMAR checks pass.
+All 71 LaMAR checks pass.
 
 | Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
@@ -732,8 +734,8 @@ All 70 LaMAR checks pass.
 | Radio Profile Coverage | 12 | 12 | 0 | 1 | CSI/CIR first-class transport deferred |
 | Radio Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
 | Radio Interop + Privacy | 5 | 5 | 0 | 1 | Multi-band coexistence metadata deferred |
-| Cross-Device Localization | 5 | 5 | 0 | 1 | Visual-overlap score as first-class edge attribute deferred |
-| **Total** | **70** | **70** | **0** | **6** | **100% coverage** |
+| Cross-Device Localization | 6 | 6 | 0 | 1 | Includes LC-06 coord-convention check; visual-overlap edge attribute deferred |
+| **Total** | **71** | **71** | **0** | **6** | **100% coverage** |
 
 Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 

@@ -29,11 +29,28 @@ module spatial {
       @value(12) COV_POSE6_TWIST6   // 12x12 pose + velocity covariance (added in 1.6)
     };
 
+    // Axis convention for poses expressed in this frame (added in 1.6).
+    // Determines the meaning of the X, Y, Z axes of a PoseSE3 translation
+    // and the body axes of its quaternion. When absent, consumers MUST
+    // assume ENU. See §2.12 Coordinate Axis Convention.
+    enum CoordConvention {
+      @value(0) ENU,       // X-East,  Y-North, Z-Up         (robotics, ROS REP-103, GeoPose)
+      @value(1) CV,        // X-Right, Y-Down,  Z-Forward    (OpenCV, colmap, hloc)
+      @value(2) GRAPHICS,  // X-Right, Y-Up,    Z-Backward   (WebXR, OpenGL, three.js)
+      @value(3) UNITY_LH,  // X-Right, Y-Up,    Z-Forward    (Unity, left-handed)
+      @value(4) NED,       // X-North, Y-East,  Z-Down       (aviation, PX4, MAVLink)
+      @value(5) OTHER      // Custom — consumer MUST consult MetaKV namespace="frame"
+    };
+
     // Stable, typo-proof frame identity shared across all profiles.
     // Equality is by uuid; fqn is a normalized, human-readable alias.
     @extensibility(APPENDABLE) struct FrameRef {
-      string uuid;  // REQUIRED: stable identifier for the frame
-      string fqn;   // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+      string uuid;                 // REQUIRED: stable identifier for the frame
+      string fqn;                  // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+      // Coordinate axis convention (added in 1.6). When has_coord_convention
+      // is false, consumers MUST assume ENU per §2.12.
+      boolean has_coord_convention;
+      CoordConvention coord_convention;
     };
 
     // Optional namespaced metadata bag for asset descriptors.

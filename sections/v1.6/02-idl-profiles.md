@@ -51,7 +51,7 @@ Blob payloads are transported as `BlobChunk` sequences. Consumers MUST be prepar
 
 #### Frame Identifiers (Reference)
 
-SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn }` type.
+SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn, coord_convention? }` type. The optional `coord_convention` (added in 1.6) selects the axis convention for poses in this frame; see §2.12 for the full convention table and chaining rules. When absent, consumers MUST assume `ENU`.
 See *Appendix G Frame Identifiers (Informative Reference)* for the complete definition and naming rules.
 
 Each Transform expresses a pose that maps coordinates from the `from` frame into the `to` frame (parent → child).

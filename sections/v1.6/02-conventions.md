@@ -8,7 +8,7 @@ This section centralizes the rules that apply across every SpatialDDS profile. I
 ### **2.1 Orientation & Frame References**
 
 - All quaternion fields, manifests, and IDLs SHALL use the `(x, y, z, w)` order that aligns with OGC GeoPose.
-- Frames are represented exclusively with `FrameRef { uuid, fqn }`. The UUID is authoritative; the fully qualified name is a human-readable alias. Appendix G defines the authoritative frame model.
+- Frames are represented exclusively with `FrameRef { uuid, fqn, coord_convention? }`. The UUID is authoritative; the fully qualified name is a human-readable alias; the optional `coord_convention` selects the axis convention for poses in this frame (see §2.12). Appendix G defines the authoritative frame model.
 - Example JSON shape:
   ```json
   "frame_ref": { "uuid": "00000000-0000-4000-8000-000000000000", "fqn": "earth-fixed/map/device" }
@@ -29,7 +29,7 @@ SpatialDDS uses `(x, y, z, w)` component order for all quaternion fields, aligni
 | OpenXR | (x, y, z, w) | None |
 | glTF | (x, y, z, w) | None |
 
-**Handedness note (Informative):** SpatialDDS does not prescribe handedness. Frame semantics are defined by `FrameRef` and transform chains, not by a global axis convention. Producers from left-handed engines (Unity, Unreal) must ensure the transform chain is consistent, not merely that the quaternion component order matches.
+**Handedness note (Informative):** SpatialDDS does not prescribe a single global handedness. Frame semantics are defined by `FrameRef` and transform chains, not by a global axis convention. Producers from left-handed engines (Unity, Unreal) must ensure the transform chain is consistent, not merely that the quaternion component order matches. Use `FrameRef.coord_convention` (§2.12) to make the per-frame axis convention explicit so that consumers can detect and resolve mismatches automatically.
 
 ### **2.2 Optional Fields & Discriminated Unions**
 
@@ -192,3 +192,36 @@ Example:
 ```
 
 Additionally, the `caps.features` field in `Announce` MAY carry feature flags prefixed with `provisional.` (e.g., `"provisional.rf_beam"`, `"provisional.radio"`). Consumers MAY filter `Announce` messages to exclude provisional features in production deployments.
+
+### **2.12 Coordinate Axis Convention (Normative)**
+
+`FrameRef` carries an optional `coord_convention` field (added in 1.6) that specifies the axis convention for all poses expressed in this frame. The five predefined conventions are:
+
+| Convention | X | Y | Z | Handedness | Used By |
+|---|---|---|---|---|---|
+| `ENU` | East | North | Up | Right | ROS REP-103, GeoPose, SpatialDDS default |
+| `CV` | Right | Down | Forward | Right | OpenCV, colmap, hloc, ORB-SLAM, DSO |
+| `GRAPHICS` | Right | Up | Backward | Right | WebXR, OpenGL, three.js, Rerun |
+| `UNITY_LH` | Right | Up | Forward | Left | Unity |
+| `NED` | North | East | Down | Right | Aviation, PX4, ArduPilot, MAVLink |
+| `OTHER` | — | — | — | — | Custom; producer MUST document axes in `MetaKV` |
+
+**Default assumption.** When `has_coord_convention` is `false` (or the field is absent because the publisher predates 1.6), consumers MUST assume `ENU`. This matches the GeoPose protocol and ROS REP-103.
+
+**Chaining rule.** Consumers MUST NOT chain poses (via `FrameTransform` or parent-child relationships) across `FrameRef` values with different `coord_convention` values without an intervening axis-swap transform. Libraries SHOULD provide automatic axis-swap utilities based on the enum:
+
+- `CV` → `ENU`: rotate 90° around X, then 90° around Z.
+- `GRAPHICS` → `ENU`: rotate 90° around X.
+- `NED` → `ENU`: rotate 180° around Z, then 90° around X.
+- `UNITY_LH` → `ENU`: negate Z, then rotate 90° around X.
+
+(Indicative — implementations MUST derive the correct transform from the axis definitions in the table above. Quaternion order remains `(x, y, z, w)` per §2.1.)
+
+**Producer guidance:**
+
+- Producers bridging from computer-vision pipelines (OpenCV, colmap, hloc, ORB-SLAM, DSO) SHOULD set `coord_convention = CV`.
+- Producers bridging from WebXR, OpenGL, or three.js SHOULD set `coord_convention = GRAPHICS`.
+- Producers bridging from Unity SHOULD set `coord_convention = UNITY_LH`.
+- Producers bridging from drone / aviation systems (PX4, ArduPilot, MAVLink) SHOULD set `coord_convention = NED`.
+- Producers publishing SpatialDDS-native pipelines (GeoPose, ROS 2 bridge) SHOULD set `coord_convention = ENU` explicitly — even though it is the default — for clarity.
+- When `coord_convention = OTHER`, producers MUST document the axis convention in a `MetaKV` entry with `namespace = "frame"` and keys `axis_x`, `axis_y`, `axis_z` (values from: `"east"`, `"north"`, `"up"`, `"right"`, `"down"`, `"forward"`, `"backward"`, `"left"`).

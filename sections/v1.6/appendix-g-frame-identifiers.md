@@ -6,10 +6,14 @@ The normative IDL for `FrameRef` resides in Appendix A (Core profile). This appe
 
 ```idl
 struct FrameRef {
-  string uuid;   // globally unique frame ID
-  string fqn;    // normalized fully-qualified name, e.g. "earth-fixed/map/cam_front"
+  string uuid;                       // globally unique frame ID
+  string fqn;                        // normalized fully-qualified name, e.g. "earth-fixed/map/cam_front"
+  boolean has_coord_convention;      // 1.6: optional axis convention
+  CoordConvention coord_convention;  // see §2.12; absent ⇒ assume ENU
 };
 ```
+
+The optional `coord_convention` field (added in 1.6) specifies the axis convention for poses expressed in this frame — see §2.12 for the full convention table (ENU, CV, GRAPHICS, UNITY_LH, NED, OTHER) and chaining rules. When `has_coord_convention` is `false`, consumers MUST assume `ENU`. Chaining poses across frames with different conventions requires an intervening axis-swap transform.
 
 ### UUID Rules
 - `uuid` is authoritative for identity.

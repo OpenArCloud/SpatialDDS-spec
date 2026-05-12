@@ -22,6 +22,12 @@
 ### Discovery (spatial.discovery/1.6)
 - Added `CoverageElement.has_coverage_window` / `coverage_window_start` / `coverage_window_end` for time-varying coverage.
 
+### FrameRef axis convention (coord_convention patch)
+- Added `CoordConvention` enum (`ENU`, `CV`, `GRAPHICS`, `UNITY_LH`, `NED`, `OTHER`) and extended `FrameRef` with optional `has_coord_convention` / `coord_convention` fields (APPENDABLE — backward compatible).
+- New §2.12 Coordinate Axis Convention (Normative): convention table, default-ENU assumption when absent, chaining rule (no cross-convention chains without axis swap), producer guidance for CV / GRAPHICS / Unity / NED / ENU bridges, MetaKV escape hatch for `OTHER`.
+- Motivated by the OpenVPS (CV) ↔ spARcl WebXR (GRAPHICS) ↔ GeoPose (ENU) integration debugging episode.
+- Appendix I gains C-06 (nuScenes ego-ENU + camera-CV) and LC-06 (LaMAR hloc-CV + HoloLens-GRAPHICS + GT-ENU) coord-convention conformance checks; totals update to nuScenes 28, LaMAR 71, 5-dataset total 216.
+
 ### New normative conventions (§2)
 - §2.7.6 Spatial Privacy (Normative Guidance) — pose quantization, trajectory truncation, pseudonymization, consent.
 - §2.8 Enum Serialization — JSON identifier strings; CDR uses integer `@value`.
