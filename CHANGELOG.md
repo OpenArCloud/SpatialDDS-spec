@@ -2,7 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.7     | TBD (Draft) | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. |
+| 1.7     | TBD (Draft) | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
 | 1.4     | 2026-02-07 | Finalized 1.4 draft text and examples; regenerated full spec. |
@@ -19,6 +19,8 @@ breaking schema or wire changes. Topic names retain the `/v1` segment.
 ### Breaking (wire)
 - `builtin::Time.sec`: `int32` → `int64` (no year-2038 limit).
 - `core::Node` / `core::Edge`: instance key is now compound (`map_id`, id).
+- `mapping::Edge`: instance key is now compound (`map_id`, `edge_id`),
+  aligning with `core::Node`/`Edge`.
 - `core::GeoPose`: removed `frame_kind` and `frame_ref`; the quaternion is
   fixed to the local ENU tangent frame at the encoded position (OGC GeoPose).
   Removed `enum GeoFrameKind`.

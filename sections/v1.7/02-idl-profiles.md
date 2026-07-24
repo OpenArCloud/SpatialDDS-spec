@@ -346,7 +346,7 @@ The TXT record uses the same key set as the local DNS-SD binding, with one addit
 
 | Key | Required | Description |
 |---|---|---|
-| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.6`) |
+| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.7`) |
 | `did` | OPTIONAL | DDS domain ID. OPTIONAL because the geospatial binding's primary role is to hand off to an HTTP discovery service via `muri`, not to provide direct DDS connection. |
 | `muri` | REQUIRED | HTTPS URL or `spatialdds://` URI for the discovery service, with the geohash passed as a query parameter or path segment. |
 | `part` | OPTIONAL | DDS partition hint (comma-separated). |
@@ -921,7 +921,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.slam_frontend | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.vio | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.semantics | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.mapping | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.mapping | 1.7 | Stable | **Breaking:** compound `@key` on `mapping::Edge` (`map_id`, `edge_id`), aligning with `core::Node`/`Edge` |
 | spatial.events | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.sensing.rf_beam | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
 | spatial.sensing.radio | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |

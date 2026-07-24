@@ -25,13 +25,13 @@ The profile intentionally avoids prescribing model internals. `model_format` is 
   "rep_type": "GAUSSIAN_SPLAT",
   "model_format": "inria-3dgs-v1",
   "frame_ref": {
-    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
-    "fqn": "earth-fixed"
+    "uuid": "b7c9d1e2-5f6a-4b3c-8d9e-0a1b2c3d4e5f",
+    "fqn": "sf/block-7/enu"
   },
   "has_extent": true,
   "extent": {
-    "min_xyz": [-122.420, 37.790, -5.0],
-    "max_xyz": [-122.410, 37.800, 50.0]
+    "min_xyz": [0.0, 0.0, -5.0],
+    "max_xyz": [120.0, 80.0, 50.0]
   },
   "has_quality": true,
   "quality": 0.85,

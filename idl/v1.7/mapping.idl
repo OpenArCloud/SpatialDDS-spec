@@ -201,8 +201,8 @@ module spatial {
     // constraints publish mapping::Edge; the fields are a superset
     // of core::Edge.
     @extensibility(APPENDABLE) struct Edge {
-      string map_id;
-      @key string edge_id;
+      @key string map_id;
+      @key string edge_id;              // unique edge id; instance identity is (map_id, edge_id)
       string from_id;                   // source node (may be in a different map_id)
       string to_id;                     // target node
       EdgeType type;                    // extended type enum

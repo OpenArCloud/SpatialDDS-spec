@@ -785,7 +785,7 @@ The TXT record uses the same key set as the local DNS-SD binding, with one addit
 
 | Key | Required | Description |
 |---|---|---|
-| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.6`) |
+| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.7`) |
 | `did` | OPTIONAL | DDS domain ID. OPTIONAL because the geospatial binding's primary role is to hand off to an HTTP discovery service via `muri`, not to provide direct DDS connection. |
 | `muri` | REQUIRED | HTTPS URL or `spatialdds://` URI for the discovery service, with the geohash passed as a query parameter or path segment. |
 | `part` | OPTIONAL | DDS partition hint (comma-separated). |
@@ -1360,7 +1360,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.slam_frontend | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.vio | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.semantics | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.mapping | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.mapping | 1.7 | Stable | **Breaking:** compound `@key` on `mapping::Edge` (`map_id`, `edge_id`), aligning with `core::Node`/`Edge` |
 | spatial.events | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.sensing.rf_beam | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
 | spatial.sensing.radio | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
@@ -2302,7 +2302,7 @@ module spatial {
 
 *The Discovery profile defines the lightweight announce messages and manifests that allow services, coverage areas, and spatial content or experiences to be discovered at runtime. It enables SpatialDDS deployments to remain decentralized while still providing structured service discovery.*
 
-SpatialDDS Discovery operates at two levels. The **DDS binding** (defined by the IDL types below) provides on-bus announce, query, and response topics for low-latency discovery within a DDS domain. The **HTTP binding** (§3.3.0, HTTP Discovery Search Binding) provides an equivalent spatial query interface over HTTPS for clients that have not yet joined a DDS domain. Both bindings share the same coverage semantics (§3.3.4) and return compatible result types — the DDS binding returns compact `ServiceSummary` rows in `CoverageResponse`; both bindings return pointers resolvable to full service manifests, and the HTTP binding returns service manifests (§8.2.3) that carry the same information plus DDS connection hints. Higher-level service catalogues (such as OSCP's Spatial Service Discovery Systems) may store, index, or federate SpatialDDS manifests and URIs on top of either binding.
+SpatialDDS Discovery operates at two levels. The **DDS binding** (defined by the IDL types below) provides on-bus announce, query, and response topics for low-latency discovery within a DDS domain. The **HTTP binding** (§3.3.0, HTTP Discovery Search Binding) provides an equivalent spatial query interface over HTTPS for clients that have not yet joined a DDS domain. Both bindings share the same coverage semantics (§3.3.4). The DDS binding returns compact `ServiceSummary` rows in `CoverageResponse`; the HTTP binding returns full service manifests (§8.2.3) directly. Both resolve to the same manifest content: a `ServiceSummary.manifest_uri` is resolved via §7.5 to the manifest the HTTP binding would have returned, including its DDS connection hints. Higher-level service catalogues (such as OSCP's Spatial Service Discovery Systems) may store, index, or federate SpatialDDS manifests and URIs on top of either binding.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -4137,8 +4137,8 @@ module spatial {
     // constraints publish mapping::Edge; the fields are a superset
     // of core::Edge.
     @extensibility(APPENDABLE) struct Edge {
-      string map_id;
-      @key string edge_id;
+      @key string map_id;
+      @key string edge_id;              // unique edge id; instance identity is (map_id, edge_id)
       string from_id;                   // source node (may be in a different map_id)
       string to_id;                     // target node
       EdgeType type;                    // extended type enum
@@ -4709,13 +4709,13 @@ module spatial {
   "rep_type": "GAUSSIAN_SPLAT",
   "model_format": "inria-3dgs-v1",
   "frame_ref": {
-    "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10",
-    "fqn": "earth-fixed"
+    "uuid": "b7c9d1e2-5f6a-4b3c-8d9e-0a1b2c3d4e5f",
+    "fqn": "sf/block-7/enu"
   },
   "has_extent": true,
   "extent": {
-    "min_xyz": [-122.420, 37.790, -5.0],
-    "max_xyz": [-122.410, 37.800, 50.0]
+    "min_xyz": [0.0, 0.0, -5.0],
+    "max_xyz": [120.0, 80.0, 50.0]
   },
   "has_quality": true,
   "quality": 0.85,
@@ -6865,7 +6865,7 @@ spatialdds-idl/
     └── agent.idl           # Agent task coordination (Informative only in 1.7)
 ```
 
-This repository organizes the v1.6 IDL files in a flat layout under `idl/v1.6/` (with `examples/` for provisional and informative profiles); both organizations are valid as long as `#include` paths and module declarations match.
+This repository organizes the v1.7 IDL files in a flat layout under `idl/v1.7/` (with `examples/` for provisional and informative profiles); both organizations are valid as long as `#include` paths and module declarations match.
 
 Module namespacing follows the IDL `module` declarations:
 

@@ -31,7 +31,7 @@ spatialdds-idl/
     └── agent.idl           # Agent task coordination (Informative only in 1.7)
 ```
 
-This repository organizes the v1.6 IDL files in a flat layout under `idl/v1.6/` (with `examples/` for provisional and informative profiles); both organizations are valid as long as `#include` paths and module declarations match.
+This repository organizes the v1.7 IDL files in a flat layout under `idl/v1.7/` (with `examples/` for provisional and informative profiles); both organizations are valid as long as `#include` paths and module declarations match.
 
 Module namespacing follows the IDL `module` declarations:
 
