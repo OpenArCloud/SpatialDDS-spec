@@ -8,7 +8,7 @@ spatialdds://<authority>/<zone>/<rtype>/<rid>[;param][?query][#fragment]
 
 - **authority** — a DNS name, case-insensitive.
 - **zone** — a namespace identifier (letters, digits, `-`, `_`, `:`).
-- **rtype** — resource type (for example `anchor`, `content`, `tileset`, `service`, `stream`).
+- **rtype** — resource type (for example `anchor`, `anchor_set`, `content`, `tileset`, `service`, `stream`).
 - **rid** — resource identifier (letters, digits, `-`, `_`).
 - **param** — optional `key=value` parameters separated by `;`.
 - **query/fragment** — follow RFC 3986 semantics.
@@ -29,7 +29,7 @@ alnum          = ALPHA / DIGIT
 zone           = 1*( zone-char )
 zone-char      = ALPHA / DIGIT / "-" / "_" / ":"
 
-rtype          = "anchor" / "content" / "tileset" / "service" / "stream"
+rtype          = "anchor" / "anchor_set" / "content" / "tileset" / "service" / "stream"
 
 rid            = 1*( rid-char )
 rid-char       = ALPHA / DIGIT / "-" / "_"

@@ -1,8 +1,8 @@
-## **Appendix G: Frame Identifiers (Informative Reference)**
+## **Appendix G: Frame Identifiers (Normative)**
 
 SpatialDDS represents reference frames using the `FrameRef` structure:
 
-The normative IDL for `FrameRef` resides in Appendix A (Core profile). This appendix is descriptive/informative and restates the usage guidance for reference frames.
+The normative IDL for `FrameRef` resides in Appendix A (Core profile). This appendix is normative and states the usage guidance for reference frames.
 
 ```idl
 struct FrameRef {

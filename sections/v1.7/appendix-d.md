@@ -46,7 +46,7 @@ enum AxisEncoding { AXIS_CENTERS = 0, AXIS_LINSPACE = 1 };
 
 ## IDL Tooling Notes (Non-Consecutive Enums)
 
-Several enumerations in the SpatialDDS 1.6 profiles use **intentionally
+Several enumerations in the SpatialDDS 1.7 profiles use **intentionally
 sparse or non-consecutive numeric values**. These enums are designed for
 forward extensibility (e.g., reserving ranges for future codecs, layouts, or
 pixel formats). Because of this, certain DDS toolchains (including Cyclone
@@ -169,7 +169,7 @@ The `poses` array uses `core::FramedPose` — each entry is self-contained with 
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.5
+// SpatialDDS AR+Geo 1.7
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -179,7 +179,7 @@ The `poses` array uses `core::FramedPose` — each entry is self-contained with 
 module spatial {
   module argeo {
 
-    const string MODULE_ID = "spatial.argeo/1.5";
+    const string MODULE_ID = "spatial.argeo/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3    PoseSE3;
@@ -254,8 +254,7 @@ module spatial {
   "has_geopose": true,
   "geopose": {
     "lat_deg": 37.7749, "lon_deg": -122.4194, "alt_m": 15.0,
-    "q": [0, 0, 0, 1], "frame_kind": "ENU",
-    "frame_ref": { "uuid": "ccc-...", "fqn": "earth-fixed/enu" },
+    "q": [0, 0, 0, 1],
     "stamp": { "sec": 1714071000, "nanosec": 0 },
     "cov": { "type": "COV_POS3", "pos": [ ... ] }
   },
@@ -342,7 +341,7 @@ The profile defines three types:
 - **`SpatialEvent`** — typed event tied to a zone, triggering detection, optional media evidence, and severity.
 - **`ZoneState`** — periodic zone occupancy and status snapshot for dashboards and capacity management.
 
-**Integration with Discovery:** Zone publishers announce via `disco::Announce` with `kind: OTHER` (or a future `ZONE_MANAGER` kind) and `coverage` matching the zone's spatial extent. Consumers use `CoverageQuery` filtered by `module_id_in: ["spatial.events/1.5"]` to discover event sources in a region. `SpatialZone` geometry reuses the same `Aabb3` and `FrameRef` primitives as `CoverageElement`, ensuring consistent spatial reasoning.
+**Integration with Discovery:** Zone publishers announce via `disco::Announce` with `kind: OTHER` (or a future `ZONE_MANAGER` kind) and `coverage` matching the zone's spatial extent. Consumers use `CoverageQuery` filtered by `module_id_in: ["spatial.events/1.7"]` to discover event sources in a region. `SpatialZone` geometry reuses the same `Aabb3` and `FrameRef` primitives as `CoverageElement`, ensuring consistent spatial reasoning.
 
 **Topic Layout**
 
@@ -376,7 +375,7 @@ Zone Definition:
   "schedule": "R/2024-01-01T06:00:00/PT14H",
   "provider_id": "safety/zone-manager",
   "stamp": { "sec": 1714070400, "nanosec": 0 },
-  "schema_version": "spatial.events/1.5"
+  "schema_version": "spatial.events/1.7"
 }
 ```
 
@@ -407,6 +406,6 @@ Event:
   "event_start": { "sec": 1714131653, "nanosec": 0 },
   "stamp": { "sec": 1714131900, "nanosec": 0 },
   "source_id": "analytics/zone-monitor",
-  "schema_version": "spatial.events/1.5"
+  "schema_version": "spatial.events/1.7"
 }
 ```

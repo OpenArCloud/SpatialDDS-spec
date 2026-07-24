@@ -34,7 +34,6 @@ nav:
           - Spatial Events: v1.7/appendix-d/#spatial-events-extension
       - Appendix E - Provisional Extension Examples: v1.7/appendix-e.md
       - Appendix F - SpatialDDS URI Scheme (ABNF): v1.7/appendix-f.md
-      - Appendix F.X - Discovery Query Expression (ABNF): v1.7/appendix-fx-discovery-query-expression.md
       - Appendix G - Frame Identifiers (Normative): v1.7/appendix-g-frame-identifiers.md
       - Appendix H - World Model Grounding (Informative): v1.7/appendix-h-world-model-grounding.md
       - Appendix I - Dataset Conformance Testing: v1.7/appendix-i.md

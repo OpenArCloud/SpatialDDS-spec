@@ -2,9 +2,9 @@
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
-**Version**: 1.6
+**Version**: 1.7 (Draft)
 
-**Date**: 2026-07-23
+**Date**: 2026-XX-XX
 
 **Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
@@ -36,7 +36,6 @@
     - [Appendix D: Extension Profiles](sections/v1.7/appendix-d.md)
     - [Appendix E: Provisional Extension Examples](sections/v1.7/appendix-e.md)
     - [Appendix F: SpatialDDS URI Scheme (ABNF)](sections/v1.7/appendix-f.md)
-    - [Appendix F.X: Discovery Query Expression (ABNF)](sections/v1.7/appendix-fx-discovery-query-expression.md)
     - [Appendix G: Frame Identifiers (Normative)](sections/v1.7/appendix-g-frame-identifiers.md)
     - [Appendix H: SpatialDDS as a Grounding Layer for World Models (Informative)](sections/v1.7/appendix-h-world-model-grounding.md)
     - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.7/appendix-i.md)

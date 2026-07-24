@@ -54,7 +54,7 @@ SpatialDDS messages are small and typed. Heavy content — meshes, point clouds,
 The specification is organized in two parts, as shown in the table of contents:
 
 * **Part I (§1–§6)** provides motivation, conventions, profile descriptions, operational scenarios, and forward-looking discussion.
-* **Part II (§7–Appendices)** contains the reference material: URI scheme and resolution, manifest examples, glossary, and the authoritative IDL appendices (A through E).
+* **Part II (§7–Appendices)** contains the reference material: URI scheme and resolution, manifest examples, glossary, and the authoritative IDL appendices (A through D).
 
 Most of Part I is informative context. Three sections within it contain normative rules and are labeled accordingly in their headings:
 
@@ -62,7 +62,7 @@ Most of Part I is informative context. Three sections within it contain normativ
 * **§3.3.1 Topic Naming (Normative)** — how topic names are structured and what fields are required.
 * **§3.3.4 Coverage Model (Normative)** — how spatial coverage is declared and evaluated.
 
-In the appendices, IDL definitions (Appendices A–D) are always normative. Appendix E contains provisional extension examples and is explicitly informative. Appendix F defines the URI ABNF (normative). Appendix F.X (query expression grammar) is informative. Appendix G (frame identifiers) is an informative reference. Appendix H (world model grounding) is informative. Appendix K (IDL package layout) is informative.
+In the appendices, IDL definitions (Appendices A–D) are always normative. Appendix E contains provisional extension examples and is explicitly informative. Appendix F defines the URI ABNF (normative). Appendix G (frame identifiers) is normative. Appendix H (world model grounding) is informative. Appendix K (IDL package layout) is informative.
 
 When in doubt about whether something is normative: if it uses RFC 2119 keywords (MUST, SHALL, SHOULD, MAY), it's normative regardless of where it appears.
 
@@ -72,7 +72,7 @@ For role-specific guidance on which sections to read first, see the Reading Guid
 
 - **Architects & product planners** — Start with §1 and §2 to internalize the motivation, shared conventions, and global rules before drilling into profiles.
 - **Implementers & SDK authors** — Focus on Part II plus Appendix A (core IDLs), Appendix B (discovery), Appendix C (anchors), and Appendix D (extensions).
-- **Routing, filtering, and coverage developers** — Read §3.3 (Discovery), §3.3.4 (Coverage Model), and Appendix B/F.X for the binding grammars.
+- **Routing, filtering, and coverage developers** — Read §3.3 (Discovery), §3.3.4 (Coverage Model), and Appendix B for the binding grammars.
 
 ### **Why DDS?**
 

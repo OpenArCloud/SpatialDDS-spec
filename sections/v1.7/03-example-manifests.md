@@ -1,19 +1,19 @@
 ## 8. Manifest Schema (Normative)
 
-The manifest schema is versioned as `spatial.manifest@MAJOR.MINOR`, consistent with the IDL profile scheme.
+The manifest schema is versioned as `spatial.manifest/MAJOR.MINOR`, consistent with the IDL profile scheme.
 
-The manifest schema is defined as the `spatial.manifest` profile. It uses the same `name@MAJOR.MINOR` convention as IDL profiles, and `spatial.manifest@1.6` is the canonical identifier for this specification.
+The manifest schema is defined as the `spatial.manifest` profile. It uses the same `spatial.<profile>/MAJOR.MINOR` convention as IDL profiles, and `spatial.manifest/1.7` is the canonical identifier for this specification.
 
 Manifests describe what a SpatialDDS node or dataset provides: **capabilities**, **coverage**, and **assets**. They are small JSON documents resolved via §7.5 and referenced by discovery announces.
 
 ### 8.1 Common Envelope (Normative)
 
-Every `spatial.manifest@1.6` document MUST include the following top-level fields:
+Every `spatial.manifest/1.7` document MUST include the following top-level fields:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `id` | string | REQUIRED | Unique manifest identifier. MUST be either a UUID or a valid `spatialdds://` URI. |
-| `profile` | string | REQUIRED | MUST be `spatial.manifest@1.6`. |
+| `profile` | string | REQUIRED | MUST be `spatial.manifest/1.7`. |
 | `rtype` | string | REQUIRED | Resource type: `anchor`, `anchor_set`, `content`, `tileset`, `service`, or `stream`. Determines the required type-specific block. |
 | `caps` | object | OPTIONAL | Capabilities block. When present, MUST follow the same structure as discovery `Capabilities`. |
 | `coverage` | object | OPTIONAL | Coverage block. When present, MUST follow the Coverage Model (§3.3.4). |
@@ -25,7 +25,7 @@ Every `spatial.manifest@1.6` document MUST include the following top-level field
 **Validation rules (Normative)**:
 
 - Unknown top-level fields MUST be ignored by consumers (forward compatibility).
-- `profile` MUST match `spatial.manifest@1.<minor>` where `<minor>` ≥ 5. Consumers SHOULD accept any minor ≥ 5 within major 1.
+- `profile` MUST match `spatial.manifest/1.<minor>` where `<minor>` ≥ 7. Consumers SHOULD accept any minor ≥ 7 within major 1, subject to the pre-adoption instability clause (§3.1).
 - When `coverage` is present, it MUST follow all normative rules from §3.3.4, including `has_bbox`/`has_aabb` presence flags and finite coordinate requirements.
 - `assets[].hash` MUST use the format `<algorithm>:<hex>` (e.g., `sha256:3af2...`).
 
@@ -33,7 +33,7 @@ Every `spatial.manifest@1.6` document MUST include the following top-level field
 ```json
 {
   "id": "spatialdds://museum.example.org/hall1/anchor/main-entrance",
-  "profile": "spatial.manifest@1.6",
+  "profile": "spatial.manifest/1.7",
   "rtype": "anchor",
   "stamp": { "sec": 1714070400, "nanosec": 0 },
   "ttl_sec": 3600
@@ -49,7 +49,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `anchor.anchor_id` | string | REQUIRED | Matches `GeoAnchor.anchor_id`. |
-| `anchor.geopose` | object | REQUIRED | GeoPose with `lat_deg`, `lon_deg`, `alt_m`, `q` (x,y,z,w), `frame_kind`, `frame_ref`. |
+| `anchor.geopose` | object | REQUIRED | GeoPose with `lat_deg`, `lon_deg`, `alt_m`, `q` (x,y,z,w); the quaternion is in the local ENU tangent frame at the encoded position (§3.2). |
 | `anchor.method` | string | OPTIONAL | Localization method (e.g., `Surveyed`, `GNSS`, `VisualFix`). |
 | `anchor.confidence` | number | OPTIONAL | 0..1. |
 | `anchor.frame_ref` | object | REQUIRED | `FrameRef` for the anchor's local frame. |
@@ -58,7 +58,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 ```json
 {
   "id": "spatialdds://museum.example.org/hall1/anchor/main-entrance",
-  "profile": "spatial.manifest@1.6",
+  "profile": "spatial.manifest/1.7",
   "rtype": "anchor",
   "anchor": {
     "anchor_id": "main-entrance",
@@ -66,12 +66,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
       "lat_deg": 37.7934,
       "lon_deg": -122.3941,
       "alt_m": 12.6,
-      "q": [0.0, 0.0, 0.0, 1.0],
-      "frame_kind": "ENU",
-      "frame_ref": {
-        "uuid": "fc6a63e0-99f7-445b-9e38-0a3c8a0c1234",
-        "fqn": "earth-fixed"
-      }
+      "q": [0.0, 0.0, 0.0, 1.0]
     },
     "method": "Surveyed",
     "confidence": 0.98,
@@ -127,7 +122,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 ```json
 {
   "id": "spatialdds://city.example.net/downtown/service/vps-main;v=2024-q2",
-  "profile": "spatial.manifest@1.6",
+  "profile": "spatial.manifest/1.7",
   "rtype": "service",
   "service": {
     "service_id": "vps-main",
@@ -146,8 +141,8 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
   },
   "caps": {
     "supported_profiles": [
-      { "name": "core", "major": 1, "min_minor": 0, "max_minor": 5 },
-      { "name": "discovery", "major": 1, "min_minor": 0, "max_minor": 5 }
+      { "name": "spatial.core", "major": 1, "min_minor": 7, "max_minor": 7 },
+      { "name": "spatial.discovery", "major": 1, "min_minor": 7, "max_minor": 7 }
     ],
     "features": ["blob.crc32"]
   },
@@ -196,10 +191,10 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 
 ### 8.3 JSON Schema (Normative)
 
-An official JSON Schema for `spatial.manifest@1.6` is published at:
+An official JSON Schema for `spatial.manifest/1.7` is published at:
 
 ```
-https://spatialdds.org/schemas/manifest/1.6/spatial-manifest.schema.json
+https://spatialdds.org/schemas/manifest/1.7/spatial-manifest.schema.json
 ```
 
 Manifests MAY include a `$schema` field pointing to this URL for self-description.
@@ -207,13 +202,13 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spatialdds.org/schemas/manifest/1.6/spatial-manifest.schema.json",
-  "title": "SpatialDDS Manifest 1.6",
+  "$id": "https://spatialdds.org/schemas/manifest/1.7/spatial-manifest.schema.json",
+  "title": "SpatialDDS Manifest 1.7",
   "type": "object",
   "required": ["id", "profile", "rtype"],
   "properties": {
     "id": { "type": "string" },
-    "profile": { "type": "string", "pattern": "^spatial\\.manifest@1\\.[5-9][0-9]*$" },
+    "profile": { "type": "string", "pattern": "^spatial\\.manifest/1\\.(?:[7-9]|[1-9][0-9]+)$" },
     "rtype": { "type": "string", "enum": ["anchor", "anchor_set", "content", "tileset", "service", "stream"] },
     "caps": { "$ref": "#/$defs/Capabilities" },
     "coverage": { "$ref": "#/$defs/Coverage" },

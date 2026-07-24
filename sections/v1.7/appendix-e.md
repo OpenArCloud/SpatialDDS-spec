@@ -4,9 +4,9 @@ These provisional extensions are intentionally minimal and subject to breaking c
 
 ### **Neural Scene Representations (Informative Example)**
 
-The following IDL illustrates how neural scene representations (NeRFs, Gaussian splats, neural SDFs) could be described and queried through SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.6 normative specification.** Implementations MUST NOT assume wire compatibility with this IDL across spec revisions.
+The following IDL illustrates how neural scene representations (NeRFs, Gaussian splats, neural SDFs) could be described and queried through SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.7 normative specification.** Implementations MUST NOT assume wire compatibility with this IDL across spec revisions.
 
-The Neural profile is retained as a design reference for future standardization. It is not included in the Profile Matrix (§3.5) and does not have a registered type, QoS profile, or topic pattern.
+The Neural profile is retained as a design reference for future standardization. It is listed in the Profile Matrix (§3.5) with status *Informative example* and does not have a registered type, QoS profile, or topic pattern.
 
 A mapping service might publish a `NeuralFieldMeta` describing a Gaussian splat covering part of a city block, and an AR client could request novel views from arbitrary camera poses.
 
@@ -44,15 +44,15 @@ The profile intentionally avoids prescribing model internals. `model_format` is 
   "has_render_time_ms": true,
   "render_time_ms": 12.5,
   "stamp": { "sec": 1714070400, "nanosec": 0 },
-  "schema_version": "spatial.neural/1.5"
+  "schema_version": "spatial.neural/1.7"
 }
 ```
 
 ### **Agent Task Coordination (Informative Example)**
 
-The following IDL illustrates how spatial task coordination between agents, robots, and planners could be structured over SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.6 normative specification.**
+The following IDL illustrates how spatial task coordination between agents, robots, and planners could be structured over SpatialDDS. **This example is informative only and is not part of the SpatialDDS 1.7 normative specification.**
 
-Agent task coordination is retained as a design reference. The types shown here are not registered in the Profile Matrix, the registered types table, or the QoS profiles table. Deployments requiring agent coordination SHOULD treat this IDL as a starting point and define deployment-specific extensions.
+Agent task coordination is retained as a design reference. The types shown here are listed in the Profile Matrix (§3.5) with status *Informative example* but are not in the registered types table or the QoS profiles table. Deployments requiring agent coordination SHOULD treat this IDL as a starting point and define deployment-specific extensions.
 
 This example covers two layers:
 
@@ -230,7 +230,7 @@ This profile provides typed transport for radio-environment observations used by
 
 The profile defines transport only. It does not define positioning, trilateration, filtering, or sensor-fusion algorithms.
 
-**Module ID:** `spatial.sensing.radio/1.5`  
+**Module ID:** `spatial.sensing.radio/1.7`  
 **Dependency:** `spatial.sensing.common@1.x`  
 **Status:** Provisional (K-R1 maturity gate)
 
@@ -331,7 +331,7 @@ WiFi scan:
   "has_aggregation_window": true,
   "aggregation_window_s": 4.0,
   "source_id": "lamar-cab-hololens-session-17",
-  "schema_version": "spatial.sensing.radio/1.5"
+  "schema_version": "spatial.sensing.radio/1.7"
 }
 ```
 
@@ -356,7 +356,7 @@ UWB ranging round:
     }
   ],
   "source_id": "warehouse-uwb-reader-alpha",
-  "schema_version": "spatial.sensing.radio/1.5"
+  "schema_version": "spatial.sensing.radio/1.7"
 }
 ```
 
@@ -403,4 +403,4 @@ QoS suggestions (informative):
 | `RadioSensorMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `RadioScan` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) |
 
-Profile matrix: `spatial.neural/1.5`, `spatial.agent/1.5`, `spatial.sensing.rf_beam/1.5`, and `spatial.sensing.radio/1.5` are provisional Appendix E profiles. When promoted to stable in a future version, they move to Appendix D.
+Profile matrix: `spatial.neural/1.7`, `spatial.agent/1.7`, `spatial.sensing.rf_beam/1.7`, and `spatial.sensing.radio/1.7` are provisional Appendix E profiles. When promoted to stable in a future version, they move to Appendix D.

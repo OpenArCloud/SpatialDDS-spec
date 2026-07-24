@@ -2,12 +2,51 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
+| 1.7     | TBD (Draft) | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
 | 1.4     | 2026-02-07 | Finalized 1.4 draft text and examples; regenerated full spec. |
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
+
+## Version 1.7 - TBD
+
+Backward compatibility with 1.6 is **not** preserved. Per the pre-adoption
+instability clause (§3.1), MINOR revisions in the 1.x series MAY include
+breaking schema or wire changes. Topic names retain the `/v1` segment.
+
+### Breaking (wire)
+- `builtin::Time.sec`: `int32` → `int64` (no year-2038 limit).
+- `core::Node` / `core::Edge`: instance key is now compound (`map_id`, id).
+- `core::GeoPose`: removed `frame_kind` and `frame_ref`; the quaternion is
+  fixed to the local ENU tangent frame at the encoded position (OGC GeoPose).
+  Removed `enum GeoFrameKind`.
+- `core::TileMeta`: replaced `min_xyz`/`max_xyz` with a single `Aabb3 aabb`;
+  removed `lod` (redundant with `key.level`).
+- `core::BlobChunk`: removed `last`.
+- `disco::CoverageResponse`: returns `sequence<ServiceSummary>` (new compact
+  row type) instead of `sequence<Announce>`.
+- `disco::Capabilities.features`: `sequence<FeatureFlag>` → `sequence<string>`;
+  removed `struct FeatureFlag`.
+- `disco::ProfileSupport`: removed `preferred`; `name` now carries the module
+  family (e.g., `"spatial.core"`).
+- `disco::CoverageElement`: removed `type` (derivable from `has_bbox`/`has_aabb`).
+- `disco::CoverageQuery`: removed `expr`; deleted Appendix F.X (query
+  expression grammar). Use `filter` exclusively.
+
+### Policy
+- Single identifier syntax: `spatial.<profile>/MAJOR.MINOR` everywhere; the
+  dual `name@MAJOR.MINOR` form is retired.
+- All modules version together with the spec; every `MODULE_ID` and
+  `schema_version` in 1.7 is `spatial.<profile>/1.7`.
+- Added the pre-adoption instability clause (§3.1).
+- Consolidated the well-known namespace to a single RFC 8615 registration:
+  `/.well-known/spatialdds/{bootstrap,resolver,search}`.
+- Bootstrap authentication unified with `auth_hint` (removed the `auth.method`
+  enum).
+- Appendix G (Frame Identifiers) promoted from Informative to Normative.
+- Manifest `profile` MUST match `spatial.manifest/1.<minor>` with `<minor>` ≥ 7.
 
 ## Version 1.6 - 2026-07-23
 

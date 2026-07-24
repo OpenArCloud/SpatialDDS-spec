@@ -1,5 +1,5 @@
 {
-  "schema_version": "spatial.core/1.6",
+  "schema_version": "spatial.core/1.7",
   "content_id": "xp:sculpture-walk:met-foyer",
   "version": "1.0.2",
   "provider": {
@@ -42,7 +42,6 @@
     "polygon_uri": "https://cdn.museum.example/foyer_poly.geojson",
     "elements": [
       {
-        "type": "bbox",
         "has_bbox": true,
         "has_aabb": false,
         "bbox": [
@@ -55,7 +54,6 @@
         "global": false
       },
       {
-        "type": "volume",
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {

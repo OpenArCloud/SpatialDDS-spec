@@ -1,6 +1,6 @@
 ## **Appendix J: Comparison with ROS 2 (Informative)**
 
-*This appendix compares SpatialDDS 1.6 with ROS 2 (Jazzy / Rolling, circa 2025) across architecture, message design, and deployment scope. The goal is to help implementers who are familiar with one system understand the other, and to clarify where the two are complementary rather than competing.*
+*This appendix compares SpatialDDS 1.7 with ROS 2 (Jazzy / Rolling, circa 2025) across architecture, message design, and deployment scope. The goal is to help implementers who are familiar with one system understand the other, and to clarify where the two are complementary rather than competing.*
 
 ---
 
@@ -12,7 +12,7 @@ ROS 2 is a full robotics framework. It includes a middleware abstraction (rmw) t
 
 Because both systems use DDS as their transport layer, they can coexist on the same DDS domain. A ROS 2 node and a SpatialDDS participant can exchange data directly when message types are aligned, or through a lightweight bridge when they are not.
 
-| Dimension | SpatialDDS 1.6 | ROS 2 |
+| Dimension | SpatialDDS 1.7 | ROS 2 |
 |---|---|---|
 | Identity | Protocol specification over DDS | Full robotics framework with DDS middleware |
 | IDL corpus | Single versioned spec with profiles | Fragmented across independent packages |
@@ -26,7 +26,7 @@ Because both systems use DDS as their transport layer, they can coexist on the s
 
 Both systems use `(x, y, z, w)` quaternion component order. Orientation data flows between them without reordering.
 
-| Dimension | SpatialDDS 1.6 | ROS 2 |
+| Dimension | SpatialDDS 1.7 | ROS 2 |
 |---|---|---|
 | Frame identity | `FrameRef { uuid, fqn }` -- UUID authoritative | `string frame_id` -- plain string |
 | Frame graph | `PoseSE3` DAG with anchors bridging local to global | `tf2` strict tree via `/tf` and `/tf_static` topics |
@@ -130,7 +130,7 @@ ROS 2 has no standard message set for radio environment observations used by WiF
 
 ### **J.4 Discovery & Spatial Awareness**
 
-| Dimension | SpatialDDS 1.6 | ROS 2 |
+| Dimension | SpatialDDS 1.7 | ROS 2 |
 |---|---|---|
 | Discovery | Application-level: ANNOUNCE / QUERY / REPLY with coverage geometry and capability negotiation | Transport-level: DDS SPDP/SEDP; application introspection via `ros2` CLI |
 | Spatial filtering | CoverageModel with AABBs, spheres, geofences -- subscribers filter by spatial region | Not present; topic-level subscription only |
@@ -151,7 +151,7 @@ ROS 2 carries payloads inline. `sensor_msgs/Image` includes the full pixel array
 
 ### **J.6 Ecosystem & Tooling**
 
-| Dimension | SpatialDDS 1.6 | ROS 2 |
+| Dimension | SpatialDDS 1.7 | ROS 2 |
 |---|---|---|
 | Visualization | DDS vendor tools; custom | RViz2, Foxglove, PlotJuggler |
 | Simulation | DDS bridge to Gazebo / Isaac Sim | Native Gazebo, Isaac Sim, CARLA integration |

@@ -1,5 +1,5 @@
 {
-  "schema_version": "spatial.core/1.6",
+  "schema_version": "spatial.core/1.7",
   "service_id": "svc:mapping:acme/sf-downtown",
   "version": "1.0.0",
   "provider": {
@@ -45,7 +45,6 @@
     "polygon_uri": "https://cdn.acme.example/downtown_poly.geojson",
     "elements": [
       {
-        "type": "bbox",
         "has_bbox": true,
         "has_aabb": false,
         "bbox": [
@@ -58,7 +57,6 @@
         "global": false
       },
       {
-        "type": "volume",
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {

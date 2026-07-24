@@ -47,6 +47,8 @@ When resolving a `spatialdds://` URI, a client MUST perform the following steps 
 4. **HTTPS fallback** — The client MUST attempt HTTPS resolution as defined below.
 5. **Failure** — If unresolved, the client MUST treat the resolution as failed.
 
+Resolution stops at the first step that yields the resource. Each subsequent step is attempted only if the previous step fails or is unavailable.
+
 #### 7.5.2 HTTPS Resolution (Required Baseline)
 
 All SpatialDDS authorities **MUST** support HTTPS-based resolution.
@@ -56,7 +58,7 @@ All SpatialDDS authorities **MUST** support HTTPS-based resolution.
 Each authority **MUST** expose the resolver metadata at:
 
 ```
-https://{authority}/.well-known/spatialdds-resolver
+https://{authority}/.well-known/spatialdds/resolver
 ```
 
 Minimum response body:
@@ -69,6 +71,8 @@ Minimum response body:
 }
 ```
 
+When a fetched manifest carries its own `ttl_sec`, the manifest's `ttl_sec` governs the cache lifetime of that manifest; the resolver's `cache_ttl_sec` is the default for responses that carry no TTL of their own.
+
 ##### Resolve Request (Normative)
 
 Clients resolve a SpatialURI via:
@@ -80,7 +84,7 @@ GET {https_base}?uri={urlencoded SpatialURI}
 Example:
 
 ```
-GET https://example.com/spatialdds/resolve?uri=spatialdds://example.com/zone:austin/manifest:vps
+GET https://example.com/spatialdds/resolve?uri=spatialdds://example.com/austin/service/vps-main
 ```
 
 ##### Resolve Response (Normative)

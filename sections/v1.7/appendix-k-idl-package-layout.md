@@ -27,8 +27,8 @@ spatialdds-idl/
 └── provisional/
     ├── rf_beam.idl         # RF beam profile (Provisional)
     ├── radio.idl           # Radio fingerprint examples (Provisional)
-    ├── neural.idl          # Neural field examples (Informative only in 1.6)
-    └── agent.idl           # Agent task coordination (Informative only in 1.6)
+    ├── neural.idl          # Neural field examples (Informative only in 1.7)
+    └── agent.idl           # Agent task coordination (Informative only in 1.7)
 ```
 
 This repository organizes the v1.6 IDL files in a flat layout under `idl/v1.6/` (with `examples/` for provisional and informative profiles); both organizations are valid as long as `#include` paths and module declarations match.

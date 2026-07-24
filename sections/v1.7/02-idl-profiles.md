@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.6 (© Open AR Cloud Initiative)
+// SpatialDDS Specification 1.7 (© Open AR Cloud Initiative)
 
 ## **3\. IDL Profiles**
 
@@ -9,14 +9,16 @@ _See §2 Conventions for global normative rules._
 
 ### **3.1 IDL Profile Versioning & Negotiation (Normative)**
 
-SpatialDDS uses semantic versioning tokens of the form `name@MAJOR.MINOR`.
+SpatialDDS uses semantic versioning of the form `spatial.<profile>/MAJOR.MINOR`.
 
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-Identifier conventions: Profile tokens use `name@MAJOR.MINOR` (e.g., `core@1.6`). Module identifiers use `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.6`). These are canonically related: `core@1.6 ⇔ spatial.core/1.6`.
+> **Pre-adoption instability (Normative).** The compatibility contract above takes effect upon formal adoption of this specification. Throughout the 1.x pre-adoption series, MINOR revisions MAY include breaking schema or wire changes. Each revision's Profile Matrix (§3.5) and changelog identify breaking changes explicitly. Topic names retain the `/v1` segment through the 1.x series notwithstanding such changes.
 
-Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.6 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
+Profile identifiers use the single form `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.7`) everywhere: prose, manifests, discovery payloads, and IDL constants.
+
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.7 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **3.2 Core SpatialDDS**
 
@@ -27,6 +29,8 @@ The Core profile defines the essential building blocks for representing and shar
 **NavSatStatus Topic (Normative):** NavSatStatus SHOULD be published on the topic `spatialdds/geo/<gnss_id>/navsat_status/v1`, where `<gnss_id>` matches the `@key gnss_id` in the struct. NavSatStatus SHOULD use the same QoS profile as the associated GeoPose stream.
 
 NavSatStatus is registered as type `navsat_status` in the registered types table (§3.3.2). Producers publishing GNSS-derived GeoPoses SHOULD include a `TopicMeta` entry for NavSatStatus in their `Announce.topics[]`. Consumers MAY discover NavSatStatus topics through standard discovery mechanisms.
+
+**GeoPose orientation reference (Normative).** `GeoPose` encodes WGS84 position (`lat_deg`, `lon_deg`, `alt_m`); its quaternion is always expressed in the local ENU tangent frame at that position, consistent with OGC GeoPose. Consumers needing another axis convention apply the §2.12 conversions. Local metric poses use `FramedPose`, whose `FrameRef` (with `coord_convention`) governs axes; `GeoPose` and `FramedPose` never require reconciliation of two convention systems on the same sample.
 
 **Planned Trajectory (Normative):** `PlannedTrajectory` represents an agent's intended future path. It is published at the agent's replan rate (typically 1–10 Hz) and superseded by each new plan revision. Consumers MUST use the most recent `plan_revision` for a given `agent_id` and discard older revisions.
 
@@ -52,7 +56,7 @@ Blob payloads are transported as `BlobChunk` sequences. Consumers MUST be prepar
 #### Frame Identifiers (Reference)
 
 SpatialDDS uses structured frame references via the `FrameRef { uuid, fqn, coord_convention? }` type. The optional `coord_convention` (added in 1.6) selects the axis convention for poses in this frame; see §2.12 for the full convention table and chaining rules. When absent, consumers MUST assume `ENU`.
-See *Appendix G Frame Identifiers (Informative Reference)* for the complete definition and naming rules.
+See *Appendix G Frame Identifiers (Normative)* for the complete definition and naming rules.
 
 Each Transform expresses a pose that maps coordinates from the `from` frame into the `to` frame (parent → child).
 
@@ -81,7 +85,7 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 
 ```json
 {
-  "spatialdds_bootstrap": "1.6",
+  "spatialdds_bootstrap": "1.7",
   "domain_id": 42,
   "initial_peers": [
     "udpv4://192.168.1.100:7400",
@@ -89,10 +93,7 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
   ],
   "partitions": ["venue/museum-west"],
   "discovery_topic": "spatialdds/discovery/announce/v1",
-  "manifest_uri": "spatialdds://museum.example.org/west/service/discovery",
-  "auth": {
-    "method": "none"
-  }
+  "manifest_uri": "spatialdds://museum.example.org/west/service/discovery"
 }
 ```
 
@@ -100,13 +101,13 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 
 | Field | Required | Description |
 |---|---|---|
-| `spatialdds_bootstrap` | REQUIRED | Bootstrap schema version (e.g., "1.6") |
+| `spatialdds_bootstrap` | REQUIRED | Bootstrap schema version (e.g., "1.7") |
 | `domain_id` | REQUIRED | DDS domain ID to join |
 | `initial_peers` | REQUIRED | One or more DDS peer locators for initial discovery |
 | `partitions` | OPTIONAL | DDS partition(s) to join. Empty or absent means default partition. |
 | `discovery_topic` | OPTIONAL | Override for the well-known announce topic. Defaults to `spatialdds/discovery/announce/v1`. |
 | `manifest_uri` | OPTIONAL | A `spatialdds://` URI for the deployment's root manifest. |
-| `auth` | OPTIONAL | Authentication hint. `method` is one of `"none"`, `"dds-security"`, `"token"`. |
+| `auth_hint` | OPTIONAL | Auth-URI list per §3.3 `auth_hint` grammar. Empty or absent means no authentication hint. |
 
 **Normative rules**
 
@@ -120,12 +121,12 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 Clients MAY fetch the bootstrap manifest from:
 
 ```
-https://{authority}/.well-known/spatialdds
+https://{authority}/.well-known/spatialdds/bootstrap
 ```
 
 The response MUST be `application/json` using the bootstrap manifest schema. Servers SHOULD set `Cache-Control` headers appropriate to their deployment (e.g., `max-age=300`).
 
-**Note:** Three well-known paths are defined under the `/.well-known/spatialdds` namespace. The bootstrap path (`/.well-known/spatialdds`) returns a Bootstrap Manifest. The resolver metadata path (`/.well-known/spatialdds-resolver`) returns resolver metadata for URI resolution (§7.5.2). The search path (`/.well-known/spatialdds/search`) accepts spatial discovery queries and returns matching service manifests. All three serve distinct functions and MAY coexist on the same authority.
+**Note:** Three well-known paths are defined under the single `/.well-known/spatialdds` namespace (one RFC 8615 registration). The bootstrap path (`/.well-known/spatialdds/bootstrap`) returns a Bootstrap Manifest. The resolver metadata path (`/.well-known/spatialdds/resolver`) returns resolver metadata for URI resolution (§7.5.2). The search path (`/.well-known/spatialdds/search`) accepts spatial discovery queries and returns matching service manifests. All three serve distinct functions and MAY coexist on the same authority.
 
 ##### **HTTP Discovery Search Binding (Normative)**
 
@@ -142,7 +143,7 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `coverage` | array of CoverageElement | REQUIRED | One or more spatial regions of interest. Uses the same `CoverageElement` schema as `CoverageQuery.coverage` — `type`, `bbox`, `aabb`, `crs`, `frame_ref`, `global`. |
+| `coverage` | array of CoverageElement | REQUIRED | One or more spatial regions of interest. Uses the same `CoverageElement` schema as `CoverageQuery.coverage` — `bbox`, `aabb`, `crs`, `frame_ref`, `global`. |
 | `filter` | CoverageFilter | OPTIONAL | Structured filter matching `CoverageFilter` — `type_in`, `qos_profile_in`, `module_id_in`. Empty arrays mean "match all." |
 | `kind` | array of string | OPTIONAL | Filter by service kind: `"VPS"`, `"MAPPING"`, `"RELOCAL"`, `"SEMANTICS"`, `"STORAGE"`, `"CONTENT"`, `"ANCHOR_REGISTRY"`, `"OTHER"`. Empty or absent means all kinds. |
 | `geohash` | string | OPTIONAL | Geohash string (3–7 characters). Shorthand for an earth-fixed bbox query. When present, the server expands the geohash to its bounding box and treats it as an additional coverage element. |
@@ -169,8 +170,7 @@ Content-Type: application/json
 {
   "coverage": [
     {
-      "type": "bbox",
-      "crs": "EPSG:4979",
+      "crs": "EPSG:4326",
       "bbox": [-122.420, 37.785, -122.405, 37.800]
     }
   ],
@@ -198,7 +198,7 @@ On success, the server MUST return HTTP `200 OK` with `Content-Type: application
   "results": [
     {
       "id": "spatialdds://acme-vps.example/sf-downtown/service/vps-main",
-      "profile": "spatial.manifest@1.6",
+      "profile": "spatial.manifest/1.7",
       "rtype": "service",
       "service": {
         "service_id": "vps-main",
@@ -271,8 +271,8 @@ The server evaluates spatial overlap using the same *intersects* predicate as th
 
 | Path | Function | Returns |
 |---|---|---|
-| `/.well-known/spatialdds` | Bootstrap manifest | Bootstrap Manifest (domain_id, peers, partitions) |
-| `/.well-known/spatialdds-resolver` | Resolver metadata | Resolver metadata (https_base, cache_ttl) |
+| `/.well-known/spatialdds/bootstrap` | Bootstrap manifest | Bootstrap Manifest (domain_id, peers, partitions) |
+| `/.well-known/spatialdds/resolver` | Resolver metadata | Resolver metadata (https_base, cache_ttl) |
 | `/.well-known/spatialdds/search` | **Spatial discovery query** | **Array of service manifests** |
 
 All three paths MAY coexist on the same authority. They serve distinct functions and do not conflict.
@@ -297,7 +297,7 @@ DNS-SD is the recommended first binding for local bootstrap.
 
 | Key | Maps to | Example |
 |---|---|---|
-| `ver` | `spatialdds_bootstrap` | `1.6` |
+| `ver` | `spatialdds_bootstrap` | `1.7` |
 | `did` | `domain_id` | `42` |
 | `part` | `partitions` (comma-separated) | `venue/museum-west` |
 | `muri` | `manifest_uri` | `spatialdds://museum.example.org/west/service/discovery` |
@@ -365,13 +365,13 @@ The TXT record uses the same key set as the local DNS-SD binding, with one addit
 
 ```
 ;; San Francisco downtown (~5 km² cell)
-_spatialdds._udp.9q8yy.geo.spatialdds.example.org.  TXT  "ver=1.6" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yy"
+_spatialdds._udp.9q8yy.geo.spatialdds.example.org.  TXT  "ver=1.7" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yy"
 
 ;; San Francisco marina district
-_spatialdds._udp.9q8yk.geo.spatialdds.example.org.  TXT  "ver=1.6" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yk"
+_spatialdds._udp.9q8yk.geo.spatialdds.example.org.  TXT  "ver=1.7" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yk"
 
 ;; London Soho
-_spatialdds._udp.gcpvj.geo.spatialdds.example.org.  TXT  "ver=1.6" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=gcpvj"
+_spatialdds._udp.gcpvj.geo.spatialdds.example.org.  TXT  "ver=1.7" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=gcpvj"
 ```
 
 **Example HTTPS response** (from the `muri` endpoint)
@@ -382,7 +382,7 @@ The discovery service returns an array of standard SpatialDDS service manifests 
 [
   {
     "id": "spatialdds://provider-a.example/sf-downtown/service/vps-main",
-    "profile": "spatial.manifest@1.6",
+    "profile": "spatial.manifest/1.7",
     "rtype": "service",
     "service": {
       "service_id": "vps-main",
@@ -510,8 +510,8 @@ GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
 ```idl
 // ABRIDGED — see Appendix B for normative definitions
 // Message shapes shown for orientation only
-@extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; boolean preferred; }
-@extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<FeatureFlag,64> features; }
+@extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; }
+@extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
 @extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
 
 @extensibility(APPENDABLE) struct Announce {
@@ -529,17 +529,25 @@ GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
 @extensibility(APPENDABLE) struct CoverageQuery {
   // minimal illustrative fields
   boolean has_filter;
-  CoverageFilter filter; // preferred in 1.5
-  string expr;           // deprecated in 1.5; Appendix F.X grammar
+  CoverageFilter filter; // structured matching
   string reply_topic;    // topic to receive results
   string query_id;       // correlate request/response
 }
 
-The expression syntax is retained for legacy deployments and defined in Appendix F.X; `expr` is deprecated in 1.5 in favor of `filter`.
+@extensibility(APPENDABLE) struct ServiceSummary {
+  string service_id;
+  ServiceKind kind;
+  string name;
+  SpatialUri manifest_uri;      // resolve for full caps/topics/transforms
+  sequence<CoverageElement,4> coverage;
+  FrameRef coverage_frame_ref;
+  Time stamp;
+  uint32 ttl_sec;
+}
 
 @extensibility(APPENDABLE) struct CoverageResponse {
   string query_id;
-  sequence<Announce,256> results;
+  sequence<ServiceSummary,256> results;
   string next_page_token;
 }
 ```
@@ -550,10 +558,10 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 {
   "caps": {
     "supported_profiles": [
-      { "name": "core",           "major": 1, "min_minor": 0, "max_minor": 3 },
-      { "name": "discovery",      "major": 1, "min_minor": 1, "max_minor": 2 }
+      { "name": "spatial.core",      "major": 1, "min_minor": 7, "max_minor": 7 },
+      { "name": "spatial.discovery", "major": 1, "min_minor": 7, "max_minor": 7 }
     ],
-    "preferred_profiles": ["discovery@1.2"],
+    "preferred_profiles": ["spatial.discovery/1.7"],
     "features": ["blob.crc32"]
   },
   "topics": [
@@ -572,30 +580,38 @@ The expression syntax is retained for legacy deployments and defined in Appendix
   "filter": {
     "type_in": ["radar_detection", "radar_tensor"],
     "qos_profile_in": [],
-    "module_id_in": ["spatial.discovery/1.4", "spatial.discovery/1.6"]
+    "module_id_in": ["spatial.discovery/1.7"]
   },
-  "expr": "",
   "reply_topic": "spatialdds/discovery/response/q1",
   "stamp": { "sec": 1714070400, "nanosec": 0 },
   "ttl_sec": 30
 }
 ```
+
+Reply topics are consumer-chosen and exempt from the application-topic pattern.
+
 ```json
-{ "query_id": "q1", "results": [ { "caps": { "supported_profiles": [ { "name": "discovery", "major": 1, "min_minor": 1, "max_minor": 2 } ] }, "topics": [ { "name": "spatialdds/perception/radar_1/radar_detection/v1", "type": "radar_detection", "version": "v1", "qos_profile": "RADAR_RT" }, { "name": "spatialdds/perception/radar_1/radar_tensor/v1", "type": "radar_tensor", "version": "v1", "qos_profile": "RADAR_RT" } ] } ], "next_page_token": "" }
+{ "query_id": "q1",
+  "results": [
+    { "service_id": "radar-1", "kind": "OTHER",
+      "name": "Radar aggregation",
+      "manifest_uri": "spatialdds://ops.example.org/plant1/service/radar-1",
+      "coverage": [ { "has_bbox": true, "bbox": [-122.42, 37.78, -122.40, 37.80], "global": false } ],
+      "coverage_frame_ref": { "uuid": "ae6f0a3e-7a3e-4b1e-9b1f-0e9f1b7c1a10", "fqn": "earth-fixed" },
+      "stamp": { "sec": 1714070400, "nanosec": 0 }, "ttl_sec": 300 } ],
+  "next_page_token": "" }
 ```
 
 #### Norms & filters
 * Announces **MUST** include `caps.supported_profiles`; peers choose the highest compatible minor within a shared major.
 * Each advertised topic **MUST** declare `name`, `type`, `version`, and `qos_profile` per Topic Identity (§3.3.1); optional throughput hints (`target_rate_hz`, `max_chunk_bytes`) are additive.
-* Discovery topics SHALL restrict `type` to {`geometry_tile`, `video_frame`, `radar_detection`, `radar_tensor`, `seg_mask`, `desc_array`, `rf_beam`, `radio_scan`}, `version` to `v1`, and `qos_profile` to {`GEOM_TILE`, `VIDEO_LIVE`, `RADAR_RT`, `SEG_MASK_RT`, `DESC_BATCH`, `RF_BEAM_RT`, `RADIO_SCAN_RT`}.
+* Each advertised topic's `type` SHALL be a value registered in the Typed Topics Registry (§3.3.2) or a documented deployment-specific extension per §3.3.1; `version` SHALL follow Topic Version Stability (§3.3.1); and `qos_profile` SHALL be a profile named in §3.3.3 or a documented deployment-specific extension.
 * `caps.preferred_profiles` is an optional tie-breaker **within the same major**.
 * `caps.features` carries namespaced feature flags; unknown flags **MUST** be ignored.
-* `FeatureFlag` is a struct (not a raw string) to allow future appended fields (e.g., version or parameters) without breaking wire compatibility.
 * `CoverageQuery.filter` provides structured matching for `type`, `qos_profile`, and `module_id`.
 * Empty sequences in `CoverageFilter` mean “match all” for that field.
 * When multiple filter fields are populated, they are ANDed; a result MUST match at least one value in every non-empty sequence.
 * Version range matching stays in profile negotiation (`supported_profiles` with `min_minor`/`max_minor`), not in coverage queries.
-* `CoverageQuery.expr` is **deprecated** in 1.5 and **will be removed in 2.0**. If `has_filter` is true, responders MUST ignore `expr`. New implementations MUST NOT generate `expr`; they MUST use `filter` exclusively. Implementations supporting `expr` for backward compatibility SHOULD log a deprecation warning.
 * Responders page large result sets via `next_page_token`; every response **MUST** echo the caller’s `query_id`.
 
 #### **Pagination Contract (Normative)**
@@ -608,7 +624,7 @@ The expression syntax is retained for legacy deployments and defined in Appendix
 
 #### **Announce Lifecycle (Normative)**
 
-- **Departure:** A node that leaves the bus gracefully SHOULD publish a `Depart` message. Consumers MUST remove the corresponding `service_id` from their local directory upon receiving `Depart`. `Depart` does not replace TTL-based expiry.
+- **Departure:** A node leaving the bus gracefully MUST dispose its `Announce` instance (DDS instance state `NOT_ALIVE_DISPOSED`) so that durable readers and late joiners observe the removal, and SHOULD also publish `Depart` (which bridges to non-DDS transports). Consumers MUST treat a disposed `Announce` instance or a received `Depart` as removal of that `service_id` from their local directory. TTL-based expiry remains the backstop for ungraceful departure.
 - **Staleness:** Consumers SHOULD discard Announce samples where `now - stamp > 2 * ttl_sec`.
 - **Re-announce cadence:** Producers SHOULD re-announce at intervals no greater than `ttl_sec / 2` to prevent premature expiry.
 - **Rate limiting:** Producers SHOULD NOT re-announce more frequently than once per second unless capabilities, coverage, or topics have changed. Consumers MAY rate-limit processing per `service_id`.
@@ -706,6 +722,8 @@ spatialdds/<domain>/<stream>/<type>/<version>
 | `<type>` | Registered data type | `video_frame` |
 | `<version>` | Schema or message version | `v1` |
 
+This pattern applies to application data topics. Well-known discovery topics (§3.3 tables) and topic templates defined by individual profiles (e.g., `spatialdds/<scene>/plan/<agent_id>/trajectory/v1`) are normative as specified where they are defined and MAY use additional path segments. The `<type>` segment of an application topic name is a human-readable hint; the authoritative type of a topic is the `type` field in its `TopicMeta` / manifest entry, not the topic name.
+
 ###### Example
 ```json
 {
@@ -720,8 +738,8 @@ spatialdds/<domain>/<stream>/<type>/<version>
 
 The version segment in topic names (e.g., `/v1`) corresponds to the **profile MAJOR version**, not the MINOR version. Topic names change only when a profile increments its MAJOR version number. Concretely:
 
-- `spatial.sensing.vision/1.5` → `spatial.sensing.vision/1.6`: topic names remain `/v1` (same MAJOR).
-- `spatial.sensing.vision/1.5` → `spatial.sensing.vision/2.0`: topic names change to `/v2` (MAJOR incremented).
+- `spatial.sensing.vision/1.7` → `spatial.sensing.vision/1.8`: topic names remain `/v1` (same MAJOR).
+- `spatial.sensing.vision/1.7` → `spatial.sensing.vision/2.0`: topic names change to `/v2` (MAJOR incremented).
 
 Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change topic names. This guarantees that consumers subscribing to `/v1` topics continue to receive messages after MINOR-version updates without resubscribing.
 
@@ -749,6 +767,8 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose |
 | `planned_trajectory` | Future agent trajectory with waypoints | Intent sharing, cooperative planning |
 | `entity_binding` | Cross-topic entity correlation | Scene graph construction, digital twins |
+| `geopose` | Global pose sample | GNSS/VPS localization outputs |
+| `vps_query` | VPS localization request | Query image/features + hints |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
@@ -771,6 +791,9 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 | `MAP_META` | Reliable | Ordered | 1000 ms | Map descriptors, alignments, events |
 | `ZONE_META` | Reliable | Ordered | 1000 ms | Zone definitions, zone state |
 | `EVENT_RT` | Reliable | Ordered | 100 ms | Spatial events and alerts |
+| `POSE_RT` | Best-effort | Ordered | 33 ms | Live pose streams |
+| `VPS_REQ` | Reliable | Ordered | 500 ms | VPS localization requests |
+| `VPS_RESP` | Reliable | Ordered | 500 ms | VPS localization responses |
 
 ###### Notes
 
@@ -869,7 +892,7 @@ The complete SpatialDDS IDL bundle is organized into the following profiles:
 Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, providing the minimal set required for interoperability.
 
 * **Extensions**
-  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet`/`RadTensorMeta`/`RadTensorFrame` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. The provisional `rf_beam` extension adds `RfBeamMeta`/`RfBeamFrame`/`RfBeamArraySet` for phased-array beam power measurements, and the provisional `radio` extension adds `RadioSensorMeta`/`RadioScan` for WiFi/BLE/UWB fingerprint transport. Deployments MAY import the specialized profiles independently but SHOULD declare the `sensing.common@1.x` dependency when they do.
+  * **Sensing Module Family**: `sensing.common` defines shared frame metadata, calibration, QoS hints, and codec descriptors. Radar, lidar, and vision profiles inherit those types and layer on their minimal deltas—`RadSensorMeta`/`RadDetectionSet`/`RadTensorMeta`/`RadTensorFrame` for radar, `PointCloud`/`ScanBlock`/`return_type` for lidar, and `ImageFrame`/`SegMask`/`FeatureArray` for vision. The provisional `rf_beam` extension adds `RfBeamMeta`/`RfBeamFrame`/`RfBeamArraySet` for phased-array beam power measurements, and the provisional `radio` extension adds `RadioSensorMeta`/`RadioScan` for WiFi/BLE/UWB fingerprint transport. Deployments MAY import the specialized profiles independently but SHOULD declare the `spatial.sensing.common/1.x` dependency when they do.
   * **VIO Profile**: Raw and fused IMU and magnetometer samples for visual-inertial pipelines.
   * **SLAM Frontend Profile**: Features, descriptors, and keyframes for SLAM and SfM pipelines.
   * **Semantics Profile**: 2D and 3D detections for AR occlusion, robotics perception, and analytics.
@@ -882,31 +905,31 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
-#### **Profile Matrix (SpatialDDS 1.6)**
+#### **Profile Matrix (SpatialDDS 1.7)**
 
-| Profile | Version in 1.6 | Status | 1.6 Change |
+| Profile | Version in 1.7 | Status | 1.7 Change |
 |---|---|---|---|
-| spatial.core | 1.6 | Stable | Added `PlannedTrajectory`, `EntityBinding` |
-| spatial.discovery | 1.6 | Stable | Added `CoverageElement.coverage_window` |
-| spatial.sensing.common | 1.6 | Stable | Added `COV_ROT3`, `COV_POSE6_TWIST6`, `Mat12x12` |
-| spatial.manifest | 1.6 | Stable | Manifest schema bumped with spec |
-| spatial.anchors | 1.5 | Stable | No change |
-| spatial.argeo | 1.5 | Stable | No change |
-| spatial.sensing.rad | 1.5 | Stable | No change |
-| spatial.sensing.lidar | 1.5 | Stable | No change |
-| spatial.sensing.vision | 1.5 | Stable | No change |
-| spatial.slam_frontend | 1.5 | Stable | No change |
-| spatial.vio | 1.5 | Stable | No change |
-| spatial.semantics | 1.5 | Stable | No change |
-| spatial.mapping | 1.5 | Stable | No change |
-| spatial.events | 1.5 | Stable | No change |
-| spatial.sensing.rf_beam | 1.5 | Provisional (Appendix E) | No change |
-| spatial.sensing.radio | 1.5 | Provisional (Appendix E) | No change |
-| spatial.neural | 1.5 | Informative example (Appendix E) | Demoted from Provisional — design reference only |
-| spatial.agent | 1.5 | Informative example (Appendix E) | Demoted from Provisional — design reference only |
+| spatial.core | 1.7 | Stable | **Breaking:** `Time.sec` int64; compound `@key` on `Node`/`Edge`; `GeoPose` orientation fixed to local ENU (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` single `aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last` |
+| spatial.discovery | 1.7 | Stable | **Breaking:** `CoverageResponse` returns `ServiceSummary` rows; `caps.features` now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` |
+| spatial.sensing.common | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.manifest | 1.7 | Stable | Single-identifier profile string; schema bumped to `/1.7` |
+| spatial.anchors | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.argeo | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.sensing.rad | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.sensing.lidar | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.sensing.vision | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.slam_frontend | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.vio | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.semantics | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.mapping | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.events | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.sensing.rf_beam | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
+| spatial.sensing.radio | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
+| spatial.neural | 1.7 | Informative example (Appendix E) | No IDL change (version unified to 1.7) |
+| spatial.agent | 1.7 | Informative example (Appendix E) | No IDL change (version unified to 1.7) |
 
-Profiles whose IDL is unchanged in 1.6 retain their `/1.5` `schema_version` and `MODULE_ID` strings. Topic names continue to use the `/v1` segment per §3.3.1 Topic Version Stability — minor profile bumps do not change topic names.
+Through the 1.x pre-adoption series, all modules version together with the specification. Every `MODULE_ID` and `schema_version` in 1.7 is `spatial.<profile>/1.7`. Topic names continue to use the `/v1` segment per §3.3.1 Topic Version Stability — minor profile bumps do not change topic names.
 
-> `spatial.manifest/1.6` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
+> `spatial.manifest/1.7` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.

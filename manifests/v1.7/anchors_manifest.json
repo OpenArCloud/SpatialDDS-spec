@@ -1,5 +1,5 @@
 {
-  "schema_version": "spatial.core/1.6",
+  "schema_version": "spatial.core/1.7",
   "schema": "https://example.org/spatialdds/anchor-manifest.schema.json#v1",
   "zone_id": "knossos:palace",
   "zone_title": "Knossos Palace Archaeological Site",
@@ -22,7 +22,6 @@
     ],
     "elements": [
       {
-        "type": "volume",
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {
@@ -41,7 +40,6 @@
         "global": false
       },
       {
-        "type": "bbox",
         "has_bbox": true,
         "has_aabb": false,
         "bbox": [

@@ -1,5 +1,5 @@
 {
-  "schema_version": "spatial.core/1.6",
+  "schema_version": "spatial.core/1.7",
   "service_id": "svc:vps:acme/sf-downtown",
   "profiles": [
     "Core",
@@ -42,7 +42,6 @@
     ],
     "elements": [
       {
-        "type": "bbox",
         "crs": "EPSG:4979",
         "has_bbox": true,
         "has_aabb": false,
@@ -56,7 +55,6 @@
         "global": false
       },
       {
-        "type": "volume",
         "has_bbox": false,
         "has_aabb": true,
         "aabb": {

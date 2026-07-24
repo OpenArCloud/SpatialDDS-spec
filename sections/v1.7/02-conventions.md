@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.6 (© Open AR Cloud Initiative)
+// SpatialDDS Specification 1.7 (© Open AR Cloud Initiative)
 
 ## **2. Conventions (Normative)**
 
@@ -33,7 +33,7 @@ SpatialDDS uses `(x, y, z, w)` component order for all quaternion fields, aligni
 
 ### **2.2 Optional Fields & Discriminated Unions**
 
-- Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field.
+- Optional scalars, structs, and arrays MUST be guarded by an explicit `has_*` boolean immediately preceding the field. String fields are exempt: an empty string denotes absence for optional strings (e.g., `auth_hint`, `next_page_token`) unless a profile states otherwise.
 - Mutually exclusive payloads SHALL be modeled as discriminated unions; do not overload presence flags to signal exclusivity.
 - Schema evolution leverages `@extensibility(APPENDABLE)`; omit fields only when the IDL version removes them, never as an on-wire sentinel.
 - See `CovMatrix` in Appendix A for the reference discriminated union pattern used for covariance.
@@ -171,14 +171,14 @@ Consumers performing cross-device temporal association (e.g., multi-robot loop c
 
 ### **2.10 Bounding Box Ordering (Normative)**
 
-- **Geographic CRS (WGS84):** `bbox` arrays MUST use GeoJSON ordering: `[lon_min, lat_min, lon_max, lat_max]` (2D) or `[lon_min, lat_min, alt_min, lon_max, lat_max, alt_max]` (3D).
+- **Geographic CRS (WGS84):** `bbox` arrays MUST use GeoJSON ordering: `[lon_min, lat_min, lon_max, lat_max]` (2D) or `[lon_min, lat_min, alt_min, lon_max, lat_max, alt_max]` (3D). The 6-element 3D form applies to JSON manifests and HTTP payloads only. On-bus `CoverageElement.bbox` is always the 4-element 2D form; volumetric coverage on the bus uses `aabb`.
 - **Local / ENU CRS:** `Aabb3` uses `{min_xyz, max_xyz}` where each is a `Vec3` in the local coordinate frame.
 
 JSON examples throughout this specification MUST follow these conventions. Where a `CoverageElement` uses `crs = "EPSG:4326"`, the `bbox` array uses GeoJSON ordering. Where `crs` is absent or local, the `aabb` field uses `Aabb3` semantics.
 
 ### **2.11 Schema Stability Signaling (Normative)**
 
-The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.5"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
+The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.7"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
 
 For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. Consumers in production deployments MAY use this flag to filter or warn on provisional data.
 
@@ -193,9 +193,11 @@ Example:
 
 Additionally, the `caps.features` field in `Announce` MAY carry feature flags prefixed with `provisional.` (e.g., `"provisional.rf_beam"`, `"provisional.radio"`). Consumers MAY filter `Announce` messages to exclude provisional features in production deployments.
 
+`schema_version` appears on Meta, Frame, and latched/durable types (descriptors that outlive a session or are recorded standalone). High-rate graph and sample types (`Node`, `Edge`, chunks) omit it; their schema identity travels via the topic's `TopicMeta` and `MODULE_ID`.
+
 ### **2.12 Coordinate Axis Convention (Normative)**
 
-`FrameRef` carries an optional `coord_convention` field (added in 1.6) that specifies the axis convention for all poses expressed in this frame. The five predefined conventions are:
+`FrameRef` carries an optional `coord_convention` field (added in 1.6) that specifies the axis convention for all poses expressed in this frame. The predefined conventions are:
 
 | Convention | X | Y | Z | Handedness | Used By |
 |---|---|---|---|---|---|

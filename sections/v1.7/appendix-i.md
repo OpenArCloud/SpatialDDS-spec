@@ -1,6 +1,6 @@
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.6 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.7 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
 
 ### **Scope and Limitations**
 
@@ -16,7 +16,7 @@ Pass rates reported below reflect expressiveness coverage. A "pass" means the da
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.6 profiles were validated against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.7 profiles were validated against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
 
 | Dataset | Focus | Modalities Stressed |
 |---|---|---|
@@ -28,13 +28,13 @@ Sensor-data specifications risk becoming disconnected from real-world workloads 
 
 nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary. LaMAR was chosen because it is the first conformance dataset to exercise cross-device heterogeneity (HoloLens, iPhone/iPad, and NavVis scanner sharing a common reference frame), the Anchors profile (cross-session alignment, year-long persistence, geo-anchored reference frames), the Discovery profile in a multi-device context (heterogeneous device announcements with distinct sensor capabilities), and the `sensing.radio` profile in a production AR workflow (typed WiFi/BT scans replacing ad hoc JSON, driving +4.6–17.5% recall improvement in image retrieval).
 
-The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.6 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
+The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.7 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
 ### **Methodology**
 
 For each dataset, a conformance harness was constructed as a self-contained Python 3 script that:
 
-1. **Mirrors the SpatialDDS 1.6 IDL** as Python data structures (enum values, struct field lists, normative prose flags).
+1. **Mirrors the SpatialDDS 1.7 IDL** as Python data structures (enum values, struct field lists, normative prose flags).
 2. **Mirrors the dataset schema** as synthetic data (sensor names, field lists, data shapes).
 3. **Runs targeted checks**, each producing a verdict:
 
@@ -683,7 +683,7 @@ The 22 radio checks in this and the next two sub-sections validate `sensing.radi
 | LM-09 | Scan duration | Variable scan-window duration maps to `scan_duration_s`. |
 | LM-10 | Aggregation window | ±window aggregation (LaMAR's ±2s pattern) maps to `aggregation_window_s`. |
 | LM-11 | Sensor metadata | `RadioSensorMeta` captures capability flags and adapter metadata. |
-| LM-12 | Schema tag | `schema_version` set to `spatial.sensing.radio/1.5`. |
+| LM-12 | Schema tag | `schema_version` set to `spatial.sensing.radio/1.7`. |
 
 ##### Radio — Discovery and QoS Integration (5 checks)
 
@@ -783,7 +783,7 @@ The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 
 python3 scripts/nuscenes_harness_v2.py
 ```
 
-Mirrors the SpatialDDS 1.6 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
+Mirrors the SpatialDDS 1.7 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
 
 **DeepSense 6G harness** (`scripts/deepsense6g_harness_v3.py`):
 
