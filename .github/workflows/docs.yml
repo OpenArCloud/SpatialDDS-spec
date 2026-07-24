@@ -26,6 +26,14 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Check spec consistency (active version)
+        # Permanent gate for the active spec version: fails the build if a
+        # literal ```idl block in the sections tree has drifted from its
+        # canonical idl/v<ver> counterpart, or if any retired @MAJOR.MINOR /
+        # stale /1.<old> profile identifier remains. Bump the version arg when
+        # a new minor becomes active.
+        run: ./scripts/check_spec_consistency.py 1.7
+
       - name: Install MkDocs
         run: pip install mkdocs mkdocs-mermaid2-plugin pymdown-extensions
 

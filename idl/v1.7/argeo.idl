@@ -12,21 +12,49 @@ module spatial {
     const string MODULE_ID = "spatial.argeo/1.7";
 
     typedef builtin::Time Time;
-    typedef spatial::core::PoseSE3 PoseSE3;
+    typedef spatial::core::PoseSE3    PoseSE3;
     typedef spatial::core::FramedPose FramedPose;
-    typedef spatial::core::GeoPose GeoPose;
+    typedef spatial::core::GeoPose    GeoPose;
+    typedef spatial::core::CovMatrix  CovMatrix;
     typedef spatial::common::FrameRef FrameRef;
 
+    // A pose-graph node with one or more metric-frame poses and an
+    // optional geographic anchor.
+    //
+    // Keyed by node_id (same key as core::Node). Published alongside
+    // core::Node when geo-referencing is available.
+    //
+    // poses[] carries the node's position in one or more local/metric
+    // coordinate frames. Each FramedPose is self-contained (pose +
+    // frame_ref + cov + stamp). Typical entries:
+    //   - SLAM map frame (always present)
+    //   - ENU frame anchored to a surveyed point
+    //   - Building / floor / room frames in hierarchical spaces
+    //   - Alternative map frames when multiple maps overlap
+    //
+    // geopose provides the WGS84 anchor (lat/lon/alt) when known.
+    // It remains a separate field because geographic coordinates use
+    // degrees, not meters — they cannot share the FramedPose type.
     @extensibility(APPENDABLE) struct NodeGeo {
       string map_id;
-      @key string node_id;      // same id as core::Node
+      @key string node_id;               // same id as core::Node
+
+      // One or more metric poses in different frames.
+      // The first entry SHOULD be the primary SLAM map frame.
+      // Additional entries provide the same physical pose expressed
+      // in alternative coordinate frames (other maps, hierarchical
+      // spaces, ENU anchors). Consumers select by frame_ref.
       sequence<FramedPose, 8> poses;
+
+      // Geographic anchor (optional — absent for indoor-only maps)
       boolean has_geopose;
-      GeoPose geopose;          // corresponding global pose (WGS84/ECEF/ENU/NED)
+      GeoPose geopose;
+
       string  source_id;
-      uint64  seq;
-      uint64  graph_epoch;
+      uint64  seq;                       // per-source monotonic
+      uint64  graph_epoch;               // increments on major rebases/merges
     };
 
   }; // module argeo
 };
+

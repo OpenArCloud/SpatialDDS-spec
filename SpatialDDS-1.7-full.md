@@ -5662,7 +5662,7 @@ QoS suggestions (informative):
 | `RadioSensorMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `RadioScan` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) |
 
-Profile matrix: `spatial.neural/1.7`, `spatial.agent/1.7`, `spatial.sensing.rf_beam/1.7`, and `spatial.sensing.radio/1.7` are provisional Appendix E profiles. When promoted to stable in a future version, they move to Appendix D.
+Profile matrix: `spatial.sensing.rf_beam/1.7` and `spatial.sensing.radio/1.7` are provisional Appendix E profiles; when promoted to stable in a future version, they move to Appendix D. `spatial.neural/1.7` and `spatial.agent/1.7` are informative design examples only and are not candidates for promotion in their current form.
 
 ## **Appendix F: SpatialDDS URI Scheme (ABNF)**
 

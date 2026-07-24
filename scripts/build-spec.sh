@@ -75,3 +75,12 @@ done
 if [[ -x "$ROOT_DIR/scripts/prepare_mkdocs.py" ]]; then
   "$ROOT_DIR/scripts/prepare_mkdocs.py" >/dev/null || echo "Warning: failed to refresh MkDocs copies" >&2
 fi
+
+# Consistency gate for the active spec version only (frozen prior versions
+# carry known-benign literal/canonical divergence and are immutable). Fails the
+# build if an in-prose IDL copy drifts from its canonical source or a stale/
+# retired profile identifier remains. See scripts/check_spec_consistency.py.
+ACTIVE_VERSION="1.7"
+if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_spec_consistency.py" ]]; then
+  "$ROOT_DIR/scripts/check_spec_consistency.py" "$VERSION"
+fi
