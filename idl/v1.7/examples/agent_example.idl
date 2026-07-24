@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Agent Profile 1.5 (Provisional Extension)
+// SpatialDDS Agent Profile 1.7 (Provisional Extension)
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -13,7 +13,7 @@
 module spatial {
   module agent {
 
-    const string MODULE_ID = "spatial.agent/1.5";
+    const string MODULE_ID = "spatial.agent/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;

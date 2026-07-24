@@ -1876,14 +1876,14 @@ Manifests give every SpatialDDS resource a compact, self-describing identity. Th
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Common Type Aliases 1.6
+// SpatialDDS Common Type Aliases 1.7
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
 
 module builtin {
   @extensibility(APPENDABLE) struct Time {
-    int32 sec;      // seconds since UNIX epoch (UTC)
+    int64 sec;      // seconds since UNIX epoch (UTC), int64 (no year-2038 limit)
     uint32 nanosec; // nanoseconds [0, 1e9)
   };
 };
@@ -1954,7 +1954,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.6
+// SpatialDDS Core 1.7
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
@@ -1964,7 +1964,7 @@ module spatial {
   module core {
 
     // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.6";
+    const string MODULE_ID = "spatial.core/1.7";
 
     // ---------- Utility ----------
     // Expose builtin Time under spatial::core
@@ -2006,9 +2006,7 @@ module spatial {
       @key TileKey key;              // unique tile key
       boolean has_tile_id_compat;
       string  tile_id_compat;        // optional human-readable id
-      spatial::common::Vec3 min_xyz; // AABB min (local frame)
-      spatial::common::Vec3 max_xyz; // AABB max (local frame)
-      uint32 lod;                    // may mirror key.level
+      Aabb3  aabb;                   // AABB in the local frame
       uint64 version;                // monotonic full-state version
       string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
       string checksum;               // checksum of composed tile
@@ -2018,7 +2016,7 @@ module spatial {
       spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.6"
+      string schema_version;         // MUST be "spatial.core/1.7"
     };
 
     @extensibility(APPENDABLE) struct TilePatch {
@@ -2037,7 +2035,6 @@ module spatial {
       @key uint32 index;     // chunk index (0..N-1)
       uint32 total_chunks;   // total number of chunks expected for this blob_id
       uint32 crc32;          // CRC32 checksum over 'data'
-      boolean last;          // true when this is the final chunk for blob_id
       sequence<uint8, 262144> data; // ≤256 KiB per sample
     };
 
@@ -2046,7 +2043,7 @@ module spatial {
       @value(0) ODOM,
       @value(1) LOOP
     };
-    // NOTE: The mapping extension profile (spatial.mapping/1.5) defines
+    // NOTE: The mapping extension profile (spatial.mapping/1.7) defines
     // mapping::EdgeType which extends EdgeTypeCore with additional constraint
     // types (INTER_MAP, GPS, ANCHOR, IMU_PREINT, GRAVITY, PLANE, SEMANTIC,
     // MANUAL). Values 0-1 are identical. Core consumers MAY downcast
@@ -2117,7 +2114,7 @@ module spatial {
       float   replan_rate_hz;           // how often the plan is updated
 
       Time    stamp;                    // when this plan was computed
-      string  schema_version;           // "spatial.core/1.6"
+      string  schema_version;           // "spatial.core/1.7"
     };
 
     // EntityBinding correlates messages across different SpatialDDS topics
@@ -2150,12 +2147,12 @@ module spatial {
 
       Time   stamp;
       string source_id;                 // who published this binding (e.g., fusion service)
-      string schema_version;            // "spatial.core/1.6"
+      string schema_version;            // "spatial.core/1.7"
     };
 
     @extensibility(APPENDABLE) struct Node {
-      string map_id;
-      @key string node_id;     // unique keyframe id
+      @key string map_id;
+      @key string node_id;     // unique keyframe id; instance identity is (map_id, node_id)
       PoseSE3 pose;            // pose in frame_ref
       CovMatrix cov;           // covariance payload (COV_NONE when absent)
       Time    stamp;
@@ -2166,8 +2163,8 @@ module spatial {
     };
 
     @extensibility(APPENDABLE) struct Edge {
-      string map_id;
-      @key string edge_id;     // unique edge id
+      @key string map_id;
+      @key string edge_id;     // unique edge id; instance identity is (map_id, edge_id)
       string from_id;          // source node
       string to_id;            // target node
       EdgeTypeCore type;       // ODOM or LOOP
@@ -2180,19 +2177,12 @@ module spatial {
     };
 
     // ---------- Geo anchoring ----------
-    enum GeoFrameKind {
-      @value(0) ECEF,
-      @value(1) ENU,
-      @value(2) NED
-    };
-
     @extensibility(APPENDABLE) struct GeoPose {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
-      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
-      GeoFrameKind frame_kind; // ECEF/ENU/NED
-      FrameRef frame_ref;      // for ENU/NED: canonical frame reference
+      // orientation (x,y,z,w) in the local ENU tangent frame at (lat,lon,alt)
+      spatial::common::QuaternionXYZW q;
       Time   stamp;
       // Exactly one covariance payload will be present based on the discriminator.
       CovMatrix cov;
@@ -2245,7 +2235,7 @@ module spatial {
       uint16  diff_station_id;  // reference station ID
 
       Time   stamp;             // should match the associated GeoPose.stamp
-      string schema_version;    // e.g., "1.6.0"
+      string schema_version;    // MUST be "spatial.core/1.7"
     };
 
     @extensibility(APPENDABLE) struct GeoAnchor {
@@ -2295,7 +2285,7 @@ See **Appendix F.X (Discovery Query Expression)** for the normative grammar used
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.6
+// SpatialDDS Discovery 1.7
 // Lightweight announces for services, coverage, and content
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -2311,7 +2301,7 @@ module spatial {
     typedef spatial::common::MetaKV  MetaKV;
     typedef spatial::common::AssetRef AssetRef;
 
-    const string MODULE_ID = "spatial.discovery/1.6";
+    const string MODULE_ID = "spatial.discovery/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
@@ -2321,34 +2311,28 @@ module spatial {
     typedef string SpatialUri;
 
     // --- Profile version advertisement (additive) ---
-    // Semver per profile: name@MAJOR.MINOR
-    // Each row declares a contiguous range of MINORs within a single MAJOR.
+    // Each row declares a module family plus a contiguous range of MINORs
+    // within a single MAJOR.
     @extensibility(APPENDABLE) struct ProfileSupport {
-      string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
+      string name;        // module family, e.g., "spatial.core", "spatial.sensing.rad"
       uint32 major;       // compatible major (e.g., 1)
-      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
-      uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
-      boolean preferred;  // optional tie-breaker hint (usually false)
-    };
-
-    // --- Optional feature flags (namespaced strings, e.g., "blob.crc32", "rad.tensor.zstd") ---
-    @extensibility(APPENDABLE) struct FeatureFlag {
-      string name;
+      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 7)
+      uint32 max_minor;   // highest supported minor within 'major' (e.g., 7)
     };
 
     // --- Capabilities advertised in-band on the discovery bus ---
     @extensibility(APPENDABLE) struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
-      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.6"]
-      sequence<FeatureFlag, 64>    features;           // optional feature flags
+      sequence<string, 32>         preferred_profiles; // e.g., ["spatial.discovery/1.7","spatial.core/1.7"]
+      sequence<string, 64>         features;           // namespaced feature flags, e.g., "blob.crc32", "provisional.rf_beam"; unknown flags MUST be ignored
     };
 
     // --- Topic metadata to enable selection without parsing payloads ---
     @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // geometry_tile | video_frame | radar_detection | radar_tensor | seg_mask | desc_array | rf_beam
+      string type;        // registered type per §3.3.2
       string version;     // currently fixed to "v1"
-      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | RF_BEAM_RT | SEG_MASK_RT | DESC_BATCH
+      string qos_profile; // QoS profile per §3.3.3
       // type, version, and qos_profile are mandatory fields describing the
       // topic’s semantic type and QoS profile.
       // optional advisory hints (topic-level, not per-message)
@@ -2376,7 +2360,6 @@ module spatial {
     // If coverage_frame_ref is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979); otherwise coordinates
     // are in local meters.
     @extensibility(APPENDABLE) struct CoverageElement {
-      string type;              // "bbox" | "volume"
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
@@ -2467,10 +2450,6 @@ module spatial {
       // Structured filter (preferred in 1.5).
       boolean has_filter;
       CoverageFilter filter;
-      // Deprecated in 1.5: freeform expression per Appendix F.X.
-      // Responders MUST ignore expr if has_filter == true.
-      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
-      string expr;
       // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;
       Time stamp;
@@ -2496,9 +2475,23 @@ module spatial {
       uint32 ttl_sec;
     };
 
+    // Compact discovery result row. Full capabilities, topics, and transforms
+    // are obtained by resolving manifest_uri (§7.5) or reading the service's
+    // retained Announce. Keeps CoverageResponse pages small.
+    @extensibility(APPENDABLE) struct ServiceSummary {
+      string service_id;
+      ServiceKind kind;
+      string name;
+      SpatialUri manifest_uri;
+      sequence<CoverageElement,4> coverage;   // summary; may be truncated
+      FrameRef coverage_frame_ref;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
     @extensibility(APPENDABLE) struct CoverageResponse {
       string query_id;                    // Mirrors CoverageQuery.query_id for correlation.
-      sequence<Announce,256> results;     // Result page (caps + typed topics)
+      sequence<ServiceSummary,256> results;
       string next_page_token;             // Empty when no further pages remain.
     };
 
@@ -2518,7 +2511,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Anchors 1.5
+// SpatialDDS Anchors 1.7
 // Bundles and updates for anchor registries
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -2528,7 +2521,7 @@ module spatial {
 
 module spatial {
   module anchors {
-    const string MODULE_ID = "spatial.anchors/1.5";
+    const string MODULE_ID = "spatial.anchors/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::GeoPose GeoPose;
@@ -2600,7 +2593,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing Common 1.6 (Extension module)
+// SpatialDDS Sensing Common 1.7 (Extension module)
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2609,7 +2602,7 @@ module spatial {
 
 module spatial { module sensing { module common {
 
-  const string MODULE_ID = "spatial.sensing.common/1.6";
+  const string MODULE_ID = "spatial.sensing.common/1.7";
 
   // --- Standard sizing tiers ---
   // Use these to bound sequences for detections and other per-frame arrays.
@@ -2720,7 +2713,7 @@ module spatial { module sensing { module common {
     FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
-    string   schema_version;      // MUST be "spatial.sensing.common/1.6"
+    string   schema_version;      // MUST be "spatial.sensing.common/1.7"
   };
 
   // ---- Frame index header shared by sensors (small, on-bus) ----
@@ -2839,7 +2832,7 @@ ignored.
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS VIO/Inertial 1.5
+// SpatialDDS VIO/Inertial 1.7
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2849,7 +2842,7 @@ ignored.
 module spatial {
   module vio {
 
-    const string MODULE_ID = "spatial.vio/1.5";
+    const string MODULE_ID = "spatial.vio/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::common::FrameRef FrameRef;
@@ -2969,7 +2962,7 @@ Vision uses `CamModel` + `Distortion`, while SLAM Frontend uses `DistortionModel
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Vision (sensing.vision) 1.5 — Extension profile
+// SpatialDDS Vision (sensing.vision) 1.7 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -2983,7 +2976,7 @@ Vision uses `CamModel` + `Distortion`, while SLAM Frontend uses `DistortionModel
 module spatial { module sensing { module vision {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.vision/1.5";
+  const string MODULE_ID = "spatial.sensing.vision/1.7";
 
   // Reuse Core + Sensing Common
   typedef builtin::Time                      Time;
@@ -3088,7 +3081,7 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
-    string schema_version;              // MUST be "spatial.sensing.vision/1.5"
+    string schema_version;              // MUST be "spatial.sensing.vision/1.7"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -3138,7 +3131,7 @@ module spatial { module sensing { module vision {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS SLAM Frontend 1.5
+// SpatialDDS SLAM Frontend 1.7
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -3148,7 +3141,7 @@ module spatial { module sensing { module vision {
 module spatial {
   module slam_frontend {
 
-    const string MODULE_ID = "spatial.slam_frontend/1.5";
+    const string MODULE_ID = "spatial.slam_frontend/1.7";
 
     // Reuse core: Time, etc.
     typedef builtin::Time Time;
@@ -3252,7 +3245,7 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.5
+// SpatialDDS Semantics 1.7
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -3266,7 +3259,7 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 module spatial {
   module semantics {
 
-    const string MODULE_ID = "spatial.semantics/1.5";
+    const string MODULE_ID = "spatial.semantics/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
@@ -3357,7 +3350,7 @@ module spatial {
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar (sensing.rad) 1.5 - Extension profile
+// SpatialDDS Radar (sensing.rad) 1.7 - Extension profile
 // Detection-centric radar for automotive, industrial, and robotics sensors.
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -3372,7 +3365,7 @@ module spatial {
 module spatial { module sensing { module rad {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rad/1.5";
+  const string MODULE_ID = "spatial.sensing.rad/1.7";
 
   // Reuse Core + Sensing Common types
   typedef builtin::Time                          Time;
@@ -3443,7 +3436,7 @@ module spatial { module sensing { module rad {
     // Processing chain description (informative)
     string  proc_chain;                  // e.g., "CFAR -> clustering -> tracking"
 
-    string  schema_version;              // MUST be "spatial.sensing.rad/1.5"
+    string  schema_version;              // MUST be "spatial.sensing.rad/1.7"
   };
 
   // ---- Per-detection data ----
@@ -3574,7 +3567,7 @@ module spatial { module sensing { module rad {
     float       quant_scale;               // valid when has_quant_scale == true
     uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
 
-    string  schema_version;                // MUST be "spatial.sensing.rad/1.5"
+    string  schema_version;                // MUST be "spatial.sensing.rad/1.7"
   };
 
   // Per-frame tensor index - BEST_EFFORT + KEEP_LAST=1
@@ -3625,7 +3618,7 @@ When a source provides only `t_start`, producers SHOULD compute `t_end` as `t_st
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS LiDAR (sensing.lidar) 1.5 — Extension profile
+// SpatialDDS LiDAR (sensing.lidar) 1.7 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -3639,7 +3632,7 @@ When a source provides only `t_start`, producers SHOULD compute `t_end` as `t_st
 module spatial { module sensing { module lidar {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.lidar/1.5";
+  const string MODULE_ID = "spatial.sensing.lidar/1.7";
 
   // Reuse Core + Sensing Common
   typedef builtin::Time                      Time;
@@ -3709,7 +3702,7 @@ module spatial { module sensing { module lidar {
     CloudEncoding encoding;           // PCD/PLY/LAS/LAZ/etc.
     Codec         codec;              // ZSTD/LZ4/DRACO/…
     PointLayout   layout;             // expected fields when decoded
-    string schema_version;            // MUST be "spatial.sensing.lidar/1.5"
+    string schema_version;            // MUST be "spatial.sensing.lidar/1.7"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)
@@ -3922,7 +3915,7 @@ Core `Node` and `Edge` topics remain unchanged. Agents that produce cross-map co
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Mapping Extension 1.5
+// SpatialDDS Mapping Extension 1.7
 //
 // Map lifecycle metadata, multi-source edge types, and inter-map
 // alignment primitives for multi-agent collaborative mapping.
@@ -3935,7 +3928,7 @@ Core `Node` and `Edge` topics remain unchanged. Agents that produce cross-map co
 module spatial {
   module mapping {
 
-    const string MODULE_ID = "spatial.mapping/1.5";
+    const string MODULE_ID = "spatial.mapping/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3    PoseSE3;
@@ -4109,7 +4102,7 @@ module spatial {
       // Extensible metadata (encoding details, sensor suite, etc.)
       sequence<MetaKV, 32> attributes;
 
-      string schema_version;            // MUST be "spatial.mapping/1.5"
+      string schema_version;            // MUST be "spatial.mapping/1.7"
     };
 
 
@@ -4199,7 +4192,7 @@ module spatial {
       // Optional: list of cross-map edge_ids that support this alignment
       sequence<string, 64> evidence_edge_ids;
 
-      string schema_version;            // MUST be "spatial.mapping/1.5"
+      string schema_version;            // MUST be "spatial.mapping/1.7"
     };
 
 
@@ -4259,7 +4252,7 @@ The profile defines three types:
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Spatial Events Extension 1.5
+// SpatialDDS Spatial Events Extension 1.7
 //
 // Typed, spatially-scoped events for zone monitoring, anomaly detection,
 // and smart infrastructure alerting.
@@ -4272,7 +4265,7 @@ The profile defines three types:
 module spatial {
   module events {
 
-    const string MODULE_ID = "spatial.events/1.5";
+    const string MODULE_ID = "spatial.events/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3   PoseSE3;
@@ -4397,7 +4390,7 @@ module spatial {
       // Extensible metadata
       sequence<MetaKV, 16> attributes;
 
-      string schema_version;            // MUST be "spatial.events/1.5"
+      string schema_version;            // MUST be "spatial.events/1.7"
     };
 
 
@@ -4476,7 +4469,7 @@ module spatial {
       // Extensible metadata
       sequence<MetaKV, 8> attributes;
 
-      string schema_version;            // MUST be "spatial.events/1.5"
+      string schema_version;            // MUST be "spatial.events/1.7"
     };
 
 
@@ -4587,7 +4580,7 @@ The profile intentionally avoids prescribing model internals. `model_format` is 
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Neural Profile 1.5 (Provisional Extension)
+// SpatialDDS Neural Profile 1.7 (Provisional Extension)
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -4601,7 +4594,7 @@ The profile intentionally avoids prescribing model internals. `model_format` is 
 module spatial {
   module neural {
 
-    const string MODULE_ID = "spatial.neural/1.5";
+    const string MODULE_ID = "spatial.neural/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -4648,7 +4641,7 @@ module spatial {
       float render_time_ms;
 
       Time stamp;
-      string schema_version;             // MUST be "spatial.neural/1.5"
+      string schema_version;             // MUST be "spatial.neural/1.7"
     };
 
     @extensibility(APPENDABLE) struct ViewSynthesisRequest {
@@ -4736,7 +4729,7 @@ The profile defines **what information agents and coordinators exchange**, not *
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Agent Profile 1.5 (Provisional Extension)
+// SpatialDDS Agent Profile 1.7 (Provisional Extension)
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -4750,7 +4743,7 @@ The profile defines **what information agents and coordinators exchange**, not *
 module spatial {
   module agent {
 
-    const string MODULE_ID = "spatial.agent/1.5";
+    const string MODULE_ID = "spatial.agent/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -5178,7 +5171,7 @@ This profile provides typed transport for phased-array beam power measurements u
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS RF Beam Sensing Profile 1.5 (Provisional Extension)
+// SpatialDDS RF Beam Sensing Profile 1.7 (Provisional Extension)
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -5196,7 +5189,7 @@ This profile provides typed transport for phased-array beam power measurements u
 module spatial { module sensing { module rf_beam {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rf_beam/1.5";
+  const string MODULE_ID = "spatial.sensing.rf_beam/1.7";
 
   // Reuse Core + Sensing Common types
   typedef builtin::Time                          Time;
@@ -5263,7 +5256,7 @@ module spatial { module sensing { module rf_beam {
     // --- Power unit convention ---
     PowerUnit power_unit;                // unit for power in RfBeamFrame (default: DBM)
 
-    string  schema_version;              // MUST be "spatial.sensing.rf_beam/1.5"
+    string  schema_version;              // MUST be "spatial.sensing.rf_beam/1.7"
   };
 
   // ---- Per-sweep beam power measurement ----
@@ -5357,7 +5350,7 @@ They are complementary and may be published together by the same node.
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radio Fingerprint (sensing.radio) 1.5 — Provisional Extension
+// SpatialDDS Radio Fingerprint (sensing.radio) 1.7 — Provisional Extension
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -5374,7 +5367,7 @@ They are complementary and may be published together by the same node.
 
 module spatial { module sensing { module radio {
 
-  const string MODULE_ID = "spatial.sensing.radio/1.5";
+  const string MODULE_ID = "spatial.sensing.radio/1.7";
 
   typedef builtin::Time                          Time;
   typedef spatial::core::PoseSE3                 PoseSE3;
@@ -5466,7 +5459,7 @@ module spatial { module sensing { module radio {
     PoseSE3     sensor_pose;
     FrameRef    pose_frame_ref;
 
-    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+    string      schema_version; // MUST be "spatial.sensing.radio/1.7"
   };
 
   @extensibility(APPENDABLE) struct RadioSensorMeta {
@@ -5494,7 +5487,7 @@ module spatial { module sensing { module radio {
     boolean     has_typical_scan_duration;
     float       typical_scan_duration_s;
 
-    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+    string      schema_version; // MUST be "spatial.sensing.radio/1.7"
   };
 
 }; }; };

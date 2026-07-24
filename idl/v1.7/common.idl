@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Sensing Common 1.6 (Extension module)
+// SpatialDDS Sensing Common 1.7 (Extension module)
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -8,7 +8,7 @@
 
 module spatial { module sensing { module common {
 
-  const string MODULE_ID = "spatial.sensing.common/1.6";
+  const string MODULE_ID = "spatial.sensing.common/1.7";
 
   // --- Standard sizing tiers ---
   // Use these to bound sequences for detections and other per-frame arrays.
@@ -119,7 +119,7 @@ module spatial { module sensing { module common {
     FrameRef frame_ref;           // mounting frame (Core frame naming)
     PoseSE3  T_bus_sensor;        // extrinsics (sensor in bus frame)
     double   nominal_rate_hz;     // advertised cadence
-    string   schema_version;      // MUST be "spatial.sensing.common/1.6"
+    string   schema_version;      // MUST be "spatial.sensing.common/1.7"
   };
 
   // ---- Frame index header shared by sensors (small, on-bus) ----

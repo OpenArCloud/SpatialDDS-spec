@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Neural Profile 1.5 (Provisional Extension)
+// SpatialDDS Neural Profile 1.7 (Provisional Extension)
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -13,7 +13,7 @@
 module spatial {
   module neural {
 
-    const string MODULE_ID = "spatial.neural/1.5";
+    const string MODULE_ID = "spatial.neural/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3 PoseSE3;
@@ -60,7 +60,7 @@ module spatial {
       float render_time_ms;
 
       Time stamp;
-      string schema_version;             // MUST be "spatial.neural/1.5"
+      string schema_version;             // MUST be "spatial.neural/1.7"
     };
 
     @extensibility(APPENDABLE) struct ViewSynthesisRequest {

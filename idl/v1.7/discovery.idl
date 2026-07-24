@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.6
+// SpatialDDS Discovery 1.7
 // Lightweight announces for services, coverage, and content
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -15,7 +15,7 @@ module spatial {
     typedef spatial::common::MetaKV  MetaKV;
     typedef spatial::common::AssetRef AssetRef;
 
-    const string MODULE_ID = "spatial.discovery/1.6";
+    const string MODULE_ID = "spatial.discovery/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
@@ -25,34 +25,28 @@ module spatial {
     typedef string SpatialUri;
 
     // --- Profile version advertisement (additive) ---
-    // Semver per profile: name@MAJOR.MINOR
-    // Each row declares a contiguous range of MINORs within a single MAJOR.
+    // Each row declares a module family plus a contiguous range of MINORs
+    // within a single MAJOR.
     @extensibility(APPENDABLE) struct ProfileSupport {
-      string name;        // e.g., "core", "discovery", "sensing.common", "sensing.rad"
+      string name;        // module family, e.g., "spatial.core", "spatial.sensing.rad"
       uint32 major;       // compatible major (e.g., 1)
-      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 0)
-      uint32 max_minor;   // highest supported minor within 'major' (e.g., 2)  // supports 1.0..1.2
-      boolean preferred;  // optional tie-breaker hint (usually false)
-    };
-
-    // --- Optional feature flags (namespaced strings, e.g., "blob.crc32", "rad.tensor.zstd") ---
-    @extensibility(APPENDABLE) struct FeatureFlag {
-      string name;
+      uint32 min_minor;   // lowest supported minor within 'major' (e.g., 7)
+      uint32 max_minor;   // highest supported minor within 'major' (e.g., 7)
     };
 
     // --- Capabilities advertised in-band on the discovery bus ---
     @extensibility(APPENDABLE) struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
-      sequence<string, 32>         preferred_profiles; // e.g., ["discovery@1.2","core@1.6"]
-      sequence<FeatureFlag, 64>    features;           // optional feature flags
+      sequence<string, 32>         preferred_profiles; // e.g., ["spatial.discovery/1.7","spatial.core/1.7"]
+      sequence<string, 64>         features;           // namespaced feature flags, e.g., "blob.crc32", "provisional.rf_beam"; unknown flags MUST be ignored
     };
 
     // --- Topic metadata to enable selection without parsing payloads ---
     @extensibility(APPENDABLE) struct TopicMeta {
       string name;        // e.g., "spatialdds/perception/cam_front/video_frame/v1"
-      string type;        // geometry_tile | video_frame | radar_detection | radar_tensor | seg_mask | desc_array | rf_beam
+      string type;        // registered type per §3.3.2
       string version;     // currently fixed to "v1"
-      string qos_profile; // GEOM_TILE | VIDEO_LIVE | RADAR_RT | RF_BEAM_RT | SEG_MASK_RT | DESC_BATCH
+      string qos_profile; // QoS profile per §3.3.3
       // type, version, and qos_profile are mandatory fields describing the
       // topic’s semantic type and QoS profile.
       // optional advisory hints (topic-level, not per-message)
@@ -80,7 +74,6 @@ module spatial {
     // If coverage_frame_ref is earth-fixed, bbox is [west,south,east,north] in degrees (EPSG:4326/4979); otherwise coordinates
     // are in local meters.
     @extensibility(APPENDABLE) struct CoverageElement {
-      string type;              // "bbox" | "volume"
       boolean has_crs;
       string  crs;              // optional CRS identifier for earth-fixed frames (e.g., EPSG code)
 
@@ -171,10 +164,6 @@ module spatial {
       // Structured filter (preferred in 1.5).
       boolean has_filter;
       CoverageFilter filter;
-      // Deprecated in 1.5: freeform expression per Appendix F.X.
-      // Responders MUST ignore expr if has_filter == true.
-      // Example: "type==\"radar_tensor\" && module_id==\"spatial.sensing.rad/1.5\""
-      string expr;
       // Discovery responders publish CoverageResponse samples to this topic.
       string reply_topic;
       Time stamp;
@@ -200,9 +189,23 @@ module spatial {
       uint32 ttl_sec;
     };
 
+    // Compact discovery result row. Full capabilities, topics, and transforms
+    // are obtained by resolving manifest_uri (§7.5) or reading the service's
+    // retained Announce. Keeps CoverageResponse pages small.
+    @extensibility(APPENDABLE) struct ServiceSummary {
+      string service_id;
+      ServiceKind kind;
+      string name;
+      SpatialUri manifest_uri;
+      sequence<CoverageElement,4> coverage;   // summary; may be truncated
+      FrameRef coverage_frame_ref;
+      Time stamp;
+      uint32 ttl_sec;
+    };
+
     @extensibility(APPENDABLE) struct CoverageResponse {
       string query_id;                    // Mirrors CoverageQuery.query_id for correlation.
-      sequence<Announce,256> results;     // Result page (caps + typed topics)
+      sequence<ServiceSummary,256> results;
       string next_page_token;             // Empty when no further pages remain.
     };
 

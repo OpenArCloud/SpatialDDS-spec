@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.5
+// SpatialDDS Semantics 1.7
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -13,7 +13,7 @@
 module spatial {
   module semantics {
 
-    const string MODULE_ID = "spatial.semantics/1.5";
+    const string MODULE_ID = "spatial.semantics/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;

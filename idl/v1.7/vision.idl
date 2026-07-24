@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Vision (sensing.vision) 1.5 — Extension profile
+// SpatialDDS Vision (sensing.vision) 1.7 — Extension profile
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -13,7 +13,7 @@
 module spatial { module sensing { module vision {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.vision/1.5";
+  const string MODULE_ID = "spatial.sensing.vision/1.7";
 
   // Reuse Core + Sensing Common
   typedef builtin::Time                      Time;
@@ -118,7 +118,7 @@ module spatial { module sensing { module vision {
     Codec codec;                        // JPEG/H264/H265/AV1 or NONE
     PixFormat pix;                      // for RAW payloads
     ColorSpace color;
-    string schema_version;              // MUST be "spatial.sensing.vision/1.5"
+    string schema_version;              // MUST be "spatial.sensing.vision/1.7"
   };
 
   // Per-frame index — BEST_EFFORT + KEEP_LAST=1 (large payloads referenced via blobs)

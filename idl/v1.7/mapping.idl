@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Mapping Extension 1.5
+// SpatialDDS Mapping Extension 1.7
 //
 // Map lifecycle metadata, multi-source edge types, and inter-map
 // alignment primitives for multi-agent collaborative mapping.
@@ -12,7 +12,7 @@
 module spatial {
   module mapping {
 
-    const string MODULE_ID = "spatial.mapping/1.5";
+    const string MODULE_ID = "spatial.mapping/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3    PoseSE3;
@@ -186,7 +186,7 @@ module spatial {
       // Extensible metadata (encoding details, sensor suite, etc.)
       sequence<MetaKV, 32> attributes;
 
-      string schema_version;            // MUST be "spatial.mapping/1.5"
+      string schema_version;            // MUST be "spatial.mapping/1.7"
     };
 
 
@@ -276,7 +276,7 @@ module spatial {
       // Optional: list of cross-map edge_ids that support this alignment
       sequence<string, 64> evidence_edge_ids;
 
-      string schema_version;            // MUST be "spatial.mapping/1.5"
+      string schema_version;            // MUST be "spatial.mapping/1.7"
     };
 
 

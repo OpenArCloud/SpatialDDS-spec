@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.6
+// SpatialDDS Core 1.7
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
@@ -9,7 +9,7 @@ module spatial {
   module core {
 
     // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.6";
+    const string MODULE_ID = "spatial.core/1.7";
 
     // ---------- Utility ----------
     // Expose builtin Time under spatial::core
@@ -51,9 +51,7 @@ module spatial {
       @key TileKey key;              // unique tile key
       boolean has_tile_id_compat;
       string  tile_id_compat;        // optional human-readable id
-      spatial::common::Vec3 min_xyz; // AABB min (local frame)
-      spatial::common::Vec3 max_xyz; // AABB max (local frame)
-      uint32 lod;                    // may mirror key.level
+      Aabb3  aabb;                   // AABB in the local frame
       uint64 version;                // monotonic full-state version
       string encoding;               // "glTF+Draco","MPEG-PCC","V3C","PLY",...
       string checksum;               // checksum of composed tile
@@ -63,7 +61,7 @@ module spatial {
       spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.6"
+      string schema_version;         // MUST be "spatial.core/1.7"
     };
 
     @extensibility(APPENDABLE) struct TilePatch {
@@ -82,7 +80,6 @@ module spatial {
       @key uint32 index;     // chunk index (0..N-1)
       uint32 total_chunks;   // total number of chunks expected for this blob_id
       uint32 crc32;          // CRC32 checksum over 'data'
-      boolean last;          // true when this is the final chunk for blob_id
       sequence<uint8, 262144> data; // ≤256 KiB per sample
     };
 
@@ -91,7 +88,7 @@ module spatial {
       @value(0) ODOM,
       @value(1) LOOP
     };
-    // NOTE: The mapping extension profile (spatial.mapping/1.5) defines
+    // NOTE: The mapping extension profile (spatial.mapping/1.7) defines
     // mapping::EdgeType which extends EdgeTypeCore with additional constraint
     // types (INTER_MAP, GPS, ANCHOR, IMU_PREINT, GRAVITY, PLANE, SEMANTIC,
     // MANUAL). Values 0-1 are identical. Core consumers MAY downcast
@@ -162,7 +159,7 @@ module spatial {
       float   replan_rate_hz;           // how often the plan is updated
 
       Time    stamp;                    // when this plan was computed
-      string  schema_version;           // "spatial.core/1.6"
+      string  schema_version;           // "spatial.core/1.7"
     };
 
     // EntityBinding correlates messages across different SpatialDDS topics
@@ -195,12 +192,12 @@ module spatial {
 
       Time   stamp;
       string source_id;                 // who published this binding (e.g., fusion service)
-      string schema_version;            // "spatial.core/1.6"
+      string schema_version;            // "spatial.core/1.7"
     };
 
     @extensibility(APPENDABLE) struct Node {
-      string map_id;
-      @key string node_id;     // unique keyframe id
+      @key string map_id;
+      @key string node_id;     // unique keyframe id; instance identity is (map_id, node_id)
       PoseSE3 pose;            // pose in frame_ref
       CovMatrix cov;           // covariance payload (COV_NONE when absent)
       Time    stamp;
@@ -211,8 +208,8 @@ module spatial {
     };
 
     @extensibility(APPENDABLE) struct Edge {
-      string map_id;
-      @key string edge_id;     // unique edge id
+      @key string map_id;
+      @key string edge_id;     // unique edge id; instance identity is (map_id, edge_id)
       string from_id;          // source node
       string to_id;            // target node
       EdgeTypeCore type;       // ODOM or LOOP
@@ -225,19 +222,12 @@ module spatial {
     };
 
     // ---------- Geo anchoring ----------
-    enum GeoFrameKind {
-      @value(0) ECEF,
-      @value(1) ENU,
-      @value(2) NED
-    };
-
     @extensibility(APPENDABLE) struct GeoPose {
       double lat_deg;
       double lon_deg;
       double alt_m;            // ellipsoidal meters
-      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
-      GeoFrameKind frame_kind; // ECEF/ENU/NED
-      FrameRef frame_ref;      // for ENU/NED: canonical frame reference
+      // orientation (x,y,z,w) in the local ENU tangent frame at (lat,lon,alt)
+      spatial::common::QuaternionXYZW q;
       Time   stamp;
       // Exactly one covariance payload will be present based on the discriminator.
       CovMatrix cov;
@@ -290,7 +280,7 @@ module spatial {
       uint16  diff_station_id;  // reference station ID
 
       Time   stamp;             // should match the associated GeoPose.stamp
-      string schema_version;    // e.g., "1.6.0"
+      string schema_version;    // MUST be "spatial.core/1.7"
     };
 
     @extensibility(APPENDABLE) struct GeoAnchor {

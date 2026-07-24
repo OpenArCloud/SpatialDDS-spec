@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radio Fingerprint (sensing.radio) 1.5 — Provisional Extension
+// SpatialDDS Radio Fingerprint (sensing.radio) 1.7 — Provisional Extension
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -16,7 +16,7 @@
 
 module spatial { module sensing { module radio {
 
-  const string MODULE_ID = "spatial.sensing.radio/1.5";
+  const string MODULE_ID = "spatial.sensing.radio/1.7";
 
   typedef builtin::Time                          Time;
   typedef spatial::core::PoseSE3                 PoseSE3;
@@ -108,7 +108,7 @@ module spatial { module sensing { module radio {
     PoseSE3     sensor_pose;
     FrameRef    pose_frame_ref;
 
-    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+    string      schema_version; // MUST be "spatial.sensing.radio/1.7"
   };
 
   @extensibility(APPENDABLE) struct RadioSensorMeta {
@@ -136,7 +136,7 @@ module spatial { module sensing { module radio {
     boolean     has_typical_scan_duration;
     float       typical_scan_duration_s;
 
-    string      schema_version; // MUST be "spatial.sensing.radio/1.5"
+    string      schema_version; // MUST be "spatial.sensing.radio/1.7"
   };
 
 }; }; };

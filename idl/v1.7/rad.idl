@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Radar (sensing.rad) 1.5 - Extension profile
+// SpatialDDS Radar (sensing.rad) 1.7 - Extension profile
 // Detection-centric radar for automotive, industrial, and robotics sensors.
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -14,7 +14,7 @@
 module spatial { module sensing { module rad {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rad/1.5";
+  const string MODULE_ID = "spatial.sensing.rad/1.7";
 
   // Reuse Core + Sensing Common types
   typedef builtin::Time                          Time;
@@ -85,7 +85,7 @@ module spatial { module sensing { module rad {
     // Processing chain description (informative)
     string  proc_chain;                  // e.g., "CFAR -> clustering -> tracking"
 
-    string  schema_version;              // MUST be "spatial.sensing.rad/1.5"
+    string  schema_version;              // MUST be "spatial.sensing.rad/1.7"
   };
 
   // ---- Per-detection data ----
@@ -216,7 +216,7 @@ module spatial { module sensing { module rad {
     float       quant_scale;               // valid when has_quant_scale == true
     uint32      tile_size[4];              // for DENSE_TILES; unused dims = 1
 
-    string  schema_version;                // MUST be "spatial.sensing.rad/1.5"
+    string  schema_version;                // MUST be "spatial.sensing.rad/1.7"
   };
 
   // Per-frame tensor index - BEST_EFFORT + KEEP_LAST=1

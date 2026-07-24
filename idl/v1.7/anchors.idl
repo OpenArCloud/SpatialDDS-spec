@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Anchors 1.5
+// SpatialDDS Anchors 1.7
 // Bundles and updates for anchor registries
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 
 module spatial {
   module anchors {
-    const string MODULE_ID = "spatial.anchors/1.5";
+    const string MODULE_ID = "spatial.anchors/1.7";
 
     typedef builtin::Time Time;
     typedef spatial::core::GeoPose GeoPose;

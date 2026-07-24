@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS RF Beam Sensing Profile 1.5 (Provisional Extension)
+// SpatialDDS RF Beam Sensing Profile 1.7 (Provisional Extension)
 //
 // PROVISIONAL: This profile is subject to breaking changes in future
 // versions. Implementers SHOULD treat all struct layouts as unstable
@@ -17,7 +17,7 @@
 module spatial { module sensing { module rf_beam {
 
   // Module identifier for discovery and schema registration
-  const string MODULE_ID = "spatial.sensing.rf_beam/1.5";
+  const string MODULE_ID = "spatial.sensing.rf_beam/1.7";
 
   // Reuse Core + Sensing Common types
   typedef builtin::Time                          Time;
@@ -84,7 +84,7 @@ module spatial { module sensing { module rf_beam {
     // --- Power unit convention ---
     PowerUnit power_unit;                // unit for power in RfBeamFrame (default: DBM)
 
-    string  schema_version;              // MUST be "spatial.sensing.rf_beam/1.5"
+    string  schema_version;              // MUST be "spatial.sensing.rf_beam/1.7"
   };
 
   // ---- Per-sweep beam power measurement ----

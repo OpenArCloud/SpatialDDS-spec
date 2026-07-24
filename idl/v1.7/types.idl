@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Common Type Aliases 1.6
+// SpatialDDS Common Type Aliases 1.7
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #define SPATIAL_COMMON_TYPES_INCLUDED
 
 module builtin {
   @extensibility(APPENDABLE) struct Time {
-    int32 sec;      // seconds since UNIX epoch (UTC)
+    int64 sec;      // seconds since UNIX epoch (UTC), int64 (no year-2038 limit)
     uint32 nanosec; // nanoseconds [0, 1e9)
   };
 };
