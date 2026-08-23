@@ -357,7 +357,7 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 | ID | Check | Description |
 |---|---|---|
-| SD-01 | Service announcement | Each robot publishes `Announce` with `ServiceKind.SLAM` and sensor capabilities in `topics[]`. |
+| SD-01 | Service announcement | Each robot publishes `Announce` with `ServiceKind.MAPPING` and sensor capabilities in `topics[]`. |
 | SD-02 | Spatial coverage | `Announce.coverage` (Aabb3 or geo-bounds) advertises each robot's operational area. |
 | SD-03 | Multi-frame NodeGeo | After inter-map alignment, `NodeGeo.poses[]` carries a node's pose in multiple robots' map frames simultaneously (FramedPose array). |
 
@@ -392,7 +392,7 @@ Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack 
 
 The S3E "teaching building" outdoor sequence illustrates the full multi-agent lifecycle:
 
-1. **Bootstrap.** Three robots (Alpha, Blob, Carol) power on and each publishes an `Announce` with `ServiceKind.SLAM`, their sensor capabilities, and an initial coverage bounding box. Each begins publishing `core::Node` and `core::Edge` (ODOM) on the pose graph topics with distinct `source_id` and `map_id` values.
+1. **Bootstrap.** Three robots (Alpha, Blob, Carol) power on and each publishes an `Announce` with `ServiceKind.MAPPING`, their sensor capabilities, and an initial coverage bounding box. Each begins publishing `core::Node` and `core::Edge` (ODOM) on the pose graph topics with distinct `source_id` and `map_id` values.
 
 2. **Independent mapping.** Each robot runs visual-inertial-lidar SLAM independently. `MapMeta` per robot shows `state = BUILDING`. Keyframes stream as `core::Node`; odometry constraints as `core::Edge` (ODOM); intra-robot loop closures as `core::Edge` (LOOP). `ImuSample`, `VisionFrame`, and `LidarFrame` are published on per-robot sensor topics.
 

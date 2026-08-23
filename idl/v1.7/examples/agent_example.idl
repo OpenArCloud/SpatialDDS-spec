@@ -28,7 +28,7 @@ module spatial {
       @value(0) NAVIGATE,         // Move to a target pose or region
       @value(1) OBSERVE,          // Collect sensor data at/around a target
       @value(2) MANIPULATE,       // Physically interact with an object
-      @value(3) MAP,              // Build or extend a spatial map
+      @value(3) MAPPING,          // Build or extend a spatial map
       @value(4) DELIVER,          // Transport an item to a target
       @value(5) REPORT,           // Generate and publish a data report
       @value(255) CUSTOM          // Deployment-specific; describe in params
@@ -78,7 +78,7 @@ module spatial {
       // Examples:
       //   NAVIGATE: {"speed_mps": 1.5, "altitude_m": 30}
       //   OBSERVE:  {"sensor": "cam_front", "duration_sec": 60, "coverage_overlap": 0.3}
-      //   MAP:      {"resolution_m": 0.05, "region_radius_m": 50}
+      //   MAPPING:  {"resolution_m": 0.05, "region_radius_m": 50}
       //   REPORT:   {"format": "json", "include_images": true}
       string params;                     // JSON object string; empty if no params
 

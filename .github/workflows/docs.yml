@@ -67,6 +67,30 @@ jobs:
         with:
           path: site
 
+  topic-construct-gate:
+    # Advisory: constructs a CycloneDDS Topic for every generated Python type,
+    # catching binding-incompatible sequence bounds (Finding 2). Runs `idlc -l
+    # py`, which requires the CycloneDDS IDL Python backend (libcycloneddsidlpy)
+    # in addition to the pip `cyclonedds` runtime. The pip wheel alone does not
+    # ship that backend, so on a stock runner the gate SKIPs cleanly rather than
+    # running — hence continue-on-error. When the backend is present it runs for
+    # real and fails on any Topic that cannot be constructed. Does not gate
+    # deploy.
+    name: topic-construct-gate (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CycloneDDS Python runtime
+        run: pip install cyclonedds
+      - name: Run topic-construction gate
+        run: ./scripts/check_topic_construct.py 1.7
+
   deploy:
     runs-on: ubuntu-latest
     needs: build

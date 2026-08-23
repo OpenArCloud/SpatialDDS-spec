@@ -65,8 +65,9 @@ Additive (IDL):
 - `common::MetaKV`: added `sequence<KV, 64> entries` (typed extension rows) and a
   new `common::KV` struct. Typed-first extension rule added (Appendix A).
 - `semantics::Detection3D`: added `has_velocity` + `Vec3 velocity`.
-- `sensing::vision`: new `Detection2D` / `Detection2DSet` (image-space, keyed by
-  `stream_id`).
+- Finding 5 (2D detections) resolved by *registration*, not addition: the existing
+  labelled, scored, image-space `semantics::Detection2DSet` is now registered as
+  topic type `detection2d`. No new type was added.
 - `disco::ServiceKind`: appended `SENSING`, `INFRASTRUCTURE`, `FUSION`.
 - `events::EventType`: appended `PREDICTED_CONFLICT`; `SpatialEvent` added
   `participant_ids`. Prediction semantics normative note added.
@@ -93,6 +94,28 @@ Non-IDL:
   (Appendix E, Appendix K, validator globs updated).
 - Appendix I: wire-level conformance suite SHOULD verify per-profile endpoint
   matching between two independently configured participants.
+
+### Batch 2 follow-up (draft rev)
+
+Decision resolutions from `spatialdds-1.7-batch2-followup.md`.
+
+- §3.3.3 QoS table completed to the full normative surface: added **Durability**
+  and **History** columns, populated for every profile row (no policy is
+  specified only in prose). `RADAR_RT` deadline widened to admit 10–20 Hz radar
+  (deadline is now normative; values must admit the profile's class):
+  20 ms → 100 ms. `RADIO_SCAN_RT` deadline → "—" (scan cycles are seconds-scale;
+  sporadic). `EVENT_RT` History is `KeepLast(64)` (existing events prose wins over
+  the table default).
+- §3.3.2 registry: added `tile_meta` (`core::TileMeta`), `rad_sensor_meta`
+  (`sensing::rad::RadSensorMeta`), and `radio_sensor_meta` (provisional
+  `sensing::radio::RadioSensorMeta`) — all QoS `SENSOR_META`. Registry gate
+  coverage is now **fatal** (underscore/case-insensitive matching; Appendix E
+  examples excluded).
+- Topic-construction gate added as a CI job (advisory; requires the CycloneDDS
+  IDL Python backend to run, otherwise skips).
+- Informative fixes: `examples/agent_example.idl` `TaskType.MAP` → `MAPPING`
+  (reserved word); `examples/` re-added to IDL validation scope. Appendix I S3E
+  `ServiceKind.SLAM` → `MAPPING` (the enum is unchanged).
 
 ## Version 1.6 - 2026-07-23
 

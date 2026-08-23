@@ -158,26 +158,4 @@ module spatial { module sensing { module vision {
     // Masks/boxes can be added in Semantics profile to keep Vision lean
   };
 
-  // Image-space 2D detections (added in 1.7 draft rev; Finding 5).
-  // Complements the scene-space Detection3D of the semantics profile;
-  // 2D (pixel) detections live with the camera/vision stream and are
-  // keyed by stream_id like VisionFrame/VisionDetections.
-  @extensibility(APPENDABLE) struct Detection2D {
-    string det_id;                      // unique per publisher
-    string label;                       // ontology label / class id
-    float  score;                       // [0..1]
-    spatial::common::BBox2D bbox_px;    // [x_min, y_min, x_max, y_max], pixels
-    boolean has_track_id;
-    string  track_id;                   // valid when has_track_id == true
-  };
-
-  @extensibility(APPENDABLE) struct Detection2DSet {
-    @key string stream_id;              // camera/stream this set belongs to
-    string schema_version;              // MUST be "spatial.sensing.vision/1.7"
-    Time   stamp;
-    string source_id;
-    uint64 seq;
-    sequence<Detection2D, spatial::sensing::common::SZ_SMALL> detections;  // <=256
-  };
-
 }; }; };

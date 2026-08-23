@@ -775,7 +775,7 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `vps_query` | VPS localization request | Query image/features + hints |
 | `framed_pose` | Located metric pose | `core::FramedPose`; QoS `POSE_RT` |
 | `detection3d` | 3D detection set | `semantics::Detection3DSet`; QoS `DET_RT` |
-| `detection2d` | 2D (image-space) detection set | `sensing::vision::Detection2DSet`; QoS `DET_RT` |
+| `detection2d` | 2D (image-space) detection set | `semantics::Detection2DSet`; QoS `DET_RT` |
 | `lidar_frame` | Per-frame lidar cloud index | `sensing::lidar::LidarFrame`; QoS `LIDAR_RT` |
 | `lidar_meta` | Lidar stream metadata | `sensing::lidar::LidarMeta`; QoS `SENSOR_META` (latched) |
 | `radar_tensor_meta` | Radar tensor stream metadata | `sensing::rad::RadTensorMeta`; QoS `SENSOR_META` (latched) |
@@ -783,6 +783,9 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `rf_beam_meta` | RF beam stream metadata (provisional) | `sensing::rf_beam::RfBeamMeta`; QoS `SENSOR_META` (latched) |
 | `imu_sample` | Raw IMU sample | `vio::ImuSample`; QoS `IMU_RT` |
 | `anchor_delta` | Anchor registry delta | `anchors::AnchorDelta`; QoS `ANCHOR_DELTA` |
+| `tile_meta` | Geometry tile metadata | `core::TileMeta`; QoS `SENSOR_META` (latched) |
+| `rad_sensor_meta` | Radar (detection) stream metadata | `sensing::rad::RadSensorMeta`; QoS `SENSOR_META` (latched) |
+| `radio_sensor_meta` | Radio stream metadata (provisional) | `sensing::radio::RadioSensorMeta`; QoS `SENSOR_META` (latched) |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
@@ -792,27 +795,27 @@ Implementations defining custom `type` and `qos_profile` values SHOULD follow th
 
 QoS profiles define delivery guarantees and timing expectations for each topic type.
 
-| Profile | Reliability | Ordering | Deadline | Use Case |
-|----------|--------------|----------|----------|-----------|
-| `GEOM_TILE` | Reliable | Ordered | — | 3D geometry, large tile data |
-| `VIDEO_LIVE` | Best-effort | Ordered | 33 ms | Live video feeds |
-| `VIDEO_ARCHIVE` | Reliable | Ordered | — | Replay or stored media |
-| `RADAR_RT` | Best-effort | Ordered | 20 ms | Real-time radar data (detections or tensors) |
-| `RF_BEAM_RT` | Best-effort | Ordered | 20 ms | Real-time beam sweep data |
-| `RADIO_SCAN_RT` | Best-effort | Ordered | 500 ms | Radio fingerprint scans (WiFi/BLE/UWB) |
-| `SEG_MASK_RT` | Best-effort | Ordered | 33 ms | Live segmentation masks |
-| `DESC_BATCH` | Reliable | Ordered | — | Descriptor or feature batches |
-| `MAP_META` | Reliable | Ordered | — | Map descriptors, alignments, events (latched; Transient-local) |
-| `ZONE_META` | Reliable | Ordered | — | Zone definitions, zone state (latched; Transient-local) |
-| `EVENT_RT` | Reliable | Ordered | — | Spatial events and alerts |
-| `POSE_RT` | Best-effort | Ordered | 33 ms | Live pose streams |
-| `VPS_REQ` | Reliable | Ordered | — | VPS localization requests |
-| `VPS_RESP` | Reliable | Ordered | — | VPS localization responses |
-| `DET_RT` | Best-effort | Ordered | 100 ms | Detection sets (2D/3D); Volatile, KeepLast(1) |
-| `LIDAR_RT` | Best-effort | Ordered | 100 ms | Lidar frames; Volatile, KeepLast(1) |
-| `IMU_RT` | Best-effort | Ordered | 10 ms | IMU samples; Volatile, KeepLast(1) |
-| `SENSOR_META` | Reliable | Ordered | — | Sensor/stream metadata (latched; Transient-local, KeepLast(1)) |
-| `ANCHOR_DELTA` | Reliable | Ordered | — | Anchor delta streams (KeepAll); snapshots via manifests |
+| Profile | Reliability | Ordering | Durability | History | Deadline | Use Case |
+|----------|--------------|----------|------------|---------|----------|-----------|
+| `GEOM_TILE` | Reliable | Ordered | Transient-local | KeepLast(1) | — | 3D geometry, large tile data |
+| `VIDEO_LIVE` | Best-effort | Ordered | Volatile | KeepLast(1) | 33 ms | Live video feeds |
+| `VIDEO_ARCHIVE` | Reliable | Ordered | Volatile | KeepAll | — | Replay or stored media |
+| `RADAR_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 100 ms | Real-time radar data (detections or tensors) |
+| `RF_BEAM_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 20 ms | Real-time beam sweep data |
+| `RADIO_SCAN_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | — | Radio fingerprint scans (WiFi/BLE/UWB) |
+| `SEG_MASK_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 33 ms | Live segmentation masks |
+| `DESC_BATCH` | Reliable | Ordered | Volatile | KeepAll | — | Descriptor or feature batches |
+| `MAP_META` | Reliable | Ordered | Transient-local | KeepLast(1) | — | Map descriptors, alignments, events |
+| `ZONE_META` | Reliable | Ordered | Transient-local | KeepLast(1) | — | Zone definitions, zone state |
+| `EVENT_RT` | Reliable | Ordered | Volatile | KeepLast(64) | — | Spatial events and alerts |
+| `POSE_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 33 ms | Live pose streams |
+| `VPS_REQ` | Reliable | Ordered | Volatile | KeepAll | — | VPS localization requests |
+| `VPS_RESP` | Reliable | Ordered | Volatile | KeepAll | — | VPS localization responses |
+| `DET_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 100 ms | Detection sets (2D/3D) |
+| `LIDAR_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 100 ms | Lidar frames |
+| `IMU_RT` | Best-effort | Ordered | Volatile | KeepLast(1) | 10 ms | IMU samples |
+| `SENSOR_META` | Reliable | Ordered | Transient-local | KeepLast(1) | — | Sensor/stream metadata |
+| `ANCHOR_DELTA` | Reliable | Ordered | Volatile | KeepAll | — | Anchor delta streams; snapshots via manifests |
 
 ###### Notes
 
@@ -821,7 +824,7 @@ QoS profiles define delivery guarantees and timing expectations for each topic t
 * `RADAR_RT` is **Best-effort**: detection sets tolerate loss, and integrity of individual samples is protected by per-type checksums where present. There is no partial-reliability kind in DDS.
 * Mixing unrelated data (e.g., radar + video) in a single QoS lane is discouraged.
 
-> **Normative QoS surface.** For each profile, Reliability, Durability, History, and Deadline (where specified) are normative: writers and readers SHALL set exactly these policies. Where Deadline is "—", the Deadline QoS SHALL be left at its default (infinite). Other DDS policies MAY be tuned per deployment.
+> **Normative QoS surface.** For each profile, Reliability, Durability, History, and Deadline (as specified in the table columns) are normative: writers and readers SHALL set exactly these policies. Where Deadline is "—", the Deadline QoS SHALL be left at its default (infinite). Other DDS policies MAY be tuned per deployment.
 >
 > **Deadline is request/offered.** A reader requesting a Deadline does not match a writer that offers none, and the failure is silent — no error is raised and no samples flow. This is why Deadline values are normative rather than typical. Note that DDS Deadline is a per-instance inter-sample-period contract, not a latency bound; it is therefore specified only for periodic stream profiles.
 
@@ -942,7 +945,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.argeo | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.sensing.rad | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.sensing.lidar | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.sensing.vision | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — new `Detection2D` / `Detection2DSet` (image-space, keyed by `stream_id`) |
+| spatial.sensing.vision | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.slam_frontend | 1.7 | Stable | **Findings batch 2 (draft rev):** Breaking — `KeyframeFeatures.descriptors` bound 1048576→65535 (larger sets via blob transfer) |
 | spatial.vio | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `ImuSample` accel/gyro covariance (`CovMatrix`) |
 | spatial.semantics | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `Detection3D.velocity` |

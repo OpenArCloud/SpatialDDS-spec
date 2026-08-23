@@ -9,15 +9,15 @@ Motivated by findings batch 2 (A.3). Two directions:
     table. This catches a registry row pointing at a type or profile that does
     not exist.
 
-  ADVISORY — Coverage. Every topic-bearing struct (heuristic: declares a
-    ``schema_version`` field) SHOULD be referenced by a registry row. Embedded
-    helper types that legitimately carry ``schema_version`` without being
-    standalone topics are allow-listed. Misses are reported but do not fail the
-    build, because the heuristic cannot perfectly distinguish a topic from an
-    embedded record.
+  FATAL — Coverage. Every topic-bearing struct (heuristic: declares a
+    ``schema_version`` field) MUST be named by a registry row, matched
+    underscore- and case-insensitively (``NavSatStatus`` ↔ ``navsat_status``).
+    Embedded helper types that legitimately carry ``schema_version`` without
+    being standalone topics are allow-listed; Appendix E informative examples
+    (neural, agent) are excluded.
 
 Usage: check_registry.py [version]   (default: 1.7)
-Exit status is nonzero only on a FATAL failure.
+Exit status is nonzero on any FATAL failure.
 """
 import os
 import re
@@ -57,7 +57,12 @@ def collect_idl(idl_dir):
     """
     fqns = set()
     schema_structs = set()
-    for dirpath, _, files in os.walk(idl_dir):
+    for dirpath, dirnames, files in os.walk(idl_dir):
+        # Appendix E informative examples (neural, agent) are not registry
+        # candidates; exclude them from coverage entirely.
+        dirnames[:] = [d for d in dirnames if d != "examples"]
+        if os.path.basename(dirpath) == "examples":
+            continue
         for fn in sorted(files):
             if not fn.endswith(".idl"):
                 continue
@@ -147,8 +152,10 @@ def collect_registry_and_qos(profiles_md):
     return type_refs, qos_refs, qos_profiles, slugs
 
 
-def _snake(name):
-    return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+def _norm(name):
+    """Lowercase, strip non-alphanumerics — so 'NavSatStatus', 'nav_sat_status'
+    and 'navsat_status' all compare equal."""
+    return re.sub(r'[^a-z0-9]', '', name.lower())
 
 
 def fqn_resolves(ref, fqns):
@@ -186,24 +193,20 @@ def main():
             fatal.append(f"registry row names QoS profile `{prof}` absent from "
                          f"the §3.3.3 QoS Profiles table")
 
-    # Advisory coverage: topic-bearing structs (schema_version heuristic) that no
-    # registry row references by name.
-    referenced_simple = {r.split("::")[-1] for r in type_refs}
-    advisory = []
+    # Coverage (fatal): every topic-bearing struct (schema_version heuristic)
+    # must be named by a registry row, matched underscore- and case-insensitively
+    # (so 'NavSatStatus' ↔ 'navsat_status'). Embedded helper types are
+    # allow-listed; Appendix E examples are excluded upstream.
+    ref_norms = {_norm(r.split("::")[-1]) for r in type_refs}
+    slug_norms = {_norm(s) for s in slugs}
     for s in sorted(schema_structs):
         if s in EMBEDDED_ALLOWLIST:
             continue
-        if s in referenced_simple or _snake(s) in slugs:
+        n = _norm(s)
+        if n in ref_norms or n in slug_norms:
             continue
-        advisory.append(s)
-
-    if advisory:
-        print(f"Registry coverage (advisory) for v{version}: "
-              f"{len(advisory)} schema_version-bearing struct(s) not named by a "
-              f"registry row (may be pre-existing or intentionally embedded):")
-        for s in advisory:
-            print(f"  ~ {s}")
-        print()
+        fatal.append(f"topic-bearing struct `{s}` (declares schema_version) has "
+                     f"no registry row in §3.3.2")
 
     if fatal:
         print(f"Registry gate FAILED for v{version} ({len(fatal)} issue(s)):\n")
