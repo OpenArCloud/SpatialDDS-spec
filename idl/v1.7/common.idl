@@ -94,7 +94,9 @@ module spatial { module sensing { module common {
     @value(23) AV1,
     @value(40) FP8Q,
     @value(41) FP4Q,
-    @value(42) AE_V1
+    @value(42) AE_V1,
+    // appended in 1.7 draft rev; ordinals frozen
+    @value(43) PNG       // lossless PNG raster (e.g., segmentation label masks)
   };
 
   enum PayloadKind {

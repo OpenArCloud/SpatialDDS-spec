@@ -57,7 +57,9 @@ module spatial {
           @value(9)  LINE_CROSS,      // object crossed a defined trip line
           @value(10) LOITERING,       // person/object lingering beyond threshold
           @value(11) TAILGATING,      // unauthorized entry following authorized person
-          @value(12) OTHER
+          @value(12) OTHER,
+          // appended in 1.7 draft rev; ordinals frozen
+          @value(13) PREDICTED_CONFLICT // predicted future conflict/collision (event_start > stamp)
         };
       };
 
@@ -217,6 +219,9 @@ module spatial {
       sequence<MetaKV, 8> attributes;
 
       string schema_version;            // MUST be "spatial.events/1.7"
+
+      // appended in 1.7 draft rev
+      sequence<string, 8> participant_ids;  // symmetric participants (track or agent ids)
     };
 
 

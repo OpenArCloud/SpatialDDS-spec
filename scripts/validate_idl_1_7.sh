@@ -13,8 +13,13 @@ fi
 mkdir -p "$OUT_DIR"
 
 errors=0
-for file in "$IDL_DIR"/*.idl; do
-  echo "[idlc] $(basename "$file")"
+# Stable profiles (top level) plus provisional profiles (Appendix E). Both
+# resolve #include against the top-level IDL_DIR. Informative examples under
+# examples/ (neural, agent) are illustrative sketches and are not validated
+# here.
+for file in "$IDL_DIR"/*.idl "$IDL_DIR"/provisional/*.idl; do
+  [[ -e "$file" ]] || continue
+  echo "[idlc] ${file#"$IDL_DIR"/}"
   if ! idlc -I "$IDL_DIR" -o "$OUT_DIR" "$file"; then
     errors=1
   fi

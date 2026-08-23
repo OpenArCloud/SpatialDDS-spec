@@ -53,10 +53,19 @@ module spatial {
       CoordConvention coord_convention;
     };
 
+    // Simple typed key/value row for structured extension metadata.
+    // Added in 1.7 draft rev so MetaKV can carry typed extensions inline.
+    @extensibility(APPENDABLE) struct KV {
+      string key;    // SHOULD be namespaced, e.g., "org.key"
+      string value;  // scalar or string-valued extension
+    };
+
     // Optional namespaced metadata bag for asset descriptors.
     @extensibility(APPENDABLE) struct MetaKV {
       string namespace;  // e.g., "sensing.vision.features"
       string json;       // JSON object string; producer-defined for this namespace
+      // appended in 1.7 draft rev
+      sequence<KV, 64> entries;   // typed extension rows; see typed-first rule (§ Appendix A)
     };
 
     // Uniform contract for asset references, covering fetch + integrity.

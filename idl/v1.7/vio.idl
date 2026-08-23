@@ -33,6 +33,12 @@ module spatial {
       Time   stamp;
       string source_id;
       uint64 seq;
+
+      // appended in 1.7 draft rev
+      boolean has_accel_cov;
+      spatial::core::CovMatrix accel_cov;   // valid when has_accel_cov == true
+      boolean has_gyro_cov;
+      spatial::core::CovMatrix gyro_cov;    // valid when has_gyro_cov == true
     };
 
     // Magnetometer

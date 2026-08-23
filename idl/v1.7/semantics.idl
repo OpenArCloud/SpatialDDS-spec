@@ -81,6 +81,10 @@ module spatial {
       boolean has_num_pts;
       uint32  num_lidar_pts;             // valid when has_num_pts == true
       uint32  num_radar_pts;             // valid when has_num_pts == true
+
+      // appended in 1.7 draft rev
+      boolean has_velocity;
+      spatial::common::Vec3 velocity;    // m/s in the detection's frame (valid when has_velocity == true)
     };
 
     @extensibility(APPENDABLE) struct Detection3DSet {

@@ -80,7 +80,7 @@ module spatial {
       @key uint32 index;     // chunk index (0..N-1)
       uint32 total_chunks;   // total number of chunks expected for this blob_id
       uint32 crc32;          // CRC32 checksum over 'data'
-      sequence<uint8, 262144> data; // ≤256 KiB per sample
+      sequence<uint8, 65535> data; // <=65535 bytes per chunk (binding-compatible bound; see §3.2)
     };
 
     // ---------- Pose Graph (minimal) ----------

@@ -49,7 +49,9 @@ module spatial {
       uint32 desc_len;                      // bytes per descriptor
       boolean row_major;                    // layout hint
       sequence<Feature2D, 4096> keypoints;  // ≤4096
-      sequence<uint8, 1048576> descriptors; // ≤1 MiB packed bytes
+      // <=65535 packed bytes per sample (binding-compatible bound; see §3.2).
+      // Larger descriptor sets ride blob transfer (BlobRef + BlobChunk).
+      sequence<uint8, 65535> descriptors;
       Time   stamp;
       string source_id;
       uint64 seq;

@@ -62,7 +62,11 @@ module spatial {
       @value(4) STORAGE,
       @value(5) CONTENT,
       @value(6) ANCHOR_REGISTRY,
-      @value(7) OTHER
+      @value(7) OTHER,
+      // appended in 1.7 draft rev; ordinals frozen
+      @value(8) SENSING,          // sensor/data-producing service (e.g., AV fleet, RSU feed)
+      @value(9) INFRASTRUCTURE,   // fixed roadside/venue infrastructure unit
+      @value(10) FUSION           // multi-source fusion/aggregation service
     };
 
     @extensibility(APPENDABLE) struct KV {
@@ -98,6 +102,11 @@ module spatial {
       boolean has_coverage_window;
       Time    coverage_window_start;
       Time    coverage_window_end;
+
+      // appended in 1.7 draft rev
+      boolean has_circle;
+      double  circle_center[3];   // frame rules as bbox (§3.3.4); alt/z may be 0
+      double  circle_radius_m;    // radius in meters, always
     };
 
     // Validity window for time-bounded transforms.
@@ -135,6 +144,8 @@ module spatial {
       string auth_hint;
       Time stamp;
       uint32 ttl_sec;
+      // appended in 1.7 draft rev
+      sequence<string, 16> coverage_source_ids;  // empty = self-asserted coverage
     };
 
     @extensibility(APPENDABLE) struct CoverageHint {
