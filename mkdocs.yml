@@ -6,6 +6,40 @@ use_directory_urls: true
 
 nav:
   - Overview: index.md
+  - SpatialDDS 1.8:
+      - 1. Introduction: v1.8/01-introduction.md
+      - 2. Conventions: v1.8/02-conventions.md
+      - 3. IDL Profiles: v1.8/02-idl-profiles.md
+      - 4. Operational Scenarios: v1.8/04-operational-scenarios.md
+      - 5. Conclusion: v1.8/conclusion.md
+      - 6. Future Directions: v1.8/future-directions.md
+      - 7. SpatialDDS URIs: v1.8/02a-spatialdds-uris.md
+      - 8. Manifest Schema: v1.8/03-example-manifests.md
+      - 9. Glossary of Acronyms: v1.8/glossary.md
+      - 10. References: v1.8/references.md
+      - Appendix A - Core Profile: v1.8/appendix-a.md
+      - Appendix B - Discovery Profile: v1.8/appendix-b.md
+      - Appendix C - Anchor Registry Profile: v1.8/appendix-c.md
+      - Appendix D - Extension Profiles:
+          - Overview: v1.8/appendix-d.md
+          - Sensing Common: v1.8/appendix-d/#sensing-common-extension
+          - VIO / Inertial: v1.8/appendix-d/#vio-inertial-extension
+          - Vision: v1.8/appendix-d/#vision-extension
+          - SLAM Frontend: v1.8/appendix-d/#slam-frontend-extension
+          - Semantics / Perception: v1.8/appendix-d/#semantics-perception-extension
+          - Radar: v1.8/appendix-d/#radar-extension
+          - Lidar: v1.8/appendix-d/#lidar-extension
+          - AR + Geo: v1.8/appendix-d/#ar-geo-extension
+          - Mapping: v1.8/appendix-d/#mapping-extension
+          - Spatial Events: v1.8/appendix-d/#spatial-events-extension
+      - Appendix E - Provisional Extension Examples: v1.8/appendix-e.md
+      - Appendix F - SpatialDDS URI Scheme (ABNF): v1.8/appendix-f.md
+      - Appendix G - Frame Identifiers (Normative): v1.8/appendix-g-frame-identifiers.md
+      - Appendix H - World Model Grounding (Informative): v1.8/appendix-h-world-model-grounding.md
+      - Appendix I - Dataset Conformance Testing: v1.8/appendix-i.md
+      - Appendix J - Comparison with ROS 2: v1.8/appendix-j.md
+      - Appendix K - IDL Package Layout: v1.8/appendix-k-idl-package-layout.md
+      - Full Spec (single page): SpatialDDS-1.7-full.md
   - SpatialDDS 1.7:
       - 1. Introduction: v1.7/01-introduction.md
       - 2. Conventions: v1.7/02-conventions.md

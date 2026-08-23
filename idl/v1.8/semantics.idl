@@ -1,0 +1,141 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Semantics 1.7
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+#ifndef SPATIAL_SENSING_COMMON_INCLUDED
+#define SPATIAL_SENSING_COMMON_INCLUDED
+#include "common.idl"
+#endif
+
+module spatial {
+  module semantics {
+
+    const string MODULE_ID = "spatial.semantics/1.7";
+
+    typedef builtin::Time Time;
+    typedef spatial::core::TileKey TileKey;
+    typedef spatial::common::FrameRef FrameRef;
+
+    // 2D detections per keyframe (image space)
+    @extensibility(APPENDABLE) struct Detection2D {
+      @key string det_id;       // unique per publisher
+      string node_id;           // keyframe id
+      string camera_id;         // camera
+      string class_id;          // ontology label
+      float  score;             // [0..1]
+      spatial::common::BBox2D bbox; // [u_min,v_min,u_max,v_max] (px)
+      boolean has_mask;         // if a pixel mask exists
+      string  mask_blob_id;     // BlobChunk ref (role="mask")
+      Time   stamp;
+      string source_id;
+    };
+
+    @extensibility(APPENDABLE) struct Detection2DSet {
+      @key string set_id;                 // batch id (e.g., node_id + seq)
+      string node_id;
+      string camera_id;
+      sequence<Detection2D, spatial::sensing::common::SZ_SMALL> dets;    // ≤256
+      Time   stamp;
+      string source_id;
+    };
+
+    // 3D detections in world/local frame (scene space)
+    @extensibility(APPENDABLE) struct Detection3D {
+      @key string det_id;
+      FrameRef frame_ref;        // e.g., "map" (pose known elsewhere)
+      boolean has_tile;
+      TileKey tile_key;          // valid when has_tile = true
+
+      string class_id;           // semantic label
+      float  score;              // [0..1]
+
+      // Oriented bounding box in frame_ref
+      spatial::common::Vec3 center;      // m
+      spatial::common::Vec3 size;        // (width, height, depth) in meters; see Size Convention
+      spatial::common::QuaternionXYZW q; // orientation (x,y,z,w) in GeoPose order
+
+      // Uncertainty (optional)
+      boolean has_covariance;
+      spatial::common::Mat3x3 cov_pos; // 3x3 position covariance (row-major)
+      spatial::common::Mat3x3 cov_rot; // 3x3 rotation covariance (row-major)
+
+      // Optional instance tracking
+      boolean has_track_id;
+      string  track_id;
+
+      Time   stamp;
+      string source_id;
+
+      // Optional attribute key-value pairs
+      boolean has_attributes;
+      sequence<spatial::common::MetaKV, 8> attributes; // valid when has_attributes == true
+
+      // Occlusion / visibility (0.0 = fully occluded, 1.0 = fully visible)
+      boolean has_visibility;
+      float   visibility;                // valid when has_visibility == true
+
+      // Evidence counts
+      boolean has_num_pts;
+      uint32  num_lidar_pts;             // valid when has_num_pts == true
+      uint32  num_radar_pts;             // valid when has_num_pts == true
+
+      // appended in 1.7 draft rev
+      boolean has_velocity;
+      spatial::common::Vec3 velocity;    // m/s in the detection's frame (valid when has_velocity == true)
+    };
+
+    @extensibility(APPENDABLE) struct Detection3DSet {
+      @key string set_id;                 // batch id
+      FrameRef frame_ref;                 // common frame for the set
+      boolean has_tile;
+      TileKey tile_key;                   // valid when has_tile = true
+      sequence<Detection3D, spatial::sensing::common::SZ_SMALL> dets;    // ≤256
+      Time   stamp;
+      string source_id;
+    };
+
+    // ---- Cross-source fused tracks ----
+    // A FusedTrack is a track correlated across multiple contributing sources
+    // (operators/modalities) by a fusion service. Provenance — which sources
+    // fed the track — is the reason the type exists; per-source detection
+    // links are carried out-of-band via core::EntityBinding. §3.3.2 registers
+    // FusedTrackSet as topic type fused_track (QoS DET_RT).
+    @extensibility(APPENDABLE) struct FusedTrack {
+      string track_id;                   // stable fused-track id
+      string object_class;               // semantic label
+      float  confidence;                 // [0..1]
+
+      // Position with optional covariance, in the set's frame_ref.
+      spatial::common::Vec3 position;    // meters
+      boolean has_position_cov;
+      spatial::common::Mat3x3 position_cov; // 3x3 position covariance (row-major)
+
+      // Velocity with optional covariance (mirrors Detection3D velocity).
+      boolean has_velocity;
+      spatial::common::Vec3 velocity;    // m/s in the set's frame_ref
+      boolean has_velocity_cov;
+      spatial::common::Mat3x3 velocity_cov; // 3x3 velocity covariance (row-major)
+
+      // Provenance — the contributing sources.
+      sequence<string, 16> source_operators;   // operator ids that fed this track
+      sequence<string, 16> source_modalities;  // e.g., "camera", "radar", "lidar"
+      uint32 source_count;                     // number of distinct contributing sources
+
+      double track_age_s;                      // seconds since the track was first observed
+    };
+
+    @extensibility(APPENDABLE) struct FusedTrackSet {
+      @key string stream_id;             // fusion stream this set belongs to
+      string schema_version;             // MUST be "spatial.semantics/1.7"
+      FrameRef frame_ref;                // common frame for the set
+      sequence<FusedTrack, spatial::sensing::common::SZ_SMALL> tracks;  // ≤256
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
+  }; // module semantics
+};

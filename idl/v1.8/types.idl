@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Common Type Aliases 1.7
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#define SPATIAL_COMMON_TYPES_INCLUDED
+
+module builtin {
+  @extensibility(APPENDABLE) struct Time {
+    int64 sec;      // seconds since UNIX epoch (UTC), int64 (no year-2038 limit)
+    uint32 nanosec; // nanoseconds [0, 1e9)
+  };
+};
+
+module spatial {
+  module common {
+    typedef double BBox2D[4];
+    typedef double Aabb3D[6];
+    typedef double Vec3[3];
+    typedef double Mat3x3[9];
+    typedef double Mat6x6[36];
+    typedef double Mat12x12[144];
+    typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+
+    enum CovarianceType {
+      @value(0) COV_NONE,
+      @value(3) COV_POS3,           // 3x3 position covariance
+      @value(6) COV_POSE6,          // 6x6 pose covariance (pos + rot)
+      @value(9) COV_ROT3,           // 3x3 orientation-only covariance (added in 1.6)
+      @value(12) COV_POSE6_TWIST6   // 12x12 pose + velocity covariance (added in 1.6)
+    };
+
+    // Axis convention for poses expressed in this frame (added in 1.6).
+    // Determines the meaning of the X, Y, Z axes of a PoseSE3 translation
+    // and the body axes of its quaternion. When absent, consumers MUST
+    // assume ENU. See §2.12 Coordinate Axis Convention.
+    enum CoordConvention {
+      @value(0) ENU,       // X-East,  Y-North, Z-Up         (robotics, ROS REP-103, GeoPose)
+      @value(1) CV,        // X-Right, Y-Down,  Z-Forward    (OpenCV, colmap, hloc)
+      @value(2) GRAPHICS,  // X-Right, Y-Up,    Z-Backward   (WebXR, OpenGL, three.js)
+      @value(3) UNITY_LH,  // X-Right, Y-Up,    Z-Forward    (Unity, left-handed)
+      @value(4) NED,       // X-North, Y-East,  Z-Down       (aviation, PX4, MAVLink)
+      @value(5) OTHER      // Custom — consumer MUST consult MetaKV namespace="frame"
+    };
+
+    // Stable, typo-proof frame identity shared across all profiles.
+    // Equality is by uuid; fqn is a normalized, human-readable alias.
+    @extensibility(APPENDABLE) struct FrameRef {
+      string uuid;                 // REQUIRED: stable identifier for the frame
+      string fqn;                  // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
+      // Coordinate axis convention (added in 1.6). When has_coord_convention
+      // is false, consumers MUST assume ENU per §2.12.
+      boolean has_coord_convention;
+      CoordConvention coord_convention;
+    };
+
+    // Simple typed key/value row for structured extension metadata.
+    // Added in 1.7 draft rev so MetaKV can carry typed extensions inline.
+    @extensibility(APPENDABLE) struct KV {
+      string key;    // SHOULD be namespaced, e.g., "org.key"
+      string value;  // scalar or string-valued extension
+    };
+
+    // Optional namespaced metadata bag for asset descriptors.
+    @extensibility(APPENDABLE) struct MetaKV {
+      string namespace;  // e.g., "sensing.vision.features"
+      string json;       // JSON object string; producer-defined for this namespace
+      // appended in 1.7 draft rev
+      sequence<KV, 64> entries;   // typed extension rows; see typed-first rule (§ Appendix A)
+    };
+
+    // Uniform contract for asset references, covering fetch + integrity.
+    @extensibility(APPENDABLE) struct AssetRef {
+      string uri;          // required: how to fetch
+      string media_type;   // required: IANA or registry-friendly type (with params)
+      string hash;         // required: e.g., "sha256:<hex>"
+      sequence<MetaKV, 16> meta;  // optional: zero or more namespaced bags
+    };
+  };
+};
+
+#endif // SPATIAL_COMMON_TYPES_INCLUDED
