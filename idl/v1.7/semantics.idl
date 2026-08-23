@@ -97,5 +97,45 @@ module spatial {
       string source_id;
     };
 
+    // ---- Cross-source fused tracks ----
+    // A FusedTrack is a track correlated across multiple contributing sources
+    // (operators/modalities) by a fusion service. Provenance — which sources
+    // fed the track — is the reason the type exists; per-source detection
+    // links are carried out-of-band via core::EntityBinding. §3.3.2 registers
+    // FusedTrackSet as topic type fused_track (QoS DET_RT).
+    @extensibility(APPENDABLE) struct FusedTrack {
+      string track_id;                   // stable fused-track id
+      string object_class;               // semantic label
+      float  confidence;                 // [0..1]
+
+      // Position with optional covariance, in the set's frame_ref.
+      spatial::common::Vec3 position;    // meters
+      boolean has_position_cov;
+      spatial::common::Mat3x3 position_cov; // 3x3 position covariance (row-major)
+
+      // Velocity with optional covariance (mirrors Detection3D velocity).
+      boolean has_velocity;
+      spatial::common::Vec3 velocity;    // m/s in the set's frame_ref
+      boolean has_velocity_cov;
+      spatial::common::Mat3x3 velocity_cov; // 3x3 velocity covariance (row-major)
+
+      // Provenance — the contributing sources.
+      sequence<string, 16> source_operators;   // operator ids that fed this track
+      sequence<string, 16> source_modalities;  // e.g., "camera", "radar", "lidar"
+      uint32 source_count;                     // number of distinct contributing sources
+
+      double track_age_s;                      // seconds since the track was first observed
+    };
+
+    @extensibility(APPENDABLE) struct FusedTrackSet {
+      @key string stream_id;             // fusion stream this set belongs to
+      string schema_version;             // MUST be "spatial.semantics/1.7"
+      FrameRef frame_ref;                // common frame for the set
+      sequence<FusedTrack, spatial::sensing::common::SZ_SMALL> tracks;  // ≤256
+      Time   stamp;
+      string source_id;
+      uint64 seq;
+    };
+
   }; // module semantics
 };

@@ -117,6 +117,28 @@ Decision resolutions from `spatialdds-1.7-batch2-followup.md`.
   (reserved word); `examples/` re-added to IDL validation scope. Appendix I S3E
   `ServiceKind.SLAM` → `MAPPING` (the enum is unchanged).
 
+### Inventory-driven type additions (batch 3, draft rev)
+
+Resolves `spatialdds-1.7-batch3-brief.md` — spec homes for two demo-owned type
+families (`OpenArCloud/SpatialDDS-demo`), hardened to spec conventions. All
+**Additive** (new structs; no existing declaration touched).
+
+- `spatial.argeo`: added the VPS request/response pair — `VpsRequest`,
+  `VpsResponse`, `QualityRequirements`, and enum `VpsStatus`. Query imagery
+  travels by `BlobRef` (never inline bytes); request/response correlate by
+  `query_id`; the response's pose rides in a `NodeGeo`.
+- `spatial.semantics`: added `FusedTrack` / `FusedTrackSet` for cross-source
+  fused tracks with per-source provenance (`source_operators`,
+  `source_modalities`, `source_count`).
+- §3.3.2 registry: `vps_query` now names `argeo::VpsRequest`; added
+  `vps_response` (`argeo::VpsResponse`) and `fused_track`
+  (`semantics::FusedTrackSet`, QoS `DET_RT`). Every existing registry row was
+  annotated with its IDL type, and the registry gate now **fatally** requires
+  every row to name a resolvable IDL type (a typeless row is a spec defect).
+- §3.3 bootstrap: on-bus bootstrap exchanges noted as deployment-specific, not
+  standardized. Future Directions: on-bus content catalog query parked as an
+  open design question (deliberately not added in 1.7).
+
 ## Version 1.6 - 2026-07-23
 
 ### Core profile (spatial.core/1.6)

@@ -167,6 +167,8 @@ When a source provides only `t_start`, producers SHOULD compute `t_end` as `t_st
 
 The `poses` array uses `core::FramedPose` — each entry is self-contained with its own frame reference and covariance. This replaces the previous pattern of a single bare `PoseSE3` with frame_ref and cov as sibling fields, which could only express one local pose and left the relationship between the top-level cov and the geopose's cov ambiguous.
 
+**VPS request/response binding (Normative).** `VpsRequest` and `VpsResponse` correlate by `query_id` and are exchanged on the `VPS_REQ` / `VPS_RESP` topics (registered as `vps_query` / `vps_response` in §3.3.2). Query imagery and descriptors travel by blob reference (`VpsRequest.query_blobs`, `BlobRef`) — never inline bytes, per §3.2. The response carries its result in a `NodeGeo`: the `FramedPose` entries follow the frame rules of their `frame_ref`, and any `GeoPose` anchor follows the GeoPose orientation rule (orientation in the local ENU tangent frame at the encoded position).
+
 ```idl
 // SPDX-License-Identifier: MIT
 // SpatialDDS AR+Geo 1.7
@@ -223,6 +225,68 @@ module spatial {
       string  source_id;
       uint64  seq;                       // per-source monotonic
       uint64  graph_epoch;               // increments on major rebases/merges
+    };
+
+    // ---- VPS localization request/response ----
+    // Visual Positioning Service query/response pair. §3.3.2 registers the
+    // topic types vps_query (VpsRequest) and vps_response (VpsResponse);
+    // request and response correlate by query_id on the VPS_REQ / VPS_RESP
+    // topics. Query imagery and descriptors travel by blob reference
+    // (spatial::core::BlobRef) — never inline bytes (§3.2).
+
+    // Accuracy requirements the caller needs the fix to satisfy.
+    @extensibility(APPENDABLE) struct QualityRequirements {
+      double max_rmse_m;        // maximum acceptable position RMSE (meters)
+      double min_confidence;    // minimum acceptable confidence [0..1]
+    };
+
+    enum VpsStatus {
+      @value(0) VPS_SUCCESS,    // fix computed within the requested quality
+      @value(1) VPS_DEGRADED,   // fix computed but below requested quality
+      @value(2) VPS_FAILED      // no fix produced
+    };
+
+    @extensibility(APPENDABLE) struct VpsRequest {
+      @key string query_id;              // correlates the reply
+      string service_id;                 // which VPS service is being asked
+
+      FrameRef client_frame_ref;         // client's local frame
+
+      // Optional prior pose to seed localization.
+      boolean has_prior_geopose;
+      GeoPose prior_geopose;             // valid when has_prior_geopose == true
+
+      // Query imagery and/or descriptors, always by reference — never inline
+      // bytes (§3.2). BlobRef.role distinguishes payloads, e.g.
+      // "vps/query-image", "vps/query-descriptors".
+      sequence<spatial::core::BlobRef, 8> query_blobs;
+
+      // Optional link to the camera stream whose VisionMeta carries the
+      // intrinsics/calibration for query_blobs. Empty when not applicable.
+      string query_stream_id;
+
+      QualityRequirements quality_requirements;
+
+      Time stamp;
+    };
+
+    @extensibility(APPENDABLE) struct VpsResponse {
+      @key string query_id;              // mirrors VpsRequest.query_id
+      string service_id;
+
+      VpsStatus status;                  // outcome of the localization attempt
+
+      // Localized result: NodeGeo carries the metric pose(s) (FramedPose with
+      // covariance) and an optional WGS84 GeoPose anchor. Absent on failure.
+      boolean has_node_geo;
+      NodeGeo node_geo;                  // valid when has_node_geo == true
+
+      // Quality report.
+      double confidence;                 // [0..1]
+      boolean has_rmse_m;
+      double rmse_m;                     // estimated position RMSE (m), valid when has_rmse_m == true
+
+      Time stamp;
     };
 
   }; // module argeo

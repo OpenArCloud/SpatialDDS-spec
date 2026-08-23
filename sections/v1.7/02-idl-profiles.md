@@ -81,6 +81,8 @@ SpatialDDS distinguishes three discovery layers:
 
 Layer 1 mechanisms deliver a **Bootstrap Manifest** that provides the parameters needed to transition to Layer 1.5 or Layer 2. Layer 1.5 delivers **Service Manifests** (§8.2.3) that provide the DDS connection parameters needed to transition to Layer 2. Clients MAY skip Layer 1.5 if Layer 1 already provides sufficient connection information (e.g., local mDNS bootstrap on the venue LAN).
 
+On-bus bootstrap exchanges (a participant querying an already-joined bus for deployment parameters) are deployment-specific and not standardized; the Layer 1 mechanisms above are the interoperable bootstrap path.
+
 ##### **Bootstrap Manifest (Normative)**
 
 A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
@@ -751,31 +753,33 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 
 | Type | Typical Payload | Notes |
 |------|------------------|-------|
-| `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Large, reliable transfers |
-| `video_frame` | Encoded video/image | Real-time camera streams |
-| `radar_detection` | Per-frame detection set | Structured radar detections |
-| `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube |
-| `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements |
-| `radio_scan` | Per-scan radio observations | WiFi/BLE/UWB/cellular fingerprint observations |
-| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation |
-| `desc_array` | Feature descriptor sets | Vector or embedding batches |
-| `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL |
-| `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL |
-| `map_event` | Map lifecycle event | Lightweight notifications |
-| `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL |
-| `spatial_event` | Spatially-scoped event | Typed alerts and anomalies |
-| `zone_state` | Zone occupancy snapshot | Periodic dashboard feed |
-| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) |
-| `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) |
-| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) |
-| `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose |
-| `planned_trajectory` | Future agent trajectory with waypoints | Intent sharing, cooperative planning |
-| `entity_binding` | Cross-topic entity correlation | Scene graph construction, digital twins |
-| `geopose` | Global pose sample | GNSS/VPS localization outputs |
-| `vps_query` | VPS localization request | Query image/features + hints |
+| `geometry_tile` | 3D tile data (GLB, 3D Tiles) | Large, reliable transfers — `core::TileMeta`; QoS `GEOM_TILE` |
+| `video_frame` | Encoded video/image | Real-time camera streams — `sensing::vision::VisionFrame`; QoS `VIDEO_LIVE` |
+| `radar_detection` | Per-frame detection set | Structured radar detections — `sensing::rad::RadDetectionSet`; QoS `RADAR_RT` |
+| `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube — `sensing::rad::RadTensorFrame`; QoS `RADAR_RT` |
+| `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements — `sensing::rf_beam::RfBeamFrame`; QoS `RF_BEAM_RT` (provisional) |
+| `radio_scan` | Per-scan radio observations | WiFi/BLE/UWB/cellular fingerprint observations — `sensing::radio::RadioScan`; QoS `RADIO_SCAN_RT` (provisional) |
+| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation — `sensing::vision::VisionFrame`; QoS `SEG_MASK_RT` |
+| `desc_array` | Feature descriptor sets | Vector or embedding batches — `slam_frontend::KeyframeFeatures`; QoS `DESC_BATCH` |
+| `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL — `mapping::MapMeta`; QoS `MAP_META` |
+| `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL — `mapping::MapAlignment`; QoS `MAP_META` |
+| `map_event` | Map lifecycle event | Lightweight notifications — `mapping::MapEvent`; QoS `MAP_META` |
+| `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL — `events::SpatialZone`; QoS `ZONE_META` |
+| `spatial_event` | Spatially-scoped event | Typed alerts and anomalies — `events::SpatialEvent`; QoS `EVENT_RT` |
+| `zone_state` | Zone occupancy snapshot | Periodic dashboard feed — `events::ZoneState`; QoS `ZONE_META` |
+| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) — `agent::AgentStatus` (provisional) |
+| `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) — `agent::TaskOffer` (provisional) |
+| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) — `agent::TaskAssignment` (provisional) |
+| `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose — `core::NavSatStatus` |
+| `planned_trajectory` | Future agent trajectory with waypoints | Intent sharing, cooperative planning — `core::PlannedTrajectory`; QoS `EVENT_RT` |
+| `entity_binding` | Cross-topic entity correlation | Scene graph construction, digital twins — `core::EntityBinding` |
+| `geopose` | Global pose sample | GNSS/VPS localization outputs — `core::GeoPose`; QoS `POSE_RT` |
+| `vps_query` | VPS localization request | Query image/features + hints — `argeo::VpsRequest`; QoS `VPS_REQ` |
+| `vps_response` | VPS localization response | `argeo::VpsResponse`; QoS `VPS_RESP` |
 | `framed_pose` | Located metric pose | `core::FramedPose`; QoS `POSE_RT` |
 | `detection3d` | 3D detection set | `semantics::Detection3DSet`; QoS `DET_RT` |
 | `detection2d` | 2D (image-space) detection set | `semantics::Detection2DSet`; QoS `DET_RT` |
+| `fused_track` | Cross-source fused track set | `semantics::FusedTrackSet`; QoS `DET_RT` |
 | `lidar_frame` | Per-frame lidar cloud index | `sensing::lidar::LidarFrame`; QoS `LIDAR_RT` |
 | `lidar_meta` | Lidar stream metadata | `sensing::lidar::LidarMeta`; QoS `SENSOR_META` (latched) |
 | `radar_tensor_meta` | Radar tensor stream metadata | `sensing::rad::RadTensorMeta`; QoS `SENSOR_META` (latched) |
@@ -942,13 +946,13 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.sensing.common | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `Codec` +PNG |
 | spatial.manifest | 1.7 | Stable | Single-identifier profile string; schema bumped to `/1.7` |
 | spatial.anchors | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.argeo | 1.7 | Stable | No IDL change (version unified to 1.7) |
+| spatial.argeo | 1.7 | Stable | **Findings batch 3 (draft rev):** Additive — VPS request/response pair (`VpsRequest`/`VpsResponse`/`QualityRequirements`/`VpsStatus`) |
 | spatial.sensing.rad | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.sensing.lidar | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.sensing.vision | 1.7 | Stable | No IDL change (version unified to 1.7) |
 | spatial.slam_frontend | 1.7 | Stable | **Findings batch 2 (draft rev):** Breaking — `KeyframeFeatures.descriptors` bound 1048576→65535 (larger sets via blob transfer) |
 | spatial.vio | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `ImuSample` accel/gyro covariance (`CovMatrix`) |
-| spatial.semantics | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `Detection3D.velocity` |
+| spatial.semantics | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `Detection3D.velocity`. **Batch 3:** Additive — `FusedTrack` / `FusedTrackSet` |
 | spatial.mapping | 1.7 | Stable | **Breaking:** compound `@key` on `mapping::Edge` (`map_id`, `edge_id`), aligning with `core::Node`/`Edge` |
 | spatial.events | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `EventType.PREDICTED_CONFLICT`; `SpatialEvent.participant_ids` |
 | spatial.sensing.rf_beam | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |

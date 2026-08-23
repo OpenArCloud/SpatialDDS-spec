@@ -3,11 +3,11 @@
 
 Motivated by findings batch 2 (A.3). Two directions:
 
-  FATAL — Reference integrity. Every §3.3.2 registry row that names an IDL
-    type (``module::Struct``) MUST resolve to a struct in idl/v<ver>, and every
-    QoS profile a row names (``QoS `PROFILE` ``) MUST appear in the §3.3.3 QoS
-    table. This catches a registry row pointing at a type or profile that does
-    not exist.
+  FATAL — Reference integrity. Every §3.3.2 registry row MUST name a
+    resolvable IDL type (``module::Struct``) — a typeless row is a spec defect —
+    and that type MUST resolve to a struct in idl/v<ver>. Every QoS profile a
+    row names (``QoS `PROFILE` ``) MUST appear in the §3.3.3 QoS table. Example
+    (Appendix E) types are resolvable targets but are not required to have rows.
 
   FATAL — Coverage. Every topic-bearing struct (heuristic: declares a
     ``schema_version`` field) MUST be named by a registry row, matched
@@ -58,11 +58,10 @@ def collect_idl(idl_dir):
     fqns = set()
     schema_structs = set()
     for dirpath, dirnames, files in os.walk(idl_dir):
-        # Appendix E informative examples (neural, agent) are not registry
-        # candidates; exclude them from coverage entirely.
-        dirnames[:] = [d for d in dirnames if d != "examples"]
-        if os.path.basename(dirpath) == "examples":
-            continue
+        # Appendix E informative examples (neural, agent) are excluded from
+        # COVERAGE (schema_structs) — they are not registry candidates — but
+        # their FQNs are still collected so a registry row MAY resolve to them.
+        is_example = os.path.basename(dirpath) == "examples"
         for fn in sorted(files):
             if not fn.endswith(".idl"):
                 continue
@@ -86,6 +85,9 @@ def collect_idl(idl_dir):
                         stack.pop()
                     pending = None
             # Second pass: attribute schema_version to its enclosing struct.
+            # Coverage excludes examples, so skip their schema_version scan.
+            if is_example:
+                continue
             stack = []
             pending = None
             for m in re.finditer(
@@ -114,17 +116,14 @@ def read_section(sections_dir, name):
 
 
 def collect_registry_and_qos(profiles_md):
-    """Return (type_refs, qos_refs, qos_profiles, slugs).
+    """Return (rows, qos_profiles).
 
-    type_refs: set of 'module::Struct' referenced by registry rows.
-    qos_refs:  set of QoS profile names referenced by registry rows.
+    rows: list of (slug, [type_refs_in_row], [qos_refs_in_row]) — one per
+      §3.3.2 registry data row, in document order.
     qos_profiles: set of profile names defined in the §3.3.3 QoS table.
-    slugs: set of first-column registry `type` slugs (e.g. 'spatial_event').
     """
-    type_refs = set()
-    qos_refs = set()
+    rows = []
     qos_profiles = set()
-    slugs = set()
     in_registry = False
     in_qos = False
     for line in profiles_md.split("\n"):
@@ -140,16 +139,14 @@ def collect_registry_and_qos(profiles_md):
         if in_registry and s.startswith("| `"):
             m = re.match(r'\|\s*`([a-z][a-z0-9_]*)`', s)
             if m:
-                slugs.add(m.group(1))
-            for m in TYPE_REF_RE.finditer(line):
-                type_refs.add(m.group(1))
-            for m in QOS_REF_RE.finditer(line):
-                qos_refs.add(m.group(1))
+                trefs = [x.group(1) for x in TYPE_REF_RE.finditer(line)]
+                qrefs = [x.group(1) for x in QOS_REF_RE.finditer(line)]
+                rows.append((m.group(1), trefs, qrefs))
         if in_qos and s.startswith("| `"):
             m = re.match(r'\|\s*`([A-Z_][A-Z0-9_]*)`', s)
             if m:
                 qos_profiles.add(m.group(1))
-    return type_refs, qos_refs, qos_profiles, slugs
+    return rows, qos_profiles
 
 
 def _norm(name):
@@ -181,24 +178,34 @@ def main():
 
     fqns, schema_structs = collect_idl(idl_dir)
     profiles_md = read_section(sections_dir, "02-idl-profiles.md")
-    type_refs, qos_refs, qos_profiles, slugs = collect_registry_and_qos(profiles_md)
+    rows, qos_profiles = collect_registry_and_qos(profiles_md)
 
+    all_type_refs = set()
+    all_slugs = set()
     fatal = []
-    for ref in sorted(type_refs):
-        if not fqn_resolves(ref, fqns):
-            fatal.append(f"registry row names IDL type `{ref}` with no matching "
-                         f"struct in idl/v{version}")
-    for prof in sorted(qos_refs):
-        if prof not in qos_profiles:
-            fatal.append(f"registry row names QoS profile `{prof}` absent from "
-                         f"the §3.3.3 QoS Profiles table")
+    # Rule 1 (reverse): every registry row MUST name a resolvable IDL type; a
+    # typeless row is a spec defect. Referenced QoS profiles must exist too.
+    for slug, trefs, qrefs in rows:
+        all_slugs.add(slug)
+        all_type_refs.update(trefs)
+        if not trefs:
+            fatal.append(f"registry row `{slug}` names no IDL type "
+                         f"(every row MUST name a resolvable `module::Struct`)")
+        for ref in trefs:
+            if not fqn_resolves(ref, fqns):
+                fatal.append(f"registry row `{slug}` names IDL type `{ref}` with "
+                             f"no matching struct in idl/v{version}")
+        for prof in qrefs:
+            if prof not in qos_profiles:
+                fatal.append(f"registry row `{slug}` names QoS profile `{prof}` "
+                             f"absent from the §3.3.3 QoS Profiles table")
 
-    # Coverage (fatal): every topic-bearing struct (schema_version heuristic)
+    # Rule 2 (coverage): every topic-bearing struct (schema_version heuristic)
     # must be named by a registry row, matched underscore- and case-insensitively
     # (so 'NavSatStatus' ↔ 'navsat_status'). Embedded helper types are
     # allow-listed; Appendix E examples are excluded upstream.
-    ref_norms = {_norm(r.split("::")[-1]) for r in type_refs}
-    slug_norms = {_norm(s) for s in slugs}
+    ref_norms = {_norm(r.split("::")[-1]) for r in all_type_refs}
+    slug_norms = {_norm(s) for s in all_slugs}
     for s in sorted(schema_structs):
         if s in EMBEDDED_ALLOWLIST:
             continue
@@ -214,8 +221,7 @@ def main():
             print(f"  - {f}")
         return 1
     print(f"Registry gate OK for v{version} "
-          f"({len(type_refs)} typed row ref(s) resolve; "
-          f"{len(qos_refs)} QoS ref(s) present).")
+          f"({len(rows)} rows; all name a resolvable IDL type and QoS profile).")
     return 0
 
 
