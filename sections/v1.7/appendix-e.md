@@ -221,7 +221,7 @@ Task Handoff:
 This profile provides typed transport for phased-array beam power measurements used in ISAC research. It defines static array metadata (`RfBeamMeta`), per-sweep power vectors (`RfBeamFrame`), and multi-array batches (`RfBeamArraySet`). The design follows the Meta/Frame pattern used elsewhere in the sensing profiles and is intentionally provisional.
 
 ```idl
-{{include:idl/v1.7/examples/rf_beam_example.idl}}
+{{include:idl/v1.7/provisional/rf_beam.idl}}
 ```
 
 ### **Example: Radio Fingerprint Extension (Provisional)**
@@ -252,7 +252,7 @@ They are complementary and may be published together by the same node.
 #### **IDL (Provisional)**
 
 ```idl
-{{include:idl/v1.7/examples/radio_example.idl}}
+{{include:idl/v1.7/provisional/radio.idl}}
 ```
 
 #### **Observation Semantics (Normative)**

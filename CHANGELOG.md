@@ -2,7 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.7     | TBD (Draft) | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. |
+| 1.7     | TBD (Draft) | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. Findings batch 2 (draft rev): breaking sequence-bound reductions (`BlobChunk.data`, `KeyframeFeatures.descriptors` → 65535); additive fields across discovery/semantics/vision/vio/events/common; new QoS profiles and registry rows. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
 | 1.4     | 2026-02-07 | Finalized 1.4 draft text and examples; regenerated full spec. |
@@ -49,6 +49,50 @@ breaking schema or wire changes. Topic names retain the `/v1` segment.
   enum).
 - Appendix G (Frame Identifiers) promoted from Informative to Normative.
 - Manifest `profile` MUST match `spatial.manifest/1.<minor>` with `<minor>` ≥ 7.
+
+### Findings batch 2 (draft rev)
+
+Implementation findings from the demo repo (`spatialdds-1.7-findings-update-plan.md`).
+
+Breaking (wire):
+- `core::BlobChunk.data`: sequence bound `262144` → `65535` (binding-compatible;
+  §3.2). Sweep confirms no other sequence bound in Appendices A–D or provisional
+  IDL exceeds 65535.
+- `slam_frontend::KeyframeFeatures.descriptors`: bound `1048576` → `65535`;
+  larger descriptor sets ride blob transfer (`BlobRef` + `BlobChunk`).
+
+Additive (IDL):
+- `common::MetaKV`: added `sequence<KV, 64> entries` (typed extension rows) and a
+  new `common::KV` struct. Typed-first extension rule added (Appendix A).
+- `semantics::Detection3D`: added `has_velocity` + `Vec3 velocity`.
+- `sensing::vision`: new `Detection2D` / `Detection2DSet` (image-space, keyed by
+  `stream_id`).
+- `disco::ServiceKind`: appended `SENSING`, `INFRASTRUCTURE`, `FUSION`.
+- `events::EventType`: appended `PREDICTED_CONFLICT`; `SpatialEvent` added
+  `participant_ids`. Prediction semantics normative note added.
+- `vio::ImuSample`: added `has_accel_cov`/`accel_cov` + `has_gyro_cov`/`gyro_cov`
+  (`core::CovMatrix`).
+- `disco::CoverageElement`: added `has_circle` / `circle_center[3]` /
+  `circle_radius_m`. Circle coverage semantics added (§3.3.4).
+- `disco::Announce`: added `coverage_source_ids` (empty = self-asserted). Derived
+  coverage semantics added (§3.3.4).
+- `sensing.common::Codec`: appended `PNG`.
+
+Non-IDL:
+- §3.3.3 QoS table: renamed "Typical Deadline" → "Deadline"; Deadline now normative
+  and specified only on periodic stream profiles (sporadic/latched/request-reply =
+  "—"); `RADAR_RT` reliability "Partial" → "Best-effort" (no partial-reliability
+  kind in DDS); added normative QoS-surface and request/offered notes; added five
+  profiles: `DET_RT`, `LIDAR_RT`, `IMU_RT`, `SENSOR_META`, `ANCHOR_DELTA`.
+- §3.3.2 registry: added ten rows (`framed_pose`, `detection3d`, `detection2d`,
+  `lidar_frame`, `lidar_meta`, `radar_tensor_meta`, `video_meta`, `rf_beam_meta`,
+  `imu_sample`, `anchor_delta`) and a registry-completeness rule; new registry
+  gate.
+- Provisional IDL relocated: `examples/rf_beam_example.idl` →
+  `provisional/rf_beam.idl`; `examples/radio_example.idl` → `provisional/radio.idl`
+  (Appendix E, Appendix K, validator globs updated).
+- Appendix I: wire-level conformance suite SHOULD verify per-profile endpoint
+  matching between two independently configured participants.
 
 ## Version 1.6 - 2026-07-23
 

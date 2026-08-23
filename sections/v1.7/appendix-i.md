@@ -10,7 +10,7 @@ The conformance tests in this appendix validate **schema expressiveness** — wh
 - **Runtime correctness** of publish/subscribe delivery, QoS enforcement, or temporal ordering.
 - **End-to-end data fidelity** of encode → transmit → decode round-trips.
 
-Wire-level interop tests across at least two DDS vendors are planned for a future revision (see §6 Future Directions).
+Wire-level interop tests across at least two DDS vendors are planned for a future revision (see §6 Future Directions). Such a suite SHOULD, per QoS profile (§3.3.3), verify endpoint matching between two independently configured participants — a reader and a writer that each set the profile's normative policies from scratch. Deadline is request/offered and matches silently: a reader requesting a Deadline will not match a writer that offers none, so a per-profile matching check is the class of failure this catches.
 
 Pass rates reported below reflect expressiveness coverage. A "pass" means the dataset field has a complete, lossless mapping to SpatialDDS types. A "gap" means no suitable type exists and an extension is needed. Deferred items are fields that can be carried (e.g., via `MetaKV`) but lack first-class typed support.
 

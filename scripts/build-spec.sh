@@ -84,3 +84,16 @@ ACTIVE_VERSION="1.7"
 if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_spec_consistency.py" ]]; then
   "$ROOT_DIR/scripts/check_spec_consistency.py" "$VERSION"
 fi
+
+# Registry gate: every §3.3.2 registry row that names an IDL type / QoS profile
+# must resolve. See scripts/check_registry.py.
+if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_registry.py" ]]; then
+  "$ROOT_DIR/scripts/check_registry.py" "$VERSION"
+fi
+
+# Topic-construction gate (optional): constructs a CycloneDDS Topic for every
+# generated Python type — catches binding-incompatible sequence bounds. Skips
+# cleanly when idlc -l py / cyclonedds-python are unavailable.
+if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_topic_construct.py" ]]; then
+  "$ROOT_DIR/scripts/check_topic_construct.py" "$VERSION"
+fi

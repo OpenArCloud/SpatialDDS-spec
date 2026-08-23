@@ -34,6 +34,11 @@ jobs:
         # a new minor becomes active.
         run: ./scripts/check_spec_consistency.py 1.7
 
+      - name: Check registered-types registry (active version)
+        # Fails the build if a §3.3.2 registry row names an IDL type or QoS
+        # profile that does not resolve. See scripts/check_registry.py.
+        run: ./scripts/check_registry.py 1.7
+
       - name: Install MkDocs
         run: pip install mkdocs mkdocs-mermaid2-plugin pymdown-extensions
 
