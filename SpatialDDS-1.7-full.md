@@ -2,9 +2,9 @@
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
-**Version**: 1.7 (Draft)
+**Version**: 1.7
 
-**Date**: 2026-XX-XX
+**Date**: 2026-08-23
 
 **Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
@@ -453,7 +453,7 @@ SpatialDDS uses semantic versioning of the form `spatial.<profile>/MAJOR.MINOR`.
 * **MAJOR** increments for breaking schema or wire changes.
 * **MINOR** increments for additive, compatible changes.
 
-> **Pre-adoption instability (Normative).** The compatibility contract above takes effect upon formal adoption of this specification. Throughout the 1.x pre-adoption series, MINOR revisions MAY include breaking schema or wire changes. Each revision's Profile Matrix (§3.5) and changelog identify breaking changes explicitly. Topic names retain the `/v1` segment through the 1.x series notwithstanding such changes.
+> **Pre-adoption instability (Normative).** The compatibility contract above takes effect upon formal adoption of this specification. Throughout the 1.x pre-adoption series, MINOR revisions MAY include breaking schema or wire changes. Each revision's Profile Matrix (§3.5) and changelog identify breaking changes explicitly. Topic names retain the `/v1` segment through the 1.x series notwithstanding such changes. 1.7 is a stamped release; subsequent breaking changes land in 1.8 or later, not in revisions to this document.
 
 Profile identifiers use the single form `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.7`) everywhere: prose, manifests, discovery payloads, and IDL constants.
 
