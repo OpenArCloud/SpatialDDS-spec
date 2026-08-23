@@ -759,7 +759,7 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `radar_tensor` | N-D float/int tensor | Raw/processed radar data cube — `sensing::rad::RadTensorFrame`; QoS `RADAR_RT` |
 | `rf_beam` | Beam sweep power vectors | Phased-array beam power measurements — `sensing::rf_beam::RfBeamFrame`; QoS `RF_BEAM_RT` (provisional) |
 | `radio_scan` | Per-scan radio observations | WiFi/BLE/UWB/cellular fingerprint observations — `sensing::radio::RadioScan`; QoS `RADIO_SCAN_RT` (provisional) |
-| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation — `sensing::vision::VisionFrame`; QoS `SEG_MASK_RT` |
+| `seg_mask` | Binary or PNG mask | Frame-aligned segmentation — `sensing::vision::VisionFrame` (alias of `video_frame`); QoS `SEG_MASK_RT` |
 | `desc_array` | Feature descriptor sets | Vector or embedding batches — `slam_frontend::KeyframeFeatures`; QoS `DESC_BATCH` |
 | `map_meta` | Map lifecycle descriptor | Latched; TRANSIENT_LOCAL — `mapping::MapMeta`; QoS `MAP_META` |
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL — `mapping::MapAlignment`; QoS `MAP_META` |
@@ -767,9 +767,6 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL — `events::SpatialZone`; QoS `ZONE_META` |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies — `events::SpatialEvent`; QoS `EVENT_RT` |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed — `events::ZoneState`; QoS `ZONE_META` |
-| `agent_status` | Agent availability advertisement | Latched; TRANSIENT_LOCAL (provisional) — `agent::AgentStatus` (provisional) |
-| `task_offer` | Agent bid on a task | Volatile offer with TTL (provisional) — `agent::TaskOffer` (provisional) |
-| `task_assignment` | Coordinator task binding | Latched; TRANSIENT_LOCAL (provisional) — `agent::TaskAssignment` (provisional) |
 | `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose — `core::NavSatStatus` |
 | `planned_trajectory` | Future agent trajectory with waypoints | Intent sharing, cooperative planning — `core::PlannedTrajectory`; QoS `EVENT_RT` |
 | `entity_binding` | Cross-topic entity correlation | Scene graph construction, digital twins — `core::EntityBinding` |
@@ -787,13 +784,22 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `rf_beam_meta` | RF beam stream metadata (provisional) | `sensing::rf_beam::RfBeamMeta`; QoS `SENSOR_META` (latched) |
 | `imu_sample` | Raw IMU sample | `vio::ImuSample`; QoS `IMU_RT` |
 | `anchor_delta` | Anchor registry delta | `anchors::AnchorDelta`; QoS `ANCHOR_DELTA` |
-| `tile_meta` | Geometry tile metadata | `core::TileMeta`; QoS `SENSOR_META` (latched) |
 | `rad_sensor_meta` | Radar (detection) stream metadata | `sensing::rad::RadSensorMeta`; QoS `SENSOR_META` (latched) |
 | `radio_sensor_meta` | Radio stream metadata (provisional) | `sensing::radio::RadioSensorMeta`; QoS `SENSOR_META` (latched) |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
 Implementations defining custom `type` and `qos_profile` values SHOULD follow the naming pattern (`myorg.depth_frame`, `DEPTH_LIVE`) and document their DDS QoS mapping.
+
+##### **Informative Example Registrations**
+
+*Types defined only in Appendix E examples (informative). These registrations are **not** part of the conformance surface — the normative registry gate does not require or check them; it only confirms they resolve.*
+
+| Type | Typical Payload | Notes |
+|------|------------------|-------|
+| `agent_status` | Agent availability advertisement | `agent::AgentStatus` (informative example, Appendix E) |
+| `task_offer` | Agent bid on a task | `agent::TaskOffer` (informative example, Appendix E) |
+| `task_assignment` | Coordinator task binding | `agent::TaskAssignment` (informative example, Appendix E) |
 
 #### **3.3.3 QoS Profiles**
 

@@ -265,6 +265,9 @@ module spatial {
       // intrinsics/calibration for query_blobs. Empty when not applicable.
       string query_stream_id;
 
+      // Absent (has_quality_requirements == false) means the service's
+      // default accuracy requirements apply.
+      boolean has_quality_requirements;
       QualityRequirements quality_requirements;
 
       Time stamp;

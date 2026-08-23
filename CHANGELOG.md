@@ -139,6 +139,24 @@ families (`OpenArCloud/SpatialDDS-demo`), hardened to spec conventions. All
   standardized. Future Directions: on-bus content catalog query parked as an
   open design question (deliberately not added in 1.7).
 
+### Batch 3 follow-up (draft rev)
+
+- `argeo::VpsRequest`: `quality_requirements` is now presence-guarded
+  (`has_quality_requirements`); absence means the service's default accuracy
+  requirements apply (§2.2 — no sentinel-zero requirements).
+- §3.3.2 registry: dropped the `tile_meta` row — `core::TileMeta` is registered
+  canonically as `geometry_tile`; `tile_meta` existed only within the 1.7 draft
+  window. The registry gate now enforces one normative row per IDL type (alias
+  rows excepted; `seg_mask` is marked an alias of `video_frame`'s
+  `VisionFrame`).
+- §3.3.2: agent-family rows (`agent_status`, `task_offer`, `task_assignment`)
+  moved out of the normative registry into an "Informative Example
+  Registrations" sub-table — they name types defined only in Appendix E
+  examples and are outside the conformance surface; the gate checks only that
+  they resolve.
+- Added `gaps/2.0-considerations.md`: unify covariance representation
+  (`CovMatrix` vs `Mat3x3`) — surveyed before 2.0, not patched in 1.7.
+
 ## Version 1.6 - 2026-07-23
 
 ### Core profile (spatial.core/1.6)

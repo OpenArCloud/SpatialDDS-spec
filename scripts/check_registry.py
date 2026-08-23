@@ -3,11 +3,15 @@
 
 Motivated by findings batch 2 (A.3). Two directions:
 
-  FATAL — Reference integrity. Every §3.3.2 registry row MUST name a
+  FATAL — Reference integrity. Every normative §3.3.2 registry row MUST name a
     resolvable IDL type (``module::Struct``) — a typeless row is a spec defect —
     and that type MUST resolve to a struct in idl/v<ver>. Every QoS profile a
-    row names (``QoS `PROFILE` ``) MUST appear in the §3.3.3 QoS table. Example
-    (Appendix E) types are resolvable targets but are not required to have rows.
+    row names (``QoS `PROFILE` ``) MUST appear in the §3.3.3 QoS table. Each IDL
+    type is named by at most one normative row unless a row is explicitly
+    annotated as an alias. Rows under the "Informative Example Registrations"
+    sub-table (Appendix E example types) are advisory only — checked to resolve,
+    but outside the normative conformance surface. Example types are resolvable
+    targets but are not required to have rows.
 
   FATAL — Coverage. Every topic-bearing struct (heuristic: declares a
     ``schema_version`` field) MUST be named by a registry row, matched
@@ -116,37 +120,46 @@ def read_section(sections_dir, name):
 
 
 def collect_registry_and_qos(profiles_md):
-    """Return (rows, qos_profiles).
+    """Return (rows, informative_rows, qos_profiles).
 
-    rows: list of (slug, [type_refs_in_row], [qos_refs_in_row]) — one per
-      §3.3.2 registry data row, in document order.
+    rows / informative_rows: lists of (slug, [type_refs], [qos_refs], is_alias)
+      — normative §3.3.2 rows and the informative-example sub-table rows,
+      respectively, in document order. is_alias is True when the row text marks
+      it as a deliberate alias (shares an IDL type with another row).
     qos_profiles: set of profile names defined in the §3.3.3 QoS table.
     """
     rows = []
+    informative = []
     qos_profiles = set()
     in_registry = False
     in_qos = False
+    in_informative = False
     for line in profiles_md.split("\n"):
         s = line.strip()
         if s.startswith("#### ") and "Typed Topics Registry" in s:
-            in_registry, in_qos = True, False
+            in_registry, in_qos, in_informative = True, False, False
             continue
         if s.startswith("#### ") and "QoS Profiles" in s:
             in_registry, in_qos = False, True
             continue
         if s.startswith("#### ") or s.startswith("### "):
             in_registry = in_qos = False
+        if in_registry and "Informative Example Registrations" in s:
+            in_informative = True
+            continue
         if in_registry and s.startswith("| `"):
             m = re.match(r'\|\s*`([a-z][a-z0-9_]*)`', s)
             if m:
                 trefs = [x.group(1) for x in TYPE_REF_RE.finditer(line)]
                 qrefs = [x.group(1) for x in QOS_REF_RE.finditer(line)]
-                rows.append((m.group(1), trefs, qrefs))
+                is_alias = "alias" in line.lower()
+                target = informative if in_informative else rows
+                target.append((m.group(1), trefs, qrefs, is_alias))
         if in_qos and s.startswith("| `"):
             m = re.match(r'\|\s*`([A-Z_][A-Z0-9_]*)`', s)
             if m:
                 qos_profiles.add(m.group(1))
-    return rows, qos_profiles
+    return rows, informative, qos_profiles
 
 
 def _norm(name):
@@ -178,14 +191,15 @@ def main():
 
     fqns, schema_structs = collect_idl(idl_dir)
     profiles_md = read_section(sections_dir, "02-idl-profiles.md")
-    rows, qos_profiles = collect_registry_and_qos(profiles_md)
+    rows, informative, qos_profiles = collect_registry_and_qos(profiles_md)
 
     all_type_refs = set()
     all_slugs = set()
     fatal = []
-    # Rule 1 (reverse): every registry row MUST name a resolvable IDL type; a
-    # typeless row is a spec defect. Referenced QoS profiles must exist too.
-    for slug, trefs, qrefs in rows:
+    by_type = {}  # non-alias type ref -> [slugs], for the uniqueness check
+    # Rule 1 (reverse): every normative registry row MUST name a resolvable IDL
+    # type; a typeless row is a spec defect. Referenced QoS profiles must exist.
+    for slug, trefs, qrefs, is_alias in rows:
         all_slugs.add(slug)
         all_type_refs.update(trefs)
         if not trefs:
@@ -195,10 +209,28 @@ def main():
             if not fqn_resolves(ref, fqns):
                 fatal.append(f"registry row `{slug}` names IDL type `{ref}` with "
                              f"no matching struct in idl/v{version}")
+            if not is_alias:
+                by_type.setdefault(ref, []).append(slug)
         for prof in qrefs:
             if prof not in qos_profiles:
                 fatal.append(f"registry row `{slug}` names QoS profile `{prof}` "
                              f"absent from the §3.3.3 QoS Profiles table")
+
+    # Rule 1b (uniqueness): one normative row per IDL type unless a row is
+    # explicitly annotated as an alias.
+    for ref, slugs in sorted(by_type.items()):
+        if len(slugs) > 1:
+            fatal.append(f"IDL type `{ref}` is named by {len(slugs)} normative "
+                         f"registry rows ({', '.join(slugs)}); one row per type "
+                         f"unless a row is annotated as an alias")
+
+    # Informative-example rows (Appendix E): advisory only — confirm they
+    # resolve, but they are not part of the normative conformance surface.
+    for slug, trefs, qrefs, _ in informative:
+        for ref in trefs:
+            if not fqn_resolves(ref, fqns):
+                print(f"Registry (informative) note for v{version}: example row "
+                      f"`{slug}` names `{ref}` which does not resolve.")
 
     # Rule 2 (coverage): every topic-bearing struct (schema_version heuristic)
     # must be named by a registry row, matched underscore- and case-insensitively
@@ -221,7 +253,8 @@ def main():
             print(f"  - {f}")
         return 1
     print(f"Registry gate OK for v{version} "
-          f"({len(rows)} rows; all name a resolvable IDL type and QoS profile).")
+          f"({len(rows)} normative rows — all name a resolvable IDL type, unique "
+          f"per type; {len(informative)} informative example row(s)).")
     return 0
 
 
