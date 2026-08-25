@@ -39,7 +39,7 @@ nav:
       - Appendix I - Dataset Conformance Testing: v1.8/appendix-i.md
       - Appendix J - Comparison with ROS 2: v1.8/appendix-j.md
       - Appendix K - IDL Package Layout: v1.8/appendix-k-idl-package-layout.md
-      - Full Spec (single page): SpatialDDS-1.7-full.md
+      - Full Spec (single page): SpatialDDS-1.8-full.md
   - SpatialDDS 1.7:
       - 1. Introduction: v1.7/01-introduction.md
       - 2. Conventions: v1.7/02-conventions.md
