@@ -1,5 +1,26 @@
 (function () {
+  function addRepoLink() {
+    const header = document.querySelector('.wy-side-nav-search');
+    if (!header || header.querySelector('.repo-link')) {
+      return;
+    }
+    const link = document.createElement('a');
+    link.className = 'repo-link';
+    link.href = 'https://github.com/OpenArCloud/SpatialDDS-spec';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'OpenArCloud/SpatialDDS-spec';
+    const home = header.querySelector('a.icon-home');
+    if (home) {
+      home.insertAdjacentElement('afterend', link);
+    } else {
+      header.insertBefore(link, header.firstChild);
+    }
+  }
+
   function init() {
+    addRepoLink();
+
     const menu = document.querySelector('.wy-nav-side .wy-menu-vertical');
     if (!menu) {
       return;

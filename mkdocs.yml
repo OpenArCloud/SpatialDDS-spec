@@ -1,12 +1,6 @@
 site_name: SpatialDDS Specification
 site_description: Lightweight browsing site for the SpatialDDS spec
 site_url: ""
-repo_url: https://github.com/OpenArCloud/SpatialDDS-spec
-repo_name: OpenArCloud/SpatialDDS-spec
-# The rendered docs are generated into mkdocs_docs/ (not committed), so a
-# per-page "Edit on GitHub" link would point at a path that isn't in the repo.
-# Empty edit_uri keeps the top-of-page repo link but drops the broken edit link.
-edit_uri: ""
 docs_dir: mkdocs_docs
 use_directory_urls: true
 

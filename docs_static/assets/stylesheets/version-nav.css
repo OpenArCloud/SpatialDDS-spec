@@ -28,3 +28,23 @@
 .wy-menu-vertical ul.version-collapsed {
   display: none;
 }
+
+/* Repo link injected under the site title in the sidebar header. */
+.wy-side-nav-search .repo-link {
+  display: block;
+  margin: 6px 12px 0;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #d6ecff;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.wy-side-nav-search .repo-link::before {
+  content: '\2197\00a0'; /* ↗ */
+}
+
+.wy-side-nav-search .repo-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
