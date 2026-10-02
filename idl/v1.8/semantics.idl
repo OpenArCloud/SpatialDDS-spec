@@ -19,6 +19,28 @@ module spatial {
     typedef spatial::core::TileKey TileKey;
     typedef spatial::common::FrameRef FrameRef;
 
+    // ---------- Keypoints / pose skeletons (added 1.8) ----------
+
+    // One joint of a pose skeleton, in 3D. Uncertainty for a keypointed
+    // detection lives on the detection (observer_cov, and the detection's own
+    // covariance) rather than per joint: no producer surveyed for 1.8
+    // publishes per-joint covariance, and a field nobody fills is worse than
+    // one appended later when somebody does. APPENDABLE leaves that open.
+    @extensibility(APPENDABLE) struct Keypoint3D {
+      spatial::common::Vec3 position;   // joint position in the detection's frame_ref (metres)
+      float confidence;                 // [0..1] per-joint detector confidence
+      boolean has_visible;
+      boolean visible;                  // false = inferred/occluded rather than directly observed
+    };
+
+    // One skeleton edge, as a pair of indices into the keypoint sequence.
+    // Carried explicitly so a consumer that does not know the topology
+    // vocabulary can still draw the skeleton.
+    @extensibility(APPENDABLE) struct KeypointLink {
+      uint16 from_index;                // index into Detection3D.keypoints
+      uint16 to_index;                  // index into Detection3D.keypoints
+    };
+
     // 2D detections per keyframe (image space)
     @extensibility(APPENDABLE) struct Detection2D {
       @key string det_id;       // unique per publisher
@@ -98,6 +120,28 @@ module spatial {
       // COV_SCOPE_LOCAL — see spatial::common::CovScope.
       boolean has_observer_cov_scope;
       spatial::common::CovScope observer_cov_scope;
+
+      // Pose skeleton (added 1.8 Batch 3), appended at struct end per
+      // APPENDABLE rules. 3D-first: metric joint positions in this detection's
+      // frame_ref, not image coordinates.
+      //
+      // topology_id names the joint vocabulary as a borrowed identifier -- a
+      // URI, or a well-known token such as "COCO-17" -- rather than an enum,
+      // consistent with the standing refusal to define an ontology. It is not
+      // self-describing on its own, which is why keypoint_links is carried
+      // beside it: a consumer that has never heard of the vocabulary can still
+      // render the skeleton from the connectivity, and one that knows it can
+      // name the joints.
+      //
+      // Order is the identity of a joint: index i in keypoints is joint i of
+      // topology_id. A producer that cannot observe a joint MUST still emit it
+      // -- with visible false, or zero confidence -- rather than shortening the
+      // sequence, because every index after a dropped joint would otherwise
+      // mean something different and the links would point at the wrong ones.
+      boolean has_keypoints;
+      sequence<Keypoint3D, 192> keypoints;      // >= COCO-WholeBody (133)
+      string topology_id;                       // e.g. "COCO-17", or a vocabulary URI
+      sequence<KeypointLink, 256> keypoint_links;
     };
 
     @extensibility(APPENDABLE) struct Detection3DSet {

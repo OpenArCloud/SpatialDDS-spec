@@ -73,6 +73,18 @@ module spatial {
         };
       };
 
+      module crossing_direction_enum {
+        // Which way an object crossed a CrossingLine, relative to the line's
+        // own LEFT/RIGHT convention (added 1.8). Tri-state: 0 is UNKNOWN, so a
+        // producer that detects a crossing but cannot resolve its direction
+        // says so rather than implying one.
+        enum CrossingDirection {
+          @value(0) CROSSING_UNKNOWN, // crossing detected, direction not resolved
+          @value(1) LEFT_TO_RIGHT,    // from the line's LEFT side to its RIGHT
+          @value(2) RIGHT_TO_LEFT     // from the line's RIGHT side to its LEFT
+        };
+      };
+
       module event_state_enum {
         // Event lifecycle state.
         enum EventState {
@@ -88,6 +100,7 @@ module spatial {
     typedef enums::event_type_enum::EventType EventType;
     typedef enums::severity_enum::Severity Severity;
     typedef enums::event_state_enum::EventState EventState;
+    typedef enums::crossing_direction_enum::CrossingDirection CrossingDirection;
 
     // ================================================================
     // 1. SPATIAL ZONES
@@ -156,6 +169,64 @@ module spatial {
       double z_max;
     };
 
+
+    // ================================================================
+    // 1b. CROSSING LINES
+    // ================================================================
+
+    // An open path that objects cross, as distinct from a region they occupy
+    // (added 1.8). Published RELIABLE + TRANSIENT_LOCAL, like SpatialZone, so
+    // late joiners receive the full line layout.
+    //
+    // Why this is not a SpatialZone. A zone answers "is this point inside?";
+    // a crossing line has no interior to be inside of. It has two sides and it
+    // produces transitions between them. Expressing one as a degenerate
+    // sliver polygon reintroduces exactly the over/under-claiming that the
+    // 1.8 polygon work removed, and leaves every consumer's containment test
+    // answering a question the geometry cannot mean. `EventType.LINE_CROSS`
+    // has referred to "a defined trip line" since 1.5 without the spec ever
+    // giving that line a geometry; this is that type.
+    @extensibility(APPENDABLE) struct CrossingLine {
+      @key string line_id;              // unique crossing-line identifier
+
+      string name;                      // human-readable name (e.g., "Entrance Door 2")
+      FrameRef frame_ref;               // coordinate frame for geometry
+
+      // Geometry: an OPEN vertex sequence in frame_ref's XY plane, in order.
+      // At least 2 vertices. Unlike SpatialZone.polygon this is NOT closed and
+      // closure MUST NOT be inferred: the last vertex does not join the first,
+      // and a consumer that closes it is reading a region where a path was
+      // meant. A 2-vertex path is the common case (a single straight line);
+      // more vertices describe a polyline across an irregular opening.
+      sequence<spatial::common::Vec2, 256> path;
+
+      // Optional vertical band, same semantics as SpatialZone's prism extents:
+      // z_max >= z_min, and equal values denote a line with no vertical extent
+      // (crossing is evaluated in plan view). Absent means unbounded in Z.
+      boolean has_vertical_band;
+      double z_min;
+      double z_max;
+
+      // Optional enclosing box for coarse discovery and spatial indexing,
+      // mirroring the polygon fallback rule: when present it MUST contain the
+      // whole path, so a box-only consumer can filter without understanding
+      // paths. It is a filter, never a containment test for crossing.
+      boolean has_bounds;
+      Aabb3 bounds;
+
+      // Applicable object classes — which detection class_ids trigger
+      // crossings. Empty means all classes. Same rule as SpatialZone.
+      sequence<string, 32> class_filter;
+
+      // Owner / authority
+      string provider_id;               // who defines this line
+      Time   stamp;                     // last update time
+
+      // Extensible metadata
+      sequence<MetaKV, 16> attributes;
+
+      string schema_version;            // MUST be "spatial.events/1.8"
+    };
 
     // ================================================================
     // 2. SPATIAL EVENTS
@@ -236,6 +307,25 @@ module spatial {
 
       // appended in 1.7 draft rev
       sequence<string, 8> participant_ids;  // symmetric participants (track or agent ids)
+
+      // Crossing-line events (added 1.8), appended at struct end per
+      // APPENDABLE rules. Populated for EventType.LINE_CROSS.
+      //
+      // `crossing_line_id` names the CrossingLine that was crossed. It is a
+      // separate field from `zone_id` on purpose: a crossing line is not a
+      // SpatialZone and its ids live in their own space, so carrying one in
+      // `zone_id` would make every zone lookup fail in a way that looks like
+      // missing data.
+      boolean has_crossing_line_id;
+      string  crossing_line_id;         // references CrossingLine.line_id
+
+      // Direction of travel through the line, relative to the line's own
+      // LEFT/RIGHT convention (see the Crossing-Line Side Convention in the
+      // conventions section). Typed rather than carried in `attributes`:
+      // direction is the whole point of a crossing event, and uncertainty or
+      // ignorance about it is expressed by CROSSING_UNKNOWN, not by absence.
+      boolean has_crossing;
+      CrossingDirection crossing_direction;
     };
 
 

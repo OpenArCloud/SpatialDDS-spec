@@ -765,6 +765,7 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL — `mapping::MapAlignment`; QoS `MAP_META` |
 | `map_event` | Map lifecycle event | Lightweight notifications — `mapping::MapEvent`; QoS `MAP_META` |
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL — `events::SpatialZone`; QoS `ZONE_META` |
+| `crossing_line` | Named crossing-line definition | Latched; TRANSIENT_LOCAL — `events::CrossingLine`; QoS `ZONE_META` |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies — `events::SpatialEvent`; QoS `EVENT_RT` |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed — `events::ZoneState`; QoS `ZONE_META` |
 | `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose — `core::NavSatStatus` |
@@ -959,9 +960,9 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.sensing.vision | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.slam_frontend | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. APPENDABLE, no field removed or reordered. |
+| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. Additive (Batch 3): 3D pose skeletons on `Detection3D` (`has_keypoints`/`keypoints`/`topology_id`/`keypoint_links`) with new `Keypoint3D` and `KeypointLink` types. APPENDABLE, no field removed or reordered. |
 | spatial.mapping | 1.8 | Stable | Additive (Batch 2): similarity `has_scale_ratio`/`scale_ratio` on `MapAlignment`. APPENDABLE, no field removed or reordered. |
-| spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`). APPENDABLE, no field removed or reordered. |
+| spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`); new keyed `CrossingLine` type (open path, LEFT/RIGHT side convention §2.16) with new `CrossingDirection` enum; crossing fields on `SpatialEvent` (`has_crossing_line_id`/`crossing_line_id`/`has_crossing`/`crossing_direction`). APPENDABLE, no field removed or reordered. |
 | spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.sensing.radio | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.neural | 1.8 | Informative example (Appendix E) | No IDL change (version unified to 1.8) |

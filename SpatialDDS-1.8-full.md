@@ -1242,6 +1242,7 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `map_alignment` | Inter-map transform | Latched; TRANSIENT_LOCAL — `mapping::MapAlignment`; QoS `MAP_META` |
 | `map_event` | Map lifecycle event | Lightweight notifications — `mapping::MapEvent`; QoS `MAP_META` |
 | `spatial_zone` | Named zone definition | Latched; TRANSIENT_LOCAL — `events::SpatialZone`; QoS `ZONE_META` |
+| `crossing_line` | Named crossing-line definition | Latched; TRANSIENT_LOCAL — `events::CrossingLine`; QoS `ZONE_META` |
 | `spatial_event` | Spatially-scoped event | Typed alerts and anomalies — `events::SpatialEvent`; QoS `EVENT_RT` |
 | `zone_state` | Zone occupancy snapshot | Periodic dashboard feed — `events::ZoneState`; QoS `ZONE_META` |
 | `navsat_status` | GNSS receiver diagnostics | Companion to GeoPose — `core::NavSatStatus` |
@@ -1436,9 +1437,9 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.sensing.vision | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.slam_frontend | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. APPENDABLE, no field removed or reordered. |
+| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. Additive (Batch 3): 3D pose skeletons on `Detection3D` (`has_keypoints`/`keypoints`/`topology_id`/`keypoint_links`) with new `Keypoint3D` and `KeypointLink` types. APPENDABLE, no field removed or reordered. |
 | spatial.mapping | 1.8 | Stable | Additive (Batch 2): similarity `has_scale_ratio`/`scale_ratio` on `MapAlignment`. APPENDABLE, no field removed or reordered. |
-| spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`). APPENDABLE, no field removed or reordered. |
+| spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`); new keyed `CrossingLine` type (open path, LEFT/RIGHT side convention §2.16) with new `CrossingDirection` enum; crossing fields on `SpatialEvent` (`has_crossing_line_id`/`crossing_line_id`/`has_crossing`/`crossing_direction`). APPENDABLE, no field removed or reordered. |
 | spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.sensing.radio | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.neural | 1.8 | Informative example (Appendix E) | No IDL change (version unified to 1.8) |
@@ -3462,6 +3463,28 @@ module spatial {
     typedef spatial::core::TileKey TileKey;
     typedef spatial::common::FrameRef FrameRef;
 
+    // ---------- Keypoints / pose skeletons (added 1.8) ----------
+
+    // One joint of a pose skeleton, in 3D. Uncertainty for a keypointed
+    // detection lives on the detection (observer_cov, and the detection's own
+    // covariance) rather than per joint: no producer surveyed for 1.8
+    // publishes per-joint covariance, and a field nobody fills is worse than
+    // one appended later when somebody does. APPENDABLE leaves that open.
+    @extensibility(APPENDABLE) struct Keypoint3D {
+      spatial::common::Vec3 position;   // joint position in the detection's frame_ref (metres)
+      float confidence;                 // [0..1] per-joint detector confidence
+      boolean has_visible;
+      boolean visible;                  // false = inferred/occluded rather than directly observed
+    };
+
+    // One skeleton edge, as a pair of indices into the keypoint sequence.
+    // Carried explicitly so a consumer that does not know the topology
+    // vocabulary can still draw the skeleton.
+    @extensibility(APPENDABLE) struct KeypointLink {
+      uint16 from_index;                // index into Detection3D.keypoints
+      uint16 to_index;                  // index into Detection3D.keypoints
+    };
+
     // 2D detections per keyframe (image space)
     @extensibility(APPENDABLE) struct Detection2D {
       @key string det_id;       // unique per publisher
@@ -3541,6 +3564,28 @@ module spatial {
       // COV_SCOPE_LOCAL — see spatial::common::CovScope.
       boolean has_observer_cov_scope;
       spatial::common::CovScope observer_cov_scope;
+
+      // Pose skeleton (added 1.8 Batch 3), appended at struct end per
+      // APPENDABLE rules. 3D-first: metric joint positions in this detection's
+      // frame_ref, not image coordinates.
+      //
+      // topology_id names the joint vocabulary as a borrowed identifier -- a
+      // URI, or a well-known token such as "COCO-17" -- rather than an enum,
+      // consistent with the standing refusal to define an ontology. It is not
+      // self-describing on its own, which is why keypoint_links is carried
+      // beside it: a consumer that has never heard of the vocabulary can still
+      // render the skeleton from the connectivity, and one that knows it can
+      // name the joints.
+      //
+      // Order is the identity of a joint: index i in keypoints is joint i of
+      // topology_id. A producer that cannot observe a joint MUST still emit it
+      // -- with visible false, or zero confidence -- rather than shortening the
+      // sequence, because every index after a dropped joint would otherwise
+      // mean something different and the links would point at the wrong ones.
+      boolean has_keypoints;
+      sequence<Keypoint3D, 192> keypoints;      // >= COCO-WholeBody (133)
+      string topology_id;                       // e.g. "COCO-17", or a vocabulary URI
+      sequence<KeypointLink, 256> keypoint_links;
     };
 
     @extensibility(APPENDABLE) struct Detection3DSet {
@@ -4675,6 +4720,18 @@ module spatial {
         };
       };
 
+      module crossing_direction_enum {
+        // Which way an object crossed a CrossingLine, relative to the line's
+        // own LEFT/RIGHT convention (added 1.8). Tri-state: 0 is UNKNOWN, so a
+        // producer that detects a crossing but cannot resolve its direction
+        // says so rather than implying one.
+        enum CrossingDirection {
+          @value(0) CROSSING_UNKNOWN, // crossing detected, direction not resolved
+          @value(1) LEFT_TO_RIGHT,    // from the line's LEFT side to its RIGHT
+          @value(2) RIGHT_TO_LEFT     // from the line's RIGHT side to its LEFT
+        };
+      };
+
       module event_state_enum {
         // Event lifecycle state.
         enum EventState {
@@ -4690,6 +4747,7 @@ module spatial {
     typedef enums::event_type_enum::EventType EventType;
     typedef enums::severity_enum::Severity Severity;
     typedef enums::event_state_enum::EventState EventState;
+    typedef enums::crossing_direction_enum::CrossingDirection CrossingDirection;
 
     // ================================================================
     // 1. SPATIAL ZONES
@@ -4758,6 +4816,64 @@ module spatial {
       double z_max;
     };
 
+
+    // ================================================================
+    // 1b. CROSSING LINES
+    // ================================================================
+
+    // An open path that objects cross, as distinct from a region they occupy
+    // (added 1.8). Published RELIABLE + TRANSIENT_LOCAL, like SpatialZone, so
+    // late joiners receive the full line layout.
+    //
+    // Why this is not a SpatialZone. A zone answers "is this point inside?";
+    // a crossing line has no interior to be inside of. It has two sides and it
+    // produces transitions between them. Expressing one as a degenerate
+    // sliver polygon reintroduces exactly the over/under-claiming that the
+    // 1.8 polygon work removed, and leaves every consumer's containment test
+    // answering a question the geometry cannot mean. `EventType.LINE_CROSS`
+    // has referred to "a defined trip line" since 1.5 without the spec ever
+    // giving that line a geometry; this is that type.
+    @extensibility(APPENDABLE) struct CrossingLine {
+      @key string line_id;              // unique crossing-line identifier
+
+      string name;                      // human-readable name (e.g., "Entrance Door 2")
+      FrameRef frame_ref;               // coordinate frame for geometry
+
+      // Geometry: an OPEN vertex sequence in frame_ref's XY plane, in order.
+      // At least 2 vertices. Unlike SpatialZone.polygon this is NOT closed and
+      // closure MUST NOT be inferred: the last vertex does not join the first,
+      // and a consumer that closes it is reading a region where a path was
+      // meant. A 2-vertex path is the common case (a single straight line);
+      // more vertices describe a polyline across an irregular opening.
+      sequence<spatial::common::Vec2, 256> path;
+
+      // Optional vertical band, same semantics as SpatialZone's prism extents:
+      // z_max >= z_min, and equal values denote a line with no vertical extent
+      // (crossing is evaluated in plan view). Absent means unbounded in Z.
+      boolean has_vertical_band;
+      double z_min;
+      double z_max;
+
+      // Optional enclosing box for coarse discovery and spatial indexing,
+      // mirroring the polygon fallback rule: when present it MUST contain the
+      // whole path, so a box-only consumer can filter without understanding
+      // paths. It is a filter, never a containment test for crossing.
+      boolean has_bounds;
+      Aabb3 bounds;
+
+      // Applicable object classes — which detection class_ids trigger
+      // crossings. Empty means all classes. Same rule as SpatialZone.
+      sequence<string, 32> class_filter;
+
+      // Owner / authority
+      string provider_id;               // who defines this line
+      Time   stamp;                     // last update time
+
+      // Extensible metadata
+      sequence<MetaKV, 16> attributes;
+
+      string schema_version;            // MUST be "spatial.events/1.8"
+    };
 
     // ================================================================
     // 2. SPATIAL EVENTS
@@ -4838,6 +4954,25 @@ module spatial {
 
       // appended in 1.7 draft rev
       sequence<string, 8> participant_ids;  // symmetric participants (track or agent ids)
+
+      // Crossing-line events (added 1.8), appended at struct end per
+      // APPENDABLE rules. Populated for EventType.LINE_CROSS.
+      //
+      // `crossing_line_id` names the CrossingLine that was crossed. It is a
+      // separate field from `zone_id` on purpose: a crossing line is not a
+      // SpatialZone and its ids live in their own space, so carrying one in
+      // `zone_id` would make every zone lookup fail in a way that looks like
+      // missing data.
+      boolean has_crossing_line_id;
+      string  crossing_line_id;         // references CrossingLine.line_id
+
+      // Direction of travel through the line, relative to the line's own
+      // LEFT/RIGHT convention (see the Crossing-Line Side Convention in the
+      // conventions section). Typed rather than carried in `attributes`:
+      // direction is the whole point of a crossing event, and uncertainty or
+      // ignorance about it is expressed by CROSSING_UNKNOWN, not by absence.
+      boolean has_crossing;
+      CrossingDirection crossing_direction;
     };
 
 
