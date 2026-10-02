@@ -55,6 +55,15 @@ module spatial {
       @value(1) SCALE_DECLARED,
       @value(2) SCALE_DERIVED
     };
+    // Covariance composition scope (added 1.8 Batch 2). Qualifies an observer
+    // covariance: COV_SCOPE_LOCAL means it is stated against the emitting frame
+    // and consumers MUST compose observer uncertainty through the frame chain;
+    // COV_SCOPE_COMPOSED means the producer has already folded observer
+    // uncertainty in and consumers MUST NOT apply it again. Absent means LOCAL.
+    enum CovScope {
+      @value(0) COV_SCOPE_LOCAL,
+      @value(1) COV_SCOPE_COMPOSED
+    };
     @extensibility(APPENDABLE) struct FrameRef {
       string uuid;                 // REQUIRED: stable identifier for the frame
       string fqn;                  // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"

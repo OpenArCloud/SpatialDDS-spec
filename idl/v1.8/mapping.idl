@@ -277,6 +277,17 @@ module spatial {
       sequence<string, 64> evidence_edge_ids;
 
       string schema_version;            // MUST be "spatial.mapping/1.8"
+
+      // Similarity scale ratio (added 1.8 Batch 2), appended per APPENDABLE rules.
+      // T_from_to is a rigid SE(3); scale_ratio carries the metric scale difference
+      // the rigid transform cannot: the factor by which a length in the map_id_from
+      // frame is multiplied to express it in the map_id_to frame (dimensionless;
+      // 1.0 when the two maps share scale). When both maps carry FrameRef scale
+      // (§2.13), scale_ratio MUST be consistent with their meters_per_unit ratio;
+      // when either frame is SCALE_UNKNOWN an alignment MAY still state a measured
+      // ratio and SHOULD reflect the added uncertainty in cov (see §2.13 chaining).
+      boolean has_scale_ratio;
+      double  scale_ratio;
     };
 
 

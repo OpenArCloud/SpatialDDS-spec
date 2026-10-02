@@ -2041,6 +2041,15 @@ module spatial {
       @value(1) SCALE_DECLARED,
       @value(2) SCALE_DERIVED
     };
+    // Covariance composition scope (added 1.8 Batch 2). Qualifies an observer
+    // covariance: COV_SCOPE_LOCAL means it is stated against the emitting frame
+    // and consumers MUST compose observer uncertainty through the frame chain;
+    // COV_SCOPE_COMPOSED means the producer has already folded observer
+    // uncertainty in and consumers MUST NOT apply it again. Absent means LOCAL.
+    enum CovScope {
+      @value(0) COV_SCOPE_LOCAL,
+      @value(1) COV_SCOPE_COMPOSED
+    };
     @extensibility(APPENDABLE) struct FrameRef {
       string uuid;                 // REQUIRED: stable identifier for the frame
       string fqn;                  // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
@@ -3499,6 +3508,19 @@ module spatial {
       // appended in 1.7 draft rev
       boolean has_velocity;
       spatial::common::Vec3 velocity;    // m/s in the detection's frame (valid when has_velocity == true)
+
+      // Observer pose covariance (added 1.8 Batch 2). observer_position is the
+      // sensor origin in this struct's frame_ref, in metres; observer_cov is the
+      // observer-pose covariance (COV_NONE when absent). Layout is row-major; the
+      // pose-covariance blocks are position m^2, position-rotation m*rad, and
+      // rotation rad^2; the observer pose is expressed in this struct's frame_ref.
+      boolean has_observer;
+      spatial::common::Vec3 observer_position;
+      spatial::core::CovMatrix observer_cov;
+      // Composition scope of observer_cov (added 1.8 Batch 2). Absent means
+      // COV_SCOPE_LOCAL — see spatial::common::CovScope.
+      boolean has_observer_cov_scope;
+      spatial::common::CovScope observer_cov_scope;
     };
 
     @extensibility(APPENDABLE) struct Detection3DSet {
@@ -3539,6 +3561,20 @@ module spatial {
       uint32 source_count;                     // number of distinct contributing sources
 
       double track_age_s;                      // seconds since the track was first observed
+
+      // Observer pose covariance, aggregate term (added 1.8 Batch 2). The combined
+      // observer uncertainty for the fused track (COV_NONE when absent); same
+      // units, row-major layout, and frame_ref convention as Detection3D. Per-source
+      // observer uncertainty, when a consumer needs it, is NOT carried here: a
+      // core::EntityBinding links each contributing source to a core::Node whose
+      // cov is that observer's uncertainty (see the semantics prose). The field
+      // serves fused consumers; the binding serves per-contributor ones.
+      boolean has_observer_cov;
+      spatial::core::CovMatrix observer_cov;
+      // Composition scope of observer_cov (added 1.8 Batch 2). Absent means
+      // COV_SCOPE_LOCAL — see spatial::common::CovScope.
+      boolean has_observer_cov_scope;
+      spatial::common::CovScope observer_cov_scope;
     };
 
     @extensibility(APPENDABLE) struct FusedTrackSet {
@@ -4471,6 +4507,17 @@ module spatial {
       sequence<string, 64> evidence_edge_ids;
 
       string schema_version;            // MUST be "spatial.mapping/1.8"
+
+      // Similarity scale ratio (added 1.8 Batch 2), appended per APPENDABLE rules.
+      // T_from_to is a rigid SE(3); scale_ratio carries the metric scale difference
+      // the rigid transform cannot: the factor by which a length in the map_id_from
+      // frame is multiplied to express it in the map_id_to frame (dimensionless;
+      // 1.0 when the two maps share scale). When both maps carry FrameRef scale
+      // (§2.13), scale_ratio MUST be consistent with their meters_per_unit ratio;
+      // when either frame is SCALE_UNKNOWN an alignment MAY still state a measured
+      // ratio and SHOULD reflect the added uncertainty in cov (see §2.13 chaining).
+      boolean has_scale_ratio;
+      double  scale_ratio;
     };
 
 
