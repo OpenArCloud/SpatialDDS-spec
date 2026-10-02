@@ -959,8 +959,8 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.sensing.vision | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.slam_frontend | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.semantics | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.mapping | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. APPENDABLE, no field removed or reordered. |
+| spatial.mapping | 1.8 | Stable | Additive (Batch 2): similarity `has_scale_ratio`/`scale_ratio` on `MapAlignment`. APPENDABLE, no field removed or reordered. |
 | spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`). APPENDABLE, no field removed or reordered. |
 | spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.sensing.radio | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |

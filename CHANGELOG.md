@@ -2,7 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.8     | Draft      | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). |
+| 1.8     | Draft      | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. |
 | 1.7     | 2026-08-23 | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. Findings batch 2 (draft rev): breaking sequence-bound reductions (`BlobChunk.data`, `KeyframeFeatures.descriptors` → 65535); additive fields across discovery/semantics/vision/vio/events/common; new QoS profiles and registry rows. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
@@ -10,6 +10,42 @@
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
+
+## Version 1.8 (Draft) — Batch 2
+
+Backward compatibility with 1.7 **and** with 1.8 Batch 1 is preserved. Every
+change is additive and APPENDABLE-safe: two new enums and trailing fields only;
+no field removed, retyped, or reordered, and no required field added. A
+1.7-shaped sample of every touched type (`Detection3D`, `FusedTrack`,
+`MapAlignment`) remains valid under the 1.8 IDL.
+
+### Additive IDL
+- `semantics::Detection3D`: appended observer pose covariance —
+  `has_observer`/`observer_position` (sensor origin in `frame_ref`, metres)/
+  `observer_cov` (COV_NONE when absent), plus the composition-scope pair
+  `has_observer_cov_scope`/`observer_cov_scope`.
+- `semantics::FusedTrack`: appended the aggregate `has_observer_cov`/
+  `observer_cov` and the same composition-scope pair. Per-source observer
+  uncertainty is carried out-of-band via `core::EntityBinding` → `core::Node.cov`.
+- `common::CovScope`: new enum `{COV_SCOPE_LOCAL, COV_SCOPE_COMPOSED}` (absent =
+  LOCAL) qualifying whether observer uncertainty is already folded into a stated
+  covariance.
+- `mapping::MapAlignment`: appended `has_scale_ratio`/`scale_ratio` — the
+  similarity factor (`from`-length × `scale_ratio` = `to`-length; 1.0 when
+  scales match) that the rigid `T_from_to` cannot carry.
+- *Observer covariance contributed by the Intel SceneScape engineering team
+  (September 2026 spec review).*
+
+### Normative prose
+- Appendix D (Semantics / Perception): observer-covariance semantics — units
+  m²/m·rad/rad², row-major, observer pose in `frame_ref`; fused-vs-per-source
+  guidance; `CovScope` composition rules with the absent-is-LOCAL rationale.
+- Appendix D (SLAM Frontend): a `TrackObs`'s observer covariance is the `cov` of
+  the `core::Node` named by its `node_id`.
+- Appendix D (Mapping): `scale_ratio` consistency with §2.13 `meters_per_unit`,
+  `SCALE_UNKNOWN` handling, and the cross-frame conversion cross-reference.
+- Appendix A (typed-first rule): covariance — observer covariance included — MUST
+  be carried as typed fields, never `MetaKV`/`json`.
 
 ## Version 1.8 (Draft) — Batch 1
 

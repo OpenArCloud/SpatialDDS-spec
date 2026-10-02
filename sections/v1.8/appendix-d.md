@@ -107,6 +107,8 @@ Vision uses `CamModel` + `Distortion`, while SLAM Frontend uses `DistortionModel
 
 *Per-keyframe features, matches, landmarks, tracks, and camera calibration.*
 
+**Observer Covariance (Normative).** `TrackObs` carries no observer-covariance field of its own: a `TrackObs`'s observer covariance is the `cov` of the `core::Node` named by its `node_id` (the observing keyframe). Consumers that need the observer uncertainty for an observation resolve it through `node_id`, consistent with the observer-covariance semantics of the Semantics / Perception extension.
+
 ```idl
 {{include:idl/v1.8/slam_frontend.idl}}
 ```
@@ -119,6 +121,22 @@ Vision uses `CamModel` + `Distortion`, while SLAM Frontend uses `DistortionModel
 `Detection3D.size` is the extent of the oriented bounding box in the object's local frame (center + q):  
 `size[0]` = width (local X), `size[1]` = height (local Z), `size[2]` = depth (local Y).  
 All values are in meters and MUST be non-negative. For datasets that use `(width, length, height)`, map as `(width, height, length)`.
+
+**Observer Covariance (Normative)** *(added 1.8, contributed by the Intel SceneScape engineering team)*  
+`Detection3D.observer_cov` and `FusedTrack.observer_cov` carry the uncertainty of the **observing sensor's own pose** — distinct from the detection/track position covariance, which is uncertainty of the observed thing. For both:
+
+- The observer pose is expressed in the struct's `frame_ref`, and `Detection3D.observer_position` is the sensor origin in that frame, in metres.
+- The covariance is **row-major**, with blocks in units of **m²** (position), **m·rad** (position–rotation cross terms), and **rad²** (rotation).
+- `observer_cov` is `COV_NONE` when absent; the `has_observer` / `has_observer_cov` flag gates it.
+
+**Fused vs. per-source.** `FusedTrack.observer_cov` is the **aggregate** observer term for the common fused case. When a consumer needs per-contributing-source observer uncertainty instead, it is carried out-of-band: a `core::EntityBinding` links each source to a `core::Node` whose `cov` is that observer's uncertainty. The field serves fused consumers; the binding serves per-contributor ones; they do not conflict.
+
+**Composition scope (Normative).** `observer_cov_scope` (a `common::CovScope`, gated by `has_observer_cov_scope`) states whether observer uncertainty has already been folded in:
+
+- `COV_SCOPE_LOCAL` — the covariance is stated against the emitting frame; downstream consumers MUST compose observer uncertainty through the frame chain themselves.
+- `COV_SCOPE_COMPOSED` — the producer has already folded observer uncertainty into the stated covariance; downstream consumers MUST NOT apply it again.
+
+*Absent means `COV_SCOPE_LOCAL`. This is the conservative default: misreading composed data as local over-reports uncertainty, whereas the reverse under-reports it — the exact failure the composition chain exists to prevent.*
 
 ```idl
 {{include:idl/v1.8/semantics.idl}}
@@ -389,6 +407,8 @@ This extension adds the **map lifecycle layer** — the metadata and coordinatio
 | `MapEvent` | `spatialdds/<scene>/mapping/event/v1` | RELIABLE, KEEP\_LAST(32) | Lightweight lifecycle notifications. |
 
 Core `Node` and `Edge` topics remain unchanged. Agents that produce cross-map constraints publish on the `mapping/edge` topic; agents that only produce intra-map odometry/loop closures continue using core topics. Consumers that need cross-map awareness subscribe to both.
+
+**Similarity scale (Normative)** *(added 1.8).* `MapAlignment.T_from_to` is a rigid SE(3); two independently built visual reconstructions generally differ by a **similarity**, whose scale the rigid transform cannot express. `scale_ratio` (gated by `has_scale_ratio`) carries it: the dimensionless factor by which a length in the `map_id_from` frame is multiplied to express it in the `map_id_to` frame (so `1.0` means the two maps share scale). When both maps carry `FrameRef` scale (§2.13), `scale_ratio` MUST be consistent with the ratio of their `meters_per_unit`. When either frame is `SCALE_UNKNOWN`, an alignment MAY still state a measured `scale_ratio`, and SHOULD reflect the resulting uncertainty in `cov`. Composing a scaled alignment across frames follows the §2.13 conversion rule — a `scale_ratio` other than `1.0` is exactly the cross-frame scale difference that rule governs.
 
 **Range-only constraints:** When `type == RANGE`, the edge carries a scalar distance measurement between `from_id` and `to_id` in the `range_m` / `range_std_m` fields. The `T_from_to` and `information` fields SHOULD be set to identity / zero respectively. Pose graph optimizers that encounter a RANGE edge SHOULD treat it as a distance-only factor: `||pos(from_id) - pos(to_id)|| = range_m`. Common sources include UWB inter-robot ranging, acoustic ranging (underwater), and BLE RSSI-derived distances. Range edges may reference nodes in different maps (with `has_from_map_id` / `has_to_map_id` populated), enabling range-assisted inter-map alignment.
 
