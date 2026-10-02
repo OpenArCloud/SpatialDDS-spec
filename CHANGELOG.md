@@ -47,6 +47,14 @@ no field removed, retyped, or reordered, and no required field added. A
 - Appendix A (typed-first rule): covariance — observer covariance included — MUST
   be carried as typed fields, never `MetaKV`/`json`.
 
+### Provisional module (separately gated)
+- **`spatial.owm/0.1`** — a provisional Open World Model module (Appendix E):
+  `Entity` (basis + lifecycle), the `ModelPose` fast lane, and keyed
+  `ModelCommand` with declines. Independently versioned and exempt from the 1.x
+  additive guarantee; relationship/identity semantics are reserved, not frozen.
+  Shapes imported from SpatialDDS-demo `oarc_model` at commit `e0fd7d2`. Carried
+  as a separate commit under its own ratification gate.
+
 ## Version 1.8 (Draft) — Batch 1
 
 Backward compatibility with 1.7 **is** preserved. Every change in this batch is

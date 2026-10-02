@@ -403,4 +403,58 @@ QoS suggestions (informative):
 | `RadioSensorMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `RadioScan` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) |
 
-Profile matrix: `spatial.sensing.rf_beam/1.8` and `spatial.sensing.radio/1.8` are provisional Appendix E profiles; when promoted to stable in a future version, they move to Appendix D. `spatial.neural/1.8` and `spatial.agent/1.8` are informative design examples only and are not candidates for promotion in their current form.
+Profile matrix: `spatial.sensing.rf_beam/1.8` and `spatial.sensing.radio/1.8` are provisional Appendix E profiles; when promoted to stable in a future version, they move to Appendix D. `spatial.neural/1.8` and `spatial.agent/1.8` are informative design examples only and are not candidates for promotion in their current form. `spatial.owm/0.1` (below) is independently versioned and exempt from the 1.x additive guarantee.
+
+### **Open World Model (spatial.owm) — Provisional Module**
+
+#### **Overview**
+
+The Open World Model layer answers a question the discovery catalogue cannot. The catalogue (manifests, `ContentAnnounce`) says what content *exists* and where to fetch it — one row per thing. A world model says what is *there*: entities with identity, pose, type, and lifecycle, pointing back at catalogue content when an entity happens to have an asset. One `duck.glb` in the catalogue, many ducks in the world. Almost everything in the module is borrowed from the core and common profiles — `FrameRef`, `PoseSE3`, `Aabb3`, `KV`, `Time` — only the join of identity to those primitives is new.
+
+This module is a provisional surface for implementers, offered so its shape can be argued against running systems before anything is proposed for the stable profiles. It is not an announcement.
+
+#### **Versioning and stability (Normative)**
+
+`spatial.owm` carries its own identifier, `spatial.owm/0.1`, and is **explicitly exempt** from the 1.x additive-compatibility guarantee: struct layouts are unstable and MAY change incompatibly between revisions. Implementers MUST NOT assume wire compatibility across revisions and SHOULD mark published data provisional per §2.11 (a `MetaKV` entry `namespace = "schema"`, `stability = "provisional"`, and/or a `provisional.owm` flag in `caps.features`).
+
+**Promotion criteria** (to leave provisional status): a second independent implementation, and relationship/identity semantics landed (see *Reserved* below).
+
+#### **IDL (Provisional)**
+
+```idl
+{{include:idl/v1.8/provisional/owm.idl}}
+```
+
+#### **Entity, basis, and lifecycle (Normative within the provisional surface)**
+
+`Entity` is the latched rest state of a thing in the world. `basis` records where the claim comes from — `OBSERVED`, `DECLARED`, `AUTHORED`, or `DERIVED` — and consumers are entitled to treat a surveyed entity differently from an inferred one. `state` is a `LifecycleState`: `ACTIVE`, `UNOBSERVED` (seen before, nothing can currently see it — *not* a removal), `RETIRED`, or `SUPERSEDED`, with `state_reason` carrying the human-readable why for non-`ACTIVE` states. `Entity` is published RELIABLE + TRANSIENT_LOCAL, KEEP_LAST(1) per key; its deliberate removal follows the keyed-instance removal rule of §2.14 (final terminal sample, then dispose).
+
+#### **Two-tier tempo**
+
+The module splits what a thing *is* from where it *is right now*, the two-tier tempo pattern of Appendix M. `Entity` is the latched identity/type/extent/lifecycle record; `ModelPose` is a VOLATILE, KEEP_LAST(1)-per-key fast lane carrying only the pose that changed. A late joiner is handed nothing on the pose lane and reads the latched `Entity`, then converges on the next `ModelPose`. The `ModelLayer` hint (`STATIC`/`SLOW`/`FAST`) is informational in 0.1.
+
+#### **Commands and declines**
+
+`ModelCommand` is a request to the authority that owns an entity, not a claim about the world — which is why it is a separate VOLATILE type on its own topic rather than an `Entity` written by whoever wishes. It is keyed on `command_id` (the request id) and follows the keyed-command-with-declines convention of Appendix M.1: on a shared command lane a service that does not own a command's subject leaves it alone ("not mine" is not "no"), and an owner that cannot carry out a command it does own declines it with a reason rather than silently.
+
+#### **Zones**
+
+Area and region entities describe their footprint with `events::SpatialZone`, which carries polygon/prism geometry as of 1.8 (§Appendix D, Spatial Events); `Entity.extent` (`Aabb3`) is the axis-aligned fallback. The module adds no zone type of its own.
+
+#### **Reserved (open design — not frozen by 0.1)**
+
+Relationship extensions and the identity semantics that accompany them — per-edge `basis`, confidence, and retraction — are **deliberately excluded** from 0.1 and reserved as open design. An edge type that can be disposed but cannot say why it went, or with what basis the relation was asserted, is under-specified relative to `Entity`; resolving that is a design question the provisional module must not pre-empt.
+
+A consequence of this boundary is that `spatial.owm/0.1` cannot express the reference deployment's own containment edges (e.g. "this entity is inside that zone"): with no relationship type, there is nowhere to carry them. Whether the *base* relationship shape — a plain typed edge, **minus** the reserved edge epistemics above — should join `spatial.owm/0.2` to close that gap is an open question for the co-author review, not a drafting change here.
+
+#### **Provenance**
+
+The module's shapes are taken from the SpatialDDS-demo `oarc_model` IDL at demo `main` commit `e0fd7d2`. Translating it to this provisional spec module, the following were changed (form only) or excluded (to honor the reserved-design boundary and drop demo-local artifacts):
+
+- **Renamed** module `oarc_model` → `spatial::owm` and `MODULE_ID` `oarc.model/0.1` → `spatial.owm/0.1`; types aliased to the spec's `core`/`common` primitives. No field types or enum values changed.
+- **Excluded `Relationship`** entirely — it is exactly the reserved relationship/identity surface above; the demo's own notes flag it as an open question, not a demo one.
+- **Dropped the `dispose_edge` verb** from `ModelCommand` (it acted on relationships) and generalized the subject comment accordingly; entity verbs are unchanged.
+- **Dropped demo-local commentary** (references to demo files, part-by-part build history, and a middleware war story), preserving the substantive design rationale.
+- No seeder configuration or Cesium/visualization hints were present in the demo IDL to exclude.
+
+No registry rows are added: the module's types carry no `schema_version` and sit in Appendix E like the other provisional/informative examples. Informative rows can be proposed if and when the module is promoted.

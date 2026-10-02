@@ -16,6 +16,8 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
   Ongoing coordination with OGC, Khronos, W3C, and GSMA initiatives will help ensure SpatialDDS complements existing geospatial, XR, and telecom standards rather than duplicating them.
 * **On-bus content catalog query**  
   `ContentAnnounce` plus manifests and HTTP search cover content discovery today. Whether an on-bus, area-scoped catalog query/response joins them is an open design question; evidence from federation prototypes will inform it. Deliberately not added in 1.7.
+* **Open World Model (`spatial.owm`)**  
+  The provisional `spatial.owm/0.1` module (Appendix E) adds an identity-and-lifecycle layer over the discovery catalogue — entities with pose, type, and state that point back at catalogue content. It is independently versioned and exempt from the 1.x additive guarantee precisely so its shape can change while implementers exercise it. It leaves provisional status on two conditions, stated in its preamble: a second independent implementation, and relationship/identity semantics (per-edge basis, confidence, and retraction) landing as a resolved design rather than the reserved gap 0.1 deliberately leaves open.
 
 ### Queryable Coverage Response
 

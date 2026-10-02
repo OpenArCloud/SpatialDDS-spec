@@ -1478,6 +1478,8 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
   Ongoing coordination with OGC, Khronos, W3C, and GSMA initiatives will help ensure SpatialDDS complements existing geospatial, XR, and telecom standards rather than duplicating them.
 * **On-bus content catalog query**  
   `ContentAnnounce` plus manifests and HTTP search cover content discovery today. Whether an on-bus, area-scoped catalog query/response joins them is an open design question; evidence from federation prototypes will inform it. Deliberately not added in 1.7.
+* **Open World Model (`spatial.owm`)**  
+  The provisional `spatial.owm/0.1` module (Appendix E) adds an identity-and-lifecycle layer over the discovery catalogue — entities with pose, type, and state that point back at catalogue content. It is independently versioned and exempt from the 1.x additive guarantee precisely so its shape can change while implementers exercise it. It leaves provisional status on two conditions, stated in its preamble: a second independent implementation, and relationship/identity semantics (per-edge basis, confidence, and retraction) landing as a resolved design rather than the reserved gap 0.1 deliberately leaves open.
 
 ### Queryable Coverage Response
 
@@ -6008,7 +6010,214 @@ QoS suggestions (informative):
 | `RadioSensorMeta` | RELIABLE | TRANSIENT_LOCAL | KEEP_LAST(1) per key |
 | `RadioScan` | BEST_EFFORT | VOLATILE | KEEP_LAST(1) |
 
-Profile matrix: `spatial.sensing.rf_beam/1.8` and `spatial.sensing.radio/1.8` are provisional Appendix E profiles; when promoted to stable in a future version, they move to Appendix D. `spatial.neural/1.8` and `spatial.agent/1.8` are informative design examples only and are not candidates for promotion in their current form.
+Profile matrix: `spatial.sensing.rf_beam/1.8` and `spatial.sensing.radio/1.8` are provisional Appendix E profiles; when promoted to stable in a future version, they move to Appendix D. `spatial.neural/1.8` and `spatial.agent/1.8` are informative design examples only and are not candidates for promotion in their current form. `spatial.owm/0.1` (below) is independently versioned and exempt from the 1.x additive guarantee.
+
+### **Open World Model (spatial.owm) — Provisional Module**
+
+#### **Overview**
+
+The Open World Model layer answers a question the discovery catalogue cannot. The catalogue (manifests, `ContentAnnounce`) says what content *exists* and where to fetch it — one row per thing. A world model says what is *there*: entities with identity, pose, type, and lifecycle, pointing back at catalogue content when an entity happens to have an asset. One `duck.glb` in the catalogue, many ducks in the world. Almost everything in the module is borrowed from the core and common profiles — `FrameRef`, `PoseSE3`, `Aabb3`, `KV`, `Time` — only the join of identity to those primitives is new.
+
+This module is a provisional surface for implementers, offered so its shape can be argued against running systems before anything is proposed for the stable profiles. It is not an announcement.
+
+#### **Versioning and stability (Normative)**
+
+`spatial.owm` carries its own identifier, `spatial.owm/0.1`, and is **explicitly exempt** from the 1.x additive-compatibility guarantee: struct layouts are unstable and MAY change incompatibly between revisions. Implementers MUST NOT assume wire compatibility across revisions and SHOULD mark published data provisional per §2.11 (a `MetaKV` entry `namespace = "schema"`, `stability = "provisional"`, and/or a `provisional.owm` flag in `caps.features`).
+
+**Promotion criteria** (to leave provisional status): a second independent implementation, and relationship/identity semantics landed (see *Reserved* below).
+
+#### **IDL (Provisional)**
+
+```idl
+// SPDX-License-Identifier: MIT
+// SpatialDDS Open World Model (spatial.owm) 0.1 — Provisional Module
+//
+// PROVISIONAL, INDEPENDENTLY VERSIONED. This module uses its own identifier
+// `spatial.owm/0.1` and is EXPLICITLY EXEMPT from the 1.x additive-compatibility
+// guarantee: struct layouts are unstable and MAY change incompatibly between
+// revisions. Implementers MUST NOT assume wire compatibility across revisions
+// and SHOULD mark published data provisional per §2.11.
+//
+// Promotion criteria (out of provisional status): a second independent
+// implementation, and relationship/identity semantics landed (see below).
+//
+// EXPLICITLY EXCLUDED and reserved as open design — this module MUST NOT freeze
+// them: relationship extensions and the identity semantics that go with them
+// (per-edge basis / confidence / retraction). An edge type that can be disposed
+// but cannot say why, or with what basis the relation was asserted, is
+// under-specified relative to Entity; that is a design question, not a
+// provisional-module one, and is deliberately left out of 0.1.
+//
+// What the layer adds: the catalogue says what content exists and where to find
+// it, one row per thing; a world model says what is *there* — entities with
+// identity, pose, type and lifecycle — and points at catalogue content when an
+// entity happens to have an asset (one `duck.glb` in the catalogue, many ducks
+// in the world). Almost everything here is borrowed from core/common types;
+// only the join is new.
+
+#ifndef SPATIAL_OWM_INCLUDED
+#define SPATIAL_OWM_INCLUDED
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#define SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+
+module spatial { module owm {
+
+  const string MODULE_ID = "spatial.owm/0.1";
+
+  typedef builtin::Time             Time;
+  typedef spatial::core::PoseSE3    PoseSE3;
+  typedef spatial::core::Aabb3      Aabb3;
+  typedef spatial::common::FrameRef FrameRef;
+  typedef spatial::common::KV       KV;
+
+  // How fast an entity is expected to change. Informational in 0.1: it does not
+  // yet drive per-layer topic splitting (that waits for a FAST-tier topic).
+  enum ModelLayer { @value(0) STATIC, @value(1) SLOW, @value(2) FAST };
+
+  // Where the claim comes from. A surveyed bollard, one someone typed in, and
+  // one inferred from a point cloud are different assertions, and a consumer is
+  // entitled to treat them differently.
+  enum Basis { @value(0) OBSERVED, @value(1) DECLARED,
+               @value(2) AUTHORED, @value(3) DERIVED };
+
+  // UNOBSERVED is a state, not a removal: "it was here and nothing can currently
+  // see it" is different from "it is gone" (RETIRED).
+  enum LifecycleState { @value(0) ACTIVE, @value(1) UNOBSERVED,
+                        @value(2) RETIRED, @value(3) SUPERSEDED };
+
+  // The latched rest state of a thing in the world: identity, basis, type,
+  // frame, pose, extent, references and lifecycle. Published RELIABLE +
+  // TRANSIENT_LOCAL, KEEP_LAST(1) per key, so a late joiner is handed the
+  // current state. Area/region entities describe their footprint with
+  // `events::SpatialZone` (which carries polygon/prism geometry as of 1.8);
+  // `extent` is the axis-aligned fallback.
+  @extensibility(APPENDABLE) struct Entity {
+    @key string entity_id;                  // model-minted UUID
+    Basis basis;
+    sequence<string, 4> type_uris;          // borrowed vocabularies only
+    ModelLayer layer;
+    FrameRef frame_ref;
+
+    boolean has_pose;
+    PoseSE3 pose;
+    boolean has_extent;
+    Aabb3 extent;
+
+    sequence<KV, 32> properties;            // namespaced scalar properties
+    sequence<KV, 8>  external_refs;         // e.g. "gers" -> id
+    // References into catalogue content this entity is rendered from. The
+    // spec-canonical form is a spatialdds:// manifest URI; many entities MAY
+    // share one reference — that asset-vs-instance split is the point of the
+    // layer.
+    sequence<string, 8> content_refs;
+
+    LifecycleState state;
+    string state_reason;                    // why, for non-ACTIVE states
+    string source_id;
+    Time   stamp;
+  };
+
+  // A pose on its own, at the tempo the thing actually moves at. The Entity
+  // record stays the rest state; republishing all of it to say a thing drifted
+  // is the wrong shape at any rate worth calling fast, so this carries the one
+  // field that changed. Published VOLATILE, KEEP_LAST(1) per key: a late joiner
+  // is handed nothing here and reads the latched Entity instead, then converges
+  // on the next pose. The two lanes are not redundant — one is where the thing
+  // is, the other is where it was last seen going.
+  @extensibility(APPENDABLE) struct ModelPose {
+    @key string entity_id;
+    PoseSE3 pose;
+    string source_id;
+    Time   stamp;
+  };
+
+  // A request to the authority that owns an entity — not a claim about the
+  // world, which is why it is a separate type on a separate topic rather than an
+  // Entity with state=RETIRED written by whoever felt like it. Retirement cannot
+  // be published around the owner: TRANSIENT_LOCAL history is writer-scoped, so a
+  // tombstone written by a short-lived operator tool dies with the tool and the
+  // next reader is handed the owner's still-latched ACTIVE sample. The tool asks
+  // and the owner acts; that is also the only way the dispose sticks.
+  //
+  // Published VOLATILE: a command is an event, not state, and a late joiner has
+  // no business replaying past retirements. Keyed on `command_id` so each request
+  // has an identity the middleware can name even in an invalid/unregister sample
+  // (an unkeyed request type cannot be filtered when its key cannot be decoded).
+  //
+  // The lane may have several owners (e.g. a model service and a robot bridge),
+  // each reading every command. A service that does not own a command's subject
+  // leaves it alone rather than refusing it — on a shared lane, "not mine" is not
+  // "no". An owner that cannot carry out a command it does own declines it with a
+  // reason rather than silently; see the keyed-command convention (Appendix M.1).
+  @extensibility(APPENDABLE) struct ModelCommand {
+    @key string command_id;
+    string verb;             // "retire" | "move" | "set_extent" | "restore" | "goto"
+    // The entity being acted on. A single field carries it: ids are prefixed
+    // ("ent:") so the kind is explicit, leaving room for other subject kinds when
+    // relationships land, but 0.1 defines verbs over entities only. Ignored by
+    // "restore".
+    string subject_id;
+    string reason;           // why; carried into Entity.state_reason by "retire"
+    string requester_id;     // who asked, for the log
+    // Guarded because only "move" / "goto" carry a pose; a pose field that is
+    // sometimes meaningless is worse than one that says when it is.
+    boolean has_pose;
+    PoseSE3 pose;
+    // Likewise for "set_extent": a command without the thing it means to set is
+    // declined, not applied as zeroes (an empty Aabb3 is a well-formed request to
+    // shrink a region to a point).
+    boolean has_extent;
+    Aabb3 extent;
+    Time   stamp;
+  };
+
+}; };
+
+#endif // SPATIAL_OWM_INCLUDED
+
+```
+
+#### **Entity, basis, and lifecycle (Normative within the provisional surface)**
+
+`Entity` is the latched rest state of a thing in the world. `basis` records where the claim comes from — `OBSERVED`, `DECLARED`, `AUTHORED`, or `DERIVED` — and consumers are entitled to treat a surveyed entity differently from an inferred one. `state` is a `LifecycleState`: `ACTIVE`, `UNOBSERVED` (seen before, nothing can currently see it — *not* a removal), `RETIRED`, or `SUPERSEDED`, with `state_reason` carrying the human-readable why for non-`ACTIVE` states. `Entity` is published RELIABLE + TRANSIENT_LOCAL, KEEP_LAST(1) per key; its deliberate removal follows the keyed-instance removal rule of §2.14 (final terminal sample, then dispose).
+
+#### **Two-tier tempo**
+
+The module splits what a thing *is* from where it *is right now*, the two-tier tempo pattern of Appendix M. `Entity` is the latched identity/type/extent/lifecycle record; `ModelPose` is a VOLATILE, KEEP_LAST(1)-per-key fast lane carrying only the pose that changed. A late joiner is handed nothing on the pose lane and reads the latched `Entity`, then converges on the next `ModelPose`. The `ModelLayer` hint (`STATIC`/`SLOW`/`FAST`) is informational in 0.1.
+
+#### **Commands and declines**
+
+`ModelCommand` is a request to the authority that owns an entity, not a claim about the world — which is why it is a separate VOLATILE type on its own topic rather than an `Entity` written by whoever wishes. It is keyed on `command_id` (the request id) and follows the keyed-command-with-declines convention of Appendix M.1: on a shared command lane a service that does not own a command's subject leaves it alone ("not mine" is not "no"), and an owner that cannot carry out a command it does own declines it with a reason rather than silently.
+
+#### **Zones**
+
+Area and region entities describe their footprint with `events::SpatialZone`, which carries polygon/prism geometry as of 1.8 (§Appendix D, Spatial Events); `Entity.extent` (`Aabb3`) is the axis-aligned fallback. The module adds no zone type of its own.
+
+#### **Reserved (open design — not frozen by 0.1)**
+
+Relationship extensions and the identity semantics that accompany them — per-edge `basis`, confidence, and retraction — are **deliberately excluded** from 0.1 and reserved as open design. An edge type that can be disposed but cannot say why it went, or with what basis the relation was asserted, is under-specified relative to `Entity`; resolving that is a design question the provisional module must not pre-empt.
+
+A consequence of this boundary is that `spatial.owm/0.1` cannot express the reference deployment's own containment edges (e.g. "this entity is inside that zone"): with no relationship type, there is nowhere to carry them. Whether the *base* relationship shape — a plain typed edge, **minus** the reserved edge epistemics above — should join `spatial.owm/0.2` to close that gap is an open question for the co-author review, not a drafting change here.
+
+#### **Provenance**
+
+The module's shapes are taken from the SpatialDDS-demo `oarc_model` IDL at demo `main` commit `e0fd7d2`. Translating it to this provisional spec module, the following were changed (form only) or excluded (to honor the reserved-design boundary and drop demo-local artifacts):
+
+- **Renamed** module `oarc_model` → `spatial::owm` and `MODULE_ID` `oarc.model/0.1` → `spatial.owm/0.1`; types aliased to the spec's `core`/`common` primitives. No field types or enum values changed.
+- **Excluded `Relationship`** entirely — it is exactly the reserved relationship/identity surface above; the demo's own notes flag it as an open question, not a demo one.
+- **Dropped the `dispose_edge` verb** from `ModelCommand` (it acted on relationships) and generalized the subject comment accordingly; entity verbs are unchanged.
+- **Dropped demo-local commentary** (references to demo files, part-by-part build history, and a middleware war story), preserving the substantive design rationale.
+- No seeder configuration or Cesium/visualization hints were present in the demo IDL to exclude.
+
+No registry rows are added: the module's types carry no `schema_version` and sit in Appendix E like the other provisional/informative examples. Informative rows can be proposed if and when the module is promoted.
 
 ## **Appendix F: SpatialDDS URI Scheme (ABNF)**
 
@@ -7207,11 +7416,12 @@ spatialdds-idl/
 └── provisional/
     ├── rf_beam.idl         # RF beam profile (Provisional)
     ├── radio.idl           # Radio fingerprint examples (Provisional)
+    ├── owm.idl             # Open World Model (Provisional, spatial.owm/0.1)
     ├── neural.idl          # Neural field examples (Informative only in 1.8)
     └── agent.idl           # Agent task coordination (Informative only in 1.8)
 ```
 
-This repository organizes the v1.8 IDL files in a flat layout under `idl/v1.8/` (with `provisional/` for provisional profiles — `rf_beam.idl`, `radio.idl` — and `examples/` for informative-only profiles — `neural_example.idl`, `agent_example.idl`); both organizations are valid as long as `#include` paths and module declarations match.
+This repository organizes the v1.8 IDL files in a flat layout under `idl/v1.8/` (with `provisional/` for provisional profiles — `rf_beam.idl`, `radio.idl`, `owm.idl` — and `examples/` for informative-only profiles — `neural_example.idl`, `agent_example.idl`); both organizations are valid as long as `#include` paths and module declarations match.
 
 Module namespacing follows the IDL `module` declarations:
 

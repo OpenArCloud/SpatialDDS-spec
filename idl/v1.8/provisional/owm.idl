@@ -1,0 +1,153 @@
+// SPDX-License-Identifier: MIT
+// SpatialDDS Open World Model (spatial.owm) 0.1 — Provisional Module
+//
+// PROVISIONAL, INDEPENDENTLY VERSIONED. This module uses its own identifier
+// `spatial.owm/0.1` and is EXPLICITLY EXEMPT from the 1.x additive-compatibility
+// guarantee: struct layouts are unstable and MAY change incompatibly between
+// revisions. Implementers MUST NOT assume wire compatibility across revisions
+// and SHOULD mark published data provisional per §2.11.
+//
+// Promotion criteria (out of provisional status): a second independent
+// implementation, and relationship/identity semantics landed (see below).
+//
+// EXPLICITLY EXCLUDED and reserved as open design — this module MUST NOT freeze
+// them: relationship extensions and the identity semantics that go with them
+// (per-edge basis / confidence / retraction). An edge type that can be disposed
+// but cannot say why, or with what basis the relation was asserted, is
+// under-specified relative to Entity; that is a design question, not a
+// provisional-module one, and is deliberately left out of 0.1.
+//
+// What the layer adds: the catalogue says what content exists and where to find
+// it, one row per thing; a world model says what is *there* — entities with
+// identity, pose, type and lifecycle — and points at catalogue content when an
+// entity happens to have an asset (one `duck.glb` in the catalogue, many ducks
+// in the world). Almost everything here is borrowed from core/common types;
+// only the join is new.
+
+#ifndef SPATIAL_OWM_INCLUDED
+#define SPATIAL_OWM_INCLUDED
+
+#ifndef SPATIAL_CORE_INCLUDED
+#define SPATIAL_CORE_INCLUDED
+#include "core.idl"
+#endif
+
+#ifndef SPATIAL_COMMON_TYPES_INCLUDED
+#define SPATIAL_COMMON_TYPES_INCLUDED
+#include "types.idl"
+#endif
+
+module spatial { module owm {
+
+  const string MODULE_ID = "spatial.owm/0.1";
+
+  typedef builtin::Time             Time;
+  typedef spatial::core::PoseSE3    PoseSE3;
+  typedef spatial::core::Aabb3      Aabb3;
+  typedef spatial::common::FrameRef FrameRef;
+  typedef spatial::common::KV       KV;
+
+  // How fast an entity is expected to change. Informational in 0.1: it does not
+  // yet drive per-layer topic splitting (that waits for a FAST-tier topic).
+  enum ModelLayer { @value(0) STATIC, @value(1) SLOW, @value(2) FAST };
+
+  // Where the claim comes from. A surveyed bollard, one someone typed in, and
+  // one inferred from a point cloud are different assertions, and a consumer is
+  // entitled to treat them differently.
+  enum Basis { @value(0) OBSERVED, @value(1) DECLARED,
+               @value(2) AUTHORED, @value(3) DERIVED };
+
+  // UNOBSERVED is a state, not a removal: "it was here and nothing can currently
+  // see it" is different from "it is gone" (RETIRED).
+  enum LifecycleState { @value(0) ACTIVE, @value(1) UNOBSERVED,
+                        @value(2) RETIRED, @value(3) SUPERSEDED };
+
+  // The latched rest state of a thing in the world: identity, basis, type,
+  // frame, pose, extent, references and lifecycle. Published RELIABLE +
+  // TRANSIENT_LOCAL, KEEP_LAST(1) per key, so a late joiner is handed the
+  // current state. Area/region entities describe their footprint with
+  // `events::SpatialZone` (which carries polygon/prism geometry as of 1.8);
+  // `extent` is the axis-aligned fallback.
+  @extensibility(APPENDABLE) struct Entity {
+    @key string entity_id;                  // model-minted UUID
+    Basis basis;
+    sequence<string, 4> type_uris;          // borrowed vocabularies only
+    ModelLayer layer;
+    FrameRef frame_ref;
+
+    boolean has_pose;
+    PoseSE3 pose;
+    boolean has_extent;
+    Aabb3 extent;
+
+    sequence<KV, 32> properties;            // namespaced scalar properties
+    sequence<KV, 8>  external_refs;         // e.g. "gers" -> id
+    // References into catalogue content this entity is rendered from. The
+    // spec-canonical form is a spatialdds:// manifest URI; many entities MAY
+    // share one reference — that asset-vs-instance split is the point of the
+    // layer.
+    sequence<string, 8> content_refs;
+
+    LifecycleState state;
+    string state_reason;                    // why, for non-ACTIVE states
+    string source_id;
+    Time   stamp;
+  };
+
+  // A pose on its own, at the tempo the thing actually moves at. The Entity
+  // record stays the rest state; republishing all of it to say a thing drifted
+  // is the wrong shape at any rate worth calling fast, so this carries the one
+  // field that changed. Published VOLATILE, KEEP_LAST(1) per key: a late joiner
+  // is handed nothing here and reads the latched Entity instead, then converges
+  // on the next pose. The two lanes are not redundant — one is where the thing
+  // is, the other is where it was last seen going.
+  @extensibility(APPENDABLE) struct ModelPose {
+    @key string entity_id;
+    PoseSE3 pose;
+    string source_id;
+    Time   stamp;
+  };
+
+  // A request to the authority that owns an entity — not a claim about the
+  // world, which is why it is a separate type on a separate topic rather than an
+  // Entity with state=RETIRED written by whoever felt like it. Retirement cannot
+  // be published around the owner: TRANSIENT_LOCAL history is writer-scoped, so a
+  // tombstone written by a short-lived operator tool dies with the tool and the
+  // next reader is handed the owner's still-latched ACTIVE sample. The tool asks
+  // and the owner acts; that is also the only way the dispose sticks.
+  //
+  // Published VOLATILE: a command is an event, not state, and a late joiner has
+  // no business replaying past retirements. Keyed on `command_id` so each request
+  // has an identity the middleware can name even in an invalid/unregister sample
+  // (an unkeyed request type cannot be filtered when its key cannot be decoded).
+  //
+  // The lane may have several owners (e.g. a model service and a robot bridge),
+  // each reading every command. A service that does not own a command's subject
+  // leaves it alone rather than refusing it — on a shared lane, "not mine" is not
+  // "no". An owner that cannot carry out a command it does own declines it with a
+  // reason rather than silently; see the keyed-command convention (Appendix M.1).
+  @extensibility(APPENDABLE) struct ModelCommand {
+    @key string command_id;
+    string verb;             // "retire" | "move" | "set_extent" | "restore" | "goto"
+    // The entity being acted on. A single field carries it: ids are prefixed
+    // ("ent:") so the kind is explicit, leaving room for other subject kinds when
+    // relationships land, but 0.1 defines verbs over entities only. Ignored by
+    // "restore".
+    string subject_id;
+    string reason;           // why; carried into Entity.state_reason by "retire"
+    string requester_id;     // who asked, for the log
+    // Guarded because only "move" / "goto" carry a pose; a pose field that is
+    // sometimes meaningless is worse than one that says when it is.
+    boolean has_pose;
+    PoseSE3 pose;
+    // Likewise for "set_extent": a command without the thing it means to set is
+    // declined, not applied as zeroes (an empty Aabb3 is a well-formed request to
+    // shrink a region to a point).
+    boolean has_extent;
+    Aabb3 extent;
+    Time   stamp;
+  };
+
+}; };
+
+#endif // SPATIAL_OWM_INCLUDED
