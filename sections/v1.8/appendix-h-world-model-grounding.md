@@ -56,3 +56,8 @@ The layering is:
 - **Factor graphs:** inside the optimizer (GTSAM, Ceres).
 - **SpatialDDS:** carries observations and inferred state.
 - **Scene graphs:** inside the consumer (Unity, Omniverse, twin).
+
+Two further payload classes are deliberately untyped — scalar sensor readings
+and analytics aggregates — each with a normative adapter mapping rather than a
+silence. Those are scope decisions about the profiles generally, not about
+world models, so they live with the other conventions: see §2.15 Payload Scope.

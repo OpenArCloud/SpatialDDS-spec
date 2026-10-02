@@ -138,6 +138,44 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 
 *Absent means `COV_SCOPE_LOCAL`. This is the conservative default: misreading composed data as local over-reports uncertainty, whereas the reverse under-reports it — the exact failure the composition chain exists to prevent.*
 
+**Pose Skeletons (Normative)** *(added 1.8 Batch 3)*
+`Detection3D` carries an optional 3D pose skeleton: `has_keypoints`,
+`keypoints` (a sequence of `Keypoint3D`), `topology_id`, and `keypoint_links`.
+
+- **3D-first.** `Keypoint3D.position` is a metric joint position in the
+  detection's `frame_ref`, not an image coordinate. Image-space keypoints are
+  not carried by this release; see the note below.
+- **Uncertainty is not per joint.** `Keypoint3D` carries a scalar `confidence`
+  and an optional `visible` flag, and no covariance. Uncertainty for a
+  keypointed detection is the detection's own covariance and `observer_cov`
+  above. No producer surveyed for 1.8 publishes per-joint covariance; the
+  structs are APPENDABLE, so a per-joint block can be appended when one does.
+  A field nobody populates is worse than one added later, because consumers
+  write code against it and then discover it is always `COV_NONE`.
+- **Topology is borrowed, not defined.** `topology_id` names a joint
+  vocabulary as an identifier — a URI, or a well-known token such as
+  `"COCO-17"` — rather than an enum. SpatialDDS does not define a skeleton
+  ontology, consistent with its treatment of class vocabularies.
+- **Connectivity travels with the data.** Because `topology_id` is not
+  self-describing, `keypoint_links` carries the skeleton's edges as index
+  pairs. A consumer that has never heard of the vocabulary can still draw the
+  figure; one that knows it can also name the joints. This is the same
+  trade-off as a borrowed class label plus a bounding box: the identifier is
+  for those who share the vocabulary, the geometry is for everyone.
+- **Order is identity (Normative).** Index *i* in `keypoints` is joint *i* of
+  `topology_id`. A producer that cannot observe a joint MUST still emit it —
+  with `visible` false, or zero `confidence` — rather than shortening the
+  sequence. Dropping an unobserved joint shifts every later index and silently
+  invalidates `keypoint_links`, which is a corruption no validator can see.
+
+*Image-space keypoints (non-normative).* `Detection2D` gets no keypoint block
+in this release. The 2D detection is a bounding box in image space with no
+natural home for a skeleton, and adding one would mean deciding whether pixel
+keypoints carry their own confidence and visibility separately from their 3D
+counterparts — a question no reviewed producer needed answered. Where a
+producer carries image-space keypoints today, they ride in the metadata bag
+(§2.15) until a second producer makes the shape worth fixing.
+
 ```idl
 {{include:idl/v1.8/semantics.idl}}
 ```

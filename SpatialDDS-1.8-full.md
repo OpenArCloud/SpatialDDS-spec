@@ -475,6 +475,214 @@ This applies to all RELIABLE + TRANSIENT_LOCAL keyed types. `EntityBinding` is n
 
 *Non-normative note:* a removal is a claim and a silence is not — the standard can require honesty about the former but can never infer it from the latter, which is exactly why the final-sample-then-dispose sequence, not liveliness, is the removal signal.
 
+### **2.15 Payload Scope (Normative)**
+
+Two classes of payload that spatial deployments commonly publish are
+deliberately **not** typed by these profiles. Each is stated here with the
+adapter mapping that carries it, so an integrator meets a decision rather than
+a silence. A refusal can be planned against; an omission has to be discovered.
+
+**Scalar sensor readings.** SpatialDDS does not define a scalar or point sensor
+reading type — a temperature, humidity, air-quality, occupancy-count, or
+similar single-value measurement. Such a reading is telemetry *about* a place
+rather than a description *of* one: it carries no geometry, no extent, and no
+frame of its own, and the formats that serve device telemetry already do it
+well.
+
+*Adapter mapping.* An adapter SHOULD attach the reading to the typed thing it
+describes rather than opening a parallel stream: as a namespaced attribute on
+the zone, entity, or stream the sensor observes, following the typed-first
+extension rule of Appendix A (scalar and string-valued extensions in
+`MetaKV.entries`, keys namespaced `org.key`). The sensor's own identity belongs
+in `source_id`, not in a new field. Where the reading's spatial meaning is the
+*place* rather than the device, the zone or entity carrying the attribute is
+what gives it location.
+
+**Analytics aggregates.** SpatialDDS does not define an aggregate-analytics
+type — a cluster, a heatmap bucket, a flow count, a dwell histogram. An
+aggregate is a **derived claim about a region over a window**, not an
+observation of a thing, and typing one would mean fixing a windowing and
+binning vocabulary that every analytics producer defines differently.
+
+*Adapter mapping.* Publish the aggregate as what it is: a derived zone
+(`events::SpatialZone`, with the aggregate's footprint as its geometry) or a
+derived entity, attributed to the producer that computed it via `source_id`,
+with the aggregation window carried as a namespaced attribute. Where the model
+in use records provenance of claims, the aggregate takes the derived basis
+rather than the observed one — in `spatial.owm` that is `Basis.DERIVED`
+(Appendix E). An aggregate MUST NOT be published as an `OBSERVED` claim: it is
+not a measurement, and a consumer that cannot tell the difference will treat a
+statistic as a sighting.
+
+**Open metadata bags.** Where a producer carries detector-defined keys whose
+vocabulary is not fixed — per-detection attributes such as re-identification
+descriptors, demographic estimates, or vendor-specific scores — an adapter
+carries the bag opaquely through the existing metadata mechanism
+(`MetaKV.entries` for scalar and string values, `MetaKV.json` for genuinely
+free-form payloads, per the typed-first extension rule in Appendix A), keys
+namespaced to the originating producer.
+
+The lossiness MUST be understood rather than hidden: a consumer receives **the
+bag, not a contract**. It can round-trip the values and show them to a human;
+it cannot rely on a key's presence, type, or meaning across producers. This is
+an honest carry, not an interoperable one, and a type would not change that —
+the obstacle is an unfixed key space, not a missing field. Agreeing a shared
+registry for such keys is a conversation between producers; it is not a
+specification obligation, and this document does not attempt one.
+
+**Hardware sensor identity.** Sensor identities that arrive as hardware
+identifiers — a MAC address, a serial number, a vendor device id — map to
+`source_id` on the message that carries the observation. No new field is
+needed, and none is added.
+
+To keep such identifiers distinguishable from service ids, producers SHOULD
+namespace them with a scheme prefix: `mac:00-1b-63-84-45-e6`,
+`serial:<vendor>/<serial>`, or a URN the vendor already publishes. An
+unprefixed bare identifier in `source_id` is indistinguishable from a service
+id, which is the failure this convention exists to prevent. Where both a
+service and a device are meaningful — a tracker publishing on behalf of a
+camera — `source_id` names the publisher and the device identifier belongs in
+the metadata bag above, or in an `EntityBinding` component reference.
+
+*Non-normative note:* both refusals are the same judgement in two places. A
+profile earns a type by carrying something whose **shape** is agreed across
+producers; scalar telemetry and analytics windows are agreed in neither shape
+nor vocabulary, so a type here would standardise one vendor's choices and call
+it interoperability. The adapter mappings cost an integrator a namespaced key
+and lose nothing a consumer could have relied on.
+
+### **2.16 Crossing-Line Side Convention (Normative)**
+
+`events::CrossingLine` (added 1.8) describes an open path that objects cross
+rather than a region they occupy. A crossing is only meaningful if both ends
+agree which side is which, so the sides are fixed here rather than left to the
+producer.
+
+**Side rule.** Take the path in the order its vertices are published, from the
+first toward the last, in the line's `frame_ref` XY plane. For a path direction
+`d = (dx, dy)`, the **LEFT** side is the half-plane lying in the direction of
+the normal `n = (-dy, dx)`; the **RIGHT** side is the opposite. Facing along
+the path with the frame's Z axis up, LEFT is to the observer's left — which is
+what the names are for, but the normal is the definition, because "left" is
+only unambiguous once the frame's handedness is pinned. Frames follow the axis
+convention of §2.12; in a frame whose Z is not up, the normal above still
+defines the sides and the words LEFT and RIGHT are then labels rather than
+descriptions.
+
+**Direction reporting.** `SpatialEvent.crossing_direction` reports travel
+relative to that convention: `LEFT_TO_RIGHT` or `RIGHT_TO_LEFT`. A producer
+that detects a crossing but cannot resolve its direction MUST report
+`CROSSING_UNKNOWN` rather than omitting `has_crossing` or guessing a direction.
+Absence of the field means the producer said nothing about crossing at all;
+`CROSSING_UNKNOWN` means it saw one and does not know which way.
+
+**Vertex order is part of the definition.** Because the sides derive from
+vertex order, reversing a published `CrossingLine`'s `path` swaps LEFT and
+RIGHT and therefore inverts the meaning of every direction reported against it.
+A producer republishing a line MUST NOT reverse its vertex order while keeping
+the same `line_id`; a line whose sides need to change is a new line, or a
+deliberate removal and replacement under the keyed-instance removal rule of
+§2.14.
+
+**Geometry constraints.** A `path` MUST carry at least 2 vertices and MUST NOT
+be closed — the last vertex does not join the first, and consumers MUST NOT
+infer closure. A path SHOULD NOT self-intersect: LEFT and RIGHT are not
+globally well-defined for a self-crossing path, and a producer needing one
+SHOULD publish separate lines. Where `has_bounds` is set, `bounds` MUST contain
+the whole path; it exists for coarse spatial filtering and MUST NOT be used as
+a crossing test.
+
+*Non-normative note:* the reason a crossing line is not a zone with a very thin
+polygon is that a zone answers "is this point inside?" and a line has no
+inside. A sliver polygon makes every containment test answer a question the
+geometry does not mean, and reintroduces precisely the over- and
+under-claiming that polygon zones were added to remove. `EventType.LINE_CROSS`
+has referred to "a defined trip line" since the enum was introduced; until 1.8
+there was no such type for it to refer to.
+
+### **2.17 Composed Scenes (Normative Guidance)**
+
+Deployments routinely nest: a site made of buildings, a building of floors, a
+floor of rooms, each with its own tracker and its own view of the objects in
+it. The question this section answers is whether that needs new types. It does
+not. A composed deployment is expressible end-to-end in types that already
+exist, and this section walks one through so that independent implementations
+converge on the same shapes rather than each inventing a hierarchy.
+
+Nothing here adds IDL or changes a normative requirement elsewhere; it states
+how existing requirements compose.
+
+**1 — One frame per scene.** Each scene is a coordinate frame, named by a
+`FrameRef` (§2.1, `fqn`). A scene is not a new kind of object; it is the frame
+its contents are expressed in, plus the services that publish into it.
+
+**2 — Coordinate nesting is a frame transform.** A child scene's placement
+within its parent is a `core::FrameTransform` with `parent_ref` naming the
+parent scene's frame, `child_ref` the child's, and `T_parent_child` the pose
+between them. Transforms compose, so a position in a room resolves to the site
+frame by walking the chain — and `cov` on each transform means the uncertainty
+of that walk is expressible rather than assumed away.
+
+**3 — Spatial containment is announced coverage.** A parent announces coverage
+that encloses its children's, and names them in `coverage_source_ids`. This is
+not a new convention: the derived-coverage rule (§3.3.0) already states that a
+non-empty `coverage_source_ids` marks the declared coverage as an
+approximation of the union of the sources' coverage, and that consumers MAY
+resolve the sources for exact extents. A site announcing its buildings as
+coverage sources is exactly that rule applied to composition — a coarse extent
+for discovery, with the precise extents one resolution away.
+
+**4 — Child health distinguishes silent from retired.** This is the
+distinction a hierarchy most needs and the one ad-hoc designs usually miss. A
+child that has stopped publishing is not the same as a child that has been
+decommissioned, and both are expressible:
+
+- A child leaving deliberately MUST dispose its `Announce` instance, and SHOULD
+  publish `Depart` (§3.3.0, Announce Lifecycle). Consumers MUST treat that as
+  removal from their directory.
+- A child that merely goes quiet is detected by TTL expiry, the stated backstop
+  for ungraceful departure — and under §2.14, loss of liveliness is **not**
+  removal. A parent MUST NOT purge a durable child record because the child
+  went silent.
+
+So "my third floor is offline" and "my third floor is gone" are different
+observable states, which is the whole point of a tombstone.
+
+**5 — Cross-level identity is a binding.** An object tracked in a room and
+again at the building level is one object with two component observations;
+`core::EntityBinding` carries exactly that, referencing messages on other
+topics without requiring either level to know the other's internal ids.
+
+**6 — Roll-up is ordinary subscription.** Topic names carry the scene as a
+segment (§3.3.1), so a parent subscribes to its children's topics with no
+special mechanism, and discovery by geohash (§3.3.0) answers which scenes cover
+a region. A roll-up is a consumer that subscribes widely, not a protocol
+feature.
+
+**The alignment picture.** None of this is novel, and the precedents are worth
+naming. Frame trees with composable transforms are how ROS `tf` has expressed
+articulated and nested spatial structure for over a decade. Containment
+expressed as nested coverage with refinement on demand is the structure of 3D
+Tiles, where a bounding volume hierarchy gives coarse culling and children give
+detail. And for the built world, the identifiers already exist: a composed
+scene SHOULD anchor to CityGML or IndoorGML identifiers through
+`external_refs`-style references rather than restating a building hierarchy in
+SpatialDDS types, because those vocabularies are maintained by the people who
+survey buildings.
+
+**The honest residual.** What the above expresses is *geometric* and
+*operational* composition: where a child sits, what it covers, whether it is
+alive, which observations are the same object. It does **not** express
+*semantic* containment — the claim "this zone is part of that site" as an
+assertion with a provenance, which someone could disagree with or retract. That
+is a relationship claim and it needs a basis, which is exactly what the
+provisional `spatial.owm` module declines to draft in 0.1: per-edge basis,
+confidence, and retraction are deliberately excluded and reserved as open
+design (Appendix E). Composed scenes are therefore expressible today without
+that machinery, and semantic containment waits for it rather than being
+approximated by a transform. A frame transform says where a thing is; it does
+not say who claims it belongs.
+
 // SPDX-License-Identifier: MIT
 // SpatialDDS Specification 1.8 (© Open AR Cloud Initiative)
 
@@ -3440,6 +3648,44 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 - `COV_SCOPE_COMPOSED` — the producer has already folded observer uncertainty into the stated covariance; downstream consumers MUST NOT apply it again.
 
 *Absent means `COV_SCOPE_LOCAL`. This is the conservative default: misreading composed data as local over-reports uncertainty, whereas the reverse under-reports it — the exact failure the composition chain exists to prevent.*
+
+**Pose Skeletons (Normative)** *(added 1.8 Batch 3)*
+`Detection3D` carries an optional 3D pose skeleton: `has_keypoints`,
+`keypoints` (a sequence of `Keypoint3D`), `topology_id`, and `keypoint_links`.
+
+- **3D-first.** `Keypoint3D.position` is a metric joint position in the
+  detection's `frame_ref`, not an image coordinate. Image-space keypoints are
+  not carried by this release; see the note below.
+- **Uncertainty is not per joint.** `Keypoint3D` carries a scalar `confidence`
+  and an optional `visible` flag, and no covariance. Uncertainty for a
+  keypointed detection is the detection's own covariance and `observer_cov`
+  above. No producer surveyed for 1.8 publishes per-joint covariance; the
+  structs are APPENDABLE, so a per-joint block can be appended when one does.
+  A field nobody populates is worse than one added later, because consumers
+  write code against it and then discover it is always `COV_NONE`.
+- **Topology is borrowed, not defined.** `topology_id` names a joint
+  vocabulary as an identifier — a URI, or a well-known token such as
+  `"COCO-17"` — rather than an enum. SpatialDDS does not define a skeleton
+  ontology, consistent with its treatment of class vocabularies.
+- **Connectivity travels with the data.** Because `topology_id` is not
+  self-describing, `keypoint_links` carries the skeleton's edges as index
+  pairs. A consumer that has never heard of the vocabulary can still draw the
+  figure; one that knows it can also name the joints. This is the same
+  trade-off as a borrowed class label plus a bounding box: the identifier is
+  for those who share the vocabulary, the geometry is for everyone.
+- **Order is identity (Normative).** Index *i* in `keypoints` is joint *i* of
+  `topology_id`. A producer that cannot observe a joint MUST still emit it —
+  with `visible` false, or zero `confidence` — rather than shortening the
+  sequence. Dropping an unobserved joint shifts every later index and silently
+  invalidates `keypoint_links`, which is a corruption no validator can see.
+
+*Image-space keypoints (non-normative).* `Detection2D` gets no keypoint block
+in this release. The 2D detection is a bounding box in image space with no
+natural home for a skeleton, and adding one would mean deciding whether pixel
+keypoints carry their own confidence and visibility separately from their 3D
+counterparts — a question no reviewed producer needed answered. Where a
+producer carries image-space keypoints today, they ride in the metadata bag
+(§2.15) until a second producer makes the shape worth fixing.
 
 ```idl
 // SPDX-License-Identifier: MIT
@@ -6517,6 +6763,11 @@ The layering is:
 - **Factor graphs:** inside the optimizer (GTSAM, Ceres).
 - **SpatialDDS:** carries observations and inferred state.
 - **Scene graphs:** inside the consumer (Unity, Omniverse, twin).
+
+Two further payload classes are deliberately untyped — scalar sensor readings
+and analytics aggregates — each with a normative adapter mapping rather than a
+silence. Those are scope decisions about the profiles generally, not about
+world models, so they live with the other conventions: see §2.15 Payload Scope.
 
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
