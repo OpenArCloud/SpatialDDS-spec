@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.7 (© Open AR Cloud Initiative)
+// SpatialDDS Specification 1.8 (© Open AR Cloud Initiative)
 
 ## **2. Conventions (Normative)**
 
@@ -178,7 +178,7 @@ JSON examples throughout this specification MUST follow these conventions. Where
 
 ### **2.11 Schema Stability Signaling (Normative)**
 
-The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.7"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
+The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.8"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
 
 For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. Consumers in production deployments MAY use this flag to filter or warn on provisional data.
 

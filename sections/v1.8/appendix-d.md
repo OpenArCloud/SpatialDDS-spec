@@ -46,7 +46,7 @@ enum AxisEncoding { AXIS_CENTERS = 0, AXIS_LINSPACE = 1 };
 
 ## IDL Tooling Notes (Non-Consecutive Enums)
 
-Several enumerations in the SpatialDDS 1.7 profiles use **intentionally
+Several enumerations in the SpatialDDS 1.8 profiles use **intentionally
 sparse or non-consecutive numeric values**. These enums are designed for
 forward extensibility (e.g., reserving ranges for future codecs, layouts, or
 pixel formats). Because of this, certain DDS toolchains (including Cyclone
@@ -171,7 +171,7 @@ The `poses` array uses `core::FramedPose` — each entry is self-contained with 
 
 ```idl
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.7
+// SpatialDDS AR+Geo 1.8
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -181,7 +181,7 @@ The `poses` array uses `core::FramedPose` — each entry is self-contained with 
 module spatial {
   module argeo {
 
-    const string MODULE_ID = "spatial.argeo/1.7";
+    const string MODULE_ID = "spatial.argeo/1.8";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3    PoseSE3;
@@ -408,7 +408,7 @@ The profile defines three types:
 - **`SpatialEvent`** — typed event tied to a zone, triggering detection, optional media evidence, and severity.
 - **`ZoneState`** — periodic zone occupancy and status snapshot for dashboards and capacity management.
 
-**Integration with Discovery:** Zone publishers announce via `disco::Announce` with `kind: OTHER` (or a future `ZONE_MANAGER` kind) and `coverage` matching the zone's spatial extent. Consumers use `CoverageQuery` filtered by `module_id_in: ["spatial.events/1.7"]` to discover event sources in a region. `SpatialZone` geometry reuses the same `Aabb3` and `FrameRef` primitives as `CoverageElement`, ensuring consistent spatial reasoning.
+**Integration with Discovery:** Zone publishers announce via `disco::Announce` with `kind: OTHER` (or a future `ZONE_MANAGER` kind) and `coverage` matching the zone's spatial extent. Consumers use `CoverageQuery` filtered by `module_id_in: ["spatial.events/1.8"]` to discover event sources in a region. `SpatialZone` geometry reuses the same `Aabb3` and `FrameRef` primitives as `CoverageElement`, ensuring consistent spatial reasoning.
 
 **Prediction semantics (Normative).** `stamp` is when the event sample was produced; `event_start` is when the event begins or is predicted to begin. For predicted events `event_start > stamp`, and `event_start − stamp` is the prediction lead time. An event in progress has `event_start ≤ stamp`. No additional lead-time field is needed.
 
@@ -444,7 +444,7 @@ Zone Definition:
   "schedule": "R/2024-01-01T06:00:00/PT14H",
   "provider_id": "safety/zone-manager",
   "stamp": { "sec": 1714070400, "nanosec": 0 },
-  "schema_version": "spatial.events/1.7"
+  "schema_version": "spatial.events/1.8"
 }
 ```
 
@@ -475,6 +475,6 @@ Event:
   "event_start": { "sec": 1714131653, "nanosec": 0 },
   "stamp": { "sec": 1714131900, "nanosec": 0 },
   "source_id": "analytics/zone-monitor",
-  "schema_version": "spatial.events/1.7"
+  "schema_version": "spatial.events/1.8"
 }
 ```

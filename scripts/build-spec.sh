@@ -80,7 +80,7 @@ fi
 # carry known-benign literal/canonical divergence and are immutable). Fails the
 # build if an in-prose IDL copy drifts from its canonical source or a stale/
 # retired profile identifier remains. See scripts/check_spec_consistency.py.
-ACTIVE_VERSION="1.7"
+ACTIVE_VERSION="1.8"
 if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_spec_consistency.py" ]]; then
   "$ROOT_DIR/scripts/check_spec_consistency.py" "$VERSION"
 fi

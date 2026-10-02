@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Spatial Events Extension 1.7
+// SpatialDDS Spatial Events Extension 1.8
 //
 // Typed, spatially-scoped events for zone monitoring, anomaly detection,
 // and smart infrastructure alerting.
@@ -12,7 +12,7 @@
 module spatial {
   module events {
 
-    const string MODULE_ID = "spatial.events/1.7";
+    const string MODULE_ID = "spatial.events/1.8";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3   PoseSE3;
@@ -139,7 +139,7 @@ module spatial {
       // Extensible metadata
       sequence<MetaKV, 16> attributes;
 
-      string schema_version;            // MUST be "spatial.events/1.7"
+      string schema_version;            // MUST be "spatial.events/1.8"
     };
 
 
@@ -218,7 +218,7 @@ module spatial {
       // Extensible metadata
       sequence<MetaKV, 8> attributes;
 
-      string schema_version;            // MUST be "spatial.events/1.7"
+      string schema_version;            // MUST be "spatial.events/1.8"
 
       // appended in 1.7 draft rev
       sequence<string, 8> participant_ids;  // symmetric participants (track or agent ids)

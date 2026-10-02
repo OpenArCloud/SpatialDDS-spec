@@ -45,7 +45,7 @@ def _have_cyclonedds():
 
 
 def main():
-    version = sys.argv[1] if len(sys.argv) > 1 else "1.7"
+    version = sys.argv[1] if len(sys.argv) > 1 else "1.8"
     idl_dir = os.path.join(ROOT, "idl", f"v{version}")
     if not os.path.isdir(idl_dir):
         print(f"error: missing directory {idl_dir}", file=sys.stderr)

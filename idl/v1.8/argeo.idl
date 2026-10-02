@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS AR+Geo 1.7
+// SpatialDDS AR+Geo 1.8
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -9,7 +9,7 @@
 module spatial {
   module argeo {
 
-    const string MODULE_ID = "spatial.argeo/1.7";
+    const string MODULE_ID = "spatial.argeo/1.8";
 
     typedef builtin::Time Time;
     typedef spatial::core::PoseSE3    PoseSE3;

@@ -181,7 +181,7 @@ def fqn_resolves(ref, fqns):
 
 
 def main():
-    version = sys.argv[1] if len(sys.argv) > 1 else "1.7"
+    version = sys.argv[1] if len(sys.argv) > 1 else "1.8"
     sections_dir = os.path.join(ROOT, "sections", f"v{version}")
     idl_dir = os.path.join(ROOT, "idl", f"v{version}")
     for d in (sections_dir, idl_dir):

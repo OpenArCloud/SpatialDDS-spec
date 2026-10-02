@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Core 1.7
+// SpatialDDS Core 1.8
 
 #ifndef SPATIAL_COMMON_TYPES_INCLUDED
 #include "types.idl"
@@ -9,7 +9,7 @@ module spatial {
   module core {
 
     // Module identity (authoritative string for interop)
-    const string MODULE_ID = "spatial.core/1.7";
+    const string MODULE_ID = "spatial.core/1.8";
 
     // ---------- Utility ----------
     // Expose builtin Time under spatial::core
@@ -61,7 +61,7 @@ module spatial {
       spatial::common::Vec3  centroid_llh; // lat,lon,alt (deg,deg,m)
       boolean has_radius_m;
       double  radius_m;              // rough extent (m)
-      string schema_version;         // MUST be "spatial.core/1.7"
+      string schema_version;         // MUST be "spatial.core/1.8"
     };
 
     @extensibility(APPENDABLE) struct TilePatch {
@@ -88,7 +88,7 @@ module spatial {
       @value(0) ODOM,
       @value(1) LOOP
     };
-    // NOTE: The mapping extension profile (spatial.mapping/1.7) defines
+    // NOTE: The mapping extension profile (spatial.mapping/1.8) defines
     // mapping::EdgeType which extends EdgeTypeCore with additional constraint
     // types (INTER_MAP, GPS, ANCHOR, IMU_PREINT, GRAVITY, PLANE, SEMANTIC,
     // MANUAL). Values 0-1 are identical. Core consumers MAY downcast
@@ -159,7 +159,7 @@ module spatial {
       float   replan_rate_hz;           // how often the plan is updated
 
       Time    stamp;                    // when this plan was computed
-      string  schema_version;           // "spatial.core/1.7"
+      string  schema_version;           // "spatial.core/1.8"
     };
 
     // EntityBinding correlates messages across different SpatialDDS topics
@@ -192,7 +192,7 @@ module spatial {
 
       Time   stamp;
       string source_id;                 // who published this binding (e.g., fusion service)
-      string schema_version;            // "spatial.core/1.7"
+      string schema_version;            // "spatial.core/1.8"
     };
 
     @extensibility(APPENDABLE) struct Node {
@@ -280,7 +280,7 @@ module spatial {
       uint16  diff_station_id;  // reference station ID
 
       Time   stamp;             // should match the associated GeoPose.stamp
-      string schema_version;    // MUST be "spatial.core/1.7"
+      string schema_version;    // MUST be "spatial.core/1.8"
     };
 
     @extensibility(APPENDABLE) struct GeoAnchor {

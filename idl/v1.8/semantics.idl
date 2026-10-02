@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Semantics 1.7
+// SpatialDDS Semantics 1.8
 
 #ifndef SPATIAL_CORE_INCLUDED
 #define SPATIAL_CORE_INCLUDED
@@ -13,7 +13,7 @@
 module spatial {
   module semantics {
 
-    const string MODULE_ID = "spatial.semantics/1.7";
+    const string MODULE_ID = "spatial.semantics/1.8";
 
     typedef builtin::Time Time;
     typedef spatial::core::TileKey TileKey;
@@ -129,7 +129,7 @@ module spatial {
 
     @extensibility(APPENDABLE) struct FusedTrackSet {
       @key string stream_id;             // fusion stream this set belongs to
-      string schema_version;             // MUST be "spatial.semantics/1.7"
+      string schema_version;             // MUST be "spatial.semantics/1.8"
       FrameRef frame_ref;                // common frame for the set
       sequence<FusedTrack, spatial::sensing::common::SZ_SMALL> tracks;  // ≤256
       Time   stamp;

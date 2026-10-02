@@ -128,7 +128,7 @@ def check_identifiers(sections_dir, minor):
 
 
 def main():
-    version = sys.argv[1] if len(sys.argv) > 1 else "1.7"
+    version = sys.argv[1] if len(sys.argv) > 1 else "1.8"
     try:
         major, minor = (int(x) for x in version.split("."))
     except ValueError:

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Discovery 1.7
+// SpatialDDS Discovery 1.8
 // Lightweight announces for services, coverage, and content
 
 #ifndef SPATIAL_CORE_INCLUDED
@@ -15,7 +15,7 @@ module spatial {
     typedef spatial::common::MetaKV  MetaKV;
     typedef spatial::common::AssetRef AssetRef;
 
-    const string MODULE_ID = "spatial.discovery/1.7";
+    const string MODULE_ID = "spatial.discovery/1.8";
 
     typedef builtin::Time Time;
     typedef spatial::core::Aabb3 Aabb3;
@@ -37,7 +37,7 @@ module spatial {
     // --- Capabilities advertised in-band on the discovery bus ---
     @extensibility(APPENDABLE) struct Capabilities {
       sequence<ProfileSupport, 64> supported_profiles;
-      sequence<string, 32>         preferred_profiles; // e.g., ["spatial.discovery/1.7","spatial.core/1.7"]
+      sequence<string, 32>         preferred_profiles; // e.g., ["spatial.discovery/1.8","spatial.core/1.8"]
       sequence<string, 64>         features;           // namespaced feature flags, e.g., "blob.crc32", "provisional.rf_beam"; unknown flags MUST be ignored
     };
 

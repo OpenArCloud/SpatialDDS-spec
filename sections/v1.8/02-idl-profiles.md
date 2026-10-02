@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SpatialDDS Specification 1.7 (© Open AR Cloud Initiative)
+// SpatialDDS Specification 1.8 (© Open AR Cloud Initiative)
 
 ## **3\. IDL Profiles**
 
@@ -16,9 +16,9 @@ SpatialDDS uses semantic versioning of the form `spatial.<profile>/MAJOR.MINOR`.
 
 > **Pre-adoption instability (Normative).** The compatibility contract above takes effect upon formal adoption of this specification. Throughout the 1.x pre-adoption series, MINOR revisions MAY include breaking schema or wire changes. Each revision's Profile Matrix (§3.5) and changelog identify breaking changes explicitly. Topic names retain the `/v1` segment through the 1.x series notwithstanding such changes. 1.7 is a stamped release; subsequent breaking changes land in 1.8 or later, not in revisions to this document.
 
-Profile identifiers use the single form `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.7`) everywhere: prose, manifests, discovery payloads, and IDL constants.
+Profile identifiers use the single form `spatial.<profile>/MAJOR.MINOR` (e.g., `spatial.core/1.8`) everywhere: prose, manifests, discovery payloads, and IDL constants.
 
-Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.7 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
+Participants advertise supported ranges via `caps.supported_profiles` (discovery) and manifest capabilities blocks. Consumers select the **highest compatible minor** within any shared major. Backward-compatibility clauses from 1.3 are retired; implementations only negotiate within their common majors. SpatialDDS 1.8 uses a single canonical quaternion order `(x, y, z, w)` across manifests, discovery payloads, and IDL messages.
 
 ### **3.2 Core SpatialDDS**
 
@@ -89,7 +89,7 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 
 ```json
 {
-  "spatialdds_bootstrap": "1.7",
+  "spatialdds_bootstrap": "1.8",
   "domain_id": 42,
   "initial_peers": [
     "udpv4://192.168.1.100:7400",
@@ -105,7 +105,7 @@ A bootstrap manifest is a small JSON document resolved by Layer 1 mechanisms:
 
 | Field | Required | Description |
 |---|---|---|
-| `spatialdds_bootstrap` | REQUIRED | Bootstrap schema version (e.g., "1.7") |
+| `spatialdds_bootstrap` | REQUIRED | Bootstrap schema version (e.g., "1.8") |
 | `domain_id` | REQUIRED | DDS domain ID to join |
 | `initial_peers` | REQUIRED | One or more DDS peer locators for initial discovery |
 | `partitions` | OPTIONAL | DDS partition(s) to join. Empty or absent means default partition. |
@@ -202,7 +202,7 @@ On success, the server MUST return HTTP `200 OK` with `Content-Type: application
   "results": [
     {
       "id": "spatialdds://acme-vps.example/sf-downtown/service/vps-main",
-      "profile": "spatial.manifest/1.7",
+      "profile": "spatial.manifest/1.8",
       "rtype": "service",
       "service": {
         "service_id": "vps-main",
@@ -301,7 +301,7 @@ DNS-SD is the recommended first binding for local bootstrap.
 
 | Key | Maps to | Example |
 |---|---|---|
-| `ver` | `spatialdds_bootstrap` | `1.7` |
+| `ver` | `spatialdds_bootstrap` | `1.8` |
 | `did` | `domain_id` | `42` |
 | `part` | `partitions` (comma-separated) | `venue/museum-west` |
 | `muri` | `manifest_uri` | `spatialdds://museum.example.org/west/service/discovery` |
@@ -350,7 +350,7 @@ The TXT record uses the same key set as the local DNS-SD binding, with one addit
 
 | Key | Required | Description |
 |---|---|---|
-| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.7`) |
+| `ver` | REQUIRED | Bootstrap schema version (e.g., `1.8`) |
 | `did` | OPTIONAL | DDS domain ID. OPTIONAL because the geospatial binding's primary role is to hand off to an HTTP discovery service via `muri`, not to provide direct DDS connection. |
 | `muri` | REQUIRED | HTTPS URL or `spatialdds://` URI for the discovery service, with the geohash passed as a query parameter or path segment. |
 | `part` | OPTIONAL | DDS partition hint (comma-separated). |
@@ -369,13 +369,13 @@ The TXT record uses the same key set as the local DNS-SD binding, with one addit
 
 ```
 ;; San Francisco downtown (~5 km² cell)
-_spatialdds._udp.9q8yy.geo.spatialdds.example.org.  TXT  "ver=1.7" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yy"
+_spatialdds._udp.9q8yy.geo.spatialdds.example.org.  TXT  "ver=1.8" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yy"
 
 ;; San Francisco marina district
-_spatialdds._udp.9q8yk.geo.spatialdds.example.org.  TXT  "ver=1.7" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yk"
+_spatialdds._udp.9q8yk.geo.spatialdds.example.org.  TXT  "ver=1.8" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=9q8yk"
 
 ;; London Soho
-_spatialdds._udp.gcpvj.geo.spatialdds.example.org.  TXT  "ver=1.7" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=gcpvj"
+_spatialdds._udp.gcpvj.geo.spatialdds.example.org.  TXT  "ver=1.8" "muri=https://discovery.spatialdds.example.org/v1/services?geohash=gcpvj"
 ```
 
 **Example HTTPS response** (from the `muri` endpoint)
@@ -386,7 +386,7 @@ The discovery service returns an array of standard SpatialDDS service manifests 
 [
   {
     "id": "spatialdds://provider-a.example/sf-downtown/service/vps-main",
-    "profile": "spatial.manifest/1.7",
+    "profile": "spatial.manifest/1.8",
     "rtype": "service",
     "service": {
       "service_id": "vps-main",
@@ -565,7 +565,7 @@ GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
       { "name": "spatial.core",      "major": 1, "min_minor": 7, "max_minor": 7 },
       { "name": "spatial.discovery", "major": 1, "min_minor": 7, "max_minor": 7 }
     ],
-    "preferred_profiles": ["spatial.discovery/1.7"],
+    "preferred_profiles": ["spatial.discovery/1.8"],
     "features": ["blob.crc32"]
   },
   "topics": [
@@ -584,7 +584,7 @@ GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
   "filter": {
     "type_in": ["radar_detection", "radar_tensor"],
     "qos_profile_in": [],
-    "module_id_in": ["spatial.discovery/1.7"]
+    "module_id_in": ["spatial.discovery/1.8"]
   },
   "reply_topic": "spatialdds/discovery/response/q1",
   "stamp": { "sec": 1714070400, "nanosec": 0 },
@@ -742,8 +742,8 @@ This pattern applies to application data topics. Well-known discovery topics (§
 
 The version segment in topic names (e.g., `/v1`) corresponds to the **profile MAJOR version**, not the MINOR version. Topic names change only when a profile increments its MAJOR version number. Concretely:
 
-- `spatial.sensing.vision/1.7` → `spatial.sensing.vision/1.8`: topic names remain `/v1` (same MAJOR).
-- `spatial.sensing.vision/1.7` → `spatial.sensing.vision/2.0`: topic names change to `/v2` (MAJOR incremented).
+- `spatial.sensing.vision/1.8` → `spatial.sensing.vision/1.9`: topic names remain `/v1` (same MAJOR).
+- `spatial.sensing.vision/1.8` → `spatial.sensing.vision/2.0`: topic names change to `/v2` (MAJOR incremented).
 
 Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change topic names. This guarantees that consumers subscribing to `/v1` topics continue to receive messages after MINOR-version updates without resubscribing.
 
@@ -943,31 +943,31 @@ Together, Core, Discovery, and Anchors form the foundation of SpatialDDS, provid
 
 Together, these profiles give SpatialDDS the flexibility to support robotics, AR/XR, digital twins, IoT, and AI world models—while ensuring that the wire format remains lightweight, codec-agnostic, and forward-compatible.
 
-#### **Profile Matrix (SpatialDDS 1.7)**
+#### **Profile Matrix (SpatialDDS 1.8)**
 
-| Profile | Version in 1.7 | Status | 1.7 Change |
+| Profile | Version in 1.8 | Status | 1.8 Change |
 |---|---|---|---|
-| spatial.core | 1.7 | Stable | **Breaking:** `Time.sec` int64; compound `@key` on `Node`/`Edge`; `GeoPose` orientation fixed to local ENU (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` single `aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`. **Findings batch 2 (draft rev):** Breaking — `BlobChunk.data` bound 262144→65535; Additive — `MetaKV.entries` typed rows + `common::KV` |
-| spatial.discovery | 1.7 | Stable | **Breaking:** `CoverageResponse` returns `ServiceSummary` rows; `caps.features` now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr`. **Findings batch 2 (draft rev):** Additive — `ServiceKind` +SENSING/INFRASTRUCTURE/FUSION; `CoverageElement` circle; `Announce.coverage_source_ids` |
-| spatial.sensing.common | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `Codec` +PNG |
-| spatial.manifest | 1.7 | Stable | Single-identifier profile string; schema bumped to `/1.7` |
-| spatial.anchors | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.argeo | 1.7 | Stable | **Findings batch 3 (draft rev):** Additive — VPS request/response pair (`VpsRequest`/`VpsResponse`/`QualityRequirements`/`VpsStatus`) |
-| spatial.sensing.rad | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.sensing.lidar | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.sensing.vision | 1.7 | Stable | No IDL change (version unified to 1.7) |
-| spatial.slam_frontend | 1.7 | Stable | **Findings batch 2 (draft rev):** Breaking — `KeyframeFeatures.descriptors` bound 1048576→65535 (larger sets via blob transfer) |
-| spatial.vio | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `ImuSample` accel/gyro covariance (`CovMatrix`) |
-| spatial.semantics | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `Detection3D.velocity`. **Batch 3:** Additive — `FusedTrack` / `FusedTrackSet` |
-| spatial.mapping | 1.7 | Stable | **Breaking:** compound `@key` on `mapping::Edge` (`map_id`, `edge_id`), aligning with `core::Node`/`Edge` |
-| spatial.events | 1.7 | Stable | **Findings batch 2 (draft rev):** Additive — `EventType.PREDICTED_CONFLICT`; `SpatialEvent.participant_ids` |
-| spatial.sensing.rf_beam | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
-| spatial.sensing.radio | 1.7 | Provisional (Appendix E) | No IDL change (version unified to 1.7) |
-| spatial.neural | 1.7 | Informative example (Appendix E) | No IDL change (version unified to 1.7) |
-| spatial.agent | 1.7 | Informative example (Appendix E) | No IDL change (version unified to 1.7) |
+| spatial.core | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.discovery | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.sensing.common | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.manifest | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.anchors | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.argeo | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.sensing.rad | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.sensing.lidar | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.sensing.vision | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.slam_frontend | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.semantics | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.mapping | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.events | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
+| spatial.sensing.radio | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
+| spatial.neural | 1.8 | Informative example (Appendix E) | No IDL change (version unified to 1.8) |
+| spatial.agent | 1.8 | Informative example (Appendix E) | No IDL change (version unified to 1.8) |
 
-Through the 1.x pre-adoption series, all modules version together with the specification. Every `MODULE_ID` and `schema_version` in 1.7 is `spatial.<profile>/1.7`. Topic names continue to use the `/v1` segment per §3.3.1 Topic Version Stability — minor profile bumps do not change topic names.
+Through the 1.x pre-adoption series, all modules version together with the specification. Every `MODULE_ID` and `schema_version` in 1.8 is `spatial.<profile>/1.8`. Topic names continue to use the `/v1` segment per §3.3.1 Topic Version Stability — minor profile bumps do not change topic names.
 
-> `spatial.manifest/1.7` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
+> `spatial.manifest/1.8` defines the JSON schema for SpatialDDS manifests, not an IDL module. It does not have a corresponding `MODULE_ID` declaration in the IDL. Provisional profile definitions and examples are specified in Appendix E.
 
 The Sensing module family keeps sensor data interoperable: `sensing.common` unifies pose stamps, calibration blobs, ROI negotiation, and quality reporting. Radar, lidar, and vision modules extend that base without redefining shared scaffolding, ensuring multi-sensor deployments can negotiate payload shapes and interpret frame metadata consistently.

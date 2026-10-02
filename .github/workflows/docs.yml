@@ -32,12 +32,12 @@ jobs:
         # canonical idl/v<ver> counterpart, or if any retired @MAJOR.MINOR /
         # stale /1.<old> profile identifier remains. Bump the version arg when
         # a new minor becomes active.
-        run: ./scripts/check_spec_consistency.py 1.7
+        run: ./scripts/check_spec_consistency.py 1.8
 
       - name: Check registered-types registry (active version)
         # Fails the build if a §3.3.2 registry row names an IDL type or QoS
         # profile that does not resolve. See scripts/check_registry.py.
-        run: ./scripts/check_registry.py 1.7
+        run: ./scripts/check_registry.py 1.8
 
       - name: Install MkDocs
         run: pip install mkdocs mkdocs-mermaid2-plugin pymdown-extensions
@@ -89,7 +89,7 @@ jobs:
       - name: Install CycloneDDS Python runtime
         run: pip install cyclonedds
       - name: Run topic-construction gate
-        run: ./scripts/check_topic_construct.py 1.7
+        run: ./scripts/check_topic_construct.py 1.8
 
   deploy:
     runs-on: ubuntu-latest
