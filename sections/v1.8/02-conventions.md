@@ -227,3 +227,39 @@ Additionally, the `caps.features` field in `Announce` MAY carry feature flags pr
 - Producers bridging from drone / aviation systems (PX4, ArduPilot, MAVLink) SHOULD set `coord_convention = NED`.
 - Producers publishing SpatialDDS-native pipelines (GeoPose, ROS 2 bridge) SHOULD set `coord_convention = ENU` explicitly — even though it is the default — for clarity.
 - When `coord_convention = OTHER`, producers MUST document the axis convention in a `MetaKV` entry with `namespace = "frame"` and keys `axis_x`, `axis_y`, `axis_z` (values from: `"east"`, `"north"`, `"up"`, `"right"`, `"down"`, `"forward"`, `"backward"`, `"left"`).
+
+### **2.13 Frame Scale (Normative)**
+
+`FrameRef` carries optional scale fields (added in 1.8): `has_scale`, `scale_status`, `meters_per_unit`, and `display_unit`. Scale is, like the axis convention of §2.12, an unstated frame property that silently corrupts every pose expressed in the frame: a monocular or image-only reconstruction has arbitrary units, and a scale error is proportional, invisible, and survives every existing validity check. The predefined scale states are:
+
+| `scale_status` | Meaning |
+|---|---|
+| `SCALE_UNKNOWN` | Scale has not been established; `meters_per_unit` is not meaningful. |
+| `SCALE_DECLARED` | The producer asserts `meters_per_unit` directly (metric SLAM/LiDAR/GNSS, surveyed frames). |
+| `SCALE_DERIVED` | `meters_per_unit` was recovered rather than asserted (e.g. from a legacy similarity transform). |
+
+**Default assumption.** When `has_scale` is `false` (or the field is absent because the publisher predates 1.8), consumers MUST assume the frame is **metric**: one frame unit equals one metre. Every pre-1.8 publisher therefore remains correct by construction. A producer publishing a frame whose metric scale it has **not** established MUST set `has_scale = true` with `scale_status = SCALE_UNKNOWN`. **Absence is not the unknown state** — silence means metric, not "I don't know."
+
+**Conversion rule.** Consumers MUST NOT compose poses across `FrameRef` values of differing or unknown `meters_per_unit` without an explicit scale conversion, and MUST NOT treat poses in a `SCALE_UNKNOWN` frame as metric at all. Libraries SHOULD provide the conversion automatically from `meters_per_unit`, mirroring the axis-swap rule of §2.12.
+
+**Covariance interpretation.** A `CovMatrix` position block expressed in a scaled frame is in **frame units squared**; multiply by `meters_per_unit²` to obtain metres squared. In a frame of unknown scale, the metric interpretation of a position covariance is undefined.
+
+**Producer guidance:**
+
+- `meters_per_unit` is the single source of truth. `display_unit` (e.g. `"m"`, `"mm"`, `"ft"`) is presentation only and MUST NOT be used for computation.
+- Producers from metric pipelines (metric SLAM, LiDAR, GNSS-aligned, surveyed) SHOULD set `scale_status = SCALE_DECLARED` with `meters_per_unit = 1.0` (or the true factor if the native unit is not the metre).
+- Producers from monocular or image-only SfM that have not resolved metric scale MUST set `scale_status = SCALE_UNKNOWN`.
+- Producers that recover scale after the fact (for example from a legacy similarity transform) SHOULD set `scale_status = SCALE_DERIVED`.
+- *Migration note (non-normative):* deriving `meters_per_unit` from an existing deployment's similarity-transform matrix is the documented path for populating scale on legacy frames. The frame-scale design was motivated and prototyped by G. Sörös's map-autoscaling work.
+
+### **2.14 Keyed-Instance Removal (Normative)**
+
+The specification defines creation and update for latched keyed types but has been silent on **removal**, so a late joiner could not distinguish an instance that was deliberately retired from one that merely vanished. This section closes that gap.
+
+**Removal rule.** For a latched keyed instance (a RELIABLE + TRANSIENT_LOCAL keyed topic) that is being deliberately removed, the writer MUST first publish a final sample carrying the instance's terminal state and a human-readable reason, and MUST then dispose the instance. The final sample is what a late joiner reads to learn that, and why, the instance was retired.
+
+**Liveliness is not removal.** Loss of liveliness, a lease expiry, or a writer simply disappearing is **not** removal. Consumers MUST NOT treat a liveliness change as a deliberate removal, and MUST NOT purge a durable keyed instance on liveliness loss alone.
+
+This applies to all RELIABLE + TRANSIENT_LOCAL keyed types. `EntityBinding` is named explicitly: a binding being retired MUST follow this rule (its absence was the recorded gap).
+
+*Non-normative note:* a removal is a claim and a silence is not — the standard can require honesty about the former but can never infer it from the latter, which is exactly why the final-sample-then-dispose sequence, not liveliness, is the removal signal.

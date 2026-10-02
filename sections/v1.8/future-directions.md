@@ -17,6 +17,10 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
 * **On-bus content catalog query**  
   `ContentAnnounce` plus manifests and HTTP search cover content discovery today. Whether an on-bus, area-scoped catalog query/response joins them is an open design question; evidence from federation prototypes will inform it. Deliberately not added in 1.7.
 
+### Queryable Coverage Response
+
+Discovery today answers *who is here* through `Announce` and the Coverage Model, and `CoverageQuery` lets a consumer ask which providers cover a region. What a working federation prototype adds on top is a direct, area-scoped **coverage answer**: a responder returns per-provider coverage summaries for the queried region, merged with its local announce cache so that providers known only from their earlier announces — not merely those answering the query live — stay discoverable in the same response. A future coverage-response type must meet that requirement: from a single area-scoped query a consumer MUST be able to learn the coverage of every provider the responder knows about, queried and cached alike, with announce-only providers never silently dropped. This is recorded as a problem statement from that prototype; the on-bus message shape is deliberately deferred to a later batch and is explicitly not added as IDL in 1.8.
+
 ### Wire-Level Interop Testing
 
 Appendix I validates schema expressiveness through static conformance checks. Future revisions will add wire-level interoperability tests across at least two DDS implementations (CycloneDDS and Fast DDS minimum) to validate end-to-end publish/subscribe fidelity, QoS enforcement, and CDR encoding compatibility.

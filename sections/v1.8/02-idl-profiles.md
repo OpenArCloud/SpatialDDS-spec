@@ -860,6 +860,7 @@ Consumers use these three keys to match and filter streams without inspecting pa
 - When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
 - Manifests MAY provide any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox` and `aabb`. Consumers SHALL treat all hints consistently according to the Coverage Model.
 - When `has_bbox == true`, `bbox` MUST contain finite coordinates; consumers SHALL reject non-finite values. When `has_bbox == false`, consumers MUST ignore `bbox` entirely. Same rules apply to `has_aabb` and `aabb`.
+- **Vertical extent.** `bbox` is planimetric (2D) only. A coverage element that must state a floor-and-ceiling or an altitude band — a specific building storey, an indoor volume, or an airspace layer — MUST express it with the 3D `aabb`, whose `min_xyz.z` / `max_xyz.z` carry the vertical bounds (WGS84 height for an earth-fixed frame; metres per §2.13 for a local frame). SpatialDDS adds no separate altitude fields to coverage: the 3D `aabb` already carries vertical extent, consistent with §2.10 ("volumetric coverage on the bus uses `aabb`").
 - **Circle.** `circle_center` follows the same frame rules as `bbox` (geographic: lon, lat[, alt]; local: meters in `coverage_frame_ref`); `circle_radius_m` is always meters. For intersects evaluation a circle MAY be approximated by its bounding box; producers SHOULD prefer the circle form over a hand-computed bounding box so consumers can recover the exact footprint.
 - **Derived coverage.** A service whose coverage is a function of its inputs (e.g., a fusion service) SHOULD list the contributing services in `coverage_source_ids`. A non-empty list marks the declared coverage elements as an approximation of the union of the sources' coverage; consumers MAY resolve the sources for exact extents. An empty list means coverage is self-asserted.
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
@@ -947,7 +948,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 
 | Profile | Version in 1.8 | Status | 1.8 Change |
 |---|---|---|---|
-| spatial.core | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.core | 1.8 | Stable | Additive: frame scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`); directional uncertainty `CovMatrix cov` on `GeoAnchor`; new `Vec2` primitive. APPENDABLE, no field removed or reordered. |
 | spatial.discovery | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.sensing.common | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.manifest | 1.8 | Stable | No IDL change (version unified to 1.8) |
@@ -960,7 +961,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.semantics | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.mapping | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.events | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`). APPENDABLE, no field removed or reordered. |
 | spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.sensing.radio | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.neural | 1.8 | Informative example (Appendix E) | No IDL change (version unified to 1.8) |

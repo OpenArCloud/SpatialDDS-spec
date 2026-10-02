@@ -2,6 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
+| 1.8     | Draft      | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). |
 | 1.7     | 2026-08-23 | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. Findings batch 2 (draft rev): breaking sequence-bound reductions (`BlobChunk.data`, `KeyframeFeatures.descriptors` → 65535); additive fields across discovery/semantics/vision/vio/events/common; new QoS profiles and registry rows. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
@@ -9,6 +10,58 @@
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
+
+## Version 1.8 (Draft) — Batch 1
+
+Backward compatibility with 1.7 **is** preserved. Every change in this batch is
+additive and APPENDABLE-safe: no field was removed, retyped, or reordered, and
+no required field was added. A 1.7-shaped sample of every touched type remains
+valid under the 1.8 IDL. Topic names retain the `/v1` segment. All module
+identifiers are swept to `/1.8`; the build and CI gates are repointed to 1.8,
+and 1.7 remains buildable but ungated.
+
+### Additive IDL
+- `common::FrameRef`: appended frame metric scale — new `enum ScaleStatus`
+  (`SCALE_UNKNOWN`/`SCALE_DECLARED`/`SCALE_DERIVED`) and
+  `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`. Absence means
+  metric (1 unit = 1 m), so every pre-1.8 publisher stays correct; an
+  unestablished scale MUST be stated explicitly as `SCALE_UNKNOWN` (§2.13).
+  *Credit: G. Sörös, whose map-autoscaling work motivated and prototyped the
+  design.*
+- `core::GeoAnchor`: appended `CovMatrix cov` (COV_NONE when absent) for
+  directional anchor uncertainty, in the anchor's local ENU tangent frame at the
+  encoded GeoPose; `confidence` retained as a monotone scalar summary
+  (Proposal A). Mirrored in the manifest as optional `anchor.cov` (§8.2.1).
+- `common::Vec2`: new 2D primitive, added beside `Vec3`.
+- `events::SpatialZone`: appended polygon/prism geometry
+  (`has_polygon`/`polygon` as `sequence<Vec2, 256>`/`z_min`/`z_max`). The polygon
+  takes precedence over `bounds` for containment; `bounds` MUST still carry the
+  ring's axis-aligned box for box-only consumers.
+
+### Normative prose
+- §2.13 **Frame Scale** — the normative rules for the fields above
+  (default-is-metric, explicit-unknown, cross-frame conversion, covariance in
+  frame units squared).
+- §2.14 **Keyed-Instance Removal** — a deliberately removed latched keyed
+  instance MUST publish a final terminal sample with a human-readable reason and
+  then dispose; liveliness loss is not removal. `EntityBinding` named explicitly.
+- §3.3.4 — clarified that vertical/altitude coverage extent is expressed via the
+  3D `aabb` (`min_xyz.z`/`max_xyz.z`), not via new fields.
+- **Appendix L: Resolution Quality Conformance (Normative)** — mechanism-agnostic
+  calibration tests for the existing quality fields (NEES/χ² covariance
+  calibration, status honesty, prior-replay non-regression, cross-session anchor
+  stability, reporting + `caps.features` citation). Evaluation-set governance is
+  flagged as an open question in an editor's note.
+
+### Informative prose
+- **Appendix M: Documented Operational Conventions** — two demo-proven patterns
+  (keyed commands with explicit declines; shared multi-writer lanes with
+  one-writer-per-key for physical-thing entities). Description only, no new IDL.
+- §6 Future Directions: a **Queryable Coverage Response** problem statement
+  (area-scoped coverage answer merged with the announce cache). Problem statement
+  only, not IDL.
+- §8 manifests: a Gaussian-splat content note — splat scenes are carried by
+  reference like all content, via glTF + `KHR_gaussian_splatting` and SPZ.
 
 ## Version 1.7 - 2026-08-23
 

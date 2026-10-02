@@ -25,7 +25,7 @@ Every `spatial.manifest/1.8` document MUST include the following top-level field
 **Validation rules (Normative)**:
 
 - Unknown top-level fields MUST be ignored by consumers (forward compatibility).
-- `profile` MUST match `spatial.manifest/1.<minor>` where `<minor>` ≥ 8. Consumers SHOULD accept any minor ≥ 8 within major 1, subject to the pre-adoption instability clause (§3.1).
+- `profile` MUST match `spatial.manifest/1.<minor>` where `<minor>` ≥ 7. Consumers SHOULD accept any minor ≥ 7 within major 1, subject to the pre-adoption instability clause (§3.1).
 - When `coverage` is present, it MUST follow all normative rules from §3.3.4, including `has_bbox`/`has_aabb` presence flags and finite coordinate requirements.
 - `assets[].hash` MUST use the format `<algorithm>:<hex>` (e.g., `sha256:3af2...`).
 
@@ -52,6 +52,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 | `anchor.geopose` | object | REQUIRED | GeoPose with `lat_deg`, `lon_deg`, `alt_m`, `q` (x,y,z,w); the quaternion is in the local ENU tangent frame at the encoded position (§3.2). |
 | `anchor.method` | string | OPTIONAL | Localization method (e.g., `Surveyed`, `GNSS`, `VisualFix`). |
 | `anchor.confidence` | number | OPTIONAL | 0..1. |
+| `anchor.cov` | object | OPTIONAL | Directional uncertainty (added 1.8): the JSON projection of `GeoAnchor.cov`, `{ "type": <CovarianceType>, "<member>": [ row-major … ] }` as in Appendix D (`COV_NONE` when absent). Expressed in the anchor's local ENU tangent frame at the GeoPose position (§3.2). When present, `anchor.confidence` SHOULD be a monotone summary of it. |
 | `anchor.frame_ref` | object | REQUIRED | `FrameRef` for the anchor's local frame. |
 | `anchor.checksum` | string | OPTIONAL | Integrity hash for the anchor data. |
 
@@ -70,6 +71,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
     },
     "method": "Surveyed",
     "confidence": 0.98,
+    "cov": { "type": "COV_POS3", "pos": [0.04, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.09] },
     "frame_ref": {
       "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
       "fqn": "museum/hall1/map"
@@ -141,8 +143,8 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
   },
   "caps": {
     "supported_profiles": [
-      { "name": "spatial.core", "major": 1, "min_minor": 8, "max_minor": 8 },
-      { "name": "spatial.discovery", "major": 1, "min_minor": 8, "max_minor": 8 }
+      { "name": "spatial.core", "major": 1, "min_minor": 7, "max_minor": 8 },
+      { "name": "spatial.discovery", "major": 1, "min_minor": 7, "max_minor": 8 }
     ],
     "features": ["blob.crc32"]
   },
@@ -208,7 +210,7 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
   "required": ["id", "profile", "rtype"],
   "properties": {
     "id": { "type": "string" },
-    "profile": { "type": "string", "pattern": "^spatial\\.manifest/1\\.(?:[89]|[1-9][0-9]+)$" },
+    "profile": { "type": "string", "pattern": "^spatial\\.manifest/1\\.(?:[7-9]|[1-9][0-9]+)$" },
     "rtype": { "type": "string", "enum": ["anchor", "anchor_set", "content", "tileset", "service", "stream"] },
     "caps": { "$ref": "#/$defs/Capabilities" },
     "coverage": { "$ref": "#/$defs/Coverage" },
@@ -234,6 +236,7 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
 * **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
 * **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
 * **Assets (`assets`)** — URIs referencing external content. Each has a `uri`, `media_type`, and `hash`.
+* **Gaussian-splat content (Informative).** Gaussian-splatting scenes are carried by reference like any other content: a `content` block or `assets` entry names the `uri`, `media_type`, and `hash`, and SpatialDDS adds no splat-specific payload type. Two interchange forms are in common use — glTF carrying the `KHR_gaussian_splatting` extension (`model/gltf-binary` for `.glb`, `model/gltf+json` for `.gltf`), and the SPZ compressed splat format (`application/octet-stream` until a media type is registered). A consumer that does not understand a given splat media type MUST ignore the asset, per the registered-media-type guidance below.
 * All orientation fields follow the quaternion order defined in §2.1.
 
 ### 8.5 Practical Guidance (Informative)

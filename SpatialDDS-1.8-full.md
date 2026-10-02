@@ -41,6 +41,8 @@
     - [Appendix I: Dataset Conformance Testing (Informative)](sections/v1.8/appendix-i.md)
     - [Appendix J: Comparison with ROS 2 (Informative)](sections/v1.8/appendix-j.md)
     - [Appendix K: IDL Package Layout (Informative)](sections/v1.8/appendix-k-idl-package-layout.md)
+    - [Appendix L: Resolution Quality Conformance (Normative)](sections/v1.8/appendix-l-resolution-quality-conformance.md)
+    - [Appendix M: Documented Operational Conventions (Informative)](sections/v1.8/appendix-m-operational-conventions.md)
 
 ## **1\. Introduction**
 
@@ -436,6 +438,42 @@ Additionally, the `caps.features` field in `Announce` MAY carry feature flags pr
 - Producers bridging from drone / aviation systems (PX4, ArduPilot, MAVLink) SHOULD set `coord_convention = NED`.
 - Producers publishing SpatialDDS-native pipelines (GeoPose, ROS 2 bridge) SHOULD set `coord_convention = ENU` explicitly — even though it is the default — for clarity.
 - When `coord_convention = OTHER`, producers MUST document the axis convention in a `MetaKV` entry with `namespace = "frame"` and keys `axis_x`, `axis_y`, `axis_z` (values from: `"east"`, `"north"`, `"up"`, `"right"`, `"down"`, `"forward"`, `"backward"`, `"left"`).
+
+### **2.13 Frame Scale (Normative)**
+
+`FrameRef` carries optional scale fields (added in 1.8): `has_scale`, `scale_status`, `meters_per_unit`, and `display_unit`. Scale is, like the axis convention of §2.12, an unstated frame property that silently corrupts every pose expressed in the frame: a monocular or image-only reconstruction has arbitrary units, and a scale error is proportional, invisible, and survives every existing validity check. The predefined scale states are:
+
+| `scale_status` | Meaning |
+|---|---|
+| `SCALE_UNKNOWN` | Scale has not been established; `meters_per_unit` is not meaningful. |
+| `SCALE_DECLARED` | The producer asserts `meters_per_unit` directly (metric SLAM/LiDAR/GNSS, surveyed frames). |
+| `SCALE_DERIVED` | `meters_per_unit` was recovered rather than asserted (e.g. from a legacy similarity transform). |
+
+**Default assumption.** When `has_scale` is `false` (or the field is absent because the publisher predates 1.8), consumers MUST assume the frame is **metric**: one frame unit equals one metre. Every pre-1.8 publisher therefore remains correct by construction. A producer publishing a frame whose metric scale it has **not** established MUST set `has_scale = true` with `scale_status = SCALE_UNKNOWN`. **Absence is not the unknown state** — silence means metric, not "I don't know."
+
+**Conversion rule.** Consumers MUST NOT compose poses across `FrameRef` values of differing or unknown `meters_per_unit` without an explicit scale conversion, and MUST NOT treat poses in a `SCALE_UNKNOWN` frame as metric at all. Libraries SHOULD provide the conversion automatically from `meters_per_unit`, mirroring the axis-swap rule of §2.12.
+
+**Covariance interpretation.** A `CovMatrix` position block expressed in a scaled frame is in **frame units squared**; multiply by `meters_per_unit²` to obtain metres squared. In a frame of unknown scale, the metric interpretation of a position covariance is undefined.
+
+**Producer guidance:**
+
+- `meters_per_unit` is the single source of truth. `display_unit` (e.g. `"m"`, `"mm"`, `"ft"`) is presentation only and MUST NOT be used for computation.
+- Producers from metric pipelines (metric SLAM, LiDAR, GNSS-aligned, surveyed) SHOULD set `scale_status = SCALE_DECLARED` with `meters_per_unit = 1.0` (or the true factor if the native unit is not the metre).
+- Producers from monocular or image-only SfM that have not resolved metric scale MUST set `scale_status = SCALE_UNKNOWN`.
+- Producers that recover scale after the fact (for example from a legacy similarity transform) SHOULD set `scale_status = SCALE_DERIVED`.
+- *Migration note (non-normative):* deriving `meters_per_unit` from an existing deployment's similarity-transform matrix is the documented path for populating scale on legacy frames. The frame-scale design was motivated and prototyped by G. Sörös's map-autoscaling work.
+
+### **2.14 Keyed-Instance Removal (Normative)**
+
+The specification defines creation and update for latched keyed types but has been silent on **removal**, so a late joiner could not distinguish an instance that was deliberately retired from one that merely vanished. This section closes that gap.
+
+**Removal rule.** For a latched keyed instance (a RELIABLE + TRANSIENT_LOCAL keyed topic) that is being deliberately removed, the writer MUST first publish a final sample carrying the instance's terminal state and a human-readable reason, and MUST then dispose the instance. The final sample is what a late joiner reads to learn that, and why, the instance was retired.
+
+**Liveliness is not removal.** Loss of liveliness, a lease expiry, or a writer simply disappearing is **not** removal. Consumers MUST NOT treat a liveliness change as a deliberate removal, and MUST NOT purge a durable keyed instance on liveliness loss alone.
+
+This applies to all RELIABLE + TRANSIENT_LOCAL keyed types. `EntityBinding` is named explicitly: a binding being retired MUST follow this rule (its absence was the recorded gap).
+
+*Non-normative note:* a removal is a claim and a silence is not — the standard can require honesty about the former but can never infer it from the latter, which is exactly why the final-sample-then-dispose sequence, not liveliness, is the removal signal.
 
 // SPDX-License-Identifier: MIT
 // SpatialDDS Specification 1.8 (© Open AR Cloud Initiative)
@@ -1299,6 +1337,7 @@ Consumers use these three keys to match and filter streams without inspecting pa
 - When `global == false`, producers MAY supply any combination of regional hints; consumers SHOULD treat the union of all regions as the effective coverage.
 - Manifests MAY provide any combination of `bbox`, `geohash`, and `elements`. Discovery coverage MAY omit `geohash` and rely solely on `bbox` and `aabb`. Consumers SHALL treat all hints consistently according to the Coverage Model.
 - When `has_bbox == true`, `bbox` MUST contain finite coordinates; consumers SHALL reject non-finite values. When `has_bbox == false`, consumers MUST ignore `bbox` entirely. Same rules apply to `has_aabb` and `aabb`.
+- **Vertical extent.** `bbox` is planimetric (2D) only. A coverage element that must state a floor-and-ceiling or an altitude band — a specific building storey, an indoor volume, or an airspace layer — MUST express it with the 3D `aabb`, whose `min_xyz.z` / `max_xyz.z` carry the vertical bounds (WGS84 height for an earth-fixed frame; metres per §2.13 for a local frame). SpatialDDS adds no separate altitude fields to coverage: the 3D `aabb` already carries vertical extent, consistent with §2.10 ("volumetric coverage on the bus uses `aabb`").
 - **Circle.** `circle_center` follows the same frame rules as `bbox` (geographic: lon, lat[, alt]; local: meters in `coverage_frame_ref`); `circle_radius_m` is always meters. For intersects evaluation a circle MAY be approximated by its bounding box; producers SHOULD prefer the circle form over a hand-computed bounding box so consumers can recover the exact footprint.
 - **Derived coverage.** A service whose coverage is a function of its inputs (e.g., a fusion service) SHOULD list the contributing services in `coverage_source_ids`. A non-empty list marks the declared coverage elements as an approximation of the union of the sources' coverage; consumers MAY resolve the sources for exact extents. An empty list means coverage is self-asserted.
 - Earth-fixed frames (`fqn` rooted at `earth-fixed`) encode WGS84 longitude/latitude/height. Local frames MUST reference anchors or manifests that describe the transform back to an earth-fixed root (Appendix G).
@@ -1386,7 +1425,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 
 | Profile | Version in 1.8 | Status | 1.8 Change |
 |---|---|---|---|
-| spatial.core | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.core | 1.8 | Stable | Additive: frame scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`); directional uncertainty `CovMatrix cov` on `GeoAnchor`; new `Vec2` primitive. APPENDABLE, no field removed or reordered. |
 | spatial.discovery | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.sensing.common | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.manifest | 1.8 | Stable | No IDL change (version unified to 1.8) |
@@ -1399,7 +1438,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.semantics | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.mapping | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.events | 1.8 | Stable | No IDL change (version unified to 1.8) |
+| spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`). APPENDABLE, no field removed or reordered. |
 | spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.sensing.radio | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
 | spatial.neural | 1.8 | Informative example (Appendix E) | No IDL change (version unified to 1.8) |
@@ -1439,6 +1478,10 @@ While SpatialDDS establishes a practical baseline for real-time spatial computin
   Ongoing coordination with OGC, Khronos, W3C, and GSMA initiatives will help ensure SpatialDDS complements existing geospatial, XR, and telecom standards rather than duplicating them.
 * **On-bus content catalog query**  
   `ContentAnnounce` plus manifests and HTTP search cover content discovery today. Whether an on-bus, area-scoped catalog query/response joins them is an open design question; evidence from federation prototypes will inform it. Deliberately not added in 1.7.
+
+### Queryable Coverage Response
+
+Discovery today answers *who is here* through `Announce` and the Coverage Model, and `CoverageQuery` lets a consumer ask which providers cover a region. What a working federation prototype adds on top is a direct, area-scoped **coverage answer**: a responder returns per-provider coverage summaries for the queried region, merged with its local announce cache so that providers known only from their earlier announces — not merely those answering the query live — stay discoverable in the same response. A future coverage-response type must meet that requirement: from a single area-scoped query a consumer MUST be able to learn the coverage of every provider the responder knows about, queried and cached alike, with announce-only providers never silently dropped. This is recorded as a problem statement from that prototype; the on-bus message shape is deliberately deferred to a later batch and is explicitly not added as IDL in 1.8.
 
 ### Wire-Level Interop Testing
 
@@ -1629,7 +1672,7 @@ Every `spatial.manifest/1.8` document MUST include the following top-level field
 **Validation rules (Normative)**:
 
 - Unknown top-level fields MUST be ignored by consumers (forward compatibility).
-- `profile` MUST match `spatial.manifest/1.<minor>` where `<minor>` ≥ 8. Consumers SHOULD accept any minor ≥ 8 within major 1, subject to the pre-adoption instability clause (§3.1).
+- `profile` MUST match `spatial.manifest/1.<minor>` where `<minor>` ≥ 7. Consumers SHOULD accept any minor ≥ 7 within major 1, subject to the pre-adoption instability clause (§3.1).
 - When `coverage` is present, it MUST follow all normative rules from §3.3.4, including `has_bbox`/`has_aabb` presence flags and finite coordinate requirements.
 - `assets[].hash` MUST use the format `<algorithm>:<hex>` (e.g., `sha256:3af2...`).
 
@@ -1656,6 +1699,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 | `anchor.geopose` | object | REQUIRED | GeoPose with `lat_deg`, `lon_deg`, `alt_m`, `q` (x,y,z,w); the quaternion is in the local ENU tangent frame at the encoded position (§3.2). |
 | `anchor.method` | string | OPTIONAL | Localization method (e.g., `Surveyed`, `GNSS`, `VisualFix`). |
 | `anchor.confidence` | number | OPTIONAL | 0..1. |
+| `anchor.cov` | object | OPTIONAL | Directional uncertainty (added 1.8): the JSON projection of `GeoAnchor.cov`, `{ "type": <CovarianceType>, "<member>": [ row-major … ] }` as in Appendix D (`COV_NONE` when absent). Expressed in the anchor's local ENU tangent frame at the GeoPose position (§3.2). When present, `anchor.confidence` SHOULD be a monotone summary of it. |
 | `anchor.frame_ref` | object | REQUIRED | `FrameRef` for the anchor's local frame. |
 | `anchor.checksum` | string | OPTIONAL | Integrity hash for the anchor data. |
 
@@ -1674,6 +1718,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
     },
     "method": "Surveyed",
     "confidence": 0.98,
+    "cov": { "type": "COV_POS3", "pos": [0.04, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.09] },
     "frame_ref": {
       "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
       "fqn": "museum/hall1/map"
@@ -1745,8 +1790,8 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
   },
   "caps": {
     "supported_profiles": [
-      { "name": "spatial.core", "major": 1, "min_minor": 8, "max_minor": 8 },
-      { "name": "spatial.discovery", "major": 1, "min_minor": 8, "max_minor": 8 }
+      { "name": "spatial.core", "major": 1, "min_minor": 7, "max_minor": 8 },
+      { "name": "spatial.discovery", "major": 1, "min_minor": 7, "max_minor": 8 }
     ],
     "features": ["blob.crc32"]
   },
@@ -1812,7 +1857,7 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
   "required": ["id", "profile", "rtype"],
   "properties": {
     "id": { "type": "string" },
-    "profile": { "type": "string", "pattern": "^spatial\\.manifest/1\\.(?:[89]|[1-9][0-9]+)$" },
+    "profile": { "type": "string", "pattern": "^spatial\\.manifest/1\\.(?:[7-9]|[1-9][0-9]+)$" },
     "rtype": { "type": "string", "enum": ["anchor", "anchor_set", "content", "tileset", "service", "stream"] },
     "caps": { "$ref": "#/$defs/Capabilities" },
     "coverage": { "$ref": "#/$defs/Coverage" },
@@ -1838,6 +1883,7 @@ Manifests MAY include a `$schema` field pointing to this URL for self-descriptio
 * **Coverage (`coverage`)** — See §3.3.4 Coverage Model (Normative). Coverage blocks in manifests and discovery announces share the same semantics. See §2 Conventions for global normative rules.
 * **Frame identity.** The `uuid` field is authoritative; `fqn` is a human-readable alias. Consumers SHOULD match frames by UUID and MAY show `fqn` in logs or UIs. See Appendix G for the full FrameRef model.
 * **Assets (`assets`)** — URIs referencing external content. Each has a `uri`, `media_type`, and `hash`.
+* **Gaussian-splat content (Informative).** Gaussian-splatting scenes are carried by reference like any other content: a `content` block or `assets` entry names the `uri`, `media_type`, and `hash`, and SpatialDDS adds no splat-specific payload type. Two interchange forms are in common use — glTF carrying the `KHR_gaussian_splatting` extension (`model/gltf-binary` for `.glb`, `model/gltf+json` for `.gltf`), and the SPZ compressed splat format (`application/octet-stream` until a media type is registered). A consumer that does not understand a given splat media type MUST ignore the asset, per the registered-media-type guidance below.
 * All orientation fields follow the quaternion order defined in §2.1.
 
 ### 8.5 Practical Guidance (Informative)
@@ -7122,3 +7168,73 @@ Generated language bindings SHOULD preserve this module hierarchy:
 - C++: `spatial::core::PoseSE3`
 - Python: `spatial.core.PoseSE3`
 - Rust: `spatial::core::PoseSE3`
+
+## **Appendix L: Resolution Quality Conformance (Normative)**
+
+§6 Future Directions calls for wire-level interop testing. The gap is broader than wire format: a `VpsResponse` may claim `status = VPS_SUCCESS` with `rmse_m = 1.0`, or an anchor may advertise `confidence = 0.95`, and nothing else in this specification tests whether those claims are true. For an open commons where participants trust one another's anchors and fixes, an unverified quality claim is worse than no claim — it composes into confidently-wrong alignment. Interoperability requires not just that messages parse, but that *quality assertions mean what they say*.
+
+This appendix defines conformance tests that any anchor-publishing or VPS-providing implementation MAY be certified against. It is deliberately **not** a test of localization accuracy in the abstract — that depends on scene, sensors, and method, all out of scope and rightly mechanism-agnostic. It is a test of **claim calibration**: does a fix that asserts a quality bar actually satisfy it, at the stated rate? Every test is mechanism-agnostic and consumes only this specification's own quality fields (`confidence`, `rmse_m`, `VpsStatus`, `CovMatrix`). An hloc-based, a bearing-based, a GNSS-only, and a neural resolver all take the same tests and pass or fail on calibration alone, never on method. The word "VPS" in existing type names is retained for continuity; the tests apply to any resolver of the AR+Geo request/response and to any anchor publisher.
+
+Each test is defined over a **labelled evaluation set**: fixes or anchors accompanied by independent ground-truth poses.
+
+### **L.1 Covariance calibration**
+
+Over the evaluation set, the actual error distribution MUST be consistent with the reported `CovMatrix` at a stated significance level: the normalized estimation error squared (NEES) MUST fall within the χ² bounds for the covariance's degrees of freedom at the p-level the implementation claims.
+
+*Plain statement:* if you report ±1 m at 1 σ, about 68 % of your fixes MUST actually land within 1 σ, and the ellipse shape MUST match the error shape. An implementation that reports round (isotropic) covariance on directional error fails this test even if its scalar magnitude is right.
+
+### **L.2 Status honesty**
+
+For requests carrying `QualityRequirements`:
+
+- `VPS_SUCCESS` MUST NOT be returned when measured error exceeds `max_rmse_m` more often than the claimed confidence permits.
+- `VPS_DEGRADED` MUST be returned, not `VPS_SUCCESS`, when a fix is produced but falls below the requested bar.
+- `VPS_FAILED` MUST be returned, rather than a fabricated in-tolerance fix, when the resolver cannot meet the bar.
+
+*A resolver that never returns `VPS_DEGRADED` or `VPS_FAILED` on hard inputs fails this test. Refusal is a conformance requirement, not an implementation choice.*
+
+### **L.3 Prior-replay non-regression**
+
+When a `VpsRequest` supplies `has_prior_geopose`, the returned fix's error MUST NOT be statistically worse than the supplied prior's error on the evaluation set.
+
+*An anchor resolver that degrades a good GNSS-plus-heading prior is worse than useless; this test forbids advertising a fix that adds nothing while claiming improvement. A resolver MAY return the prior unchanged — reporting so via covariance and confidence — but it MUST NOT move the pose away from truth and claim success.*
+
+### **L.4 Cross-session / cross-device stability**
+
+An anchor advertised as durable MUST resolve, across independent sessions and — where applicable — devices, to poses mutually consistent within the union of their reported covariances.
+
+*A "durable" anchor that lands in different places on different visits, beyond its own stated uncertainty, is mislabelled.*
+
+### **L.5 Reporting**
+
+A conformance run MUST publish, per test, the evaluation-set size, the measured rate versus the claimed rate, and a pass/fail result. An implementation that has passed a profile cites it in `caps.features` (and, for durable providers, its service manifest) so that consumers can filter by *verified* quality, not merely advertised quality. A citation naming a profile the implementation has not passed is itself a conformance violation.
+
+> **Editor's note (open question — comment invited).** Governance of the evaluation set — who curates it, how ground truth is established and audited, how a set is versioned, and how a passing result is attested and revoked — is unresolved and intentionally left outside the normative text above. The tests specify *what* must hold over *a* labelled evaluation set; they do not yet specify *whose* set or *how certified*. Reviewers are invited to comment on whether this specification should define that governance, defer to an external conformance authority, or standardize only a reporting format and leave curation to deployments.
+
+### Why this belongs in the standard
+
+This appendix converts SpatialDDS's honest-quality fields from *hope* into *contract*. The fields already exist; these tests give them teeth, so that "open" also means "verifiably honest" — the differentiator an open commons has over a closed VPS that markets unfalsifiable precision. It pairs naturally with the §6 Wire-Level Interop Testing item as its quality-layer counterpart.
+
+## **Appendix M: Documented Operational Conventions (Informative)**
+
+This appendix records two coordination patterns that are not new protocol — they use only existing types and QoS — but that recurred across the reference deployment and are worth writing down so independent implementations converge on the same shapes. Nothing here adds IDL or changes a normative requirement; the keyed-removal rule those patterns rely on is normative and lives in §2.14.
+
+### M.1 Keyed commands with explicit declines
+
+A command addressed to a specific participant is published on a shared keyed command topic, keyed by the addressee. The pattern has three parts:
+
+- **Addressed commands.** The writer sets the key to the intended recipient and publishes the command instance. Every participant reads the topic, but a participant acts only on instances keyed to itself.
+- **Decline with reason.** When an addressee cannot or will not carry out a command, it does not stay silent: it publishes a response carrying a terminal state and a human-readable reason (the same final-sample-then-dispose discipline as §2.14 when the command instance is latched). A decline is a first-class, observable outcome, not an absence.
+- **Silence for other keys.** A participant publishes nothing for instances keyed to others. Silence on another key is not a decline and carries no meaning — only an addressed response does.
+
+The value of the pattern is that a late joiner or an observer can always distinguish *refused* from *not-yet-answered* from *not-for-me*, because the first is an explicit sample, the second is a pending instance, and the third is simply a key the participant never writes.
+
+### M.2 Shared multi-writer lanes
+
+A single topic sometimes carries contributions from several writers at once — a shared "lane" rather than one writer per topic. The pattern that kept this unambiguous in practice:
+
+- **Several writers, addressed readers.** Many participants write to the lane; readers filter to the instances they care about by key, exactly as in M.1.
+- **One writer per key for physical-thing entities.** When an instance represents a physical thing — an entity binding, a tracked object, a device's own state — exactly one writer owns that key at a time. Multiple writers MAY share the lane, but they MUST NOT concurrently write the same physical-thing key, because two writers describing one physical thing produce contradictions no reader can reconcile.
+- **Ownership transfer is explicit.** Handing a physical-thing key from one writer to another follows the §2.14 removal discipline: the outgoing writer publishes a terminal sample and disposes the instance before the incoming writer takes the key, so the transfer is observable rather than a race.
+
+Logical or aggregate instances (summaries, derived views) MAY be written by several writers without the one-writer-per-key rule, since they do not assert the state of a single physical thing.
