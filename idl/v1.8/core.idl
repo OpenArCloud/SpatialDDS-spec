@@ -289,8 +289,15 @@ module spatial {
       FrameRef frame_ref;      // local frame (e.g., "map")
       GeoPose geopose;         // global pose
       string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
-      double  confidence;      // 0..1
+      double  confidence;      // 0..1 scalar summary, retained
       string  checksum;        // integrity/versioning
+      // Directional uncertainty (added 1.8). COV_NONE when absent, so existing
+      // anchors remain valid. Expressed in the anchor's local ENU tangent frame
+      // at the encoded GeoPose position (same convention as the GeoPose
+      // orientation rule, §3.2). When both are present, confidence SHOULD be a
+      // monotone summary of cov (e.g. from its largest eigenvalue) so the two
+      // never contradict. Appended at struct end per APPENDABLE rules.
+      CovMatrix cov;
     };
 
     @extensibility(APPENDABLE) struct FrameTransform {

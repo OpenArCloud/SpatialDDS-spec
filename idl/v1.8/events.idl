@@ -140,6 +140,20 @@ module spatial {
       sequence<MetaKV, 16> attributes;
 
       string schema_version;            // MUST be "spatial.events/1.8"
+
+      // Polygon/prism geometry (added 1.8), appended at struct end per APPENDABLE
+      // rules. When has_polygon is true, the polygon takes precedence over bounds
+      // for containment, and consumers that understand polygons MUST prefer them;
+      // bounds MUST still carry the polygon's axis-aligned bounding box so
+      // box-only consumers degrade gracefully (back-compatibility rule). The ring
+      // is given in frame_ref's XY plane, CCW, not self-intersecting; the first
+      // vertex is NOT repeated (closure is implicit). z_min/z_max give the prism
+      // extent along frame_ref Z (z_max >= z_min); equal values denote a flat
+      // (2D) zone with no vertical extent.
+      boolean has_polygon;
+      sequence<spatial::common::Vec2, 256> polygon;
+      double z_min;
+      double z_max;
     };
 
 

@@ -1955,6 +1955,7 @@ module spatial {
   module common {
     typedef double BBox2D[4];
     typedef double Aabb3D[6];
+    typedef double Vec2[2];  // 2D point/vector; used by polygon zone rings (added 1.8)
     typedef double Vec3[3];
     typedef double Mat3x3[9];
     typedef double Mat6x6[36];
@@ -1984,6 +1985,16 @@ module spatial {
 
     // Stable, typo-proof frame identity shared across all profiles.
     // Equality is by uuid; fqn is a normalized, human-readable alias.
+    // Frame scale status (added 1.8). Parallel to CoordConvention: an unstated
+    // frame property that silently corrupts every pose expressed in the frame.
+    // SCALE_DECLARED = producer asserts meters_per_unit directly; SCALE_DERIVED =
+    // meters_per_unit was recovered (e.g. from a legacy similarity transform);
+    // SCALE_UNKNOWN = scale not established, meters_per_unit is not meaningful.
+    enum ScaleStatus {
+      @value(0) SCALE_UNKNOWN,
+      @value(1) SCALE_DECLARED,
+      @value(2) SCALE_DERIVED
+    };
     @extensibility(APPENDABLE) struct FrameRef {
       string uuid;                 // REQUIRED: stable identifier for the frame
       string fqn;                  // REQUIRED: normalized FQN, e.g., "oarc/rig01/cam_front"
@@ -1991,6 +2002,17 @@ module spatial {
       // is false, consumers MUST assume ENU per §2.12.
       boolean has_coord_convention;
       CoordConvention coord_convention;
+      // Metric scale (added 1.8). When has_scale is false, the frame is metric:
+      // 1 unit = 1 metre (every pre-1.8 publisher is correct by construction). A
+      // producer that has NOT established the frame's scale MUST set has_scale =
+      // true with scale_status = SCALE_UNKNOWN — absence is not the unknown state.
+      // meters_per_unit is the single source of truth, valid when scale_status is
+      // not SCALE_UNKNOWN (1.0 for a native-metric frame). display_unit is
+      // presentation only (e.g. "m","mm","ft") and is never used for computation.
+      boolean has_scale;
+      ScaleStatus scale_status;
+      double meters_per_unit;
+      string display_unit;
     };
 
     // Simple typed key/value row for structured extension metadata.
@@ -2318,8 +2340,15 @@ module spatial {
       FrameRef frame_ref;      // local frame (e.g., "map")
       GeoPose geopose;         // global pose
       string  method;          // "GNSS","VisualFix","Surveyed","Fusion"
-      double  confidence;      // 0..1
+      double  confidence;      // 0..1 scalar summary, retained
       string  checksum;        // integrity/versioning
+      // Directional uncertainty (added 1.8). COV_NONE when absent, so existing
+      // anchors remain valid. Expressed in the anchor's local ENU tangent frame
+      // at the encoded GeoPose position (same convention as the GeoPose
+      // orientation rule, §3.2). When both are present, confidence SHOULD be a
+      // monotone summary of cov (e.g. from its largest eigenvalue) so the two
+      // never contradict. Appended at struct end per APPENDABLE rules.
+      CovMatrix cov;
     };
 
     @extensibility(APPENDABLE) struct FrameTransform {
@@ -4598,6 +4627,20 @@ module spatial {
       sequence<MetaKV, 16> attributes;
 
       string schema_version;            // MUST be "spatial.events/1.8"
+
+      // Polygon/prism geometry (added 1.8), appended at struct end per APPENDABLE
+      // rules. When has_polygon is true, the polygon takes precedence over bounds
+      // for containment, and consumers that understand polygons MUST prefer them;
+      // bounds MUST still carry the polygon's axis-aligned bounding box so
+      // box-only consumers degrade gracefully (back-compatibility rule). The ring
+      // is given in frame_ref's XY plane, CCW, not self-intersecting; the first
+      // vertex is NOT repeated (closure is implicit). z_min/z_max give the prism
+      // extent along frame_ref Z (z_max >= z_min); equal values denote a flat
+      // (2D) zone with no vertical extent.
+      boolean has_polygon;
+      sequence<spatial::common::Vec2, 256> polygon;
+      double z_min;
+      double z_max;
     };
 
 
