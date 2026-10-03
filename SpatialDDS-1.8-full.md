@@ -2223,25 +2223,34 @@ module spatial {
     // what it was in the 1.8 draft until this type met its first independent
     // consumer.
     //
-    // FINAL is load-bearing, not stylistic. The wire layout of a FINAL struct
-    // of two doubles is byte-identical to `double[2]`, so this definition is a
-    // drop-in replacement: measured on a 3-element sequence, both encode to
-    // the same 68 octets. An APPENDABLE struct is NOT -- XCDR2 prefixes each
-    // appendable member with a 4-byte DHEADER, giving 80 octets for the same
-    // data and silently breaking every reader built against the array form.
-    // Do not relax this annotation.
+    // APPENDABLE is deliberate, and is the opposite of what a purity argument
+    // would pick. Under XCDR2 an APPENDABLE struct carries a 4-byte DHEADER
+    // per element; a FINAL one does not, and FINAL would therefore be
+    // byte-identical to the `double[2]` this replaced. The reason to delimit
+    // anyway is reader compatibility, measured against real messages:
     //
-    // DRAFTING RULE, from the episode that produced this change: an array
-    // typedef MUST NOT be used as a sequence element type. `sequence<Vec2>`
-    // over an array typedef is legal IDL and `idlc` accepts it, but it is
-    // outside the subset several widely-used consumers implement -- Foxglove's
-    // omgidl support rejects it outright with "We do not support composing
-    // variable length arrays with typedefs" -- and it made SpatialZone and
-    // CrossingLine unreadable in the first third-party viewer that tried.
-    // Prefer a struct for any element type that appears inside a sequence.
-    // The remaining array typedefs above are fixed-size members only, never
-    // sequence elements, and are unaffected.
-    @extensibility(FINAL) struct Vec2 {
+    //   schema says   wire carries          conformant reader   Foxglove
+    //   FINAL         no per-element DHEADER        OK            FAIL
+    //   APPENDABLE    per-element DHEADER           OK            OK
+    //
+    // A widely deployed omgidl deserializer requires a delimiter on every
+    // nested struct element regardless of its declared extensibility, so a
+    // FINAL element is unreadable there while an APPENDABLE one is readable
+    // everywhere. That makes APPENDABLE strictly dominant rather than a
+    // compromise: it costs four octets per vertex on definitions that are
+    // latched and published once, and it buys every reader. Revisit only if
+    // that deserializer changes upstream.
+    //
+    // DRAFTING RULES, from the episode that produced this type:
+    //   1. An array typedef MUST NOT be used as a sequence element type.
+    //      `sequence<Vec2>` over `typedef double Vec2[2]` is legal IDL that
+    //      `idlc` accepts and that omgidl consumers reject outright ("We do
+    //      not support composing variable length arrays with typedefs").
+    //   2. A struct used as a sequence element SHOULD be APPENDABLE, so its
+    //      elements are delimited on the wire, for the reason above.
+    // The remaining array typedefs are fixed-size members only, never
+    // sequence elements, and are unaffected by either rule.
+    @extensibility(APPENDABLE) struct Vec2 {
       double x;
       double y;
     };
