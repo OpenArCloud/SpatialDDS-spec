@@ -2212,12 +2212,39 @@ module spatial {
   module common {
     typedef double BBox2D[4];
     typedef double Aabb3D[6];
-    typedef double Vec2[2];  // 2D point/vector; used by polygon zone rings (added 1.8)
     typedef double Vec3[3];
     typedef double Mat3x3[9];
     typedef double Mat6x6[36];
     typedef double Mat12x12[144];
     typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+
+    // 2D point/vector; used by polygon zone rings and crossing-line paths
+    // (added 1.8). A struct rather than `typedef double Vec2[2]`, which is
+    // what it was in the 1.8 draft until this type met its first independent
+    // consumer.
+    //
+    // FINAL is load-bearing, not stylistic. The wire layout of a FINAL struct
+    // of two doubles is byte-identical to `double[2]`, so this definition is a
+    // drop-in replacement: measured on a 3-element sequence, both encode to
+    // the same 68 octets. An APPENDABLE struct is NOT -- XCDR2 prefixes each
+    // appendable member with a 4-byte DHEADER, giving 80 octets for the same
+    // data and silently breaking every reader built against the array form.
+    // Do not relax this annotation.
+    //
+    // DRAFTING RULE, from the episode that produced this change: an array
+    // typedef MUST NOT be used as a sequence element type. `sequence<Vec2>`
+    // over an array typedef is legal IDL and `idlc` accepts it, but it is
+    // outside the subset several widely-used consumers implement -- Foxglove's
+    // omgidl support rejects it outright with "We do not support composing
+    // variable length arrays with typedefs" -- and it made SpatialZone and
+    // CrossingLine unreadable in the first third-party viewer that tried.
+    // Prefer a struct for any element type that appears inside a sequence.
+    // The remaining array typedefs above are fixed-size members only, never
+    // sequence elements, and are unaffected.
+    @extensibility(FINAL) struct Vec2 {
+      double x;
+      double y;
+    };
 
     enum CovarianceType {
       @value(0) COV_NONE,

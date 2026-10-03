@@ -76,7 +76,7 @@ and 1.7 remains buildable but ungated.
   directional anchor uncertainty, in the anchor's local ENU tangent frame at the
   encoded GeoPose; `confidence` retained as a monotone scalar summary
   (Proposal A). Mirrored in the manifest as optional `anchor.cov` (§8.2.1).
-- `common::Vec2`: new 2D primitive, added beside `Vec3`.
+- `common::Vec2`: new 2D primitive, added beside `Vec3`, as a **FINAL struct** `{ double x; double y; }`. Introduced earlier in the 1.8 draft as `typedef double Vec2[2]` and changed before release: an array typedef used as a sequence element is legal IDL that several widely-used consumers decline, and it made `SpatialZone` and `CrossingLine` unreadable in the first third-party viewer to open a 1.8 recording. The FINAL annotation keeps the change wire-compatible -- a FINAL struct of two doubles encodes byte-identically to `double[2]`, measured at 68 octets for a 3-element sequence either way, while an APPENDABLE struct adds an XCDR2 DHEADER per element and would not. New drafting rule recorded beside the type: array typedefs are not to be used as sequence element types.
 - `events::SpatialZone`: appended polygon/prism geometry
   (`has_polygon`/`polygon` as `sequence<Vec2, 256>`/`z_min`/`z_max`). The polygon
   takes precedence over `bounds` for containment; `bounds` MUST still carry the
