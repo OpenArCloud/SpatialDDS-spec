@@ -41,6 +41,10 @@ MkDocs reads from the generated `mkdocs_docs/` tree, so updating any section and
 
 Changes pushed to `main` automatically rebuild and publish the MkDocs site via `.github/workflows/docs.yml`. After the initial deploy, configure GitHub Pages to serve from the `gh-pages` branch to make updates live.
 
+## Implementations
+
+[spatialdds-scenescape](https://github.com/OpenArCloud/spatialdds-scenescape) is the first adapter for a third-party production system: it publishes an unmodified Intel SceneScape deployment's scene analytics as typed SpatialDDS 1.8 samples, was exercised against more than 50,000 real messages from a running deployment, and ships recordings that decode without any of its own code.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please open an issue to discuss large changes or questions about the specification. See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
