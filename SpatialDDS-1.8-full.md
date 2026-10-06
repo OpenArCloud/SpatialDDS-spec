@@ -1480,6 +1480,7 @@ Profile MINOR bumps (`@extensibility(APPENDABLE)` additions) MUST NOT change top
 | `anchor_delta` | Anchor registry delta | `anchors::AnchorDelta`; QoS `ANCHOR_DELTA` |
 | `rad_sensor_meta` | Radar (detection) stream metadata | `sensing::rad::RadSensorMeta`; QoS `SENSOR_META` (latched) |
 | `radio_sensor_meta` | Radio stream metadata (provisional) | `sensing::radio::RadioSensorMeta`; QoS `SENSOR_META` (latched) |
+| `model_entity` | World-model entity, lifecycle-shaped (provisional) | Latched; RELIABLE + TRANSIENT_LOCAL, KEEP_LAST(1) per key — `spatial::owm::Entity` on `spatialdds/<scene>/model/entity/v0`. `spatial.owm/0.1` is independently versioned and exempt from the 1.x additive guarantee; `v0` is the profile MAJOR version, **not** a stability promise — a 0.1→0.2 revision MAY break the wire while keeping `v0`, so compatibility is carried by the module's pinned IDL content digest, not the topic name. Provisional (Appendix E). |
 
 These registered types ensure consistent topic semantics without altering wire framing. New types can be registered additively through this table or extensions.
 
