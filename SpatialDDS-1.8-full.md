@@ -1645,7 +1645,7 @@ Together, these profiles give SpatialDDS the flexibility to support robotics, AR
 | spatial.sensing.vision | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.slam_frontend | 1.8 | Stable | No IDL change (version unified to 1.8) |
 | spatial.vio | 1.8 | Stable | No IDL change (version unified to 1.8) |
-| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. Additive (Batch 3): 3D pose skeletons on `Detection3D` (`has_keypoints`/`keypoints`/`topology_id`/`keypoint_links`) with new `Keypoint3D` and `KeypointLink` types. APPENDABLE, no field removed or reordered. |
+| spatial.semantics | 1.8 | Stable | Additive (Batch 2): observer pose covariance on `Detection3D` (`has_observer`/`observer_position`/`observer_cov`) and aggregate `observer_cov` on `FusedTrack`; composition-scope pair (`has_observer_cov_scope`/`observer_cov_scope`, new `common::CovScope` enum) on both. Additive (Batch 3): 3D pose skeletons on `Detection3D` (`has_keypoints`/`keypoints`/`topology_id`/`keypoint_links`) with new `Keypoint3D` and `KeypointLink` types. Normative, no wire change: a bistatic/multistatic localized target MUST set `observer_cov_scope = COV_SCOPE_COMPOSED` (Appendix D). APPENDABLE, no field removed or reordered. |
 | spatial.mapping | 1.8 | Stable | Additive (Batch 2): similarity `has_scale_ratio`/`scale_ratio` on `MapAlignment`. APPENDABLE, no field removed or reordered. |
 | spatial.events | 1.8 | Stable | Additive: polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`); new keyed `CrossingLine` type (open path, LEFT/RIGHT side convention §2.16) with new `CrossingDirection` enum; crossing fields on `SpatialEvent` (`has_crossing_line_id`/`crossing_line_id`/`has_crossing`/`crossing_direction`). APPENDABLE, no field removed or reordered. |
 | spatial.sensing.rf_beam | 1.8 | Provisional (Appendix E) | No IDL change (version unified to 1.8) |
@@ -3684,6 +3684,8 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 - `COV_SCOPE_COMPOSED` — the producer has already folded observer uncertainty into the stated covariance; downstream consumers MUST NOT apply it again.
 
 *Absent means `COV_SCOPE_LOCAL`. This is the conservative default: misreading composed data as local over-reports uncertainty, whereas the reverse under-reports it — the exact failure the composition chain exists to prevent.*
+
+For a bistatic or multistatic localized target, the producer MUST publish `observer_cov_scope = COV_SCOPE_COMPOSED`; `COV_SCOPE_LOCAL` is well-defined only for a single-origin observer. The bistatic solve folds transmitter-pose, receiver-pose, and measurement uncertainty together into the stated covariance, and the consumer has no composition handle on the transmitter — the observer field names only the measuring receiver — so a `LOCAL` scope would leave the transmitter's contribution unaccounted for.
 
 **Pose Skeletons (Normative)** *(added 1.8 Batch 3)*
 `Detection3D` carries an optional 3D pose skeleton: `has_keypoints`,

@@ -138,6 +138,8 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 
 *Absent means `COV_SCOPE_LOCAL`. This is the conservative default: misreading composed data as local over-reports uncertainty, whereas the reverse under-reports it — the exact failure the composition chain exists to prevent.*
 
+For a bistatic or multistatic localized target, the producer MUST publish `observer_cov_scope = COV_SCOPE_COMPOSED`; `COV_SCOPE_LOCAL` is well-defined only for a single-origin observer. The bistatic solve folds transmitter-pose, receiver-pose, and measurement uncertainty together into the stated covariance, and the consumer has no composition handle on the transmitter — the observer field names only the measuring receiver — so a `LOCAL` scope would leave the transmitter's contribution unaccounted for.
+
 **Pose Skeletons (Normative)** *(added 1.8 Batch 3)*
 `Detection3D` carries an optional 3D pose skeleton: `has_keypoints`,
 `keypoints` (a sequence of `Keypoint3D`), `topology_id`, and `keypoint_links`.
