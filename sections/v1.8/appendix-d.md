@@ -140,6 +140,29 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 
 For a bistatic or multistatic localized target, the producer MUST publish `observer_cov_scope = COV_SCOPE_COMPOSED`; `COV_SCOPE_LOCAL` is well-defined only for a single-origin observer. The bistatic solve folds transmitter-pose, receiver-pose, and measurement uncertainty together into the stated covariance, and the consumer has no composition handle on the transmitter — the observer field names only the measuring receiver — so a `LOCAL` scope would leave the transmitter's contribution unaccounted for.
 
+**Worked example — a bistatic localized target (Informative).** A 5G ISAC
+deployment localizes a target illuminated by one base station (the transmitter)
+and measured at another (the receiver), and reports it crossing a monitored
+boundary. It maps to existing types in five steps, no new type required:
+
+1. **Stations are latched nodes.** The transmitter and receiver are each a
+   `core::Node` (or a `core::GeoAnchor` for a geo-durable station), latched with
+   their pose and `cov` in a shared `frame_ref`.
+2. **The target is an ordinary detection, observer = the receiver.** A
+   `Detection3D` carries the solved target; `observer_position` is the measuring
+   receiver's origin and `observer_cov` is its pose uncertainty.
+3. **Scope is COMPOSED.** The producer sets `observer_cov_scope =
+   COV_SCOPE_COMPOSED` per the rule above, so the detection `cov` already carries
+   the full two-station geometry.
+4. **Contributors are enumerated out-of-band.** A `core::EntityBinding` for the
+   target lists both stations via `components` (each a `ComponentRef` naming the
+   station's node topic and key); the detection names the receiver, the binding
+   names the transmitter.
+5. **The crossing is an ordinary event.** The boundary is a `SpatialZone`
+   (`GEOFENCE`) or `CrossingLine`; the crossing is a `SpatialEvent`
+   (`ZONE_ENTRY`/`ZONE_EXIT` or `LINE_CROSS`) whose `trigger_det_id` references
+   the `Detection3D`.
+
 **Pose Skeletons (Normative)** *(added 1.8 Batch 3)*
 `Detection3D` carries an optional 3D pose skeleton: `has_keypoints`,
 `keypoints` (a sequence of `Keypoint3D`), `topology_id`, and `keypoint_links`.

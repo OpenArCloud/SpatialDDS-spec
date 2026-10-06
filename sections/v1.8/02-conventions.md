@@ -180,7 +180,7 @@ JSON examples throughout this specification MUST follow these conventions. Where
 
 The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.8"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
 
-For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. Consumers in production deployments MAY use this flag to filter or warn on provisional data.
+For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. On a type whose metadata is carried as a plain `KV` sequence rather than `MetaKV` (for example `owm::Entity.properties`), the equivalent marking is a `KV` with key `schema.stability` and value `provisional`. Consumers in production deployments MAY use either form to filter or warn on provisional data.
 
 Example:
 
@@ -193,7 +193,7 @@ Example:
 
 Additionally, the `caps.features` field in `Announce` MAY carry feature flags prefixed with `provisional.` (e.g., `"provisional.rf_beam"`, `"provisional.radio"`). Consumers MAY filter `Announce` messages to exclude provisional features in production deployments.
 
-`schema_version` appears on Meta, Frame, and latched/durable types (descriptors that outlive a session or are recorded standalone). High-rate graph and sample types (`Node`, `Edge`, chunks) omit it; their schema identity travels via the topic's `TopicMeta` and `MODULE_ID`.
+`schema_version` appears on Meta, Frame, and latched/durable types (descriptors that outlive a session or are recorded standalone). High-rate graph and sample types (`Node`, `Edge`, chunks) omit it; their schema identity travels via the topic's `TopicMeta` and `MODULE_ID`. Types in a provisional 0.x module (for example `spatial.owm/0.1`) MAY omit `schema_version` entirely regardless of their latched/durable status: the module's version identity lives in its `MODULE_ID` and provenance note (Appendix E), and a 0.x module carries no per-sample schema-version guarantee to signal.
 
 ### **2.12 Coordinate Axis Convention (Normative)**
 
@@ -346,6 +346,14 @@ and lose nothing a consumer could have relied on.
 rather than a region they occupy. A crossing is only meaningful if both ends
 agree which side is which, so the sides are fixed here rather than left to the
 producer.
+
+This is the deliberate counterpart to a zone ring. A `SpatialZone` polygon is a
+*closed* ring with a fixed winding (CCW), where the winding is what separates
+inside from outside; a `CrossingLine` is an *open* path whose two sides are
+separated instead by the path normal defined below. The asymmetry is
+intentional — a region has an interior to enclose, a line has only two sides to
+tell apart — and the two must not be conflated: a `CrossingLine` path is never
+implicitly closed.
 
 **Side rule.** Take the path in the order its vertices are published, from the
 first toward the last, in the line's `frame_ref` XY plane. For a path direction

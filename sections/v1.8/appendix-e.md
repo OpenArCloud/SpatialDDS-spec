@@ -431,7 +431,7 @@ This module is a provisional surface for implementers, offered so its shape can 
 
 #### **Two-tier tempo**
 
-The module splits what a thing *is* from where it *is right now*, the two-tier tempo pattern of Appendix M. `Entity` is the latched identity/type/extent/lifecycle record; `ModelPose` is a VOLATILE, KEEP_LAST(1)-per-key fast lane carrying only the pose that changed. A late joiner is handed nothing on the pose lane and reads the latched `Entity`, then converges on the next `ModelPose`. The `ModelLayer` hint (`STATIC`/`SLOW`/`FAST`) is informational in 0.1.
+The module splits what a thing *is* from where it *is right now* — a two-tier tempo. `Entity` is the latched identity/type/extent/lifecycle record; `ModelPose` is a VOLATILE, KEEP_LAST(1)-per-key fast lane carrying only the pose that changed. A late joiner is handed nothing on the pose lane and reads the latched `Entity`, then converges on the next `ModelPose`. The `ModelLayer` hint (`STATIC`/`SLOW`/`FAST`) is informational in 0.1.
 
 #### **Commands and declines**
 

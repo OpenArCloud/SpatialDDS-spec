@@ -20,6 +20,10 @@ module spatial {
       spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
+    // On-bus volumetric AABB: min and max corners as Vec3 in the enclosing
+    // struct's frame. The flat 6-element array counterpart for JSON/HTTP
+    // payloads is common::Aabb3D (§2.10); this struct is the wire form, and the
+    // two are distinct despite the near-identical names.
     @extensibility(APPENDABLE) struct Aabb3 {
       spatial::common::Vec3 min_xyz;
       spatial::common::Vec3 max_xyz;

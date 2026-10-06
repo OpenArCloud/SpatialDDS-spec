@@ -43,3 +43,16 @@ A conformance run MUST publish, per test, the evaluation-set size, the measured 
 ### Why this belongs in the standard
 
 This appendix converts SpatialDDS's honest-quality fields from *hope* into *contract*. The fields already exist; these tests give them teeth, so that "open" also means "verifiably honest" — the differentiator an open commons has over a closed VPS that markets unfalsifiable precision. It pairs naturally with the §6 Wire-Level Interop Testing item as its quality-layer counterpart.
+
+### 3GPP ISAC KPI bridge (Informative)
+
+For readers coming from 3GPP integrated-sensing work, the tests above restate, in SpatialDDS's own vocabulary, quantities the ISAC sensing KPIs (TS 22.137 service requirements; TR 38.765 scope) already name. This is a terminology bridge only; it changes no conformance requirement and introduces no KPI target — SpatialDDS tests *claim calibration*, not an absolute accuracy figure.
+
+| 3GPP ISAC KPI | SpatialDDS conformance analogue |
+|---|---|
+| Positioning / sensing **accuracy** KPI (e.g. position error at a stated percentile) | L.1 covariance calibration — the reported `CovMatrix` must be consistent with the observed error distribution (NEES within χ² bounds), i.e. the stated accuracy must be the *true* accuracy, not an advertised one. |
+| **Detection probability** (P_d) | L.2 status honesty — `VPS_SUCCESS` returned no more often than the claimed confidence actually holds; a fix below the requested bar must downgrade to `VPS_DEGRADED`. |
+| **False-alarm rate** (P_fa) | L.2 status honesty, read the other way — a resolver that returns a fabricated in-tolerance fix rather than `VPS_FAILED` on an unresolvable input is manufacturing false alarms; refusal is the conformance requirement. |
+| **Sensing latency / refresh** KPIs | Out of scope here — carried by QoS and the per-type timing fields, not by this appendix. |
+
+The mapping is deliberately loose: a 3GPP KPI is a numeric target a deployment sets, whereas an L-test asks only that whatever a producer claims is kept. A producer can cite both — the KPI it targets and the L-profile it has passed — and a consumer filters on the latter for *verified* quality.

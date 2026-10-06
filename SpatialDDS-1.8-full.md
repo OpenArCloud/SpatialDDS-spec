@@ -391,7 +391,7 @@ JSON examples throughout this specification MUST follow these conventions. Where
 
 The `schema_version` string present on all Meta and Frame types (e.g., `"spatial.sensing.vision/1.8"`) implicitly indicates stability: profiles listed in Appendices A–D are stable; profiles in Appendix E are provisional or informative.
 
-For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. Consumers in production deployments MAY use this flag to filter or warn on provisional data.
+For runtime discrimination, producers of provisional types SHOULD include a `MetaKV` entry with `namespace = "schema"` and key `stability` set to `"provisional"`. On a type whose metadata is carried as a plain `KV` sequence rather than `MetaKV` (for example `owm::Entity.properties`), the equivalent marking is a `KV` with key `schema.stability` and value `provisional`. Consumers in production deployments MAY use either form to filter or warn on provisional data.
 
 Example:
 
@@ -404,7 +404,7 @@ Example:
 
 Additionally, the `caps.features` field in `Announce` MAY carry feature flags prefixed with `provisional.` (e.g., `"provisional.rf_beam"`, `"provisional.radio"`). Consumers MAY filter `Announce` messages to exclude provisional features in production deployments.
 
-`schema_version` appears on Meta, Frame, and latched/durable types (descriptors that outlive a session or are recorded standalone). High-rate graph and sample types (`Node`, `Edge`, chunks) omit it; their schema identity travels via the topic's `TopicMeta` and `MODULE_ID`.
+`schema_version` appears on Meta, Frame, and latched/durable types (descriptors that outlive a session or are recorded standalone). High-rate graph and sample types (`Node`, `Edge`, chunks) omit it; their schema identity travels via the topic's `TopicMeta` and `MODULE_ID`. Types in a provisional 0.x module (for example `spatial.owm/0.1`) MAY omit `schema_version` entirely regardless of their latched/durable status: the module's version identity lives in its `MODULE_ID` and provenance note (Appendix E), and a 0.x module carries no per-sample schema-version guarantee to signal.
 
 ### **2.12 Coordinate Axis Convention (Normative)**
 
@@ -557,6 +557,14 @@ and lose nothing a consumer could have relied on.
 rather than a region they occupy. A crossing is only meaningful if both ends
 agree which side is which, so the sides are fixed here rather than left to the
 producer.
+
+This is the deliberate counterpart to a zone ring. A `SpatialZone` polygon is a
+*closed* ring with a fixed winding (CCW), where the winding is what separates
+inside from outside; a `CrossingLine` is an *open* path whose two sides are
+separated instead by the path normal defined below. The asymmetry is
+intentional — a region has an interior to enclose, a line has only two sides to
+tell apart — and the two must not be conflated: a `CrossingLine` path is never
+implicitly closed.
 
 **Side rule.** Take the path in the order its vertices are published, from the
 first toward the last, in the line's `frame_ref` XY plane. For a path direction
@@ -2211,6 +2219,10 @@ module builtin {
 module spatial {
   module common {
     typedef double BBox2D[4];
+    // Flat 3D AABB, [min_x, min_y, min_z, max_x, max_y, max_z], for JSON/HTTP
+    // payloads (see §2.10). This is the array form; the on-bus volumetric type
+    // is the core::Aabb3 struct (min_xyz/max_xyz), NOT this typedef. The two are
+    // distinct despite the near-identical names.
     typedef double Aabb3D[6];
     typedef double Vec3[3];
     typedef double Mat3x3[9];
@@ -2373,6 +2385,10 @@ module spatial {
       spatial::common::QuaternionXYZW q;     // quaternion (x,y,z,w) in GeoPose order
     };
 
+    // On-bus volumetric AABB: min and max corners as Vec3 in the enclosing
+    // struct's frame. The flat 6-element array counterpart for JSON/HTTP
+    // payloads is common::Aabb3D (§2.10); this struct is the wire form, and the
+    // two are distinct despite the near-identical names.
     @extensibility(APPENDABLE) struct Aabb3 {
       spatial::common::Vec3 min_xyz;
       spatial::common::Vec3 max_xyz;
@@ -3686,6 +3702,29 @@ All values are in meters and MUST be non-negative. For datasets that use `(width
 *Absent means `COV_SCOPE_LOCAL`. This is the conservative default: misreading composed data as local over-reports uncertainty, whereas the reverse under-reports it — the exact failure the composition chain exists to prevent.*
 
 For a bistatic or multistatic localized target, the producer MUST publish `observer_cov_scope = COV_SCOPE_COMPOSED`; `COV_SCOPE_LOCAL` is well-defined only for a single-origin observer. The bistatic solve folds transmitter-pose, receiver-pose, and measurement uncertainty together into the stated covariance, and the consumer has no composition handle on the transmitter — the observer field names only the measuring receiver — so a `LOCAL` scope would leave the transmitter's contribution unaccounted for.
+
+**Worked example — a bistatic localized target (Informative).** A 5G ISAC
+deployment localizes a target illuminated by one base station (the transmitter)
+and measured at another (the receiver), and reports it crossing a monitored
+boundary. It maps to existing types in five steps, no new type required:
+
+1. **Stations are latched nodes.** The transmitter and receiver are each a
+   `core::Node` (or a `core::GeoAnchor` for a geo-durable station), latched with
+   their pose and `cov` in a shared `frame_ref`.
+2. **The target is an ordinary detection, observer = the receiver.** A
+   `Detection3D` carries the solved target; `observer_position` is the measuring
+   receiver's origin and `observer_cov` is its pose uncertainty.
+3. **Scope is COMPOSED.** The producer sets `observer_cov_scope =
+   COV_SCOPE_COMPOSED` per the rule above, so the detection `cov` already carries
+   the full two-station geometry.
+4. **Contributors are enumerated out-of-band.** A `core::EntityBinding` for the
+   target lists both stations via `components` (each a `ComponentRef` naming the
+   station's node topic and key); the detection names the receiver, the binding
+   names the transmitter.
+5. **The crossing is an ordinary event.** The boundary is a `SpatialZone`
+   (`GEOFENCE`) or `CrossingLine`; the crossing is a `SpatialEvent`
+   (`ZONE_ENTRY`/`ZONE_EXIT` or `LINE_CROSS`) whose `trigger_det_id` references
+   the `Detection3D`.
 
 **Pose Skeletons (Normative)** *(added 1.8 Batch 3)*
 `Detection3D` carries an optional 3D pose skeleton: `has_keypoints`,
@@ -6610,7 +6649,7 @@ module spatial { module owm {
 
 #### **Two-tier tempo**
 
-The module splits what a thing *is* from where it *is right now*, the two-tier tempo pattern of Appendix M. `Entity` is the latched identity/type/extent/lifecycle record; `ModelPose` is a VOLATILE, KEEP_LAST(1)-per-key fast lane carrying only the pose that changed. A late joiner is handed nothing on the pose lane and reads the latched `Entity`, then converges on the next `ModelPose`. The `ModelLayer` hint (`STATIC`/`SLOW`/`FAST`) is informational in 0.1.
+The module splits what a thing *is* from where it *is right now* — a two-tier tempo. `Entity` is the latched identity/type/extent/lifecycle record; `ModelPose` is a VOLATILE, KEEP_LAST(1)-per-key fast lane carrying only the pose that changed. A late joiner is handed nothing on the pose lane and reads the latched `Entity`, then converges on the next `ModelPose`. The `ModelLayer` hint (`STATIC`/`SLOW`/`FAST`) is informational in 0.1.
 
 #### **Commands and declines**
 
@@ -7915,6 +7954,19 @@ A conformance run MUST publish, per test, the evaluation-set size, the measured 
 ### Why this belongs in the standard
 
 This appendix converts SpatialDDS's honest-quality fields from *hope* into *contract*. The fields already exist; these tests give them teeth, so that "open" also means "verifiably honest" — the differentiator an open commons has over a closed VPS that markets unfalsifiable precision. It pairs naturally with the §6 Wire-Level Interop Testing item as its quality-layer counterpart.
+
+### 3GPP ISAC KPI bridge (Informative)
+
+For readers coming from 3GPP integrated-sensing work, the tests above restate, in SpatialDDS's own vocabulary, quantities the ISAC sensing KPIs (TS 22.137 service requirements; TR 38.765 scope) already name. This is a terminology bridge only; it changes no conformance requirement and introduces no KPI target — SpatialDDS tests *claim calibration*, not an absolute accuracy figure.
+
+| 3GPP ISAC KPI | SpatialDDS conformance analogue |
+|---|---|
+| Positioning / sensing **accuracy** KPI (e.g. position error at a stated percentile) | L.1 covariance calibration — the reported `CovMatrix` must be consistent with the observed error distribution (NEES within χ² bounds), i.e. the stated accuracy must be the *true* accuracy, not an advertised one. |
+| **Detection probability** (P_d) | L.2 status honesty — `VPS_SUCCESS` returned no more often than the claimed confidence actually holds; a fix below the requested bar must downgrade to `VPS_DEGRADED`. |
+| **False-alarm rate** (P_fa) | L.2 status honesty, read the other way — a resolver that returns a fabricated in-tolerance fix rather than `VPS_FAILED` on an unresolvable input is manufacturing false alarms; refusal is the conformance requirement. |
+| **Sensing latency / refresh** KPIs | Out of scope here — carried by QoS and the per-type timing fields, not by this appendix. |
+
+The mapping is deliberately loose: a 3GPP KPI is a numeric target a deployment sets, whereas an L-test asks only that whatever a producer claims is kept. A producer can cite both — the KPI it targets and the L-profile it has passed — and a consumer filters on the latter for *verified* quality.
 
 ## **Appendix M: Documented Operational Conventions (Informative)**
 
