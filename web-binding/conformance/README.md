@@ -15,7 +15,7 @@ which is behind the endpoint is a bug in the check. That blindness is the design
 requirement that keeps the two deployment shapes (brief §3) from drifting apart:
 the same suite, byte-for-byte, must pass against both.
 
-Planned invocation (skips clean with reason + remedy when no endpoint is given,
+Invocation (skips clean with reason and remedy when no endpoint is given,
 matching the gates):
 
 ```sh
@@ -141,17 +141,45 @@ names and shapes are **[invented]** (semantics per brief §4 and §2.14):
    alone — sharing none of our code — consumes a live endpoint correctly. The
    validation bar the rest of 1.8 already meets, applied to the binding.
 
-## Build order within step 6
+## Build order within step 6 — done, with one scenario held
 
-1. This definition (stable; here).
-2. The runner skeleton: argument handling, schema loader (from `web-binding/schemas/`),
-   backend-blind endpoint client, skip-clean without `--endpoint`. Reuses
-   `gate_roundtrip.py`'s `canon`/`ecma262`.
-3. Cross-cutting checks, then the four scenarios — each wired as the gateway
-   (step 5) exposes the surface it needs, so no check encodes a gateway assumption
-   before the gateway proves it.
+1. This definition (stable; here). **Done.**
+2. The runner skeleton: argument handling, schema loader, backend-blind endpoint
+   client, skip-clean without `--endpoint`. **Done.**
+3. Cross-cutting checks, then the four scenarios. **Done**, nine checks and four
+   scenarios, wired against the standalone gateway in
+   `OpenArCloud/spatialdds-web`.
 
-Until a gateway endpoint exists, the suite is a definition plus a skeleton that
-SKIPs clean; it earns green against the first standalone gateway the sidecar
-stands up, and the same green against a bridged deployment is what certifies the
-binding — not either one alone.
+`§8.2 anchor resolve` SKIPs with its reason: the open-anchors option-2
+acceptance criteria land in `directions/` before that check is built. Nothing is
+asserted for it in the meantime, which is the point of printing the skip.
+
+**The rulings this suite implements**, from step 5's report:
+
+- **DDS-join material is optional-and-validated, never required.**
+  `service.connection`, `bootstrap` and `resolver` are correct when present and
+  conformant when absent (an omission, or a 404). The suite never demands DDS of
+  an endpoint that never claimed any, which is what lets the standalone shape
+  pass the suite that exists to certify it.
+- **A topic entry's `url` and `access` are expected.** `TopicMeta` has no URL;
+  adding one is what makes discovery hypermedia, so a client follows a link
+  rather than rebuilding `{base}/{scene}/{stream}/{type}/{version}` by string
+  surgery. Ratified into the pinned surface.
+- **Error bodies are taken as found**, pending the RFC 7807
+  `application/problem+json` evaluation at step 7. The suite asserts status
+  codes and that a refusal says how to authenticate, not a body shape.
+
+**Fault-injected before trusted**, against a deliberately broken endpoint: an
+operator-scoped resource served cacheable, a suppressed `end_of_replay`, and a
+renamed member on a served instance. Each is caught by the check that should
+catch it. The renamed-member case is the one worth noting, because it is the
+shape of finding 10: `additionalProperties: true` means a tolerant reader
+accepts the wrong name silently, and the suite is what notices.
+
+A green run against one shape is not certification. The same suite, unchanged,
+passing against a bridged DDS deployment is the other half, and that half is
+unexercised: there is no bridged endpoint yet. `§8.3` therefore verifies the
+invariant structurally — that no check branches on the backend, and that the
+runner takes nothing but an endpoint and a token — because that is a property of
+the suite rather than of any one endpoint, and a second endpoint would exercise
+it without proving it.
