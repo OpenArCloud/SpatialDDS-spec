@@ -612,10 +612,12 @@ def main():
     self_check(schemas)
 
     if not a.endpoint:
-        print("conformance: SKIP network checks — no --endpoint given.\n"
-              "  Remedy: pass --endpoint <url> of a binding gateway (bridged or "
-              "standalone). A gateway is stood up in step 5 (sidecar repo); the "
-              "network checks are added against it (README.md build order).")
+        print(f"conformance: SKIP {len(NETWORK_CHECKS)} network checks — no "
+              f"--endpoint given.\n"
+              "  Remedy: pass --endpoint <url> of a binding gateway, bridged or "
+              "standalone, and --token for its operator-scoped resources. A "
+              "standalone gateway is OpenArCloud/spatialdds-web:\n"
+              "    python3 tools/run_gateway.py --mcap <file> --port P --token T")
         return 0
 
     if not NETWORK_CHECKS:
