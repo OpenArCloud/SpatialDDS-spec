@@ -1,0 +1,237 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_BlobRef": {
+      "additionalProperties": true,
+      "properties": {
+        "blob_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "blob_id",
+        "role",
+        "checksum"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameHeader": {
+      "additionalProperties": true,
+      "properties": {
+        "blobs": {
+          "items": {
+            "$ref": "#/$defs/spatial_core_BlobRef"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "frame_seq": {
+          "pattern": "^\\d+$",
+          "type": "string"
+        },
+        "has_sensor_pose": {
+          "type": "boolean"
+        },
+        "sensor_pose": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "stream_id": {
+          "type": "string"
+        },
+        "t_end": {
+          "$ref": "#/$defs/builtin_Time"
+        },
+        "t_start": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_seq",
+        "t_start",
+        "t_end",
+        "has_sensor_pose",
+        "sensor_pose",
+        "blobs"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameQuality": {
+      "additionalProperties": true,
+      "properties": {
+        "has_snr_db": {
+          "type": "boolean"
+        },
+        "health": {
+          "enum": [
+            "OK",
+            "DEGRADED",
+            "ERROR"
+          ],
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "percent_valid": {
+          "type": "number"
+        },
+        "snr_db": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "has_snr_db",
+        "snr_db",
+        "percent_valid",
+        "health",
+        "note"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.lidar.LidarFrame",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "average_range_m": {
+      "type": "number"
+    },
+    "codec": {
+      "enum": [
+        "CODEC_NONE",
+        "LZ4",
+        "ZSTD",
+        "GZIP",
+        "DRACO",
+        "JPEG",
+        "H264",
+        "H265",
+        "AV1",
+        "FP8Q",
+        "FP4Q",
+        "AE_V1",
+        "PNG"
+      ],
+      "type": "string"
+    },
+    "encoding": {
+      "enum": [
+        "PCD",
+        "PLY",
+        "LAS",
+        "LAZ",
+        "BIN_INTERLEAVED",
+        "GLTF_DRACO",
+        "MPEG_PCC",
+        "CUSTOM_BIN"
+      ],
+      "type": "string"
+    },
+    "frame_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "has_average_range_m": {
+      "type": "boolean"
+    },
+    "has_per_point_timestamps": {
+      "type": "boolean"
+    },
+    "has_percent_valid": {
+      "type": "boolean"
+    },
+    "has_quality": {
+      "type": "boolean"
+    },
+    "hdr": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameHeader"
+    },
+    "layout": {
+      "enum": [
+        "XYZ_I",
+        "XYZ_I_R",
+        "XYZ_I_R_N",
+        "XYZ_I_R_T",
+        "XYZ_I_R_T_N"
+      ],
+      "type": "string"
+    },
+    "percent_valid": {
+      "type": "number"
+    },
+    "quality": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameQuality"
+    },
+    "stream_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "frame_seq",
+    "hdr",
+    "encoding",
+    "codec",
+    "layout",
+    "has_per_point_timestamps",
+    "has_average_range_m",
+    "average_range_m",
+    "has_percent_valid",
+    "percent_valid",
+    "has_quality",
+    "quality"
+  ],
+  "title": "spatial.sensing.lidar.LidarFrame",
+  "type": "object"
+}

@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_slam_frontend_Feature2D": {
+      "additionalProperties": true,
+      "properties": {
+        "angle": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number"
+        },
+        "score": {
+          "type": "number"
+        },
+        "u": {
+          "type": "number"
+        },
+        "v": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "u",
+        "v",
+        "scale",
+        "angle",
+        "score"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.slam_frontend.KeyframeFeatures",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "camera_id": {
+      "type": "string"
+    },
+    "desc_len": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "desc_type": {
+      "type": "string"
+    },
+    "descriptors": {
+      "contentEncoding": "base64",
+      "type": "string"
+    },
+    "keypoints": {
+      "items": {
+        "$ref": "#/$defs/spatial_slam_frontend_Feature2D"
+      },
+      "maxItems": 4096,
+      "type": "array"
+    },
+    "node_id": {
+      "type": "string"
+    },
+    "row_major": {
+      "type": "boolean"
+    },
+    "seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "node_id",
+    "camera_id",
+    "desc_type",
+    "desc_len",
+    "row_major",
+    "keypoints",
+    "descriptors",
+    "stamp",
+    "source_id",
+    "seq"
+  ],
+  "title": "spatial.slam_frontend.KeyframeFeatures",
+  "type": "object"
+}

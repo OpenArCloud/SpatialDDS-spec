@@ -1,0 +1,38 @@
+{
+  "$id": "spatialdds:webjson:spatial.core.BlobChunk",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "blob_id": {
+      "type": "string"
+    },
+    "crc32": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "data": {
+      "contentEncoding": "base64",
+      "type": "string"
+    },
+    "index": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "total_chunks": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "blob_id",
+    "index",
+    "total_chunks",
+    "crc32",
+    "data"
+  ],
+  "title": "spatial.core.BlobChunk",
+  "type": "object"
+}

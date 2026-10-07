@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.vio.MagnetometerSample",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "mag": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "mag_id": {
+      "type": "string"
+    },
+    "seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "mag_id",
+    "mag",
+    "stamp",
+    "frame_ref",
+    "source_id",
+    "seq"
+  ],
+  "title": "spatial.vio.MagnetometerSample",
+  "type": "object"
+}

@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_BlobRef": {
+      "additionalProperties": true,
+      "properties": {
+        "blob_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "blob_id",
+        "role",
+        "checksum"
+      ],
+      "type": "object"
+    },
+    "spatial_core_TileKey": {
+      "additionalProperties": true,
+      "properties": {
+        "level": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "x": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "z": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "level"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.TilePatch",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "blobs": {
+      "items": {
+        "$ref": "#/$defs/spatial_core_BlobRef"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "key": {
+      "$ref": "#/$defs/spatial_core_TileKey"
+    },
+    "op": {
+      "enum": [
+        "ADD",
+        "REPLACE",
+        "REMOVE"
+      ],
+      "type": "string"
+    },
+    "post_checksum": {
+      "type": "string"
+    },
+    "revision": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "target": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "revision",
+    "op",
+    "target",
+    "blobs",
+    "post_checksum",
+    "stamp"
+  ],
+  "title": "spatial.core.TilePatch",
+  "type": "object"
+}

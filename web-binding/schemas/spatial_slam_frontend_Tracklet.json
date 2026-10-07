@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_slam_frontend_TrackObs": {
+      "additionalProperties": true,
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "u": {
+          "type": "number"
+        },
+        "v": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "node_id",
+        "u",
+        "v"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.slam_frontend.Tracklet",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "has_lm_id": {
+      "type": "boolean"
+    },
+    "lm_id": {
+      "type": "string"
+    },
+    "obs": {
+      "items": {
+        "$ref": "#/$defs/spatial_slam_frontend_TrackObs"
+      },
+      "maxItems": 64,
+      "type": "array"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "track_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "track_id",
+    "has_lm_id",
+    "lm_id",
+    "obs",
+    "source_id",
+    "stamp"
+  ],
+  "title": "spatial.slam_frontend.Tracklet",
+  "type": "object"
+}

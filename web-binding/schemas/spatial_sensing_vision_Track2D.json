@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "spatial_sensing_vision_Keypoint2D": {
+      "additionalProperties": true,
+      "properties": {
+        "score": {
+          "type": "number"
+        },
+        "u": {
+          "type": "number"
+        },
+        "v": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "u",
+        "v",
+        "score"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.vision.Track2D",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "trail": {
+      "items": {
+        "$ref": "#/$defs/spatial_sensing_vision_Keypoint2D"
+      },
+      "maxItems": 8192,
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "trail"
+  ],
+  "title": "spatial.sensing.vision.Track2D",
+  "type": "object"
+}

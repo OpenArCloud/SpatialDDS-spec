@@ -1,0 +1,283 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_ComponentRef": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "topic": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic",
+        "key"
+      ],
+      "type": "object"
+    },
+    "spatial_core_CovMatrix": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "COV_NONE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pos": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POS3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 36,
+              "minItems": 36,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "rot": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_ROT3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose_twist": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 144,
+              "minItems": 144,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6_TWIST6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_core_FramedPose": {
+      "additionalProperties": true,
+      "properties": {
+        "cov": {
+          "$ref": "#/$defs/spatial_core_CovMatrix"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "pose": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "stamp": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "pose",
+        "frame_ref",
+        "cov",
+        "stamp"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.EntityBinding",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "components": {
+      "items": {
+        "$ref": "#/$defs/spatial_core_ComponentRef"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "entity_class": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "has_pose": {
+      "type": "boolean"
+    },
+    "pose": {
+      "$ref": "#/$defs/spatial_core_FramedPose"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "entity_id",
+    "entity_class",
+    "components",
+    "has_pose",
+    "pose",
+    "stamp",
+    "source_id",
+    "schema_version"
+  ],
+  "title": "spatial.core.EntityBinding",
+  "type": "object"
+}

@@ -1,0 +1,236 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_BlobRef": {
+      "additionalProperties": true,
+      "properties": {
+        "blob_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "blob_id",
+        "role",
+        "checksum"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameHeader": {
+      "additionalProperties": true,
+      "properties": {
+        "blobs": {
+          "items": {
+            "$ref": "#/$defs/spatial_core_BlobRef"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "frame_seq": {
+          "pattern": "^\\d+$",
+          "type": "string"
+        },
+        "has_sensor_pose": {
+          "type": "boolean"
+        },
+        "sensor_pose": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "stream_id": {
+          "type": "string"
+        },
+        "t_end": {
+          "$ref": "#/$defs/builtin_Time"
+        },
+        "t_start": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_seq",
+        "t_start",
+        "t_end",
+        "has_sensor_pose",
+        "sensor_pose",
+        "blobs"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameQuality": {
+      "additionalProperties": true,
+      "properties": {
+        "has_snr_db": {
+          "type": "boolean"
+        },
+        "health": {
+          "enum": [
+            "OK",
+            "DEGRADED",
+            "ERROR"
+          ],
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "percent_valid": {
+          "type": "number"
+        },
+        "snr_db": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "has_snr_db",
+        "snr_db",
+        "percent_valid",
+        "health",
+        "note"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.rf_beam.RfBeamFrame",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "beam_indices": {
+      "items": {
+        "maximum": 65535,
+        "minimum": 0,
+        "type": "integer"
+      },
+      "maxItems": 1024,
+      "type": "array"
+    },
+    "best_beam_idx": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "best_beam_power": {
+      "type": "number"
+    },
+    "blockage_confidence": {
+      "type": "number"
+    },
+    "frame_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "has_best_beam": {
+      "type": "boolean"
+    },
+    "has_blockage_state": {
+      "type": "boolean"
+    },
+    "has_quality": {
+      "type": "boolean"
+    },
+    "has_snr_db": {
+      "type": "boolean"
+    },
+    "hdr": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameHeader"
+    },
+    "is_blocked": {
+      "type": "boolean"
+    },
+    "power": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 1024,
+      "type": "array"
+    },
+    "quality": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameQuality"
+    },
+    "snr_db": {
+      "type": "number"
+    },
+    "stream_id": {
+      "type": "string"
+    },
+    "sweep_type": {
+      "enum": [
+        "EXHAUSTIVE",
+        "HIERARCHICAL",
+        "TRACKING",
+        "PARTIAL",
+        "OTHER"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "frame_seq",
+    "hdr",
+    "sweep_type",
+    "power",
+    "beam_indices",
+    "has_best_beam",
+    "best_beam_idx",
+    "best_beam_power",
+    "has_blockage_state",
+    "is_blocked",
+    "blockage_confidence",
+    "has_snr_db",
+    "snr_db",
+    "has_quality",
+    "quality"
+  ],
+  "title": "spatial.sensing.rf_beam.RfBeamFrame",
+  "type": "object"
+}

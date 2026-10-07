@@ -1,0 +1,248 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_CovMatrix": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "COV_NONE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pos": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POS3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 36,
+              "minItems": 36,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "rot": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_ROT3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose_twist": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 144,
+              "minItems": 144,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6_TWIST6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.mapping.MapAlignment",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "T_from_to": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "alignment_id": {
+      "type": "string"
+    },
+    "cov": {
+      "$ref": "#/$defs/spatial_core_CovMatrix"
+    },
+    "evidence_edge_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "type": "array"
+    },
+    "has_match_score": {
+      "type": "boolean"
+    },
+    "has_overlap_pct": {
+      "type": "boolean"
+    },
+    "has_scale_ratio": {
+      "type": "boolean"
+    },
+    "has_supporting_edges": {
+      "type": "boolean"
+    },
+    "map_id_from": {
+      "type": "string"
+    },
+    "map_id_to": {
+      "type": "string"
+    },
+    "match_score": {
+      "type": "number"
+    },
+    "method": {
+      "enum": [
+        "VISUAL_LOOP",
+        "LIDAR_ICP",
+        "ANCHOR_MATCH",
+        "GPS_COARSE",
+        "SEMANTIC_MATCH",
+        "MANUAL",
+        "MULTI_METHOD",
+        "RANGE_COARSE",
+        "OTHER"
+      ],
+      "type": "string"
+    },
+    "overlap_pct": {
+      "type": "number"
+    },
+    "revision": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "scale_ratio": {
+      "type": "number"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "supporting_edges": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "alignment_id",
+    "map_id_from",
+    "map_id_to",
+    "T_from_to",
+    "cov",
+    "method",
+    "stamp",
+    "source_id",
+    "has_match_score",
+    "match_score",
+    "has_overlap_pct",
+    "overlap_pct",
+    "has_supporting_edges",
+    "supporting_edges",
+    "revision",
+    "evidence_edge_ids",
+    "schema_version",
+    "has_scale_ratio",
+    "scale_ratio"
+  ],
+  "title": "spatial.mapping.MapAlignment",
+  "type": "object"
+}

@@ -1,0 +1,97 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.mapping.MapEvent",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "alignment_id": {
+      "type": "string"
+    },
+    "event": {
+      "enum": [
+        "CREATED",
+        "EPOCH_ADVANCE",
+        "STATUS_CHANGE",
+        "ALIGNMENT_NEW",
+        "ALIGNMENT_UPDATE",
+        "DEPRECATED",
+        "DELETED"
+      ],
+      "type": "string"
+    },
+    "has_alignment_id": {
+      "type": "boolean"
+    },
+    "has_new_epoch": {
+      "type": "boolean"
+    },
+    "has_new_status": {
+      "type": "boolean"
+    },
+    "has_reason": {
+      "type": "boolean"
+    },
+    "map_id": {
+      "type": "string"
+    },
+    "new_epoch": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "new_status": {
+      "enum": [
+        "BUILDING",
+        "OPTIMIZING",
+        "STABLE",
+        "FROZEN",
+        "DEPRECATED"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "map_id",
+    "event",
+    "source_id",
+    "stamp",
+    "has_new_status",
+    "new_status",
+    "has_new_epoch",
+    "new_epoch",
+    "has_alignment_id",
+    "alignment_id",
+    "has_reason",
+    "reason"
+  ],
+  "title": "spatial.mapping.MapEvent",
+  "type": "object"
+}

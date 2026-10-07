@@ -1,0 +1,31 @@
+{
+  "$id": "spatialdds:webjson:spatial.slam_frontend.Feature2D",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "angle": {
+      "type": "number"
+    },
+    "scale": {
+      "type": "number"
+    },
+    "score": {
+      "type": "number"
+    },
+    "u": {
+      "type": "number"
+    },
+    "v": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "u",
+    "v",
+    "scale",
+    "angle",
+    "score"
+  ],
+  "title": "spatial.slam_frontend.Feature2D",
+  "type": "object"
+}

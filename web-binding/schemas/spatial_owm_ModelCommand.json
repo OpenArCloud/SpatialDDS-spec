@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_Aabb3": {
+      "additionalProperties": true,
+      "properties": {
+        "max_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "min_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "min_xyz",
+        "max_xyz"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.owm.ModelCommand",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "command_id": {
+      "type": "string"
+    },
+    "extent": {
+      "$ref": "#/$defs/spatial_core_Aabb3"
+    },
+    "has_extent": {
+      "type": "boolean"
+    },
+    "has_pose": {
+      "type": "boolean"
+    },
+    "pose": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "requester_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "subject_id": {
+      "type": "string"
+    },
+    "verb": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "command_id",
+    "verb",
+    "subject_id",
+    "reason",
+    "requester_id",
+    "has_pose",
+    "pose",
+    "has_extent",
+    "extent",
+    "stamp"
+  ],
+  "title": "spatial.owm.ModelCommand",
+  "type": "object"
+}

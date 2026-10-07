@@ -1,0 +1,91 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.common.ROI",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "_global": {
+      "type": "boolean"
+    },
+    "az_max": {
+      "type": "number"
+    },
+    "az_min": {
+      "type": "number"
+    },
+    "dop_max": {
+      "type": "number"
+    },
+    "dop_min": {
+      "type": "number"
+    },
+    "el_max": {
+      "type": "number"
+    },
+    "el_min": {
+      "type": "number"
+    },
+    "has_azimuth": {
+      "type": "boolean"
+    },
+    "has_doppler": {
+      "type": "boolean"
+    },
+    "has_elevation": {
+      "type": "boolean"
+    },
+    "has_image_roi": {
+      "type": "boolean"
+    },
+    "has_range": {
+      "type": "boolean"
+    },
+    "range_max": {
+      "type": "number"
+    },
+    "range_min": {
+      "type": "number"
+    },
+    "u_max": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "u_min": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "v_max": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "v_min": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "has_range",
+    "range_min",
+    "range_max",
+    "has_azimuth",
+    "az_min",
+    "az_max",
+    "has_elevation",
+    "el_min",
+    "el_max",
+    "has_doppler",
+    "dop_min",
+    "dop_max",
+    "has_image_roi",
+    "u_min",
+    "v_min",
+    "u_max",
+    "v_max",
+    "_global"
+  ],
+  "title": "spatial.sensing.common.ROI",
+  "type": "object"
+}

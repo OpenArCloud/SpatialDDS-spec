@@ -1,0 +1,95 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.PlannedWaypoint",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "confidence": {
+      "type": "number"
+    },
+    "has_confidence": {
+      "type": "boolean"
+    },
+    "has_uncertainty": {
+      "type": "boolean"
+    },
+    "has_velocity": {
+      "type": "boolean"
+    },
+    "pose": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "position_uncertainty_m": {
+      "type": "number"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "velocity": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    }
+  },
+  "required": [
+    "pose",
+    "stamp",
+    "has_velocity",
+    "velocity",
+    "has_uncertainty",
+    "position_uncertainty_m",
+    "has_confidence",
+    "confidence"
+  ],
+  "title": "spatial.core.PlannedWaypoint",
+  "type": "object"
+}

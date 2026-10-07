@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.Edge",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "T_from_to": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "edge_id": {
+      "type": "string"
+    },
+    "from_id": {
+      "type": "string"
+    },
+    "graph_epoch": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "information": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 36,
+      "minItems": 36,
+      "type": "array"
+    },
+    "map_id": {
+      "type": "string"
+    },
+    "seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "to_id": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "ODOM",
+        "LOOP"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "map_id",
+    "edge_id",
+    "from_id",
+    "to_id",
+    "type",
+    "T_from_to",
+    "information",
+    "stamp",
+    "source_id",
+    "seq",
+    "graph_epoch"
+  ],
+  "title": "spatial.core.Edge",
+  "type": "object"
+}

@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "spatial_core_TileKey": {
+      "additionalProperties": true,
+      "properties": {
+        "level": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "x": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "z": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "level"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.SnapshotResponse",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "blob_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "type": "array"
+    },
+    "checksum": {
+      "type": "string"
+    },
+    "key": {
+      "$ref": "#/$defs/spatial_core_TileKey"
+    },
+    "revision": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "revision",
+    "blob_ids",
+    "checksum"
+  ],
+  "title": "spatial.core.SnapshotResponse",
+  "type": "object"
+}

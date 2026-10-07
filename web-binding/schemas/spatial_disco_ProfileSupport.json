@@ -1,0 +1,33 @@
+{
+  "$id": "spatialdds:webjson:spatial.disco.ProfileSupport",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "major": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "max_minor": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "min_minor": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "major",
+    "min_minor",
+    "max_minor"
+  ],
+  "title": "spatial.disco.ProfileSupport",
+  "type": "object"
+}

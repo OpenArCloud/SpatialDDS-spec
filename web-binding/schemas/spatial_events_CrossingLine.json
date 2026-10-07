@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    },
+    "spatial_common_MetaKV": {
+      "additionalProperties": true,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/spatial_common_KV"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "json": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "json",
+        "entries"
+      ],
+      "type": "object"
+    },
+    "spatial_common_Vec2": {
+      "additionalProperties": true,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "spatial_core_Aabb3": {
+      "additionalProperties": true,
+      "properties": {
+        "max_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "min_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "min_xyz",
+        "max_xyz"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.events.CrossingLine",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "attributes": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_MetaKV"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "bounds": {
+      "$ref": "#/$defs/spatial_core_Aabb3"
+    },
+    "class_filter": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "has_bounds": {
+      "type": "boolean"
+    },
+    "has_vertical_band": {
+      "type": "boolean"
+    },
+    "line_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "path": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_Vec2"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "provider_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "z_max": {
+      "type": "number"
+    },
+    "z_min": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "line_id",
+    "name",
+    "frame_ref",
+    "path",
+    "has_vertical_band",
+    "z_min",
+    "z_max",
+    "has_bounds",
+    "bounds",
+    "class_filter",
+    "provider_id",
+    "stamp",
+    "attributes",
+    "schema_version"
+  ],
+  "title": "spatial.events.CrossingLine",
+  "type": "object"
+}

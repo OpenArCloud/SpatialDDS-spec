@@ -1,0 +1,22 @@
+{
+  "$id": "spatialdds:webjson:builtin.Time",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "nanosec": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "sec": {
+      "pattern": "^-?\\d+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sec",
+    "nanosec"
+  ],
+  "title": "builtin.Time",
+  "type": "object"
+}

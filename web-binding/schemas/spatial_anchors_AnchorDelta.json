@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_anchors_AnchorEntry": {
+      "additionalProperties": true,
+      "properties": {
+        "anchor_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "geopose": {
+          "$ref": "#/$defs/spatial_core_GeoPose"
+        },
+        "name": {
+          "type": "string"
+        },
+        "stamp": {
+          "$ref": "#/$defs/builtin_Time"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array"
+        }
+      },
+      "required": [
+        "anchor_id",
+        "name",
+        "geopose",
+        "confidence",
+        "tags",
+        "stamp",
+        "checksum"
+      ],
+      "type": "object"
+    },
+    "spatial_core_CovMatrix": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "COV_NONE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pos": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POS3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 36,
+              "minItems": 36,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "rot": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_ROT3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose_twist": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 144,
+              "minItems": 144,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6_TWIST6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_core_GeoPose": {
+      "additionalProperties": true,
+      "properties": {
+        "alt_m": {
+          "type": "number"
+        },
+        "cov": {
+          "$ref": "#/$defs/spatial_core_CovMatrix"
+        },
+        "lat_deg": {
+          "type": "number"
+        },
+        "lon_deg": {
+          "type": "number"
+        },
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "stamp": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "lat_deg",
+        "lon_deg",
+        "alt_m",
+        "q",
+        "stamp",
+        "cov"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.anchors.AnchorDelta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "entry": {
+      "$ref": "#/$defs/spatial_anchors_AnchorEntry"
+    },
+    "op": {
+      "enum": [
+        "ADD",
+        "UPDATE",
+        "REMOVE"
+      ],
+      "type": "string"
+    },
+    "post_checksum": {
+      "type": "string"
+    },
+    "revision": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "set_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "set_id",
+    "op",
+    "entry",
+    "revision",
+    "stamp",
+    "post_checksum"
+  ],
+  "title": "spatial.anchors.AnchorDelta",
+  "type": "object"
+}

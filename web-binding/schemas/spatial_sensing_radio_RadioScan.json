@@ -1,0 +1,327 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_radio_RadioObservation": {
+      "additionalProperties": true,
+      "properties": {
+        "aoa_azimuth_deg": {
+          "type": "number"
+        },
+        "aoa_elevation_deg": {
+          "type": "number"
+        },
+        "band": {
+          "enum": [
+            "BAND_UNKNOWN",
+            "BAND_2_4GHZ",
+            "BAND_5GHZ",
+            "BAND_6GHZ",
+            "BAND_60GHZ"
+          ],
+          "type": "string"
+        },
+        "channel": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "frequency_mhz": {
+          "type": "number"
+        },
+        "has_aoa_azimuth": {
+          "type": "boolean"
+        },
+        "has_aoa_elevation": {
+          "type": "boolean"
+        },
+        "has_band": {
+          "type": "boolean"
+        },
+        "has_channel": {
+          "type": "boolean"
+        },
+        "has_frequency": {
+          "type": "boolean"
+        },
+        "has_major_minor": {
+          "type": "boolean"
+        },
+        "has_measurement_count": {
+          "type": "boolean"
+        },
+        "has_noise_floor": {
+          "type": "boolean"
+        },
+        "has_range": {
+          "type": "boolean"
+        },
+        "has_range_std": {
+          "type": "boolean"
+        },
+        "has_ssid": {
+          "type": "boolean"
+        },
+        "has_tx_power": {
+          "type": "boolean"
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "major": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "measurement_count": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "measurement_kind": {
+          "enum": [
+            "RSSI",
+            "RTT_NS",
+            "AOA_DEG",
+            "RANGE_M",
+            "RSRP",
+            "CSI_REF",
+            "OTHER_MEASURE"
+          ],
+          "type": "string"
+        },
+        "minor": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "noise_floor_dbm": {
+          "type": "number"
+        },
+        "range_m": {
+          "type": "number"
+        },
+        "range_std_m": {
+          "type": "number"
+        },
+        "ssid": {
+          "type": "string"
+        },
+        "tx_power_dbm": {
+          "maximum": 127,
+          "minimum": -128,
+          "type": "integer"
+        },
+        "value": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "identifier",
+        "measurement_kind",
+        "value",
+        "has_frequency",
+        "frequency_mhz",
+        "has_band",
+        "band",
+        "has_ssid",
+        "ssid",
+        "has_channel",
+        "channel",
+        "has_major_minor",
+        "major",
+        "minor",
+        "has_tx_power",
+        "tx_power_dbm",
+        "has_range",
+        "range_m",
+        "has_range_std",
+        "range_std_m",
+        "has_aoa_azimuth",
+        "aoa_azimuth_deg",
+        "has_aoa_elevation",
+        "aoa_elevation_deg",
+        "has_noise_floor",
+        "noise_floor_dbm",
+        "has_measurement_count",
+        "measurement_count"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.radio.RadioScan",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "aggregation_window_s": {
+      "type": "number"
+    },
+    "has_aggregation_window": {
+      "type": "boolean"
+    },
+    "has_scan_duration": {
+      "type": "boolean"
+    },
+    "has_sensor_pose": {
+      "type": "boolean"
+    },
+    "observations": {
+      "items": {
+        "$ref": "#/$defs/spatial_sensing_radio_RadioObservation"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "pose_frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "radio_type": {
+      "enum": [
+        "WIFI",
+        "BLE",
+        "BT_CLASSIC",
+        "UWB",
+        "CELLULAR",
+        "LORA",
+        "OTHER_RADIO"
+      ],
+      "type": "string"
+    },
+    "scan_duration_s": {
+      "type": "number"
+    },
+    "scan_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "sensor_id": {
+      "type": "string"
+    },
+    "sensor_pose": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "sensor_id",
+    "radio_type",
+    "scan_seq",
+    "stamp",
+    "has_scan_duration",
+    "scan_duration_s",
+    "observations",
+    "has_aggregation_window",
+    "aggregation_window_s",
+    "source_id",
+    "has_sensor_pose",
+    "sensor_pose",
+    "pose_frame_ref",
+    "schema_version"
+  ],
+  "title": "spatial.sensing.radio.RadioScan",
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "$id": "spatialdds:webjson:spatial.semantics.KeypointLink",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "from_index": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "to_index": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "from_index",
+    "to_index"
+  ],
+  "title": "spatial.semantics.KeypointLink",
+  "type": "object"
+}

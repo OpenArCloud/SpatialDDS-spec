@@ -1,0 +1,32 @@
+{
+  "$id": "spatialdds:webjson:spatial.semantics.Keypoint3D",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "confidence": {
+      "type": "number"
+    },
+    "has_visible": {
+      "type": "boolean"
+    },
+    "position": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "visible": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "position",
+    "confidence",
+    "has_visible",
+    "visible"
+  ],
+  "title": "spatial.semantics.Keypoint3D",
+  "type": "object"
+}

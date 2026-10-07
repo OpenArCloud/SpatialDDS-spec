@@ -1,0 +1,229 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_BlobRef": {
+      "additionalProperties": true,
+      "properties": {
+        "blob_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "blob_id",
+        "role",
+        "checksum"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameHeader": {
+      "additionalProperties": true,
+      "properties": {
+        "blobs": {
+          "items": {
+            "$ref": "#/$defs/spatial_core_BlobRef"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "frame_seq": {
+          "pattern": "^\\d+$",
+          "type": "string"
+        },
+        "has_sensor_pose": {
+          "type": "boolean"
+        },
+        "sensor_pose": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "stream_id": {
+          "type": "string"
+        },
+        "t_end": {
+          "$ref": "#/$defs/builtin_Time"
+        },
+        "t_start": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_seq",
+        "t_start",
+        "t_end",
+        "has_sensor_pose",
+        "sensor_pose",
+        "blobs"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameQuality": {
+      "additionalProperties": true,
+      "properties": {
+        "has_snr_db": {
+          "type": "boolean"
+        },
+        "health": {
+          "enum": [
+            "OK",
+            "DEGRADED",
+            "ERROR"
+          ],
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "percent_valid": {
+          "type": "number"
+        },
+        "snr_db": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "has_snr_db",
+        "snr_db",
+        "percent_valid",
+        "health",
+        "note"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.vision.VisionFrame",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "codec": {
+      "enum": [
+        "CODEC_NONE",
+        "LZ4",
+        "ZSTD",
+        "GZIP",
+        "DRACO",
+        "JPEG",
+        "H264",
+        "H265",
+        "AV1",
+        "FP8Q",
+        "FP4Q",
+        "AE_V1",
+        "PNG"
+      ],
+      "type": "string"
+    },
+    "color": {
+      "enum": [
+        "SRGB",
+        "REC709",
+        "REC2020",
+        "LINEAR"
+      ],
+      "type": "string"
+    },
+    "frame_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "has_line_readout_us": {
+      "type": "boolean"
+    },
+    "hdr": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameHeader"
+    },
+    "is_key_frame": {
+      "type": "boolean"
+    },
+    "line_readout_us": {
+      "type": "number"
+    },
+    "pix": {
+      "enum": [
+        "UNKNOWN",
+        "YUV420",
+        "RGB8",
+        "BGR8",
+        "RGBA8",
+        "DEPTH16",
+        "RAW10",
+        "RAW12",
+        "RAW16"
+      ],
+      "type": "string"
+    },
+    "quality": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameQuality"
+    },
+    "rectified": {
+      "type": "boolean"
+    },
+    "stream_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "frame_seq",
+    "hdr",
+    "codec",
+    "pix",
+    "color",
+    "has_line_readout_us",
+    "line_readout_us",
+    "rectified",
+    "is_key_frame",
+    "quality"
+  ],
+  "title": "spatial.sensing.vision.VisionFrame",
+  "type": "object"
+}

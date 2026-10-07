@@ -1,0 +1,35 @@
+{
+  "$id": "spatialdds:webjson:spatial.slam_frontend.FeatureMatch",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "idx_a": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "idx_b": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "node_id_a": {
+      "type": "string"
+    },
+    "node_id_b": {
+      "type": "string"
+    },
+    "score": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "node_id_a",
+    "idx_a",
+    "node_id_b",
+    "idx_b",
+    "score"
+  ],
+  "title": "spatial.slam_frontend.FeatureMatch",
+  "type": "object"
+}

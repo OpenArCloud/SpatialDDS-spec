@@ -1,0 +1,45 @@
+{
+  "$defs": {
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.common.MetaKV",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_KV"
+      },
+      "maxItems": 64,
+      "type": "array"
+    },
+    "json": {
+      "type": "string"
+    },
+    "namespace": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "namespace",
+    "json",
+    "entries"
+  ],
+  "title": "spatial.common.MetaKV",
+  "type": "object"
+}

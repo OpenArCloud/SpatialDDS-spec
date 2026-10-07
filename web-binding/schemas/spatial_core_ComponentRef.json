@@ -1,0 +1,19 @@
+{
+  "$id": "spatialdds:webjson:spatial.core.ComponentRef",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "topic": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "topic",
+    "key"
+  ],
+  "title": "spatial.core.ComponentRef",
+  "type": "object"
+}

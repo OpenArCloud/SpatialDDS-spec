@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    },
+    "spatial_common_MetaKV": {
+      "additionalProperties": true,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/spatial_common_KV"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "json": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "json",
+        "entries"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.common.AssetRef",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "hash": {
+      "type": "string"
+    },
+    "media_type": {
+      "type": "string"
+    },
+    "meta": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_MetaKV"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "uri": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "uri",
+    "media_type",
+    "hash",
+    "meta"
+  ],
+  "title": "spatial.common.AssetRef",
+  "type": "object"
+}

@@ -1,0 +1,65 @@
+{
+  "$id": "spatialdds:webjson:spatial.mapping.MapQuality",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "coverage_pct": {
+      "type": "number"
+    },
+    "has_coverage_pct": {
+      "type": "boolean"
+    },
+    "has_keyframe_count": {
+      "type": "boolean"
+    },
+    "has_landmark_count": {
+      "type": "boolean"
+    },
+    "has_loop_closure_count": {
+      "type": "boolean"
+    },
+    "has_max_drift_m": {
+      "type": "boolean"
+    },
+    "has_mean_residual": {
+      "type": "boolean"
+    },
+    "keyframe_count": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "landmark_count": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "loop_closure_count": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "max_drift_m": {
+      "type": "number"
+    },
+    "mean_residual": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "has_loop_closure_count",
+    "loop_closure_count",
+    "has_mean_residual",
+    "mean_residual",
+    "has_max_drift_m",
+    "max_drift_m",
+    "has_coverage_pct",
+    "coverage_pct",
+    "has_keyframe_count",
+    "keyframe_count",
+    "has_landmark_count",
+    "landmark_count"
+  ],
+  "title": "spatial.mapping.MapQuality",
+  "type": "object"
+}

@@ -1,0 +1,308 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_FrameQuality": {
+      "additionalProperties": true,
+      "properties": {
+        "has_snr_db": {
+          "type": "boolean"
+        },
+        "health": {
+          "enum": [
+            "OK",
+            "DEGRADED",
+            "ERROR"
+          ],
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "percent_valid": {
+          "type": "number"
+        },
+        "snr_db": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "has_snr_db",
+        "snr_db",
+        "percent_valid",
+        "health",
+        "note"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_rad_RadDetection": {
+      "additionalProperties": true,
+      "properties": {
+        "ambig_state": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dyn_prop": {
+          "enum": [
+            "UNKNOWN",
+            "MOVING",
+            "STATIONARY",
+            "ONCOMING",
+            "CROSSING_LEFT",
+            "CROSSING_RIGHT",
+            "STOPPED"
+          ],
+          "type": "string"
+        },
+        "false_alarm_prob": {
+          "type": "number"
+        },
+        "has_ambig_state": {
+          "type": "boolean"
+        },
+        "has_dyn_prop": {
+          "type": "boolean"
+        },
+        "has_false_alarm_prob": {
+          "type": "boolean"
+        },
+        "has_pos_rms": {
+          "type": "boolean"
+        },
+        "has_rcs_dbm2": {
+          "type": "boolean"
+        },
+        "has_sensor_track_id": {
+          "type": "boolean"
+        },
+        "has_v_r_mps": {
+          "type": "boolean"
+        },
+        "has_vel_rms": {
+          "type": "boolean"
+        },
+        "has_velocity_comp_xyz": {
+          "type": "boolean"
+        },
+        "has_velocity_xyz": {
+          "type": "boolean"
+        },
+        "intensity": {
+          "type": "number"
+        },
+        "quality": {
+          "type": "number"
+        },
+        "rcs_dbm2": {
+          "type": "number"
+        },
+        "sensor_track_id": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "v_r_mps": {
+          "type": "number"
+        },
+        "velocity_comp_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "velocity_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "vx_rms_mps": {
+          "type": "number"
+        },
+        "vy_rms_mps": {
+          "type": "number"
+        },
+        "vz_rms_mps": {
+          "type": "number"
+        },
+        "x_rms_m": {
+          "type": "number"
+        },
+        "xyz_m": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "y_rms_m": {
+          "type": "number"
+        },
+        "z_rms_m": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "xyz_m",
+        "has_velocity_xyz",
+        "velocity_xyz",
+        "has_v_r_mps",
+        "v_r_mps",
+        "has_velocity_comp_xyz",
+        "velocity_comp_xyz",
+        "has_rcs_dbm2",
+        "rcs_dbm2",
+        "intensity",
+        "quality",
+        "has_dyn_prop",
+        "dyn_prop",
+        "has_pos_rms",
+        "x_rms_m",
+        "y_rms_m",
+        "z_rms_m",
+        "has_vel_rms",
+        "vx_rms_mps",
+        "vy_rms_mps",
+        "vz_rms_mps",
+        "has_ambig_state",
+        "ambig_state",
+        "has_false_alarm_prob",
+        "false_alarm_prob",
+        "has_sensor_track_id",
+        "sensor_track_id"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.rad.RadDetectionSet",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "dets": {
+      "items": {
+        "$ref": "#/$defs/spatial_sensing_rad_RadDetection"
+      },
+      "maxItems": 32768,
+      "type": "array"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "frame_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "has_quality": {
+      "type": "boolean"
+    },
+    "proc_chain": {
+      "type": "string"
+    },
+    "quality": {
+      "$ref": "#/$defs/spatial_sensing_common_FrameQuality"
+    },
+    "seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "stream_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "frame_seq",
+    "frame_ref",
+    "dets",
+    "stamp",
+    "source_id",
+    "seq",
+    "proc_chain",
+    "has_quality",
+    "quality"
+  ],
+  "title": "spatial.sensing.rad.RadDetectionSet",
+  "type": "object"
+}

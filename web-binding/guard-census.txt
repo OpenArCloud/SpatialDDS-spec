@@ -1,0 +1,187 @@
+# has_* Guard Census — evidence for the contiguous-run rule (web-binding MAPPING.md)
+# Generated from idlc's AST: idlc -l py over idl/v1.8 (+provisional), parsing the
+# generated dataclass field order. Each row: STRUCT  GUARD -> [contiguous run to next guard].
+# VERDICT: rule REFUTED — see MAPPING.md Optionality section. Over-capture and
+# capability-flag (EMPTY) cases prove no purely-structural rule reproduces intent.
+# Regenerate: PATH=<miniforge/bin>:$PATH; idlc -l py over idl/v1.8; /tmp/ast_census.py
+
+NodeGeo                has_geopose                -> ['geopose', 'source_id', 'seq', 'graph_epoch']  MULTI
+VpsRequest             has_prior_geopose          -> ['prior_geopose', 'query_blobs', 'query_stream_id']  MULTI
+VpsRequest             has_quality_requirements   -> ['quality_requirements', 'stamp']  MULTI
+VpsResponse            has_node_geo               -> ['node_geo', 'confidence']  MULTI
+VpsResponse            has_rmse_m                 -> ['rmse_m', 'stamp']  MULTI
+FrameRef               has_coord_convention       -> ['coord_convention']
+FrameRef               has_scale                  -> ['scale_status', 'meters_per_unit', 'display_unit']  MULTI
+TileMeta               has_tile_id_compat         -> ['tile_id_compat', 'aabb', 'version', 'encoding', 'checksum', 'blob_ids']  MULTI
+TileMeta               has_centroid_llh           -> ['centroid_llh']
+TileMeta               has_radius_m               -> ['radius_m', 'schema_version']  MULTI
+PlannedWaypoint        has_velocity               -> ['velocity']
+PlannedWaypoint        has_uncertainty            -> ['position_uncertainty_m']
+PlannedWaypoint        has_confidence             -> ['confidence']
+PlannedTrajectory      has_goal_pose              -> ['goal_pose']
+PlannedTrajectory      has_horizon_sec            -> ['horizon_sec']
+PlannedTrajectory      has_replan_rate_hz         -> ['replan_rate_hz', 'stamp', 'schema_version']  MULTI
+EntityBinding          has_pose                   -> ['pose', 'stamp', 'source_id', 'schema_version']  MULTI
+NavSatStatus           has_dop                    -> ['pdop', 'hdop', 'vdop']  MULTI
+NavSatStatus           has_velocity               -> ['speed_mps', 'course_deg']  MULTI
+NavSatStatus           has_diff_age               -> ['diff_age_s', 'diff_station_id', 'stamp', 'schema_version']  MULTI
+CoverageElement        has_crs                    -> ['crs']
+CoverageElement        has_bbox                   -> ['bbox']
+CoverageElement        has_aabb                   -> ['aabb', '_global']  MULTI
+CoverageElement        has_frame_ref              -> ['frame_ref']
+CoverageElement        has_coverage_window        -> ['coverage_window_start', 'coverage_window_end']  MULTI
+CoverageElement        has_circle                 -> ['circle_center', 'circle_radius_m']  MULTI
+Transform              has_validity               -> ['validity']
+Announce               has_coverage_eval_time     -> ['coverage_eval_time', 'transforms', 'manifest_uri', 'auth_hint', 'stamp', 'ttl_sec', 'coverage_source_ids']  MULTI
+CoverageHint           has_coverage_eval_time     -> ['coverage_eval_time', 'transforms', 'stamp', 'ttl_sec']  MULTI
+CoverageQuery          has_coverage_eval_time     -> ['coverage_eval_time']
+CoverageQuery          has_filter                 -> ['filter', 'reply_topic', 'stamp', 'ttl_sec']  MULTI
+ContentAnnounce        has_coverage_eval_time     -> ['coverage_eval_time', 'transforms', 'available_from', 'available_until', 'stamp', 'ttl_sec']  MULTI
+SpatialZone            has_bounds                 -> ['bounds']
+SpatialZone            has_geopose                -> ['geopose']
+SpatialZone            has_speed_limit_mps        -> ['speed_limit_mps']
+SpatialZone            has_capacity               -> ['capacity']
+SpatialZone            has_dwell_limit_sec        -> ['dwell_limit_sec', 'class_filter']  MULTI
+SpatialZone            has_schedule               -> ['schedule', 'provider_id', 'stamp', 'attributes', 'schema_version']  MULTI
+SpatialZone            has_polygon                -> ['polygon', 'z_min', 'z_max']  MULTI
+CrossingLine           has_vertical_band          -> ['z_min', 'z_max']  MULTI
+CrossingLine           has_bounds                 -> ['bounds', 'class_filter', 'provider_id', 'stamp', 'attributes', 'schema_version']  MULTI
+SpatialEvent           has_zone_id                -> ['zone_id']
+SpatialEvent           has_position               -> ['position', 'frame_ref']  MULTI
+SpatialEvent           has_trigger_det_id         -> ['trigger_det_id']
+SpatialEvent           has_trigger_track_id       -> ['trigger_track_id', 'trigger_class_id']  MULTI
+SpatialEvent           has_secondary_det_id       -> ['secondary_det_id']
+SpatialEvent           has_measured_speed_mps     -> ['measured_speed_mps']
+SpatialEvent           has_measured_dwell_sec     -> ['measured_dwell_sec']
+SpatialEvent           has_measured_distance_m    -> ['measured_distance_m']
+SpatialEvent           has_zone_occupancy         -> ['zone_occupancy', 'confidence']  MULTI
+SpatialEvent           has_evidence               -> ['evidence']
+SpatialEvent           has_description            -> ['description', 'event_start', 'stamp', 'source_id', 'attributes', 'schema_version', 'participant_ids']  MULTI
+SpatialEvent           has_crossing_line_id       -> ['crossing_line_id']
+SpatialEvent           has_crossing               -> ['crossing_direction']
+ZoneState              has_capacity               -> ['capacity', 'active_info', 'active_warning', 'active_alert', 'active_critical', 'class_counts', 'stamp', 'source_id']  MULTI
+MapQuality             has_loop_closure_count     -> ['loop_closure_count']
+MapQuality             has_mean_residual          -> ['mean_residual']
+MapQuality             has_max_drift_m            -> ['max_drift_m']
+MapQuality             has_coverage_pct           -> ['coverage_pct']
+MapQuality             has_keyframe_count         -> ['keyframe_count']
+MapQuality             has_landmark_count         -> ['landmark_count']
+MapMeta                has_extent                 -> ['extent']
+MapMeta                has_geopose                -> ['geopose', 'graph_epoch', 'revision']  MULTI
+MapMeta                has_quality                -> ['quality', 'created', 'stamp', 'blob_refs', 'attributes', 'schema_version']  MULTI
+Edge                   has_from_map_id            -> ['from_map_id']
+Edge                   has_to_map_id              -> ['to_map_id']
+Edge                   has_match_score            -> ['match_score']
+Edge                   has_inlier_count           -> ['inlier_count']
+Edge                   has_range_m                -> ['range_m']
+Edge                   has_range_std_m            -> ['range_std_m']
+MapAlignment           has_match_score            -> ['match_score']
+MapAlignment           has_overlap_pct            -> ['overlap_pct']
+MapAlignment           has_supporting_edges       -> ['supporting_edges', 'revision', 'evidence_edge_ids', 'schema_version']  MULTI
+MapAlignment           has_scale_ratio            -> ['scale_ratio']
+MapEvent               has_new_status             -> ['new_status']
+MapEvent               has_new_epoch              -> ['new_epoch']
+MapEvent               has_alignment_id           -> ['alignment_id']
+MapEvent               has_reason                 -> ['reason']
+Entity                 has_pose                   -> ['pose']
+Entity                 has_extent                 -> ['extent', 'properties', 'external_refs', 'content_refs', 'state', 'state_reason', 'source_id', 'stamp']  MULTI
+ModelCommand           has_pose                   -> ['pose']
+ModelCommand           has_extent                 -> ['extent', 'stamp']  MULTI
+Keypoint3D             has_visible                -> ['visible']
+Detection2D            has_mask                   -> ['mask_blob_id', 'stamp', 'source_id']  MULTI
+Detection3D            has_tile                   -> ['tile_key', 'class_id', 'score', 'center', 'size', 'q']  MULTI
+Detection3D            has_covariance             -> ['cov_pos', 'cov_rot']  MULTI
+Detection3D            has_track_id               -> ['track_id', 'stamp', 'source_id']  MULTI
+Detection3D            has_attributes             -> ['attributes']
+Detection3D            has_visibility             -> ['visibility']
+Detection3D            has_num_pts                -> ['num_lidar_pts', 'num_radar_pts']  MULTI
+Detection3D            has_velocity               -> ['velocity']
+Detection3D            has_observer               -> ['observer_position', 'observer_cov']  MULTI
+Detection3D            has_observer_cov_scope     -> ['observer_cov_scope']
+Detection3D            has_keypoints              -> ['keypoints', 'topology_id', 'keypoint_links']  MULTI
+Detection3DSet         has_tile                   -> ['tile_key', 'dets', 'stamp', 'source_id']  MULTI
+FusedTrack             has_position_cov           -> ['position_cov']
+FusedTrack             has_velocity               -> ['velocity']
+FusedTrack             has_velocity_cov           -> ['velocity_cov', 'source_operators', 'source_modalities', 'source_count', 'track_age_s']  MULTI
+FusedTrack             has_observer_cov           -> ['observer_cov']
+FusedTrack             has_observer_cov_scope     -> ['observer_cov_scope']
+ROI                    has_range                  -> ['range_min', 'range_max']  MULTI
+ROI                    has_azimuth                -> ['az_min', 'az_max']  MULTI
+ROI                    has_elevation              -> ['el_min', 'el_max']  MULTI
+ROI                    has_doppler                -> ['dop_min', 'dop_max']  MULTI
+ROI                    has_image_roi              -> ['u_min', 'v_min', 'u_max', 'v_max', '_global']  MULTI
+FrameHeader            has_sensor_pose            -> ['sensor_pose', 'blobs']  MULTI
+FrameQuality           has_snr_db                 -> ['snr_db', 'percent_valid', 'health', 'note']  MULTI
+LidarMeta              has_range_limits           -> ['min_range_m', 'max_range_m']  MULTI
+LidarMeta              has_horiz_fov              -> ['horiz_fov_deg_min', 'horiz_fov_deg_max']  MULTI
+LidarMeta              has_vert_fov               -> ['vert_fov_deg_min', 'vert_fov_deg_max']  MULTI
+LidarMeta              has_wavelength             -> ['wavelength_nm', 'encoding', 'codec', 'layout', 'schema_version']  MULTI
+LidarFrame             has_per_point_timestamps   -> []  EMPTY
+LidarFrame             has_average_range_m        -> ['average_range_m']
+LidarFrame             has_percent_valid          -> ['percent_valid']
+LidarFrame             has_quality                -> ['quality']
+RadSensorMeta          has_range_limits           -> ['min_range_m', 'max_range_m']  MULTI
+RadSensorMeta          has_azimuth_fov            -> ['az_fov_min_deg', 'az_fov_max_deg']  MULTI
+RadSensorMeta          has_elevation_fov          -> ['el_fov_min_deg', 'el_fov_max_deg']  MULTI
+RadSensorMeta          has_velocity_limits        -> ['v_min_mps', 'v_max_mps', 'max_detections_per_frame', 'proc_chain', 'schema_version']  MULTI
+RadDetection           has_velocity_xyz           -> ['velocity_xyz']
+RadDetection           has_v_r_mps                -> ['v_r_mps']
+RadDetection           has_velocity_comp_xyz      -> ['velocity_comp_xyz']
+RadDetection           has_rcs_dbm2               -> ['rcs_dbm2', 'intensity', 'quality']  MULTI
+RadDetection           has_dyn_prop               -> ['dyn_prop']
+RadDetection           has_pos_rms                -> ['x_rms_m', 'y_rms_m', 'z_rms_m']  MULTI
+RadDetection           has_vel_rms                -> ['vx_rms_mps', 'vy_rms_mps', 'vz_rms_mps']  MULTI
+RadDetection           has_ambig_state            -> ['ambig_state']
+RadDetection           has_false_alarm_prob       -> ['false_alarm_prob']
+RadDetection           has_sensor_track_id        -> ['sensor_track_id']
+RadDetectionSet        has_quality                -> ['quality']
+RadTensorMeta          has_antenna_config         -> ['num_tx', 'num_rx', 'num_virtual_channels']  MULTI
+RadTensorMeta          has_waveform_params        -> ['bandwidth_hz', 'center_freq_hz', 'chirp_duration_s', 'samples_per_chirp', 'chirps_per_frame', 'payload_kind', 'codec']  MULTI
+RadTensorMeta          has_quant_scale            -> ['quant_scale', 'tile_size', 'schema_version']  MULTI
+RadTensorFrame         has_quant_scale            -> ['quant_scale', 'quality', 'proc_chain']  MULTI
+RadioObservation       has_frequency              -> ['frequency_mhz']
+RadioObservation       has_band                   -> ['band']
+RadioObservation       has_ssid                   -> ['ssid']
+RadioObservation       has_channel                -> ['channel']
+RadioObservation       has_major_minor            -> ['major', 'minor']  MULTI
+RadioObservation       has_tx_power               -> ['tx_power_dbm']
+RadioObservation       has_range                  -> ['range_m']
+RadioObservation       has_range_std              -> ['range_std_m']
+RadioObservation       has_aoa_azimuth            -> ['aoa_azimuth_deg']
+RadioObservation       has_aoa_elevation          -> ['aoa_elevation_deg']
+RadioObservation       has_noise_floor            -> ['noise_floor_dbm']
+RadioObservation       has_measurement_count      -> ['measurement_count']
+RadioScan              has_scan_duration          -> ['scan_duration_s', 'observations']  MULTI
+RadioScan              has_aggregation_window     -> ['aggregation_window_s', 'source_id']  MULTI
+RadioScan              has_sensor_pose            -> ['sensor_pose', 'pose_frame_ref', 'schema_version']  MULTI
+RadioSensorMeta        has_rssi                   -> []  EMPTY
+RadioSensorMeta        has_rtt                    -> []  EMPTY
+RadioSensorMeta        has_aoa                    -> []  EMPTY
+RadioSensorMeta        has_csi                    -> []  EMPTY
+RadioSensorMeta        has_wifi_bands             -> ['supported_bands']
+RadioSensorMeta        has_ble_version            -> ['ble_version', 'device_model', 'platform']  MULTI
+RadioSensorMeta        has_max_observations       -> ['max_observations']
+RadioSensorMeta        has_typical_scan_duration  -> ['typical_scan_duration_s', 'schema_version']  MULTI
+RfBeamMeta             has_bandwidth              -> ['bandwidth_ghz', 'n_elements', 'n_beams', 'fov_az_deg']  MULTI
+RfBeamMeta             has_fov_el                 -> ['fov_el_deg']
+RfBeamMeta             has_array_index            -> ['array_index', 'array_label', 'codebook_type']  MULTI
+RfBeamMeta             has_mimo_config            -> ['n_tx', 'n_rx', 'power_unit', 'schema_version']  MULTI
+RfBeamFrame            has_best_beam              -> ['best_beam_idx', 'best_beam_power']  MULTI
+RfBeamFrame            has_blockage_state         -> ['is_blocked', 'blockage_confidence']  MULTI
+RfBeamFrame            has_snr_db                 -> ['snr_db']
+RfBeamFrame            has_quality                -> ['quality']
+RfBeamArraySet         has_overall_best           -> ['overall_best_array_idx', 'overall_best_beam_idx', 'overall_best_power']  MULTI
+VisionFrame            has_line_readout_us        -> ['line_readout_us', 'rectified', 'is_key_frame', 'quality']  MULTI
+Landmark               has_cov                    -> ['cov', 'desc', 'desc_type', 'stamp', 'source_id', 'seq']  MULTI
+Tracklet               has_lm_id                  -> ['lm_id', 'obs', 'source_id', 'stamp']  MULTI
+ImuSample              has_accel_cov              -> ['accel_cov']
+ImuSample              has_gyro_cov               -> ['gyro_cov']
+FusedState             has_position               -> ['t']
+FusedState             has_gravity                -> ['gravity']
+FusedState             has_lin_accel              -> ['lin_accel']
+FusedState             has_gyro_bias              -> ['gyro_bias']
+FusedState             has_accel_bias             -> ['accel_bias']
+FusedState             has_cov_orient             -> ['cov_orient']
+FusedState             has_cov_pos                -> ['cov_pos', 'stamp', 'frame_ref', 'source_id', 'seq', 'quality']  MULTI
+
+TOTAL has_* guards (AST): 178

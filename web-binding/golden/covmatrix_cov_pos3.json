@@ -1,0 +1,18 @@
+{
+  "type": "spatial::core::CovMatrix",
+  "description": "A discriminated union serialized as a tagged object: discriminator key is the literal \"type\" carrying the enumerator name, and the selected branch member (pos, a Mat3x3=double[9]) carries the value. Aligns with the existing Appendix D covariance JSON.",
+  "sample": {
+    "_discriminator": "COV_POS3",
+    "pos": [0.04, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.09]
+  },
+  "expected_json": {
+    "type": "COV_POS3",
+    "pos": [0.04, 0, 0, 0, 0.25, 0, 0, 0, 0.09]
+  },
+  "exercises": [
+    "union -> tagged object with discriminator key \"type\" = enumerator name",
+    "selected branch member (pos) carries the value; other branches absent",
+    "Mat3x3 (double[9]) -> JSON array; integer-valued doubles -> 0 (no decimal)",
+    "no union member is named \"type\", so the discriminator key does not collide"
+  ]
+}

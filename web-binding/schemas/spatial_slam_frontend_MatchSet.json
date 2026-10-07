@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_slam_frontend_FeatureMatch": {
+      "additionalProperties": true,
+      "properties": {
+        "idx_a": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "idx_b": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "node_id_a": {
+          "type": "string"
+        },
+        "node_id_b": {
+          "type": "string"
+        },
+        "score": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "node_id_a",
+        "idx_a",
+        "node_id_b",
+        "idx_b",
+        "score"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.slam_frontend.MatchSet",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "match_id": {
+      "type": "string"
+    },
+    "matches": {
+      "items": {
+        "$ref": "#/$defs/spatial_slam_frontend_FeatureMatch"
+      },
+      "maxItems": 8192,
+      "type": "array"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "match_id",
+    "matches",
+    "stamp",
+    "source_id"
+  ],
+  "title": "spatial.slam_frontend.MatchSet",
+  "type": "object"
+}

@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_core_BlobRef": {
+      "additionalProperties": true,
+      "properties": {
+        "blob_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "blob_id",
+        "role",
+        "checksum"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.common.FrameHeader",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "blobs": {
+      "items": {
+        "$ref": "#/$defs/spatial_core_BlobRef"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "frame_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "has_sensor_pose": {
+      "type": "boolean"
+    },
+    "sensor_pose": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "stream_id": {
+      "type": "string"
+    },
+    "t_end": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "t_start": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "stream_id",
+    "frame_seq",
+    "t_start",
+    "t_end",
+    "has_sensor_pose",
+    "sensor_pose",
+    "blobs"
+  ],
+  "title": "spatial.sensing.common.FrameHeader",
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.vision.Keypoint2D",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "score": {
+      "type": "number"
+    },
+    "u": {
+      "type": "number"
+    },
+    "v": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "u",
+    "v",
+    "score"
+  ],
+  "title": "spatial.sensing.vision.Keypoint2D",
+  "type": "object"
+}

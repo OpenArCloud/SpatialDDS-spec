@@ -1,0 +1,19 @@
+{
+  "$id": "spatialdds:webjson:spatial.argeo.QualityRequirements",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "max_rmse_m": {
+      "type": "number"
+    },
+    "min_confidence": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "max_rmse_m",
+    "min_confidence"
+  ],
+  "title": "spatial.argeo.QualityRequirements",
+  "type": "object"
+}

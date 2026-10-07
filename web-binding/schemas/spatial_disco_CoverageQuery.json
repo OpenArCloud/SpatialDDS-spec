@@ -1,0 +1,267 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_Aabb3": {
+      "additionalProperties": true,
+      "properties": {
+        "max_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "min_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "min_xyz",
+        "max_xyz"
+      ],
+      "type": "object"
+    },
+    "spatial_disco_CoverageElement": {
+      "additionalProperties": true,
+      "properties": {
+        "_global": {
+          "type": "boolean"
+        },
+        "aabb": {
+          "$ref": "#/$defs/spatial_core_Aabb3"
+        },
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "circle_center": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "circle_radius_m": {
+          "type": "number"
+        },
+        "coverage_window_end": {
+          "$ref": "#/$defs/builtin_Time"
+        },
+        "coverage_window_start": {
+          "$ref": "#/$defs/builtin_Time"
+        },
+        "crs": {
+          "type": "string"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "has_aabb": {
+          "type": "boolean"
+        },
+        "has_bbox": {
+          "type": "boolean"
+        },
+        "has_circle": {
+          "type": "boolean"
+        },
+        "has_coverage_window": {
+          "type": "boolean"
+        },
+        "has_crs": {
+          "type": "boolean"
+        },
+        "has_frame_ref": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "has_crs",
+        "crs",
+        "has_bbox",
+        "bbox",
+        "has_aabb",
+        "aabb",
+        "_global",
+        "has_frame_ref",
+        "frame_ref",
+        "has_coverage_window",
+        "coverage_window_start",
+        "coverage_window_end",
+        "has_circle",
+        "circle_center",
+        "circle_radius_m"
+      ],
+      "type": "object"
+    },
+    "spatial_disco_CoverageFilter": {
+      "additionalProperties": true,
+      "properties": {
+        "module_id_in": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        "qos_profile_in": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        "type_in": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "type": "array"
+        }
+      },
+      "required": [
+        "type_in",
+        "qos_profile_in",
+        "module_id_in"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.disco.CoverageQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "coverage": {
+      "items": {
+        "$ref": "#/$defs/spatial_disco_CoverageElement"
+      },
+      "maxItems": 4,
+      "type": "array"
+    },
+    "coverage_eval_time": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "coverage_frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "filter": {
+      "$ref": "#/$defs/spatial_disco_CoverageFilter"
+    },
+    "has_coverage_eval_time": {
+      "type": "boolean"
+    },
+    "has_filter": {
+      "type": "boolean"
+    },
+    "query_id": {
+      "type": "string"
+    },
+    "reply_topic": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "ttl_sec": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "query_id",
+    "coverage",
+    "coverage_frame_ref",
+    "has_coverage_eval_time",
+    "coverage_eval_time",
+    "has_filter",
+    "filter",
+    "reply_topic",
+    "stamp",
+    "ttl_sec"
+  ],
+  "title": "spatial.disco.CoverageQuery",
+  "type": "object"
+}

@@ -1,0 +1,357 @@
+{
+  "$defs": {
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_Axis": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/$defs/spatial_sensing_common_AxisSpec"
+        },
+        "unit": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "unit",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_AxisSpec": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "centers": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 65535,
+              "type": "array"
+            },
+            "type": {
+              "const": "AXIS_CENTERS"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "lin": {
+              "$ref": "#/$defs/spatial_sensing_common_Linspace"
+            },
+            "type": {
+              "const": "AXIS_LINSPACE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_sensing_common_Linspace": {
+      "additionalProperties": true,
+      "properties": {
+        "count": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "start",
+        "step",
+        "count"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_StreamMeta": {
+      "additionalProperties": true,
+      "properties": {
+        "T_bus_sensor": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "nominal_rate_hz": {
+          "type": "number"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_ref",
+        "T_bus_sensor",
+        "nominal_rate_hz",
+        "schema_version"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.rad.RadTensorMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "axes": {
+      "items": {
+        "$ref": "#/$defs/spatial_sensing_common_Axis"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "bandwidth_hz": {
+      "type": "number"
+    },
+    "base": {
+      "$ref": "#/$defs/spatial_sensing_common_StreamMeta"
+    },
+    "center_freq_hz": {
+      "type": "number"
+    },
+    "chirp_duration_s": {
+      "type": "number"
+    },
+    "chirps_per_frame": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "codec": {
+      "enum": [
+        "CODEC_NONE",
+        "LZ4",
+        "ZSTD",
+        "GZIP",
+        "DRACO",
+        "JPEG",
+        "H264",
+        "H265",
+        "AV1",
+        "FP8Q",
+        "FP4Q",
+        "AE_V1",
+        "PNG"
+      ],
+      "type": "string"
+    },
+    "has_antenna_config": {
+      "type": "boolean"
+    },
+    "has_quant_scale": {
+      "type": "boolean"
+    },
+    "has_waveform_params": {
+      "type": "boolean"
+    },
+    "layout": {
+      "enum": [
+        "RA_D",
+        "R_AZ_EL_D",
+        "CH_FAST_SLOW",
+        "CH_R_D",
+        "CUSTOM"
+      ],
+      "type": "string"
+    },
+    "num_rx": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "num_tx": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "num_virtual_channels": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "payload_kind": {
+      "enum": [
+        "DENSE_TILES",
+        "SPARSE_COO",
+        "LATENT",
+        "BLOB_GEOMETRY",
+        "BLOB_RASTER"
+      ],
+      "type": "string"
+    },
+    "physical_meaning": {
+      "type": "string"
+    },
+    "quant_scale": {
+      "type": "number"
+    },
+    "samples_per_chirp": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "sensor_type": {
+      "enum": [
+        "SHORT_RANGE",
+        "MEDIUM_RANGE",
+        "LONG_RANGE",
+        "IMAGING_4D",
+        "SAR",
+        "OTHER"
+      ],
+      "type": "string"
+    },
+    "stream_id": {
+      "type": "string"
+    },
+    "tile_size": {
+      "items": {
+        "maximum": 4294967295,
+        "minimum": 0,
+        "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    },
+    "voxel_type": {
+      "enum": [
+        "U8_MAG",
+        "F16_MAG",
+        "CF16",
+        "CF32",
+        "MAGPHASE_S8"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "base",
+    "sensor_type",
+    "layout",
+    "axes",
+    "voxel_type",
+    "physical_meaning",
+    "has_antenna_config",
+    "num_tx",
+    "num_rx",
+    "num_virtual_channels",
+    "has_waveform_params",
+    "bandwidth_hz",
+    "center_freq_hz",
+    "chirp_duration_s",
+    "samples_per_chirp",
+    "chirps_per_frame",
+    "payload_kind",
+    "codec",
+    "has_quant_scale",
+    "quant_scale",
+    "tile_size",
+    "schema_version"
+  ],
+  "title": "spatial.sensing.rad.RadTensorMeta",
+  "type": "object"
+}

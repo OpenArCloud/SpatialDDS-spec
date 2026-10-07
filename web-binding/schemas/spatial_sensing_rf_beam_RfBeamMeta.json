@@ -1,0 +1,212 @@
+{
+  "$defs": {
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_StreamMeta": {
+      "additionalProperties": true,
+      "properties": {
+        "T_bus_sensor": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "nominal_rate_hz": {
+          "type": "number"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_ref",
+        "T_bus_sensor",
+        "nominal_rate_hz",
+        "schema_version"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.rf_beam.RfBeamMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "array_index": {
+      "maximum": 255,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "array_label": {
+      "type": "string"
+    },
+    "bandwidth_ghz": {
+      "type": "number"
+    },
+    "base": {
+      "$ref": "#/$defs/spatial_sensing_common_StreamMeta"
+    },
+    "center_freq_ghz": {
+      "type": "number"
+    },
+    "codebook_type": {
+      "type": "string"
+    },
+    "fov_az_deg": {
+      "type": "number"
+    },
+    "fov_el_deg": {
+      "type": "number"
+    },
+    "has_array_index": {
+      "type": "boolean"
+    },
+    "has_bandwidth": {
+      "type": "boolean"
+    },
+    "has_fov_el": {
+      "type": "boolean"
+    },
+    "has_mimo_config": {
+      "type": "boolean"
+    },
+    "n_beams": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "n_elements": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "n_rx": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "n_tx": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "power_unit": {
+      "enum": [
+        "DBM",
+        "LINEAR_MW",
+        "RSRP",
+        "OTHER_UNIT"
+      ],
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "stream_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "base",
+    "center_freq_ghz",
+    "has_bandwidth",
+    "bandwidth_ghz",
+    "n_elements",
+    "n_beams",
+    "fov_az_deg",
+    "has_fov_el",
+    "fov_el_deg",
+    "has_array_index",
+    "array_index",
+    "array_label",
+    "codebook_type",
+    "has_mimo_config",
+    "n_tx",
+    "n_rx",
+    "power_unit",
+    "schema_version"
+  ],
+  "title": "spatial.sensing.rf_beam.RfBeamMeta",
+  "type": "object"
+}

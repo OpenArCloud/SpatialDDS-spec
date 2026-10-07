@@ -1,0 +1,29 @@
+{
+  "$id": "spatialdds:webjson:spatial.core.Aabb3",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "max_xyz": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "min_xyz": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    }
+  },
+  "required": [
+    "min_xyz",
+    "max_xyz"
+  ],
+  "title": "spatial.core.Aabb3",
+  "type": "object"
+}

@@ -1,0 +1,16 @@
+{
+  "type": "builtin::Time",
+  "description": "Time with sec past the 2^53 safe-integer boundary, forcing the unconditional int64->string rule; nanosec is a uint32 and stays a JSON number.",
+  "sample": {
+    "sec": 9007199254740993,
+    "nanosec": 500000000
+  },
+  "expected_json": {
+    "sec": "9007199254740993",
+    "nanosec": 500000000
+  },
+  "exercises": [
+    "int64 -> decimal string, unconditional (value is 2^53 + 1, unrepresentable as a JS-safe number)",
+    "uint32 -> JSON number"
+  ]
+}

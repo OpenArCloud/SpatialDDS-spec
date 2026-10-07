@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.slam_frontend.Landmark",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "cov": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "type": "array"
+    },
+    "desc": {
+      "contentEncoding": "base64",
+      "type": "string"
+    },
+    "desc_type": {
+      "type": "string"
+    },
+    "has_cov": {
+      "type": "boolean"
+    },
+    "lm_id": {
+      "type": "string"
+    },
+    "map_id": {
+      "type": "string"
+    },
+    "p": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "lm_id",
+    "map_id",
+    "p",
+    "has_cov",
+    "cov",
+    "desc",
+    "desc_type",
+    "stamp",
+    "source_id",
+    "seq"
+  ],
+  "title": "spatial.slam_frontend.Landmark",
+  "type": "object"
+}

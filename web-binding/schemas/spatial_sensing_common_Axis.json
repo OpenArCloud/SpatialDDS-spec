@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "spatial_sensing_common_AxisSpec": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "centers": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 65535,
+              "type": "array"
+            },
+            "type": {
+              "const": "AXIS_CENTERS"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "lin": {
+              "$ref": "#/$defs/spatial_sensing_common_Linspace"
+            },
+            "type": {
+              "const": "AXIS_LINSPACE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_sensing_common_Linspace": {
+      "additionalProperties": true,
+      "properties": {
+        "count": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "start",
+        "step",
+        "count"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.common.Axis",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "spec": {
+      "$ref": "#/$defs/spatial_sensing_common_AxisSpec"
+    },
+    "unit": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "unit",
+    "spec"
+  ],
+  "title": "spatial.sensing.common.Axis",
+  "type": "object"
+}

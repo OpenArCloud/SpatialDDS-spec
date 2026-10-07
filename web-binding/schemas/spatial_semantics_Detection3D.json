@@ -1,0 +1,493 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    },
+    "spatial_common_MetaKV": {
+      "additionalProperties": true,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/spatial_common_KV"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "json": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "json",
+        "entries"
+      ],
+      "type": "object"
+    },
+    "spatial_core_CovMatrix": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "COV_NONE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pos": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POS3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 36,
+              "minItems": 36,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "rot": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_ROT3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose_twist": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 144,
+              "minItems": 144,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6_TWIST6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_core_TileKey": {
+      "additionalProperties": true,
+      "properties": {
+        "level": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "x": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "z": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "level"
+      ],
+      "type": "object"
+    },
+    "spatial_semantics_Keypoint3D": {
+      "additionalProperties": true,
+      "properties": {
+        "confidence": {
+          "type": "number"
+        },
+        "has_visible": {
+          "type": "boolean"
+        },
+        "position": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "position",
+        "confidence",
+        "has_visible",
+        "visible"
+      ],
+      "type": "object"
+    },
+    "spatial_semantics_KeypointLink": {
+      "additionalProperties": true,
+      "properties": {
+        "from_index": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "to_index": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "from_index",
+        "to_index"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.semantics.Detection3D",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "attributes": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_MetaKV"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "center": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "cov_pos": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "type": "array"
+    },
+    "cov_rot": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "type": "array"
+    },
+    "det_id": {
+      "type": "string"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "has_attributes": {
+      "type": "boolean"
+    },
+    "has_covariance": {
+      "type": "boolean"
+    },
+    "has_keypoints": {
+      "type": "boolean"
+    },
+    "has_num_pts": {
+      "type": "boolean"
+    },
+    "has_observer": {
+      "type": "boolean"
+    },
+    "has_observer_cov_scope": {
+      "type": "boolean"
+    },
+    "has_tile": {
+      "type": "boolean"
+    },
+    "has_track_id": {
+      "type": "boolean"
+    },
+    "has_velocity": {
+      "type": "boolean"
+    },
+    "has_visibility": {
+      "type": "boolean"
+    },
+    "keypoint_links": {
+      "items": {
+        "$ref": "#/$defs/spatial_semantics_KeypointLink"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "keypoints": {
+      "items": {
+        "$ref": "#/$defs/spatial_semantics_Keypoint3D"
+      },
+      "maxItems": 192,
+      "type": "array"
+    },
+    "num_lidar_pts": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "num_radar_pts": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "observer_cov": {
+      "$ref": "#/$defs/spatial_core_CovMatrix"
+    },
+    "observer_cov_scope": {
+      "enum": [
+        "COV_SCOPE_LOCAL",
+        "COV_SCOPE_COMPOSED"
+      ],
+      "type": "string"
+    },
+    "observer_position": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "q": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    },
+    "score": {
+      "type": "number"
+    },
+    "size": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "tile_key": {
+      "$ref": "#/$defs/spatial_core_TileKey"
+    },
+    "topology_id": {
+      "type": "string"
+    },
+    "track_id": {
+      "type": "string"
+    },
+    "velocity": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "visibility": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "det_id",
+    "frame_ref",
+    "has_tile",
+    "tile_key",
+    "class_id",
+    "score",
+    "center",
+    "size",
+    "q",
+    "has_covariance",
+    "cov_pos",
+    "cov_rot",
+    "has_track_id",
+    "track_id",
+    "stamp",
+    "source_id",
+    "has_attributes",
+    "attributes",
+    "has_visibility",
+    "visibility",
+    "has_num_pts",
+    "num_lidar_pts",
+    "num_radar_pts",
+    "has_velocity",
+    "velocity",
+    "has_observer",
+    "observer_position",
+    "observer_cov",
+    "has_observer_cov_scope",
+    "observer_cov_scope",
+    "has_keypoints",
+    "keypoints",
+    "topology_id",
+    "keypoint_links"
+  ],
+  "title": "spatial.semantics.Detection3D",
+  "type": "object"
+}

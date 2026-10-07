@@ -1,0 +1,25 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.common.Linspace",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "count": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "start": {
+      "type": "number"
+    },
+    "step": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "start",
+    "step",
+    "count"
+  ],
+  "title": "spatial.sensing.common.Linspace",
+  "type": "object"
+}

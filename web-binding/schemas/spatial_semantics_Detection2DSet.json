@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_semantics_Detection2D": {
+      "additionalProperties": true,
+      "properties": {
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "camera_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "det_id": {
+          "type": "string"
+        },
+        "has_mask": {
+          "type": "boolean"
+        },
+        "mask_blob_id": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "score": {
+          "type": "number"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "stamp": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "det_id",
+        "node_id",
+        "camera_id",
+        "class_id",
+        "score",
+        "bbox",
+        "has_mask",
+        "mask_blob_id",
+        "stamp",
+        "source_id"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.semantics.Detection2DSet",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "camera_id": {
+      "type": "string"
+    },
+    "dets": {
+      "items": {
+        "$ref": "#/$defs/spatial_semantics_Detection2D"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "node_id": {
+      "type": "string"
+    },
+    "set_id": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    }
+  },
+  "required": [
+    "set_id",
+    "node_id",
+    "camera_id",
+    "dets",
+    "stamp",
+    "source_id"
+  ],
+  "title": "spatial.semantics.Detection2DSet",
+  "type": "object"
+}

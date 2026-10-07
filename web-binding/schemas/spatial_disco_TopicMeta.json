@@ -1,0 +1,37 @@
+{
+  "$id": "spatialdds:webjson:spatial.disco.TopicMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "max_chunk_bytes": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "qos_profile": {
+      "type": "string"
+    },
+    "target_rate_hz": {
+      "type": "number"
+    },
+    "type": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "version",
+    "qos_profile",
+    "target_rate_hz",
+    "max_chunk_bytes"
+  ],
+  "title": "spatial.disco.TopicMeta",
+  "type": "object"
+}

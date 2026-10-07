@@ -1,0 +1,102 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_vision_Keypoint2D": {
+      "additionalProperties": true,
+      "properties": {
+        "score": {
+          "type": "number"
+        },
+        "u": {
+          "type": "number"
+        },
+        "v": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "u",
+        "v",
+        "score"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_vision_Track2D": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "pattern": "^\\d+$",
+          "type": "string"
+        },
+        "trail": {
+          "items": {
+            "$ref": "#/$defs/spatial_sensing_vision_Keypoint2D"
+          },
+          "maxItems": 8192,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "trail"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.vision.VisionDetections",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "frame_seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "keypoints": {
+      "items": {
+        "$ref": "#/$defs/spatial_sensing_vision_Keypoint2D"
+      },
+      "maxItems": 8192,
+      "type": "array"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "stream_id": {
+      "type": "string"
+    },
+    "tracks": {
+      "items": {
+        "$ref": "#/$defs/spatial_sensing_vision_Track2D"
+      },
+      "maxItems": 2048,
+      "type": "array"
+    }
+  },
+  "required": [
+    "stream_id",
+    "frame_seq",
+    "stamp",
+    "keypoints",
+    "tracks"
+  ],
+  "title": "spatial.sensing.vision.VisionDetections",
+  "type": "object"
+}

@@ -1,0 +1,35 @@
+{
+  "$id": "spatialdds:webjson:spatial.core.TileKey",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "level": {
+      "maximum": 255,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "x": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "y": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "z": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "x",
+    "y",
+    "z",
+    "level"
+  ],
+  "title": "spatial.core.TileKey",
+  "type": "object"
+}

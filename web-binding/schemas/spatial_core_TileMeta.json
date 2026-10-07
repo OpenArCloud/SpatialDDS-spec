@@ -1,0 +1,133 @@
+{
+  "$defs": {
+    "spatial_core_Aabb3": {
+      "additionalProperties": true,
+      "properties": {
+        "max_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "min_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "min_xyz",
+        "max_xyz"
+      ],
+      "type": "object"
+    },
+    "spatial_core_TileKey": {
+      "additionalProperties": true,
+      "properties": {
+        "level": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "x": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "z": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "level"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.TileMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "aabb": {
+      "$ref": "#/$defs/spatial_core_Aabb3"
+    },
+    "blob_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "centroid_llh": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "checksum": {
+      "type": "string"
+    },
+    "encoding": {
+      "type": "string"
+    },
+    "has_centroid_llh": {
+      "type": "boolean"
+    },
+    "has_radius_m": {
+      "type": "boolean"
+    },
+    "has_tile_id_compat": {
+      "type": "boolean"
+    },
+    "key": {
+      "$ref": "#/$defs/spatial_core_TileKey"
+    },
+    "radius_m": {
+      "type": "number"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "tile_id_compat": {
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "has_tile_id_compat",
+    "tile_id_compat",
+    "aabb",
+    "version",
+    "encoding",
+    "checksum",
+    "blob_ids",
+    "has_centroid_llh",
+    "centroid_llh",
+    "has_radius_m",
+    "radius_m",
+    "schema_version"
+  ],
+  "title": "spatial.core.TileMeta",
+  "type": "object"
+}

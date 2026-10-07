@@ -1,0 +1,425 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    },
+    "spatial_common_MetaKV": {
+      "additionalProperties": true,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/spatial_common_KV"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "json": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "json",
+        "entries"
+      ],
+      "type": "object"
+    },
+    "spatial_common_Vec2": {
+      "additionalProperties": true,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "spatial_core_Aabb3": {
+      "additionalProperties": true,
+      "properties": {
+        "max_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "min_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "min_xyz",
+        "max_xyz"
+      ],
+      "type": "object"
+    },
+    "spatial_core_CovMatrix": {
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "COV_NONE"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pos": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POS3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 36,
+              "minItems": 36,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "rot": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 9,
+              "minItems": 9,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_ROT3"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "pose_twist": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 144,
+              "minItems": 144,
+              "type": "array"
+            },
+            "type": {
+              "const": "COV_POSE6_TWIST6"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "spatial_core_GeoPose": {
+      "additionalProperties": true,
+      "properties": {
+        "alt_m": {
+          "type": "number"
+        },
+        "cov": {
+          "$ref": "#/$defs/spatial_core_CovMatrix"
+        },
+        "lat_deg": {
+          "type": "number"
+        },
+        "lon_deg": {
+          "type": "number"
+        },
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "stamp": {
+          "$ref": "#/$defs/builtin_Time"
+        }
+      },
+      "required": [
+        "lat_deg",
+        "lon_deg",
+        "alt_m",
+        "q",
+        "stamp",
+        "cov"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.events.SpatialZone",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "attributes": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_MetaKV"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "bounds": {
+      "$ref": "#/$defs/spatial_core_Aabb3"
+    },
+    "capacity": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "class_filter": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "dwell_limit_sec": {
+      "type": "number"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "geopose": {
+      "$ref": "#/$defs/spatial_core_GeoPose"
+    },
+    "has_bounds": {
+      "type": "boolean"
+    },
+    "has_capacity": {
+      "type": "boolean"
+    },
+    "has_dwell_limit_sec": {
+      "type": "boolean"
+    },
+    "has_geopose": {
+      "type": "boolean"
+    },
+    "has_polygon": {
+      "type": "boolean"
+    },
+    "has_schedule": {
+      "type": "boolean"
+    },
+    "has_speed_limit_mps": {
+      "type": "boolean"
+    },
+    "kind": {
+      "enum": [
+        "RESTRICTED",
+        "SPEED_LIMITED",
+        "CAPACITY_LIMITED",
+        "ONE_WAY",
+        "LOADING",
+        "HAZARD",
+        "MONITORING",
+        "GEOFENCE",
+        "OTHER"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "polygon": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_Vec2"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "provider_id": {
+      "type": "string"
+    },
+    "schedule": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "speed_limit_mps": {
+      "type": "number"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "z_max": {
+      "type": "number"
+    },
+    "z_min": {
+      "type": "number"
+    },
+    "zone_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "zone_id",
+    "name",
+    "kind",
+    "frame_ref",
+    "has_bounds",
+    "bounds",
+    "has_geopose",
+    "geopose",
+    "has_speed_limit_mps",
+    "speed_limit_mps",
+    "has_capacity",
+    "capacity",
+    "has_dwell_limit_sec",
+    "dwell_limit_sec",
+    "class_filter",
+    "has_schedule",
+    "schedule",
+    "provider_id",
+    "stamp",
+    "attributes",
+    "schema_version",
+    "has_polygon",
+    "polygon",
+    "z_min",
+    "z_max"
+  ],
+  "title": "spatial.events.SpatialZone",
+  "type": "object"
+}

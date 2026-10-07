@@ -1,0 +1,34 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.lidar.LidarDetection",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "intensity": {
+      "type": "number"
+    },
+    "quality": {
+      "type": "number"
+    },
+    "ring": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "xyz_m": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    }
+  },
+  "required": [
+    "xyz_m",
+    "intensity",
+    "ring",
+    "quality"
+  ],
+  "title": "spatial.sensing.lidar.LidarDetection",
+  "type": "object"
+}

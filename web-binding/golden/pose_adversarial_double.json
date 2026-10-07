@@ -1,0 +1,19 @@
+{
+  "type": "spatial::core::PoseSE3",
+  "description": "Adversarial doubles through PoseSE3 (t: Vec3=double[3], q: QuaternionXYZW=double[4]). Pins the ECMA-262 number-to-string rule: shortest round-trip, integer-valued doubles without a decimal point, and exponential form for 1e21.",
+  "sample": {
+    "t": [0.1, 0.30000000000000004, 1e21],
+    "q": [0.0, 0.0, 0.0, 1.0]
+  },
+  "expected_json": {
+    "t": [0.1, 0.30000000000000004, 1e+21],
+    "q": [0, 0, 0, 1]
+  },
+  "exercises": [
+    "double digest form = ECMA-262 Number::toString: 0.1 -> 0.1 (not 0.10000000000000001)",
+    "0.1 + 0.2 double -> 0.30000000000000004 (shortest round-trip, not 0.3)",
+    "1e21 -> 1e+21 (exponential form per ECMA-262)",
+    "integer-valued doubles 0.0 and 1.0 -> 0 and 1 (no decimal point)",
+    "typedef double[3]/double[4] -> JSON array"
+  ]
+}

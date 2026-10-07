@@ -1,0 +1,302 @@
+{
+  "$defs": {
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_StreamMeta": {
+      "additionalProperties": true,
+      "properties": {
+        "T_bus_sensor": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "nominal_rate_hz": {
+          "type": "number"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_ref",
+        "T_bus_sensor",
+        "nominal_rate_hz",
+        "schema_version"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_vision_CamIntrinsics": {
+      "additionalProperties": true,
+      "properties": {
+        "calib_version": {
+          "type": "string"
+        },
+        "color": {
+          "enum": [
+            "SRGB",
+            "REC709",
+            "REC2020",
+            "LINEAR"
+          ],
+          "type": "string"
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        },
+        "dist": {
+          "enum": [
+            "NONE",
+            "RADTAN",
+            "KANNALA_BRANDT"
+          ],
+          "type": "string"
+        },
+        "dist_params": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        "fx": {
+          "type": "number"
+        },
+        "fy": {
+          "type": "number"
+        },
+        "height": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "model": {
+          "enum": [
+            "PINHOLE",
+            "FISHEYE_EQUIDISTANT",
+            "KB_4",
+            "OMNI"
+          ],
+          "type": "string"
+        },
+        "pix": {
+          "enum": [
+            "UNKNOWN",
+            "YUV420",
+            "RGB8",
+            "BGR8",
+            "RGBA8",
+            "DEPTH16",
+            "RAW10",
+            "RAW12",
+            "RAW16"
+          ],
+          "type": "string"
+        },
+        "readout_us": {
+          "type": "number"
+        },
+        "shutter_us": {
+          "type": "number"
+        },
+        "width": {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "model",
+        "width",
+        "height",
+        "fx",
+        "fy",
+        "cx",
+        "cy",
+        "dist",
+        "dist_params",
+        "shutter_us",
+        "readout_us",
+        "pix",
+        "color",
+        "calib_version"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.vision.VisionMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "K": {
+      "$ref": "#/$defs/spatial_sensing_vision_CamIntrinsics"
+    },
+    "base": {
+      "$ref": "#/$defs/spatial_sensing_common_StreamMeta"
+    },
+    "codec": {
+      "enum": [
+        "CODEC_NONE",
+        "LZ4",
+        "ZSTD",
+        "GZIP",
+        "DRACO",
+        "JPEG",
+        "H264",
+        "H265",
+        "AV1",
+        "FP8Q",
+        "FP4Q",
+        "AE_V1",
+        "PNG"
+      ],
+      "type": "string"
+    },
+    "color": {
+      "enum": [
+        "SRGB",
+        "REC709",
+        "REC2020",
+        "LINEAR"
+      ],
+      "type": "string"
+    },
+    "pix": {
+      "enum": [
+        "UNKNOWN",
+        "YUV420",
+        "RGB8",
+        "BGR8",
+        "RGBA8",
+        "DEPTH16",
+        "RAW10",
+        "RAW12",
+        "RAW16"
+      ],
+      "type": "string"
+    },
+    "rig_id": {
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "LEFT",
+        "RIGHT",
+        "CENTER",
+        "FRONT",
+        "FRONT_LEFT",
+        "FRONT_RIGHT",
+        "BACK",
+        "BACK_LEFT",
+        "BACK_RIGHT",
+        "AUX",
+        "PANORAMIC",
+        "EQUIRECTANGULAR"
+      ],
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "stream_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stream_id",
+    "base",
+    "K",
+    "role",
+    "rig_id",
+    "codec",
+    "pix",
+    "color",
+    "schema_version"
+  ],
+  "title": "spatial.sensing.vision.VisionMeta",
+  "type": "object"
+}

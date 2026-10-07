@@ -1,0 +1,250 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    },
+    "spatial_core_Aabb3": {
+      "additionalProperties": true,
+      "properties": {
+        "max_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "min_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "min_xyz",
+        "max_xyz"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.owm.Entity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "basis": {
+      "enum": [
+        "OBSERVED",
+        "DECLARED",
+        "AUTHORED",
+        "DERIVED"
+      ],
+      "type": "string"
+    },
+    "content_refs": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "extent": {
+      "$ref": "#/$defs/spatial_core_Aabb3"
+    },
+    "external_refs": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_KV"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "has_extent": {
+      "type": "boolean"
+    },
+    "has_pose": {
+      "type": "boolean"
+    },
+    "layer": {
+      "enum": [
+        "STATIC",
+        "SLOW",
+        "FAST"
+      ],
+      "type": "string"
+    },
+    "pose": {
+      "$ref": "#/$defs/spatial_core_PoseSE3"
+    },
+    "properties": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_KV"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "state": {
+      "enum": [
+        "ACTIVE",
+        "UNOBSERVED",
+        "RETIRED",
+        "SUPERSEDED"
+      ],
+      "type": "string"
+    },
+    "state_reason": {
+      "type": "string"
+    },
+    "type_uris": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 4,
+      "type": "array"
+    }
+  },
+  "required": [
+    "entity_id",
+    "basis",
+    "type_uris",
+    "layer",
+    "frame_ref",
+    "has_pose",
+    "pose",
+    "has_extent",
+    "extent",
+    "properties",
+    "external_refs",
+    "content_refs",
+    "state",
+    "state_reason",
+    "source_id",
+    "stamp"
+  ],
+  "title": "spatial.owm.Entity",
+  "type": "object"
+}

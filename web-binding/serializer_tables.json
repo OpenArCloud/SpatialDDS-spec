@@ -1,0 +1,8094 @@
+{
+  "builtin.Time": {
+    "fields": [
+      [
+        "sec",
+        {
+          "t": "int64"
+        }
+      ],
+      [
+        "nanosec",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.anchors.AnchorDelta": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "op",
+        {
+          "fqn": "spatial.anchors.AnchorOp",
+          "t": "enum"
+        }
+      ],
+      [
+        "entry",
+        {
+          "fqn": "spatial.anchors.AnchorEntry",
+          "t": "ref"
+        }
+      ],
+      [
+        "revision",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "post_checksum",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.anchors.AnchorEntry": {
+    "fields": [
+      [
+        "anchor_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "geopose",
+        {
+          "fqn": "spatial.core.GeoPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "tags",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "checksum",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.anchors.AnchorOp": {
+    "kind": "enum",
+    "members": [
+      "ADD",
+      "UPDATE",
+      "REMOVE"
+    ]
+  },
+  "spatial.anchors.AnchorSet": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "title",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "provider_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "map_frame",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "tags",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "center_lat",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "center_lon",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "radius_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "anchors",
+        {
+          "item": {
+            "fqn": "spatial.anchors.AnchorEntry",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "checksum",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.anchors.AnchorSetRequest": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "up_to_revision",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.anchors.AnchorSetResponse": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "revision",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "set",
+        {
+          "fqn": "spatial.anchors.AnchorSet",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.argeo.NodeGeo": {
+    "fields": [
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "node_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "poses",
+        {
+          "item": {
+            "fqn": "spatial.core.FramedPose",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_geopose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "geopose",
+        {
+          "fqn": "spatial.core.GeoPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "graph_epoch",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.argeo.QualityRequirements": {
+    "fields": [
+      [
+        "max_rmse_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "min_confidence",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.argeo.VpsRequest": {
+    "fields": [
+      [
+        "query_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "service_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "client_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_prior_geopose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "prior_geopose",
+        {
+          "fqn": "spatial.core.GeoPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "query_blobs",
+        {
+          "item": {
+            "fqn": "spatial.core.BlobRef",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "query_stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_quality_requirements",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quality_requirements",
+        {
+          "fqn": "spatial.argeo.QualityRequirements",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.argeo.VpsResponse": {
+    "fields": [
+      [
+        "query_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "service_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "status",
+        {
+          "fqn": "spatial.argeo.VpsStatus",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_node_geo",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "node_geo",
+        {
+          "fqn": "spatial.argeo.NodeGeo",
+          "t": "ref"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_rmse_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "rmse_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.argeo.VpsStatus": {
+    "kind": "enum",
+    "members": [
+      "VPS_SUCCESS",
+      "VPS_DEGRADED",
+      "VPS_FAILED"
+    ]
+  },
+  "spatial.common.AssetRef": {
+    "fields": [
+      [
+        "uri",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "media_type",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "hash",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "meta",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.common.CoordConvention": {
+    "kind": "enum",
+    "members": [
+      "ENU",
+      "CV",
+      "GRAPHICS",
+      "UNITY_LH",
+      "NED",
+      "OTHER"
+    ]
+  },
+  "spatial.common.CovScope": {
+    "kind": "enum",
+    "members": [
+      "COV_SCOPE_LOCAL",
+      "COV_SCOPE_COMPOSED"
+    ]
+  },
+  "spatial.common.CovarianceType": {
+    "kind": "enum",
+    "members": [
+      "COV_NONE",
+      "COV_POS3",
+      "COV_POSE6",
+      "COV_ROT3",
+      "COV_POSE6_TWIST6"
+    ]
+  },
+  "spatial.common.FrameRef": {
+    "fields": [
+      [
+        "uuid",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "fqn",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_coord_convention",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coord_convention",
+        {
+          "fqn": "spatial.common.CoordConvention",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_scale",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "scale_status",
+        {
+          "fqn": "spatial.common.ScaleStatus",
+          "t": "enum"
+        }
+      ],
+      [
+        "meters_per_unit",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "display_unit",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.common.KV": {
+    "fields": [
+      [
+        "key",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "value",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.common.MetaKV": {
+    "fields": [
+      [
+        "namespace",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "json",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "entries",
+        {
+          "item": {
+            "fqn": "spatial.common.KV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.common.ScaleStatus": {
+    "kind": "enum",
+    "members": [
+      "SCALE_UNKNOWN",
+      "SCALE_DECLARED",
+      "SCALE_DERIVED"
+    ]
+  },
+  "spatial.common.Vec2": {
+    "fields": [
+      [
+        "x",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "y",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.Aabb3": {
+    "fields": [
+      [
+        "min_xyz",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "max_xyz",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.BlobChunk": {
+    "fields": [
+      [
+        "blob_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "index",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "total_chunks",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "crc32",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "data",
+        {
+          "t": "base64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.BlobRef": {
+    "fields": [
+      [
+        "blob_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "role",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "checksum",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.ComponentRef": {
+    "fields": [
+      [
+        "topic",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "key",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.CovMatrix": {
+    "cases": [
+      [
+        "COV_NONE",
+        "none",
+        null
+      ],
+      [
+        "COV_POS3",
+        "pos",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "COV_POSE6",
+        "pose",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "COV_ROT3",
+        "rot",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "COV_POSE6_TWIST6",
+        "pose_twist",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "disc": "CovarianceType",
+    "kind": "union"
+  },
+  "spatial.core.Edge": {
+    "fields": [
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "edge_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "from_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "to_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "type",
+        {
+          "fqn": "spatial.core.EdgeTypeCore",
+          "t": "enum"
+        }
+      ],
+      [
+        "T_from_to",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "information",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "graph_epoch",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.EdgeTypeCore": {
+    "kind": "enum",
+    "members": [
+      "ODOM",
+      "LOOP"
+    ]
+  },
+  "spatial.core.EntityBinding": {
+    "fields": [
+      [
+        "entity_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "entity_class",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "components",
+        {
+          "item": {
+            "fqn": "spatial.core.ComponentRef",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_pose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.FramedPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.FrameTransform": {
+    "fields": [
+      [
+        "transform_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "parent_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "child_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "T_parent_child",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.FramedPose": {
+    "fields": [
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.GeoAnchor": {
+    "fields": [
+      [
+        "anchor_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "geopose",
+        {
+          "fqn": "spatial.core.GeoPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "method",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "checksum",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.GeoPose": {
+    "fields": [
+      [
+        "lat_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "lon_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "alt_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "q",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.GnssFixType": {
+    "kind": "enum",
+    "members": [
+      "NO_FIX",
+      "FIX_2D",
+      "FIX_3D",
+      "DGPS",
+      "RTK_FLOAT",
+      "RTK_FIXED",
+      "SBAS",
+      "DEAD_RECKONING",
+      "UNKNOWN_FIX"
+    ]
+  },
+  "spatial.core.NavSatStatus": {
+    "fields": [
+      [
+        "gnss_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "fix_type",
+        {
+          "fqn": "spatial.core.GnssFixType",
+          "t": "enum"
+        }
+      ],
+      [
+        "service",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "num_satellites",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_dop",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "pdop",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "hdop",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "vdop",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_velocity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "speed_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "course_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_diff_age",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "diff_age_s",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "diff_station_id",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.Node": {
+    "fields": [
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "node_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "graph_epoch",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.PatchOp": {
+    "kind": "enum",
+    "members": [
+      "ADD",
+      "REPLACE",
+      "REMOVE"
+    ]
+  },
+  "spatial.core.PlannedTrajectory": {
+    "fields": [
+      [
+        "agent_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "plan_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "plan_revision",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "waypoints",
+        {
+          "item": {
+            "fqn": "spatial.core.PlannedWaypoint",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_goal_pose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "goal_pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_horizon_sec",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "horizon_sec",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_replan_rate_hz",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "replan_rate_hz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.PlannedWaypoint": {
+    "fields": [
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_velocity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "velocity",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_uncertainty",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "position_uncertainty_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_confidence",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.PoseSE3": {
+    "fields": [
+      [
+        "t",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "q",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.SnapshotRequest": {
+    "fields": [
+      [
+        "key",
+        {
+          "fqn": "spatial.core.TileKey",
+          "t": "ref"
+        }
+      ],
+      [
+        "up_to_revision",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.SnapshotResponse": {
+    "fields": [
+      [
+        "key",
+        {
+          "fqn": "spatial.core.TileKey",
+          "t": "ref"
+        }
+      ],
+      [
+        "revision",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "blob_ids",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "checksum",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.TileKey": {
+    "fields": [
+      [
+        "x",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "y",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "z",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "level",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.TileMeta": {
+    "fields": [
+      [
+        "key",
+        {
+          "fqn": "spatial.core.TileKey",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_tile_id_compat",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "tile_id_compat",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "aabb",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "version",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "encoding",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "checksum",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "blob_ids",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_centroid_llh",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "centroid_llh",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_radius_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "radius_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.core.TilePatch": {
+    "fields": [
+      [
+        "key",
+        {
+          "fqn": "spatial.core.TileKey",
+          "t": "ref"
+        }
+      ],
+      [
+        "revision",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "op",
+        {
+          "fqn": "spatial.core.PatchOp",
+          "t": "enum"
+        }
+      ],
+      [
+        "target",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "blobs",
+        {
+          "item": {
+            "fqn": "spatial.core.BlobRef",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "post_checksum",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.Announce": {
+    "fields": [
+      [
+        "service_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "kind",
+        {
+          "fqn": "spatial.disco.ServiceKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "org",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "hints",
+        {
+          "item": {
+            "fqn": "spatial.disco.KV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "caps",
+        {
+          "fqn": "spatial.disco.Capabilities",
+          "t": "ref"
+        }
+      ],
+      [
+        "topics",
+        {
+          "item": {
+            "fqn": "spatial.disco.TopicMeta",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "coverage",
+        {
+          "item": {
+            "fqn": "spatial.disco.CoverageElement",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "coverage_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_coverage_eval_time",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coverage_eval_time",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "transforms",
+        {
+          "item": {
+            "fqn": "spatial.disco.Transform",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "manifest_uri",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "auth_hint",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "ttl_sec",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "coverage_source_ids",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.Capabilities": {
+    "fields": [
+      [
+        "supported_profiles",
+        {
+          "item": {
+            "fqn": "spatial.disco.ProfileSupport",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "preferred_profiles",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "features",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.ContentAnnounce": {
+    "fields": [
+      [
+        "content_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "provider_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "title",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "summary",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "tags",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "class_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "manifest_uri",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "coverage",
+        {
+          "item": {
+            "fqn": "spatial.disco.CoverageElement",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "coverage_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_coverage_eval_time",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coverage_eval_time",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "transforms",
+        {
+          "item": {
+            "fqn": "spatial.disco.Transform",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "available_from",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "available_until",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "ttl_sec",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.CoverageElement": {
+    "fields": [
+      [
+        "has_crs",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "crs",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_bbox",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "bbox",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_aabb",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "aabb",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "_global",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "has_frame_ref",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_coverage_window",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coverage_window_start",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "coverage_window_end",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_circle",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "circle_center",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "circle_radius_m",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.CoverageFilter": {
+    "fields": [
+      [
+        "type_in",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "qos_profile_in",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "module_id_in",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.CoverageHint": {
+    "fields": [
+      [
+        "service_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "coverage",
+        {
+          "item": {
+            "fqn": "spatial.disco.CoverageElement",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "coverage_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_coverage_eval_time",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coverage_eval_time",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "transforms",
+        {
+          "item": {
+            "fqn": "spatial.disco.Transform",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "ttl_sec",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.CoverageQuery": {
+    "fields": [
+      [
+        "query_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "coverage",
+        {
+          "item": {
+            "fqn": "spatial.disco.CoverageElement",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "coverage_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_coverage_eval_time",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coverage_eval_time",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_filter",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "filter",
+        {
+          "fqn": "spatial.disco.CoverageFilter",
+          "t": "ref"
+        }
+      ],
+      [
+        "reply_topic",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "ttl_sec",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.CoverageResponse": {
+    "fields": [
+      [
+        "query_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "results",
+        {
+          "item": {
+            "fqn": "spatial.disco.ServiceSummary",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "next_page_token",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.Depart": {
+    "fields": [
+      [
+        "service_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.KV": {
+    "fields": [
+      [
+        "key",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "value",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.ProfileSupport": {
+    "fields": [
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "major",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "min_minor",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "max_minor",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.ServiceKind": {
+    "kind": "enum",
+    "members": [
+      "VPS",
+      "MAPPING",
+      "RELOCAL",
+      "SEMANTICS",
+      "STORAGE",
+      "CONTENT",
+      "ANCHOR_REGISTRY",
+      "OTHER",
+      "SENSING",
+      "INFRASTRUCTURE",
+      "FUSION"
+    ]
+  },
+  "spatial.disco.ServiceSummary": {
+    "fields": [
+      [
+        "service_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "kind",
+        {
+          "fqn": "spatial.disco.ServiceKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "manifest_uri",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "coverage",
+        {
+          "item": {
+            "fqn": "spatial.disco.CoverageElement",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "coverage_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "ttl_sec",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.TopicMeta": {
+    "fields": [
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "type",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "qos_profile",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "target_rate_hz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "max_chunk_bytes",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.Transform": {
+    "fields": [
+      [
+        "_from",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "to",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_validity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "validity",
+        {
+          "fqn": "spatial.disco.ValidityWindow",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.disco.ValidityWindow": {
+    "fields": [
+      [
+        "_from",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "seconds",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.events.CrossingLine": {
+    "fields": [
+      [
+        "line_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "path",
+        {
+          "item": {
+            "fqn": "spatial.common.Vec2",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_vertical_band",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "z_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "z_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_bounds",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "bounds",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "class_filter",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "provider_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "attributes",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.events.SpatialEvent": {
+    "fields": [
+      [
+        "event_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "type",
+        {
+          "fqn": "spatial.events.enums.event_type_enum.EventType",
+          "t": "enum"
+        }
+      ],
+      [
+        "severity",
+        {
+          "fqn": "spatial.events.enums.severity_enum.Severity",
+          "t": "enum"
+        }
+      ],
+      [
+        "state",
+        {
+          "fqn": "spatial.events.enums.event_state_enum.EventState",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_zone_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "zone_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_position",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "position",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_trigger_det_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "trigger_det_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_trigger_track_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "trigger_track_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "trigger_class_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_secondary_det_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "secondary_det_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_measured_speed_mps",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "measured_speed_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_measured_dwell_sec",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "measured_dwell_sec",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_measured_distance_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "measured_distance_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_zone_occupancy",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "zone_occupancy",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_evidence",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "evidence",
+        {
+          "fqn": "spatial.core.BlobRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_description",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "description",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "event_start",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "attributes",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "participant_ids",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_crossing_line_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "crossing_line_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_crossing",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "crossing_direction",
+        {
+          "fqn": "spatial.events.enums.crossing_direction_enum.CrossingDirection",
+          "t": "enum"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.events.SpatialZone": {
+    "fields": [
+      [
+        "zone_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "kind",
+        {
+          "fqn": "spatial.events.enums.zone_kind_enum.ZoneKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_bounds",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "bounds",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_geopose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "geopose",
+        {
+          "fqn": "spatial.core.GeoPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_speed_limit_mps",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "speed_limit_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_capacity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "capacity",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_dwell_limit_sec",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "dwell_limit_sec",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "class_filter",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_schedule",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "schedule",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "provider_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "attributes",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_polygon",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "polygon",
+        {
+          "item": {
+            "fqn": "spatial.common.Vec2",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "z_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "z_max",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.events.ZoneState": {
+    "fields": [
+      [
+        "zone_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "current_occupancy",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_capacity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "capacity",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "active_info",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "active_warning",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "active_alert",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "active_critical",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "class_counts",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.events.enums.crossing_direction_enum.CrossingDirection": {
+    "kind": "enum",
+    "members": [
+      "CROSSING_UNKNOWN",
+      "LEFT_TO_RIGHT",
+      "RIGHT_TO_LEFT"
+    ]
+  },
+  "spatial.events.enums.event_state_enum.EventState": {
+    "kind": "enum",
+    "members": [
+      "ACTIVE",
+      "RESOLVED",
+      "ACKNOWLEDGED",
+      "SUPPRESSED"
+    ]
+  },
+  "spatial.events.enums.event_type_enum.EventType": {
+    "kind": "enum",
+    "members": [
+      "ZONE_ENTRY",
+      "ZONE_EXIT",
+      "DWELL_TIMEOUT",
+      "SPEED_VIOLATION",
+      "CAPACITY_BREACH",
+      "WRONG_WAY",
+      "PROXIMITY_ALERT",
+      "UNATTENDED",
+      "ANOMALY",
+      "LINE_CROSS",
+      "LOITERING",
+      "TAILGATING",
+      "OTHER",
+      "PREDICTED_CONFLICT"
+    ]
+  },
+  "spatial.events.enums.severity_enum.Severity": {
+    "kind": "enum",
+    "members": [
+      "INFO",
+      "WARNING",
+      "ALERT",
+      "CRITICAL"
+    ]
+  },
+  "spatial.events.enums.zone_kind_enum.ZoneKind": {
+    "kind": "enum",
+    "members": [
+      "RESTRICTED",
+      "SPEED_LIMITED",
+      "CAPACITY_LIMITED",
+      "ONE_WAY",
+      "LOADING",
+      "HAZARD",
+      "MONITORING",
+      "GEOFENCE",
+      "OTHER"
+    ]
+  },
+  "spatial.mapping.Edge": {
+    "fields": [
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "edge_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "from_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "to_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "type",
+        {
+          "fqn": "spatial.mapping.enums.edge_type.EdgeType",
+          "t": "enum"
+        }
+      ],
+      [
+        "T_from_to",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "information",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "graph_epoch",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "has_from_map_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "from_map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_to_map_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "to_map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_match_score",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "match_score",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_inlier_count",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "inlier_count",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_range_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_range_std_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "range_std_m",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.mapping.MapAlignment": {
+    "fields": [
+      [
+        "alignment_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "map_id_from",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "map_id_to",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "T_from_to",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ],
+      [
+        "method",
+        {
+          "fqn": "spatial.mapping.enums.alignment_method.AlignmentMethod",
+          "t": "enum"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_match_score",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "match_score",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_overlap_pct",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "overlap_pct",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_supporting_edges",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "supporting_edges",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "revision",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "evidence_edge_ids",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_scale_ratio",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "scale_ratio",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.mapping.MapEvent": {
+    "fields": [
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "event",
+        {
+          "fqn": "spatial.mapping.enums.map_event_kind.MapEventKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_new_status",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "new_status",
+        {
+          "fqn": "spatial.mapping.enums.map_status.MapStatus",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_new_epoch",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "new_epoch",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "has_alignment_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "alignment_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_reason",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "reason",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.mapping.MapMeta": {
+    "fields": [
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "kind",
+        {
+          "fqn": "spatial.mapping.enums.map_kind.MapKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "status",
+        {
+          "fqn": "spatial.mapping.enums.map_status.MapStatus",
+          "t": "enum"
+        }
+      ],
+      [
+        "algorithm",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_extent",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "extent",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_geopose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "geopose",
+        {
+          "fqn": "spatial.core.GeoPose",
+          "t": "ref"
+        }
+      ],
+      [
+        "graph_epoch",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "revision",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "has_quality",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quality",
+        {
+          "fqn": "spatial.mapping.MapQuality",
+          "t": "ref"
+        }
+      ],
+      [
+        "created",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "blob_refs",
+        {
+          "item": {
+            "fqn": "spatial.core.BlobRef",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "attributes",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.mapping.MapQuality": {
+    "fields": [
+      [
+        "has_loop_closure_count",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "loop_closure_count",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_mean_residual",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "mean_residual",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_max_drift_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "max_drift_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_coverage_pct",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "coverage_pct",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_keyframe_count",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "keyframe_count",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_landmark_count",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "landmark_count",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.mapping.enums.alignment_method.AlignmentMethod": {
+    "kind": "enum",
+    "members": [
+      "VISUAL_LOOP",
+      "LIDAR_ICP",
+      "ANCHOR_MATCH",
+      "GPS_COARSE",
+      "SEMANTIC_MATCH",
+      "MANUAL",
+      "MULTI_METHOD",
+      "RANGE_COARSE",
+      "OTHER"
+    ]
+  },
+  "spatial.mapping.enums.edge_type.EdgeType": {
+    "kind": "enum",
+    "members": [
+      "ODOM",
+      "LOOP",
+      "INTER_MAP",
+      "GPS",
+      "ANCHOR",
+      "IMU_PREINT",
+      "GRAVITY",
+      "PLANE",
+      "SEMANTIC",
+      "MANUAL",
+      "RANGE",
+      "OTHER"
+    ]
+  },
+  "spatial.mapping.enums.map_event_kind.MapEventKind": {
+    "kind": "enum",
+    "members": [
+      "CREATED",
+      "EPOCH_ADVANCE",
+      "STATUS_CHANGE",
+      "ALIGNMENT_NEW",
+      "ALIGNMENT_UPDATE",
+      "DEPRECATED",
+      "DELETED"
+    ]
+  },
+  "spatial.mapping.enums.map_kind.MapKind": {
+    "kind": "enum",
+    "members": [
+      "POSE_GRAPH",
+      "OCCUPANCY_GRID",
+      "POINT_CLOUD",
+      "MESH",
+      "TSDF",
+      "VOXEL",
+      "NEURAL_FIELD",
+      "FEATURE_MAP",
+      "SEMANTIC",
+      "OTHER"
+    ]
+  },
+  "spatial.mapping.enums.map_status.MapStatus": {
+    "kind": "enum",
+    "members": [
+      "BUILDING",
+      "OPTIMIZING",
+      "STABLE",
+      "FROZEN",
+      "DEPRECATED"
+    ]
+  },
+  "spatial.owm.Basis": {
+    "kind": "enum",
+    "members": [
+      "OBSERVED",
+      "DECLARED",
+      "AUTHORED",
+      "DERIVED"
+    ]
+  },
+  "spatial.owm.Entity": {
+    "fields": [
+      [
+        "entity_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "basis",
+        {
+          "fqn": "spatial.owm.Basis",
+          "t": "enum"
+        }
+      ],
+      [
+        "type_uris",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "layer",
+        {
+          "fqn": "spatial.owm.ModelLayer",
+          "t": "enum"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_pose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_extent",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "extent",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "properties",
+        {
+          "item": {
+            "fqn": "spatial.common.KV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "external_refs",
+        {
+          "item": {
+            "fqn": "spatial.common.KV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "content_refs",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "state",
+        {
+          "fqn": "spatial.owm.LifecycleState",
+          "t": "enum"
+        }
+      ],
+      [
+        "state_reason",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.owm.LifecycleState": {
+    "kind": "enum",
+    "members": [
+      "ACTIVE",
+      "UNOBSERVED",
+      "RETIRED",
+      "SUPERSEDED"
+    ]
+  },
+  "spatial.owm.ModelCommand": {
+    "fields": [
+      [
+        "command_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "verb",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "subject_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "reason",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "requester_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_pose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_extent",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "extent",
+        {
+          "fqn": "spatial.core.Aabb3",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.owm.ModelLayer": {
+    "kind": "enum",
+    "members": [
+      "STATIC",
+      "SLOW",
+      "FAST"
+    ]
+  },
+  "spatial.owm.ModelPose": {
+    "fields": [
+      [
+        "entity_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.Detection2D": {
+    "fields": [
+      [
+        "det_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "node_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "camera_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "class_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "score",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "bbox",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_mask",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "mask_blob_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.Detection2DSet": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "node_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "camera_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "dets",
+        {
+          "item": {
+            "fqn": "spatial.semantics.Detection2D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.Detection3D": {
+    "fields": [
+      [
+        "det_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_tile",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "tile_key",
+        {
+          "fqn": "spatial.core.TileKey",
+          "t": "ref"
+        }
+      ],
+      [
+        "class_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "score",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "center",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "size",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "q",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_covariance",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "cov_pos",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "cov_rot",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_track_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "track_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_attributes",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "attributes",
+        {
+          "item": {
+            "fqn": "spatial.common.MetaKV",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_visibility",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "visibility",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_num_pts",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "num_lidar_pts",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "num_radar_pts",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_velocity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "velocity",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_observer",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "observer_position",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "observer_cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ],
+      [
+        "has_observer_cov_scope",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "observer_cov_scope",
+        {
+          "fqn": "spatial.common.CovScope",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_keypoints",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "keypoints",
+        {
+          "item": {
+            "fqn": "spatial.semantics.Keypoint3D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "topology_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "keypoint_links",
+        {
+          "item": {
+            "fqn": "spatial.semantics.KeypointLink",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.Detection3DSet": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_tile",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "tile_key",
+        {
+          "fqn": "spatial.core.TileKey",
+          "t": "ref"
+        }
+      ],
+      [
+        "dets",
+        {
+          "item": {
+            "fqn": "spatial.semantics.Detection3D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.FusedTrack": {
+    "fields": [
+      [
+        "track_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "object_class",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "position",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_position_cov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "position_cov",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_velocity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "velocity",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_velocity_cov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "velocity_cov",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "source_operators",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "source_modalities",
+        {
+          "item": {
+            "t": "str"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "source_count",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "track_age_s",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_observer_cov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "observer_cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ],
+      [
+        "has_observer_cov_scope",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "observer_cov_scope",
+        {
+          "fqn": "spatial.common.CovScope",
+          "t": "enum"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.FusedTrackSet": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "tracks",
+        {
+          "item": {
+            "fqn": "spatial.semantics.FusedTrack",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.Keypoint3D": {
+    "fields": [
+      [
+        "position",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_visible",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "visible",
+        {
+          "t": "bool"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.semantics.KeypointLink": {
+    "fields": [
+      [
+        "from_index",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "to_index",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.Axis": {
+    "fields": [
+      [
+        "name",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "unit",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "spec",
+        {
+          "fqn": "spatial.sensing.common.AxisSpec",
+          "t": "union"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.AxisEncoding": {
+    "kind": "enum",
+    "members": [
+      "AXIS_CENTERS",
+      "AXIS_LINSPACE"
+    ]
+  },
+  "spatial.sensing.common.AxisSpec": {
+    "cases": [
+      [
+        "AXIS_CENTERS",
+        "centers",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "AXIS_LINSPACE",
+        "lin",
+        {
+          "fqn": "spatial.sensing.common.Linspace",
+          "t": "ref"
+        }
+      ]
+    ],
+    "disc": "AxisEncoding",
+    "kind": "union"
+  },
+  "spatial.sensing.common.Codec": {
+    "kind": "enum",
+    "members": [
+      "CODEC_NONE",
+      "LZ4",
+      "ZSTD",
+      "GZIP",
+      "DRACO",
+      "JPEG",
+      "H264",
+      "H265",
+      "AV1",
+      "FP8Q",
+      "FP4Q",
+      "AE_V1",
+      "PNG"
+    ]
+  },
+  "spatial.sensing.common.FrameHeader": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "t_start",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "t_end",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_sensor_pose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "sensor_pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "blobs",
+        {
+          "item": {
+            "fqn": "spatial.core.BlobRef",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.FrameQuality": {
+    "fields": [
+      [
+        "has_snr_db",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "snr_db",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "percent_valid",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "health",
+        {
+          "fqn": "spatial.sensing.common.Health",
+          "t": "enum"
+        }
+      ],
+      [
+        "note",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.Health": {
+    "kind": "enum",
+    "members": [
+      "OK",
+      "DEGRADED",
+      "ERROR"
+    ]
+  },
+  "spatial.sensing.common.Linspace": {
+    "fields": [
+      [
+        "start",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "step",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "count",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.PayloadKind": {
+    "kind": "enum",
+    "members": [
+      "DENSE_TILES",
+      "SPARSE_COO",
+      "LATENT",
+      "BLOB_GEOMETRY",
+      "BLOB_RASTER"
+    ]
+  },
+  "spatial.sensing.common.ROI": {
+    "fields": [
+      [
+        "has_range",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "range_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "range_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_azimuth",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "az_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "az_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_elevation",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "el_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "el_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_doppler",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "dop_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "dop_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_image_roi",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "u_min",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "v_min",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "u_max",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "v_max",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "_global",
+        {
+          "t": "bool"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.ROIReply": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "request_id",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "frames",
+        {
+          "item": {
+            "fqn": "spatial.sensing.common.FrameHeader",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.ROIRequest": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "request_id",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "t_start",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "t_end",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "roi",
+        {
+          "fqn": "spatial.sensing.common.ROI",
+          "t": "ref"
+        }
+      ],
+      [
+        "wants_payload_kind",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "desired_payload_kind",
+        {
+          "fqn": "spatial.sensing.common.PayloadKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "wants_codec",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "desired_codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "wants_sample_type",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "desired_sample_type",
+        {
+          "fqn": "spatial.sensing.common.SampleType",
+          "t": "enum"
+        }
+      ],
+      [
+        "max_bytes",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.common.SampleType": {
+    "kind": "enum",
+    "members": [
+      "U8_MAG",
+      "F16_MAG",
+      "CF16",
+      "CF32",
+      "MAGPHASE_S8"
+    ]
+  },
+  "spatial.sensing.common.StreamMeta": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "T_bus_sensor",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "nominal_rate_hz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.lidar.CloudEncoding": {
+    "kind": "enum",
+    "members": [
+      "PCD",
+      "PLY",
+      "LAS",
+      "LAZ",
+      "BIN_INTERLEAVED",
+      "GLTF_DRACO",
+      "MPEG_PCC",
+      "CUSTOM_BIN"
+    ]
+  },
+  "spatial.sensing.lidar.LidarDetection": {
+    "fields": [
+      [
+        "xyz_m",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "intensity",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "ring",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "quality",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.lidar.LidarDetectionSet": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "dets",
+        {
+          "item": {
+            "fqn": "spatial.sensing.lidar.LidarDetection",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.lidar.LidarFrame": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "hdr",
+        {
+          "fqn": "spatial.sensing.common.FrameHeader",
+          "t": "ref"
+        }
+      ],
+      [
+        "encoding",
+        {
+          "fqn": "spatial.sensing.lidar.CloudEncoding",
+          "t": "enum"
+        }
+      ],
+      [
+        "codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "layout",
+        {
+          "fqn": "spatial.sensing.lidar.PointLayout",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_per_point_timestamps",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "has_average_range_m",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "average_range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_percent_valid",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "percent_valid",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_quality",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quality",
+        {
+          "fqn": "spatial.sensing.common.FrameQuality",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.lidar.LidarMeta": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "base",
+        {
+          "fqn": "spatial.sensing.common.StreamMeta",
+          "t": "ref"
+        }
+      ],
+      [
+        "type",
+        {
+          "fqn": "spatial.sensing.lidar.LidarType",
+          "t": "enum"
+        }
+      ],
+      [
+        "n_rings",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_range_limits",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "min_range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "max_range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_horiz_fov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "horiz_fov_deg_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "horiz_fov_deg_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_vert_fov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "vert_fov_deg_min",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "vert_fov_deg_max",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_wavelength",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "wavelength_nm",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "encoding",
+        {
+          "fqn": "spatial.sensing.lidar.CloudEncoding",
+          "t": "enum"
+        }
+      ],
+      [
+        "codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "layout",
+        {
+          "fqn": "spatial.sensing.lidar.PointLayout",
+          "t": "enum"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.lidar.LidarType": {
+    "kind": "enum",
+    "members": [
+      "SPINNING_2D",
+      "MULTI_BEAM_3D",
+      "SOLID_STATE"
+    ]
+  },
+  "spatial.sensing.lidar.PointLayout": {
+    "kind": "enum",
+    "members": [
+      "XYZ_I",
+      "XYZ_I_R",
+      "XYZ_I_R_N",
+      "XYZ_I_R_T",
+      "XYZ_I_R_T_N"
+    ]
+  },
+  "spatial.sensing.rad.RadDetection": {
+    "fields": [
+      [
+        "xyz_m",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_velocity_xyz",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "velocity_xyz",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_v_r_mps",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "v_r_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_velocity_comp_xyz",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "velocity_comp_xyz",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_rcs_dbm2",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "rcs_dbm2",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "intensity",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "quality",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_dyn_prop",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "dyn_prop",
+        {
+          "fqn": "spatial.sensing.rad.RadDynProp",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_pos_rms",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "x_rms_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "y_rms_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "z_rms_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_vel_rms",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "vx_rms_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "vy_rms_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "vz_rms_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_ambig_state",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "ambig_state",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_false_alarm_prob",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "false_alarm_prob",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_sensor_track_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "sensor_track_id",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.rad.RadDetectionSet": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "dets",
+        {
+          "item": {
+            "fqn": "spatial.sensing.rad.RadDetection",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "proc_chain",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_quality",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quality",
+        {
+          "fqn": "spatial.sensing.common.FrameQuality",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.rad.RadDynProp": {
+    "kind": "enum",
+    "members": [
+      "UNKNOWN",
+      "MOVING",
+      "STATIONARY",
+      "ONCOMING",
+      "CROSSING_LEFT",
+      "CROSSING_RIGHT",
+      "STOPPED"
+    ]
+  },
+  "spatial.sensing.rad.RadSensorMeta": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "base",
+        {
+          "fqn": "spatial.sensing.common.StreamMeta",
+          "t": "ref"
+        }
+      ],
+      [
+        "sensor_type",
+        {
+          "fqn": "spatial.sensing.rad.RadSensorType",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_range_limits",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "min_range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "max_range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_azimuth_fov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "az_fov_min_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "az_fov_max_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_elevation_fov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "el_fov_min_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "el_fov_max_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_velocity_limits",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "v_min_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "v_max_mps",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "max_detections_per_frame",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "proc_chain",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.rad.RadSensorType": {
+    "kind": "enum",
+    "members": [
+      "SHORT_RANGE",
+      "MEDIUM_RANGE",
+      "LONG_RANGE",
+      "IMAGING_4D",
+      "SAR",
+      "OTHER"
+    ]
+  },
+  "spatial.sensing.rad.RadTensorFrame": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "hdr",
+        {
+          "fqn": "spatial.sensing.common.FrameHeader",
+          "t": "ref"
+        }
+      ],
+      [
+        "payload_kind",
+        {
+          "fqn": "spatial.sensing.common.PayloadKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "voxel_type_after_decode",
+        {
+          "fqn": "spatial.sensing.common.SampleType",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_quant_scale",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quant_scale",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "quality",
+        {
+          "fqn": "spatial.sensing.common.FrameQuality",
+          "t": "ref"
+        }
+      ],
+      [
+        "proc_chain",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.rad.RadTensorLayout": {
+    "kind": "enum",
+    "members": [
+      "RA_D",
+      "R_AZ_EL_D",
+      "CH_FAST_SLOW",
+      "CH_R_D",
+      "CUSTOM"
+    ]
+  },
+  "spatial.sensing.rad.RadTensorMeta": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "base",
+        {
+          "fqn": "spatial.sensing.common.StreamMeta",
+          "t": "ref"
+        }
+      ],
+      [
+        "sensor_type",
+        {
+          "fqn": "spatial.sensing.rad.RadSensorType",
+          "t": "enum"
+        }
+      ],
+      [
+        "layout",
+        {
+          "fqn": "spatial.sensing.rad.RadTensorLayout",
+          "t": "enum"
+        }
+      ],
+      [
+        "axes",
+        {
+          "item": {
+            "fqn": "spatial.sensing.common.Axis",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "voxel_type",
+        {
+          "fqn": "spatial.sensing.common.SampleType",
+          "t": "enum"
+        }
+      ],
+      [
+        "physical_meaning",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_antenna_config",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "num_tx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "num_rx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "num_virtual_channels",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_waveform_params",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "bandwidth_hz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "center_freq_hz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "chirp_duration_s",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "samples_per_chirp",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "chirps_per_frame",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "payload_kind",
+        {
+          "fqn": "spatial.sensing.common.PayloadKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_quant_scale",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quant_scale",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "tile_size",
+        {
+          "item": {
+            "t": "int"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.radio.RadioMeasurementKind": {
+    "kind": "enum",
+    "members": [
+      "RSSI",
+      "RTT_NS",
+      "AOA_DEG",
+      "RANGE_M",
+      "RSRP",
+      "CSI_REF",
+      "OTHER_MEASURE"
+    ]
+  },
+  "spatial.sensing.radio.RadioObservation": {
+    "fields": [
+      [
+        "identifier",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "measurement_kind",
+        {
+          "fqn": "spatial.sensing.radio.RadioMeasurementKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "value",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_frequency",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "frequency_mhz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_band",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "band",
+        {
+          "fqn": "spatial.sensing.radio.WifiBand",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_ssid",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "ssid",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_channel",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "channel",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_major_minor",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "major",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "minor",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_tx_power",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "tx_power_dbm",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_range",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "range_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_range_std",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "range_std_m",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_aoa_azimuth",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "aoa_azimuth_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_aoa_elevation",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "aoa_elevation_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_noise_floor",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "noise_floor_dbm",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_measurement_count",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "measurement_count",
+        {
+          "t": "int"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.radio.RadioScan": {
+    "fields": [
+      [
+        "sensor_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "radio_type",
+        {
+          "fqn": "spatial.sensing.radio.RadioType",
+          "t": "enum"
+        }
+      ],
+      [
+        "scan_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "has_scan_duration",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "scan_duration_s",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "observations",
+        {
+          "item": {
+            "fqn": "spatial.sensing.radio.RadioObservation",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_aggregation_window",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "aggregation_window_s",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_sensor_pose",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "sensor_pose",
+        {
+          "fqn": "spatial.core.PoseSE3",
+          "t": "ref"
+        }
+      ],
+      [
+        "pose_frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.radio.RadioSensorMeta": {
+    "fields": [
+      [
+        "sensor_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "base",
+        {
+          "fqn": "spatial.sensing.common.StreamMeta",
+          "t": "ref"
+        }
+      ],
+      [
+        "radio_type",
+        {
+          "fqn": "spatial.sensing.radio.RadioType",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_rssi",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "has_rtt",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "has_aoa",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "has_csi",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "has_wifi_bands",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "supported_bands",
+        {
+          "item": {
+            "fqn": "spatial.sensing.radio.WifiBand",
+            "t": "enum"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_ble_version",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "ble_version",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "device_model",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "platform",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_max_observations",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "max_observations",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "has_typical_scan_duration",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "typical_scan_duration_s",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.radio.RadioType": {
+    "kind": "enum",
+    "members": [
+      "WIFI",
+      "BLE",
+      "BT_CLASSIC",
+      "UWB",
+      "CELLULAR",
+      "LORA",
+      "OTHER_RADIO"
+    ]
+  },
+  "spatial.sensing.radio.WifiBand": {
+    "kind": "enum",
+    "members": [
+      "BAND_UNKNOWN",
+      "BAND_2_4GHZ",
+      "BAND_5GHZ",
+      "BAND_6GHZ",
+      "BAND_60GHZ"
+    ]
+  },
+  "spatial.sensing.rf_beam.BeamSweepType": {
+    "kind": "enum",
+    "members": [
+      "EXHAUSTIVE",
+      "HIERARCHICAL",
+      "TRACKING",
+      "PARTIAL",
+      "OTHER"
+    ]
+  },
+  "spatial.sensing.rf_beam.PowerUnit": {
+    "kind": "enum",
+    "members": [
+      "DBM",
+      "LINEAR_MW",
+      "RSRP",
+      "OTHER_UNIT"
+    ]
+  },
+  "spatial.sensing.rf_beam.RfBeamArraySet": {
+    "fields": [
+      [
+        "set_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "arrays",
+        {
+          "item": {
+            "fqn": "spatial.sensing.rf_beam.RfBeamFrame",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_overall_best",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "overall_best_array_idx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "overall_best_beam_idx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "overall_best_power",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.rf_beam.RfBeamFrame": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "hdr",
+        {
+          "fqn": "spatial.sensing.common.FrameHeader",
+          "t": "ref"
+        }
+      ],
+      [
+        "sweep_type",
+        {
+          "fqn": "spatial.sensing.rf_beam.BeamSweepType",
+          "t": "enum"
+        }
+      ],
+      [
+        "power",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "beam_indices",
+        {
+          "item": {
+            "t": "int"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_best_beam",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "best_beam_idx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "best_beam_power",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_blockage_state",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "is_blocked",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "blockage_confidence",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_snr_db",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "snr_db",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_quality",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quality",
+        {
+          "fqn": "spatial.sensing.common.FrameQuality",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.rf_beam.RfBeamMeta": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "base",
+        {
+          "fqn": "spatial.sensing.common.StreamMeta",
+          "t": "ref"
+        }
+      ],
+      [
+        "center_freq_ghz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_bandwidth",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "bandwidth_ghz",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "n_elements",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "n_beams",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "fov_az_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_fov_el",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "fov_el_deg",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "has_array_index",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "array_index",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "array_label",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "codebook_type",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_mimo_config",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "n_tx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "n_rx",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "power_unit",
+        {
+          "fqn": "spatial.sensing.rf_beam.PowerUnit",
+          "t": "enum"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.vision.CamIntrinsics": {
+    "fields": [
+      [
+        "model",
+        {
+          "fqn": "spatial.sensing.vision.CamModel",
+          "t": "enum"
+        }
+      ],
+      [
+        "width",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "height",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "fx",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "fy",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "cx",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "cy",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "dist",
+        {
+          "fqn": "spatial.sensing.vision.Distortion",
+          "t": "enum"
+        }
+      ],
+      [
+        "dist_params",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "shutter_us",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "readout_us",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "pix",
+        {
+          "fqn": "spatial.sensing.vision.PixFormat",
+          "t": "enum"
+        }
+      ],
+      [
+        "color",
+        {
+          "fqn": "spatial.sensing.vision.ColorSpace",
+          "t": "enum"
+        }
+      ],
+      [
+        "calib_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.vision.CamModel": {
+    "kind": "enum",
+    "members": [
+      "PINHOLE",
+      "FISHEYE_EQUIDISTANT",
+      "KB_4",
+      "OMNI"
+    ]
+  },
+  "spatial.sensing.vision.ColorSpace": {
+    "kind": "enum",
+    "members": [
+      "SRGB",
+      "REC709",
+      "REC2020",
+      "LINEAR"
+    ]
+  },
+  "spatial.sensing.vision.Distortion": {
+    "kind": "enum",
+    "members": [
+      "NONE",
+      "RADTAN",
+      "KANNALA_BRANDT"
+    ]
+  },
+  "spatial.sensing.vision.Keypoint2D": {
+    "fields": [
+      [
+        "u",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "v",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "score",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.vision.PixFormat": {
+    "kind": "enum",
+    "members": [
+      "UNKNOWN",
+      "YUV420",
+      "RGB8",
+      "BGR8",
+      "RGBA8",
+      "DEPTH16",
+      "RAW10",
+      "RAW12",
+      "RAW16"
+    ]
+  },
+  "spatial.sensing.vision.RigRole": {
+    "kind": "enum",
+    "members": [
+      "LEFT",
+      "RIGHT",
+      "CENTER",
+      "FRONT",
+      "FRONT_LEFT",
+      "FRONT_RIGHT",
+      "BACK",
+      "BACK_LEFT",
+      "BACK_RIGHT",
+      "AUX",
+      "PANORAMIC",
+      "EQUIRECTANGULAR"
+    ]
+  },
+  "spatial.sensing.vision.Track2D": {
+    "fields": [
+      [
+        "id",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "trail",
+        {
+          "item": {
+            "fqn": "spatial.sensing.vision.Keypoint2D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.vision.VisionDetections": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "keypoints",
+        {
+          "item": {
+            "fqn": "spatial.sensing.vision.Keypoint2D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "tracks",
+        {
+          "item": {
+            "fqn": "spatial.sensing.vision.Track2D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.vision.VisionFrame": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "hdr",
+        {
+          "fqn": "spatial.sensing.common.FrameHeader",
+          "t": "ref"
+        }
+      ],
+      [
+        "codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "pix",
+        {
+          "fqn": "spatial.sensing.vision.PixFormat",
+          "t": "enum"
+        }
+      ],
+      [
+        "color",
+        {
+          "fqn": "spatial.sensing.vision.ColorSpace",
+          "t": "enum"
+        }
+      ],
+      [
+        "has_line_readout_us",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "line_readout_us",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "rectified",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "is_key_frame",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "quality",
+        {
+          "fqn": "spatial.sensing.common.FrameQuality",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.sensing.vision.VisionMeta": {
+    "fields": [
+      [
+        "stream_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "base",
+        {
+          "fqn": "spatial.sensing.common.StreamMeta",
+          "t": "ref"
+        }
+      ],
+      [
+        "K",
+        {
+          "fqn": "spatial.sensing.vision.CamIntrinsics",
+          "t": "ref"
+        }
+      ],
+      [
+        "role",
+        {
+          "fqn": "spatial.sensing.vision.RigRole",
+          "t": "enum"
+        }
+      ],
+      [
+        "rig_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "codec",
+        {
+          "fqn": "spatial.sensing.common.Codec",
+          "t": "enum"
+        }
+      ],
+      [
+        "pix",
+        {
+          "fqn": "spatial.sensing.vision.PixFormat",
+          "t": "enum"
+        }
+      ],
+      [
+        "color",
+        {
+          "fqn": "spatial.sensing.vision.ColorSpace",
+          "t": "enum"
+        }
+      ],
+      [
+        "schema_version",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.CameraInfo": {
+    "fields": [
+      [
+        "camera_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "width",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "height",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "fx",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "fy",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "cx",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "cy",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "dist_kind",
+        {
+          "fqn": "spatial.slam_frontend.DistortionModelKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "dist",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.DistortionModelKind": {
+    "kind": "enum",
+    "members": [
+      "NONE",
+      "RADTAN",
+      "EQUIDISTANT",
+      "KANNALA_BRANDT"
+    ]
+  },
+  "spatial.slam_frontend.Feature2D": {
+    "fields": [
+      [
+        "u",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "v",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "scale",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "angle",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "score",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.FeatureMatch": {
+    "fields": [
+      [
+        "node_id_a",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "idx_a",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "node_id_b",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "idx_b",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "score",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.KeyframeFeatures": {
+    "fields": [
+      [
+        "node_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "camera_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "desc_type",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "desc_len",
+        {
+          "t": "int"
+        }
+      ],
+      [
+        "row_major",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "keypoints",
+        {
+          "item": {
+            "fqn": "spatial.slam_frontend.Feature2D",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "descriptors",
+        {
+          "t": "base64"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.Landmark": {
+    "fields": [
+      [
+        "lm_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "map_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "p",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_cov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "cov",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "desc",
+        {
+          "t": "base64"
+        }
+      ],
+      [
+        "desc_type",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.MatchSet": {
+    "fields": [
+      [
+        "match_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "matches",
+        {
+          "item": {
+            "fqn": "spatial.slam_frontend.FeatureMatch",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.TrackObs": {
+    "fields": [
+      [
+        "node_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "u",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "v",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.slam_frontend.Tracklet": {
+    "fields": [
+      [
+        "track_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "has_lm_id",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "lm_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "obs",
+        {
+          "item": {
+            "fqn": "spatial.slam_frontend.TrackObs",
+            "t": "ref"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.vio.FusedState": {
+    "fields": [
+      [
+        "fusion_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "mode",
+        {
+          "fqn": "spatial.vio.FusionMode",
+          "t": "enum"
+        }
+      ],
+      [
+        "source_kind",
+        {
+          "fqn": "spatial.vio.FusionSourceKind",
+          "t": "enum"
+        }
+      ],
+      [
+        "q",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_position",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "t",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_gravity",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "gravity",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_lin_accel",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "lin_accel",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_gyro_bias",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "gyro_bias",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_accel_bias",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "accel_bias",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_cov_orient",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "cov_orient",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "has_cov_pos",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "cov_pos",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "quality",
+        {
+          "t": "double"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.vio.FusionMode": {
+    "kind": "enum",
+    "members": [
+      "ORIENTATION_3DOF",
+      "ORIENTATION_6DOF",
+      "POSE_6DOF"
+    ]
+  },
+  "spatial.vio.FusionSourceKind": {
+    "kind": "enum",
+    "members": [
+      "EKF",
+      "AHRS",
+      "VIO_FUSED",
+      "IMU_ONLY",
+      "MAG_AIDED",
+      "AR_PLATFORM"
+    ]
+  },
+  "spatial.vio.ImuInfo": {
+    "fields": [
+      [
+        "imu_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "accel_noise_density",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "gyro_noise_density",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "accel_random_walk",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "gyro_random_walk",
+        {
+          "t": "double"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.vio.ImuSample": {
+    "fields": [
+      [
+        "imu_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "accel",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "gyro",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ],
+      [
+        "has_accel_cov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "accel_cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ],
+      [
+        "has_gyro_cov",
+        {
+          "t": "bool"
+        }
+      ],
+      [
+        "gyro_cov",
+        {
+          "fqn": "spatial.core.CovMatrix",
+          "t": "union"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.vio.MagnetometerSample": {
+    "fields": [
+      [
+        "mag_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "mag",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  },
+  "spatial.vio.SensorFusionSample": {
+    "fields": [
+      [
+        "fusion_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "accel",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "gyro",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "mag",
+        {
+          "item": {
+            "t": "double"
+          },
+          "t": "array"
+        }
+      ],
+      [
+        "stamp",
+        {
+          "fqn": "builtin.Time",
+          "t": "ref"
+        }
+      ],
+      [
+        "frame_ref",
+        {
+          "fqn": "spatial.common.FrameRef",
+          "t": "ref"
+        }
+      ],
+      [
+        "source_id",
+        {
+          "t": "str"
+        }
+      ],
+      [
+        "seq",
+        {
+          "t": "uint64"
+        }
+      ]
+    ],
+    "kind": "struct"
+  }
+}

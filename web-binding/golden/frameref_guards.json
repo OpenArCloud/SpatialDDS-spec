@@ -1,0 +1,31 @@
+{
+  "type": "spatial::common::FrameRef",
+  "description": "Literal translation of the has_* guard idiom (brief v1.2, step-3 reopening). Guards appear in JSON as the booleans they are; guarded members are ALWAYS present, exactly as the wire carries them (CDR serializes guarded members regardless of the guard). has_coord_convention is false yet coord_convention is still present (its wire value); the reader consults the guard before trusting it. No presence magic, no dropped fields.",
+  "sample": {
+    "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+    "fqn": "museum/hall1/map",
+    "has_coord_convention": false,
+    "coord_convention": "ENU",
+    "has_scale": true,
+    "scale_status": "SCALE_DECLARED",
+    "meters_per_unit": 0.001,
+    "display_unit": "mm"
+  },
+  "expected_json": {
+    "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+    "fqn": "museum/hall1/map",
+    "has_coord_convention": false,
+    "coord_convention": "ENU",
+    "has_scale": true,
+    "scale_status": "SCALE_DECLARED",
+    "meters_per_unit": 0.001,
+    "display_unit": "mm"
+  },
+  "exercises": [
+    "literal has_*: guard booleans appear in JSON as ordinary boolean fields",
+    "guarded member present regardless of guard: has_coord_convention=false, coord_convention still present",
+    "enum by name (coord_convention -> \"ENU\", scale_status -> \"SCALE_DECLARED\")",
+    "fractional double 0.001 -> 0.001 (ECMA-262)",
+    "every declared member present; no field dropped or made conditional"
+  ]
+}

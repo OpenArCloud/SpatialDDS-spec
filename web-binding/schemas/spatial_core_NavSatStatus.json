@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.core.NavSatStatus",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "course_deg": {
+      "type": "number"
+    },
+    "diff_age_s": {
+      "type": "number"
+    },
+    "diff_station_id": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "fix_type": {
+      "enum": [
+        "NO_FIX",
+        "FIX_2D",
+        "FIX_3D",
+        "DGPS",
+        "RTK_FLOAT",
+        "RTK_FIXED",
+        "SBAS",
+        "DEAD_RECKONING",
+        "UNKNOWN_FIX"
+      ],
+      "type": "string"
+    },
+    "gnss_id": {
+      "type": "string"
+    },
+    "has_diff_age": {
+      "type": "boolean"
+    },
+    "has_dop": {
+      "type": "boolean"
+    },
+    "has_velocity": {
+      "type": "boolean"
+    },
+    "hdop": {
+      "type": "number"
+    },
+    "num_satellites": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "pdop": {
+      "type": "number"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "service": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "speed_mps": {
+      "type": "number"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "vdop": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "gnss_id",
+    "fix_type",
+    "service",
+    "num_satellites",
+    "has_dop",
+    "pdop",
+    "hdop",
+    "vdop",
+    "has_velocity",
+    "speed_mps",
+    "course_deg",
+    "has_diff_age",
+    "diff_age_s",
+    "diff_station_id",
+    "stamp",
+    "schema_version"
+  ],
+  "title": "spatial.core.NavSatStatus",
+  "type": "object"
+}

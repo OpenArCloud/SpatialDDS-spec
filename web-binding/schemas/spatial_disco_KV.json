@@ -1,0 +1,19 @@
+{
+  "$id": "spatialdds:webjson:spatial.disco.KV",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ],
+  "title": "spatial.disco.KV",
+  "type": "object"
+}

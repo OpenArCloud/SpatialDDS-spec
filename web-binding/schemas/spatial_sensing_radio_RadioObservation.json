@@ -1,0 +1,149 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.radio.RadioObservation",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "aoa_azimuth_deg": {
+      "type": "number"
+    },
+    "aoa_elevation_deg": {
+      "type": "number"
+    },
+    "band": {
+      "enum": [
+        "BAND_UNKNOWN",
+        "BAND_2_4GHZ",
+        "BAND_5GHZ",
+        "BAND_6GHZ",
+        "BAND_60GHZ"
+      ],
+      "type": "string"
+    },
+    "channel": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "frequency_mhz": {
+      "type": "number"
+    },
+    "has_aoa_azimuth": {
+      "type": "boolean"
+    },
+    "has_aoa_elevation": {
+      "type": "boolean"
+    },
+    "has_band": {
+      "type": "boolean"
+    },
+    "has_channel": {
+      "type": "boolean"
+    },
+    "has_frequency": {
+      "type": "boolean"
+    },
+    "has_major_minor": {
+      "type": "boolean"
+    },
+    "has_measurement_count": {
+      "type": "boolean"
+    },
+    "has_noise_floor": {
+      "type": "boolean"
+    },
+    "has_range": {
+      "type": "boolean"
+    },
+    "has_range_std": {
+      "type": "boolean"
+    },
+    "has_ssid": {
+      "type": "boolean"
+    },
+    "has_tx_power": {
+      "type": "boolean"
+    },
+    "identifier": {
+      "type": "string"
+    },
+    "major": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "measurement_count": {
+      "maximum": 255,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "measurement_kind": {
+      "enum": [
+        "RSSI",
+        "RTT_NS",
+        "AOA_DEG",
+        "RANGE_M",
+        "RSRP",
+        "CSI_REF",
+        "OTHER_MEASURE"
+      ],
+      "type": "string"
+    },
+    "minor": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "noise_floor_dbm": {
+      "type": "number"
+    },
+    "range_m": {
+      "type": "number"
+    },
+    "range_std_m": {
+      "type": "number"
+    },
+    "ssid": {
+      "type": "string"
+    },
+    "tx_power_dbm": {
+      "maximum": 127,
+      "minimum": -128,
+      "type": "integer"
+    },
+    "value": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "identifier",
+    "measurement_kind",
+    "value",
+    "has_frequency",
+    "frequency_mhz",
+    "has_band",
+    "band",
+    "has_ssid",
+    "ssid",
+    "has_channel",
+    "channel",
+    "has_major_minor",
+    "major",
+    "minor",
+    "has_tx_power",
+    "tx_power_dbm",
+    "has_range",
+    "range_m",
+    "has_range_std",
+    "range_std_m",
+    "has_aoa_azimuth",
+    "aoa_azimuth_deg",
+    "has_aoa_elevation",
+    "aoa_elevation_deg",
+    "has_noise_floor",
+    "noise_floor_dbm",
+    "has_measurement_count",
+    "measurement_count"
+  ],
+  "title": "spatial.sensing.radio.RadioObservation",
+  "type": "object"
+}

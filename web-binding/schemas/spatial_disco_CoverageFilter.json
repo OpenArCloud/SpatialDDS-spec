@@ -1,0 +1,35 @@
+{
+  "$id": "spatialdds:webjson:spatial.disco.CoverageFilter",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "module_id_in": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "qos_profile_in": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "type_in": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "type": "array"
+    }
+  },
+  "required": [
+    "type_in",
+    "qos_profile_in",
+    "module_id_in"
+  ],
+  "title": "spatial.disco.CoverageFilter",
+  "type": "object"
+}

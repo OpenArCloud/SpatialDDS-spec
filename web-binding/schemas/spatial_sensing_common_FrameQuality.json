@@ -1,0 +1,36 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.common.FrameQuality",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "has_snr_db": {
+      "type": "boolean"
+    },
+    "health": {
+      "enum": [
+        "OK",
+        "DEGRADED",
+        "ERROR"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "percent_valid": {
+      "type": "number"
+    },
+    "snr_db": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "has_snr_db",
+    "snr_db",
+    "percent_valid",
+    "health",
+    "note"
+  ],
+  "title": "spatial.sensing.common.FrameQuality",
+  "type": "object"
+}

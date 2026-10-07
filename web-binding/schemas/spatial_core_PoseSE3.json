@@ -1,0 +1,29 @@
+{
+  "$id": "spatialdds:webjson:spatial.core.PoseSE3",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "q": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    },
+    "t": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    }
+  },
+  "required": [
+    "t",
+    "q"
+  ],
+  "title": "spatial.core.PoseSE3",
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "$id": "spatialdds:webjson:spatial.slam_frontend.TrackObs",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "node_id": {
+      "type": "string"
+    },
+    "u": {
+      "type": "number"
+    },
+    "v": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "node_id",
+    "u",
+    "v"
+  ],
+  "title": "spatial.slam_frontend.TrackObs",
+  "type": "object"
+}

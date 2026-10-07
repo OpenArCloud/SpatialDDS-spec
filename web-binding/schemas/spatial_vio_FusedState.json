@@ -1,0 +1,231 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.vio.FusedState",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "accel_bias": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "cov_orient": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "type": "array"
+    },
+    "cov_pos": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "type": "array"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "fusion_id": {
+      "type": "string"
+    },
+    "gravity": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "gyro_bias": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "has_accel_bias": {
+      "type": "boolean"
+    },
+    "has_cov_orient": {
+      "type": "boolean"
+    },
+    "has_cov_pos": {
+      "type": "boolean"
+    },
+    "has_gravity": {
+      "type": "boolean"
+    },
+    "has_gyro_bias": {
+      "type": "boolean"
+    },
+    "has_lin_accel": {
+      "type": "boolean"
+    },
+    "has_position": {
+      "type": "boolean"
+    },
+    "lin_accel": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "mode": {
+      "enum": [
+        "ORIENTATION_3DOF",
+        "ORIENTATION_6DOF",
+        "POSE_6DOF"
+      ],
+      "type": "string"
+    },
+    "q": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    },
+    "quality": {
+      "type": "number"
+    },
+    "seq": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "source_kind": {
+      "enum": [
+        "EKF",
+        "AHRS",
+        "VIO_FUSED",
+        "IMU_ONLY",
+        "MAG_AIDED",
+        "AR_PLATFORM"
+      ],
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "t": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    }
+  },
+  "required": [
+    "fusion_id",
+    "mode",
+    "source_kind",
+    "q",
+    "has_position",
+    "t",
+    "has_gravity",
+    "gravity",
+    "has_lin_accel",
+    "lin_accel",
+    "has_gyro_bias",
+    "gyro_bias",
+    "has_accel_bias",
+    "accel_bias",
+    "has_cov_orient",
+    "cov_orient",
+    "has_cov_pos",
+    "cov_pos",
+    "stamp",
+    "frame_ref",
+    "source_id",
+    "seq",
+    "quality"
+  ],
+  "title": "spatial.vio.FusedState",
+  "type": "object"
+}

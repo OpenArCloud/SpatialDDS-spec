@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_ROI": {
+      "additionalProperties": true,
+      "properties": {
+        "_global": {
+          "type": "boolean"
+        },
+        "az_max": {
+          "type": "number"
+        },
+        "az_min": {
+          "type": "number"
+        },
+        "dop_max": {
+          "type": "number"
+        },
+        "dop_min": {
+          "type": "number"
+        },
+        "el_max": {
+          "type": "number"
+        },
+        "el_min": {
+          "type": "number"
+        },
+        "has_azimuth": {
+          "type": "boolean"
+        },
+        "has_doppler": {
+          "type": "boolean"
+        },
+        "has_elevation": {
+          "type": "boolean"
+        },
+        "has_image_roi": {
+          "type": "boolean"
+        },
+        "has_range": {
+          "type": "boolean"
+        },
+        "range_max": {
+          "type": "number"
+        },
+        "range_min": {
+          "type": "number"
+        },
+        "u_max": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "u_min": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "v_max": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "v_min": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "has_range",
+        "range_min",
+        "range_max",
+        "has_azimuth",
+        "az_min",
+        "az_max",
+        "has_elevation",
+        "el_min",
+        "el_max",
+        "has_doppler",
+        "dop_min",
+        "dop_max",
+        "has_image_roi",
+        "u_min",
+        "v_min",
+        "u_max",
+        "v_max",
+        "_global"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.common.ROIRequest",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "desired_codec": {
+      "enum": [
+        "CODEC_NONE",
+        "LZ4",
+        "ZSTD",
+        "GZIP",
+        "DRACO",
+        "JPEG",
+        "H264",
+        "H265",
+        "AV1",
+        "FP8Q",
+        "FP4Q",
+        "AE_V1",
+        "PNG"
+      ],
+      "type": "string"
+    },
+    "desired_payload_kind": {
+      "enum": [
+        "DENSE_TILES",
+        "SPARSE_COO",
+        "LATENT",
+        "BLOB_GEOMETRY",
+        "BLOB_RASTER"
+      ],
+      "type": "string"
+    },
+    "desired_sample_type": {
+      "enum": [
+        "U8_MAG",
+        "F16_MAG",
+        "CF16",
+        "CF32",
+        "MAGPHASE_S8"
+      ],
+      "type": "string"
+    },
+    "max_bytes": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "request_id": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    },
+    "roi": {
+      "$ref": "#/$defs/spatial_sensing_common_ROI"
+    },
+    "stream_id": {
+      "type": "string"
+    },
+    "t_end": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "t_start": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "wants_codec": {
+      "type": "boolean"
+    },
+    "wants_payload_kind": {
+      "type": "boolean"
+    },
+    "wants_sample_type": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "stream_id",
+    "request_id",
+    "t_start",
+    "t_end",
+    "roi",
+    "wants_payload_kind",
+    "desired_payload_kind",
+    "wants_codec",
+    "desired_codec",
+    "wants_sample_type",
+    "desired_sample_type",
+    "max_bytes"
+  ],
+  "title": "spatial.sensing.common.ROIRequest",
+  "type": "object"
+}

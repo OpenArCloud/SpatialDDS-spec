@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "spatial_disco_ProfileSupport": {
+      "additionalProperties": true,
+      "properties": {
+        "major": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_minor": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "min_minor": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "major",
+        "min_minor",
+        "max_minor"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.disco.Capabilities",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "features": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "type": "array"
+    },
+    "preferred_profiles": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "supported_profiles": {
+      "items": {
+        "$ref": "#/$defs/spatial_disco_ProfileSupport"
+      },
+      "maxItems": 64,
+      "type": "array"
+    }
+  },
+  "required": [
+    "supported_profiles",
+    "preferred_profiles",
+    "features"
+  ],
+  "title": "spatial.disco.Capabilities",
+  "type": "object"
+}

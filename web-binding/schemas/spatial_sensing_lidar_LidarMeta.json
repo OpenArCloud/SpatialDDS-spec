@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_StreamMeta": {
+      "additionalProperties": true,
+      "properties": {
+        "T_bus_sensor": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "nominal_rate_hz": {
+          "type": "number"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_ref",
+        "T_bus_sensor",
+        "nominal_rate_hz",
+        "schema_version"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.lidar.LidarMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "base": {
+      "$ref": "#/$defs/spatial_sensing_common_StreamMeta"
+    },
+    "codec": {
+      "enum": [
+        "CODEC_NONE",
+        "LZ4",
+        "ZSTD",
+        "GZIP",
+        "DRACO",
+        "JPEG",
+        "H264",
+        "H265",
+        "AV1",
+        "FP8Q",
+        "FP4Q",
+        "AE_V1",
+        "PNG"
+      ],
+      "type": "string"
+    },
+    "encoding": {
+      "enum": [
+        "PCD",
+        "PLY",
+        "LAS",
+        "LAZ",
+        "BIN_INTERLEAVED",
+        "GLTF_DRACO",
+        "MPEG_PCC",
+        "CUSTOM_BIN"
+      ],
+      "type": "string"
+    },
+    "has_horiz_fov": {
+      "type": "boolean"
+    },
+    "has_range_limits": {
+      "type": "boolean"
+    },
+    "has_vert_fov": {
+      "type": "boolean"
+    },
+    "has_wavelength": {
+      "type": "boolean"
+    },
+    "horiz_fov_deg_max": {
+      "type": "number"
+    },
+    "horiz_fov_deg_min": {
+      "type": "number"
+    },
+    "layout": {
+      "enum": [
+        "XYZ_I",
+        "XYZ_I_R",
+        "XYZ_I_R_N",
+        "XYZ_I_R_T",
+        "XYZ_I_R_T_N"
+      ],
+      "type": "string"
+    },
+    "max_range_m": {
+      "type": "number"
+    },
+    "min_range_m": {
+      "type": "number"
+    },
+    "n_rings": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "stream_id": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "SPINNING_2D",
+        "MULTI_BEAM_3D",
+        "SOLID_STATE"
+      ],
+      "type": "string"
+    },
+    "vert_fov_deg_max": {
+      "type": "number"
+    },
+    "vert_fov_deg_min": {
+      "type": "number"
+    },
+    "wavelength_nm": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "stream_id",
+    "base",
+    "type",
+    "n_rings",
+    "has_range_limits",
+    "min_range_m",
+    "max_range_m",
+    "has_horiz_fov",
+    "horiz_fov_deg_min",
+    "horiz_fov_deg_max",
+    "has_vert_fov",
+    "vert_fov_deg_min",
+    "vert_fov_deg_max",
+    "has_wavelength",
+    "wavelength_nm",
+    "encoding",
+    "codec",
+    "layout",
+    "schema_version"
+  ],
+  "title": "spatial.sensing.lidar.LidarMeta",
+  "type": "object"
+}

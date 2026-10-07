@@ -1,0 +1,103 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.vision.CamIntrinsics",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "calib_version": {
+      "type": "string"
+    },
+    "color": {
+      "enum": [
+        "SRGB",
+        "REC709",
+        "REC2020",
+        "LINEAR"
+      ],
+      "type": "string"
+    },
+    "cx": {
+      "type": "number"
+    },
+    "cy": {
+      "type": "number"
+    },
+    "dist": {
+      "enum": [
+        "NONE",
+        "RADTAN",
+        "KANNALA_BRANDT"
+      ],
+      "type": "string"
+    },
+    "dist_params": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "fx": {
+      "type": "number"
+    },
+    "fy": {
+      "type": "number"
+    },
+    "height": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "model": {
+      "enum": [
+        "PINHOLE",
+        "FISHEYE_EQUIDISTANT",
+        "KB_4",
+        "OMNI"
+      ],
+      "type": "string"
+    },
+    "pix": {
+      "enum": [
+        "UNKNOWN",
+        "YUV420",
+        "RGB8",
+        "BGR8",
+        "RGBA8",
+        "DEPTH16",
+        "RAW10",
+        "RAW12",
+        "RAW16"
+      ],
+      "type": "string"
+    },
+    "readout_us": {
+      "type": "number"
+    },
+    "shutter_us": {
+      "type": "number"
+    },
+    "width": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "model",
+    "width",
+    "height",
+    "fx",
+    "fy",
+    "cx",
+    "cy",
+    "dist",
+    "dist_params",
+    "shutter_us",
+    "readout_us",
+    "pix",
+    "color",
+    "calib_version"
+  ],
+  "title": "spatial.sensing.vision.CamIntrinsics",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "$id": "spatialdds:webjson:spatial.anchors.AnchorSetRequest",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "set_id": {
+      "type": "string"
+    },
+    "up_to_revision": {
+      "pattern": "^\\d+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "set_id",
+    "up_to_revision"
+  ],
+  "title": "spatial.anchors.AnchorSetRequest",
+  "type": "object"
+}

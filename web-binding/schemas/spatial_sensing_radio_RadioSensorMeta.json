@@ -1,0 +1,214 @@
+{
+  "$defs": {
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_core_PoseSE3": {
+      "additionalProperties": true,
+      "properties": {
+        "q": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "t": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "t",
+        "q"
+      ],
+      "type": "object"
+    },
+    "spatial_sensing_common_StreamMeta": {
+      "additionalProperties": true,
+      "properties": {
+        "T_bus_sensor": {
+          "$ref": "#/$defs/spatial_core_PoseSE3"
+        },
+        "frame_ref": {
+          "$ref": "#/$defs/spatial_common_FrameRef"
+        },
+        "nominal_rate_hz": {
+          "type": "number"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stream_id",
+        "frame_ref",
+        "T_bus_sensor",
+        "nominal_rate_hz",
+        "schema_version"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.sensing.radio.RadioSensorMeta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "base": {
+      "$ref": "#/$defs/spatial_sensing_common_StreamMeta"
+    },
+    "ble_version": {
+      "type": "string"
+    },
+    "device_model": {
+      "type": "string"
+    },
+    "has_aoa": {
+      "type": "boolean"
+    },
+    "has_ble_version": {
+      "type": "boolean"
+    },
+    "has_csi": {
+      "type": "boolean"
+    },
+    "has_max_observations": {
+      "type": "boolean"
+    },
+    "has_rssi": {
+      "type": "boolean"
+    },
+    "has_rtt": {
+      "type": "boolean"
+    },
+    "has_typical_scan_duration": {
+      "type": "boolean"
+    },
+    "has_wifi_bands": {
+      "type": "boolean"
+    },
+    "max_observations": {
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "radio_type": {
+      "enum": [
+        "WIFI",
+        "BLE",
+        "BT_CLASSIC",
+        "UWB",
+        "CELLULAR",
+        "LORA",
+        "OTHER_RADIO"
+      ],
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "sensor_id": {
+      "type": "string"
+    },
+    "supported_bands": {
+      "items": {
+        "enum": [
+          "BAND_UNKNOWN",
+          "BAND_2_4GHZ",
+          "BAND_5GHZ",
+          "BAND_6GHZ",
+          "BAND_60GHZ"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "type": "array"
+    },
+    "typical_scan_duration_s": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "sensor_id",
+    "base",
+    "radio_type",
+    "has_rssi",
+    "has_rtt",
+    "has_aoa",
+    "has_csi",
+    "has_wifi_bands",
+    "supported_bands",
+    "has_ble_version",
+    "ble_version",
+    "device_model",
+    "platform",
+    "has_max_observations",
+    "max_observations",
+    "has_typical_scan_duration",
+    "typical_scan_duration_s",
+    "schema_version"
+  ],
+  "title": "spatial.sensing.radio.RadioSensorMeta",
+  "type": "object"
+}

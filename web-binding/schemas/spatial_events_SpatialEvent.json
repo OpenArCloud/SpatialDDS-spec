@@ -1,0 +1,349 @@
+{
+  "$defs": {
+    "builtin_Time": {
+      "additionalProperties": true,
+      "properties": {
+        "nanosec": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sec": {
+          "pattern": "^-?\\d+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sec",
+        "nanosec"
+      ],
+      "type": "object"
+    },
+    "spatial_common_FrameRef": {
+      "additionalProperties": true,
+      "properties": {
+        "coord_convention": {
+          "enum": [
+            "ENU",
+            "CV",
+            "GRAPHICS",
+            "UNITY_LH",
+            "NED",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "display_unit": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "has_coord_convention": {
+          "type": "boolean"
+        },
+        "has_scale": {
+          "type": "boolean"
+        },
+        "meters_per_unit": {
+          "type": "number"
+        },
+        "scale_status": {
+          "enum": [
+            "SCALE_UNKNOWN",
+            "SCALE_DECLARED",
+            "SCALE_DERIVED"
+          ],
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uuid",
+        "fqn",
+        "has_coord_convention",
+        "coord_convention",
+        "has_scale",
+        "scale_status",
+        "meters_per_unit",
+        "display_unit"
+      ],
+      "type": "object"
+    },
+    "spatial_common_KV": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "object"
+    },
+    "spatial_common_MetaKV": {
+      "additionalProperties": true,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/spatial_common_KV"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "json": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "json",
+        "entries"
+      ],
+      "type": "object"
+    },
+    "spatial_core_BlobRef": {
+      "additionalProperties": true,
+      "properties": {
+        "blob_id": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "blob_id",
+        "role",
+        "checksum"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "spatialdds:webjson:spatial.events.SpatialEvent",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "attributes": {
+      "items": {
+        "$ref": "#/$defs/spatial_common_MetaKV"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "crossing_direction": {
+      "enum": [
+        "CROSSING_UNKNOWN",
+        "LEFT_TO_RIGHT",
+        "RIGHT_TO_LEFT"
+      ],
+      "type": "string"
+    },
+    "crossing_line_id": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_start": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "evidence": {
+      "$ref": "#/$defs/spatial_core_BlobRef"
+    },
+    "frame_ref": {
+      "$ref": "#/$defs/spatial_common_FrameRef"
+    },
+    "has_crossing": {
+      "type": "boolean"
+    },
+    "has_crossing_line_id": {
+      "type": "boolean"
+    },
+    "has_description": {
+      "type": "boolean"
+    },
+    "has_evidence": {
+      "type": "boolean"
+    },
+    "has_measured_distance_m": {
+      "type": "boolean"
+    },
+    "has_measured_dwell_sec": {
+      "type": "boolean"
+    },
+    "has_measured_speed_mps": {
+      "type": "boolean"
+    },
+    "has_position": {
+      "type": "boolean"
+    },
+    "has_secondary_det_id": {
+      "type": "boolean"
+    },
+    "has_trigger_det_id": {
+      "type": "boolean"
+    },
+    "has_trigger_track_id": {
+      "type": "boolean"
+    },
+    "has_zone_id": {
+      "type": "boolean"
+    },
+    "has_zone_occupancy": {
+      "type": "boolean"
+    },
+    "measured_distance_m": {
+      "type": "number"
+    },
+    "measured_dwell_sec": {
+      "type": "number"
+    },
+    "measured_speed_mps": {
+      "type": "number"
+    },
+    "participant_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "position": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "secondary_det_id": {
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "INFO",
+        "WARNING",
+        "ALERT",
+        "CRITICAL"
+      ],
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "stamp": {
+      "$ref": "#/$defs/builtin_Time"
+    },
+    "state": {
+      "enum": [
+        "ACTIVE",
+        "RESOLVED",
+        "ACKNOWLEDGED",
+        "SUPPRESSED"
+      ],
+      "type": "string"
+    },
+    "trigger_class_id": {
+      "type": "string"
+    },
+    "trigger_det_id": {
+      "type": "string"
+    },
+    "trigger_track_id": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "ZONE_ENTRY",
+        "ZONE_EXIT",
+        "DWELL_TIMEOUT",
+        "SPEED_VIOLATION",
+        "CAPACITY_BREACH",
+        "WRONG_WAY",
+        "PROXIMITY_ALERT",
+        "UNATTENDED",
+        "ANOMALY",
+        "LINE_CROSS",
+        "LOITERING",
+        "TAILGATING",
+        "OTHER",
+        "PREDICTED_CONFLICT"
+      ],
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "zone_occupancy": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "event_id",
+    "type",
+    "severity",
+    "state",
+    "has_zone_id",
+    "zone_id",
+    "has_position",
+    "position",
+    "frame_ref",
+    "has_trigger_det_id",
+    "trigger_det_id",
+    "has_trigger_track_id",
+    "trigger_track_id",
+    "trigger_class_id",
+    "has_secondary_det_id",
+    "secondary_det_id",
+    "has_measured_speed_mps",
+    "measured_speed_mps",
+    "has_measured_dwell_sec",
+    "measured_dwell_sec",
+    "has_measured_distance_m",
+    "measured_distance_m",
+    "has_zone_occupancy",
+    "zone_occupancy",
+    "confidence",
+    "has_evidence",
+    "evidence",
+    "has_description",
+    "description",
+    "event_start",
+    "stamp",
+    "source_id",
+    "attributes",
+    "schema_version",
+    "participant_ids",
+    "has_crossing_line_id",
+    "crossing_line_id",
+    "has_crossing",
+    "crossing_direction"
+  ],
+  "title": "spatial.events.SpatialEvent",
+  "type": "object"
+}

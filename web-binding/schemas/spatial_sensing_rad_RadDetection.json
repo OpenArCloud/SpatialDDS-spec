@@ -1,0 +1,147 @@
+{
+  "$id": "spatialdds:webjson:spatial.sensing.rad.RadDetection",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "ambig_state": {
+      "maximum": 255,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "dyn_prop": {
+      "enum": [
+        "UNKNOWN",
+        "MOVING",
+        "STATIONARY",
+        "ONCOMING",
+        "CROSSING_LEFT",
+        "CROSSING_RIGHT",
+        "STOPPED"
+      ],
+      "type": "string"
+    },
+    "false_alarm_prob": {
+      "type": "number"
+    },
+    "has_ambig_state": {
+      "type": "boolean"
+    },
+    "has_dyn_prop": {
+      "type": "boolean"
+    },
+    "has_false_alarm_prob": {
+      "type": "boolean"
+    },
+    "has_pos_rms": {
+      "type": "boolean"
+    },
+    "has_rcs_dbm2": {
+      "type": "boolean"
+    },
+    "has_sensor_track_id": {
+      "type": "boolean"
+    },
+    "has_v_r_mps": {
+      "type": "boolean"
+    },
+    "has_vel_rms": {
+      "type": "boolean"
+    },
+    "has_velocity_comp_xyz": {
+      "type": "boolean"
+    },
+    "has_velocity_xyz": {
+      "type": "boolean"
+    },
+    "intensity": {
+      "type": "number"
+    },
+    "quality": {
+      "type": "number"
+    },
+    "rcs_dbm2": {
+      "type": "number"
+    },
+    "sensor_track_id": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "v_r_mps": {
+      "type": "number"
+    },
+    "velocity_comp_xyz": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "velocity_xyz": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "vx_rms_mps": {
+      "type": "number"
+    },
+    "vy_rms_mps": {
+      "type": "number"
+    },
+    "vz_rms_mps": {
+      "type": "number"
+    },
+    "x_rms_m": {
+      "type": "number"
+    },
+    "xyz_m": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "y_rms_m": {
+      "type": "number"
+    },
+    "z_rms_m": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "xyz_m",
+    "has_velocity_xyz",
+    "velocity_xyz",
+    "has_v_r_mps",
+    "v_r_mps",
+    "has_velocity_comp_xyz",
+    "velocity_comp_xyz",
+    "has_rcs_dbm2",
+    "rcs_dbm2",
+    "intensity",
+    "quality",
+    "has_dyn_prop",
+    "dyn_prop",
+    "has_pos_rms",
+    "x_rms_m",
+    "y_rms_m",
+    "z_rms_m",
+    "has_vel_rms",
+    "vx_rms_mps",
+    "vy_rms_mps",
+    "vz_rms_mps",
+    "has_ambig_state",
+    "ambig_state",
+    "has_false_alarm_prob",
+    "false_alarm_prob",
+    "has_sensor_track_id",
+    "sensor_track_id"
+  ],
+  "title": "spatial.sensing.rad.RadDetection",
+  "type": "object"
+}
