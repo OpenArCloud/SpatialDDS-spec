@@ -226,7 +226,7 @@ On success, the server MUST return HTTP `200 OK` with `Content-Type: application
         "bbox": [-122.420, 37.785, -122.405, 37.800],
         "global": false
       },
-      "stamp": { "sec": 1735689600, "nanosec": 0 },
+      "stamp": { "sec": "1735689600", "nanosec": 0 },
       "ttl_sec": 3600
     }
   ],
@@ -263,7 +263,7 @@ The server evaluates spatial overlap using the same *intersects* predicate as th
 **Normative rules:**
 
 - Servers implementing the HTTP discovery search binding MUST support the POST form. The GET convenience form is also REQUIRED for interoperability with the Geospatial DNS-SD binding.
-- The response MUST use the §8.2.3 service manifest schema for each result. Clients MUST be able to extract `service.connection` from any result and use it to join the service's DDS domain.
+- The response MUST use the §8.2.3 service manifest schema for each result. Where a result carries `service.connection`, clients MUST be able to extract it and use it to join the service's DDS domain. The block remains OPTIONAL (§8.2.3): a service that offers no DDS access MUST omit it rather than fabricate connection parameters, and clients MUST treat its absence as conformant. See Appendix N.7.
 - Servers MUST respect the Coverage Model (§3.3.4) when evaluating spatial overlap: `coverage_frame_ref`, `bbox`, `aabb`, and `global` flags all apply.
 - Servers SHOULD set `Cache-Control` headers appropriate to the deployment. Responses to geohash queries at precision 5 (city-district scale) MAY be cached for 60–300 seconds.
 - Pagination follows the same contract as on-bus `CoverageResponse`: tokens are opaque, results are best-effort, and an empty `next_page_token` means no further pages.
@@ -407,7 +407,7 @@ The discovery service returns an array of standard SpatialDDS service manifests 
       "bbox": [-122.420, 37.785, -122.405, 37.800],
       "global": false
     },
-    "stamp": { "sec": 1714070400, "nanosec": 0 },
+    "stamp": { "sec": "1714070400", "nanosec": 0 },
     "ttl_sec": 3600
   }
 ]

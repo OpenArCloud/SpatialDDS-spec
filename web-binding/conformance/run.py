@@ -253,7 +253,7 @@ def check_canonical_form(ep, schemas):
 def check_latched_get(ep, schemas):
     """TRANSIENT_LOCAL resources are GET with ETag, Cache-Control, and 304."""
     latched = [t for t in discover(ep)
-               if t.get("qos_profile") == "TRANSIENT_LOCAL"]
+               if t.get("durability") == "TRANSIENT_LOCAL"]
     assert latched, "the endpoint advertises no latched resource"
     checked = 0
     for t in latched:
@@ -371,7 +371,8 @@ def check_manifest_shape(ep, schemas):
                                "STORAGE", "CONTENT", "ANCHOR_REGISTRY",
                                "OTHER"), f"kind {svc['kind']!r}"
         for t in svc.get("topics", []):
-            for k in ("name", "type", "version", "url", "access"):
+            for k in ("name", "type", "version", "url", "access",
+                      "durability"):
                 assert k in t, f"topic entry is missing {k}: {sorted(t)}"
             assert t["name"].startswith("spatialdds/"), \
                 f"topic name {t['name']!r} does not follow §3.3.1"
@@ -403,18 +404,20 @@ def check_commands_post(ep, schemas):
 def check_qos_subset(ep, schemas):
     """The carried QoS distinctions are observable; the rest is absent."""
     topics = discover(ep)
-    profiles = {t.get("qos_profile") for t in topics}
-    assert "TRANSIENT_LOCAL" in profiles, \
+    kinds = {t.get("durability") for t in topics}
+    assert "TRANSIENT_LOCAL" in kinds, \
         "no latched topic is advertised, so durability is not observable"
-    assert len(profiles) > 1, \
-        f"every topic has the same qos_profile ({profiles}), so the distinction is not carried"
+    assert kinds <= {"VOLATILE", "TRANSIENT_LOCAL"}, \
+        f"durability must be a DDS kind, got {sorted(k for k in kinds if k)}"
+    assert len(kinds) > 1, \
+        f"every topic declares the same durability ({kinds}), so the distinction is not carried"
     # The not-carried set must not be emulated anywhere in a manifest.
     blob = json.dumps(ep.json(f"{WK}/search"))
     for absent in ("deadline", "ownership", "time_based_filter",
                    "transport_priority"):
         assert absent not in blob, \
             f"the manifest mentions {absent!r}, which the binding does not carry"
-    return f"profiles {sorted(p for p in profiles if p)}"
+    return f"durability {sorted(k for k in kinds if k)}"
 
 
 
@@ -461,7 +464,7 @@ def scenario_hello_spatial(ep, schemas):
         'doc = ep.json("/.well-known/spatialdds/search")',
         'svc = doc["results"][0]["service"]',
         'topic = next(t for t in svc["topics"]'
-        ' if t["qos_profile"] == "TRANSIENT_LOCAL")',
+        ' if t["durability"] == "TRANSIENT_LOCAL")',
         'url = topic["url"].replace("http", "ws", 1)',
         'msgs = _ws_collect(url, ep.token)',
         'replay = [m for m in msgs if m["event"] == "sample"]',
@@ -476,7 +479,7 @@ def scenario_hello_spatial(ep, schemas):
     doc = ep.json(f"{WK}/search")
     svc = doc["results"][0]["service"]
     latched = [t for t in svc["topics"]
-               if t.get("qos_profile") == "TRANSIENT_LOCAL"]
+               if t.get("durability") == "TRANSIENT_LOCAL"]
     assert latched, "no latched topic to subscribe to"
     topic = latched[0]
     msgs = _ws_collect(ep.ws_url(topic["url"][len(ep.base):]), ep.token)
@@ -548,7 +551,7 @@ def scenario_third_party_reader(ep, schemas):
     """
     index = ep.json(f"{WK}/schemas")
     latched = [t for t in discover(ep)
-               if t.get("qos_profile") == "TRANSIENT_LOCAL"]
+               if t.get("durability") == "TRANSIENT_LOCAL"]
     assert latched, "no latched resource to read"
     read = 0
     for t in latched:

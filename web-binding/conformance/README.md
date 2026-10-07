@@ -22,15 +22,23 @@ matching the gates):
 python3 web-binding/conformance/run.py --endpoint https://host/… [--token T]
 ```
 
-## Pinned wire surface (normative — the step-5 contract)
+## Pinned wire surface — now **Appendix N** of the specification
 
-The gateway (step 5) **implements** this surface; it does not get to invent it. It
-is pinned here, with the conformance definition, so the suite tests a fixed
-contract rather than whatever the gateway happened to do. Step 7 moves it into
-the binding spec text; until then this section is the contract the step-5
-directive hands the demo agent. Grounded in existing spec where noted; every item
-marked **[invented]** is a decision made here for lack of a prior one — flag for
-step-7 ratification.
+**This section is historical.** Step 7 moved the surface into the specification
+proper, as *Appendix N: Web Binding (Normative)*, which is now the contract. The
+items once marked **[invented]** here were ratified and are normative there:
+the `schemas` paths, the latched-resource path mapping, the WebSocket envelope
+field names, and `url`/`access` on a manifest topic entry.
+
+Appendix N also carries what this section could not, because it was learned
+afterwards from a second implementation: `closing` as a fifth event so a
+subscription's end has a reason, an optional `as_of` on `end_of_replay`,
+declared liveliness granularity, `application/problem+json` for errors, and
+`service.connection`, `bootstrap` and `resolver` as optional-and-validated
+rather than required.
+
+What follows is kept as the record of what was pinned, and when, during step 5.
+Where it differs from Appendix N, Appendix N governs.
 
 ### Well-known paths
 
@@ -88,12 +96,73 @@ names and shapes are **[invented]** (semantics per brief §4 and §2.14):
 - **`liveliness`** is an explicit event; a client MUST NOT infer liveliness or
   removal from the WS connection dropping.
 
-### Invented here — flag list for step 7 / the step-5 directive
+### Invented here — the flag list for chosen names
 
-1. `/.well-known/spatialdds/schemas[/{type}]` paths + index shape.
-2. The latched-resource HTTP path mapping (`{base}/{scene}/{stream}/{type}/{version}[/{key}]`).
-3. The WS event-envelope field names (`event`,`topic`,`key`,`data`,`replayed`,`reason`,`alive`) and the `end_of_replay.replayed` count.
-   (The four event-type tokens themselves are fixed by direction, not invented here.)
+Where a name this work chose sits until it is ratified. Items 1 to 3 were
+flagged during step 5 and are **ratified**: they are normative in Appendix N.
+Items 4 and 5 are names chosen during step 7, inside queue items that were
+ruled, and are **flagged pending ratification** — the decision to add each was
+made elsewhere; only the spelling is ours.
+
+1. **Ratified.** `/.well-known/spatialdds/schemas[/{type}]` paths + index shape.
+2. **Ratified.** The latched-resource HTTP path mapping
+   (`{base}/{scene}/{stream}/{type}/{version}[/{key}]`).
+3. **Ratified.** The WS event-envelope field names
+   (`event`,`topic`,`key`,`data`,`replayed`,`reason`,`alive`) and the
+   `end_of_replay.replayed` count. (The four event-type tokens themselves were
+   fixed by direction, not invented here.)
+4. **Pending.** `closing` as the fifth event-type token (Appendix N.5.4), and
+   its `reason` and `code` members. That a subscription's end needs a terminal
+   event carrying a reason was ruled; the token is a name we picked. The four
+   original tokens were fixed by direction, so a fifth is the first addition to
+   that set and the spelling should be deliberate.
+5. **Pending.** The `liveliness` member on a manifest topic entry and its three
+   values, `"per-key"`, `"per-writer"`, `"none"` (Appendix N.5.3). That
+   granularity should be declared rather than assumed was ruled; the member
+   name and the vocabulary are ours.
+
+6. **Ratified, by removal.** `LIVE` as a `qos_profile` value meaning "not
+   latched" is **gone**, and nothing replaced it that needed naming. A topic
+   entry now carries a `durability` member taking the DDS kinds verbatim,
+   `"VOLATILE"` or `"TRANSIENT_LOCAL"`, and `qos_profile` keeps its free-form
+   §3.3.2 meaning untouched.
+
+   Worth keeping as a record of how it was found. One review question — *is
+   `LIVE` a defined term, or a token the gateway coined and the appendix
+   inherited?* — turned up two defects for the price of one. `LIVE` appeared
+   exactly once in the entire specification, in the appendix asserting it, so a
+   reader could resolve it from neither DDS vocabulary nor existing text. And
+   checking that exposed the larger problem the question had not asked about:
+   `qos_profile` is already a free-form profile *name* in §3.3.2, carrying
+   `VIDEO_LIVE` and `POSE_RT`, so durability carried there collided with an
+   established use. The resolution invented no vocabulary at all, which is
+   usually the sign that the first shape was carrying something that did not
+   belong to it.
+
+Also chosen rather than ruled, and recorded here for completeness: `url` and
+`access` on a manifest topic entry were flagged at step 5 and ratified, and
+`application/problem+json` (N.8) is an existing standard adopted rather than a
+name invented, so neither needs a slot above.
+
+## Zero observations is not evidence
+
+A stated principle of this suite, and permanent vocabulary: **a rule the
+endpoint's data never exercises reports UNEXERCISED, never a counted pass.**
+
+It is here because the suite nearly broke it. The canonical-form check counted
+the §5 rules it observed and asserted that some were non-zero; the tagged-union
+count sat at zero, because the check did not resolve `$ref` and so never
+reached the `CovMatrix` inside a `GeoPose`. A green row would have reported a
+rule as satisfied on the strength of never having looked at it.
+
+So a count of zero is now reported in the detail as UNEXERCISED and read as an
+absence of evidence rather than evidence of conformance. An endpoint whose data
+happens not to contain a union is not thereby conformant about unions; it is
+untested about unions, and the manifest says which.
+
+This is the same discipline as a SKIPPED check, applied one level down: a check
+that cannot run says so by name, and a rule that had nothing to run against
+says so too.
 
 ## Cross-cutting checks (brief §4, §5, §7)
 

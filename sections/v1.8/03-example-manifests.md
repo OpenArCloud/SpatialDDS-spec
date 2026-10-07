@@ -18,7 +18,7 @@ Every `spatial.manifest/1.8` document MUST include the following top-level field
 | `caps` | object | OPTIONAL | Capabilities block. When present, MUST follow the same structure as discovery `Capabilities`. |
 | `coverage` | object | OPTIONAL | Coverage block. When present, MUST follow the Coverage Model (§3.3.4). |
 | `assets` | array | OPTIONAL | Array of `AssetRef` objects. Each entry MUST include `uri`, `media_type`, and `hash`. |
-| `stamp` | object | OPTIONAL | Publication timestamp `{ "sec": <int>, "nanosec": <int> }`. |
+| `stamp` | object | OPTIONAL | Publication timestamp `{ "sec": "<decimal string>", "nanosec": <int> }`. A manifest is JSON produced by this specification's bindings and follows the canonical mapping (Appendix N.1): `Time.sec` is an `int64` and is therefore a decimal string, `nanosec` a `uint32` and therefore a number. |
 | `ttl_sec` | integer | OPTIONAL | Cache lifetime hint in seconds. Clients SHOULD NOT use a cached manifest beyond `stamp + ttl_sec`. |
 | `auth` | object | OPTIONAL | Authentication hints, consistent with `auth_hint` semantics in §3.3. |
 
@@ -35,7 +35,7 @@ Every `spatial.manifest/1.8` document MUST include the following top-level field
   "id": "spatialdds://museum.example.org/hall1/anchor/main-entrance",
   "profile": "spatial.manifest/1.8",
   "rtype": "anchor",
-  "stamp": { "sec": 1714070400, "nanosec": 0 },
+  "stamp": { "sec": "1714070400", "nanosec": 0 },
   "ttl_sec": 3600
 }
 ```
@@ -83,7 +83,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
     "bbox": [-122.395, 37.793, -122.393, 37.794],
     "global": false
   },
-  "stamp": { "sec": 1714070400, "nanosec": 0 },
+  "stamp": { "sec": "1714070400", "nanosec": 0 },
   "ttl_sec": 86400
 }
 ```
@@ -154,7 +154,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
     "bbox": [-122.420, 37.790, -122.410, 37.800],
     "global": false
   },
-  "stamp": { "sec": 1714070400, "nanosec": 0 },
+  "stamp": { "sec": "1714070400", "nanosec": 0 },
   "ttl_sec": 3600
 }
 ```

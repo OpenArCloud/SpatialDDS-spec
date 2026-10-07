@@ -4,3 +4,4 @@ CONTEXT.md
 directions/
 __pycache__/
 *.pyc
+.DS_Store

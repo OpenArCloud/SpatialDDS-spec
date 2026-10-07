@@ -43,3 +43,4 @@
     - [Appendix K: IDL Package Layout (Informative)](sections/v1.8/appendix-k-idl-package-layout.md)
     - [Appendix L: Resolution Quality Conformance (Normative)](sections/v1.8/appendix-l-resolution-quality-conformance.md)
     - [Appendix M: Documented Operational Conventions (Informative)](sections/v1.8/appendix-m-operational-conventions.md)
+    - [Appendix N: Web Binding (Normative)](sections/v1.8/appendix-n-web-binding.md)
