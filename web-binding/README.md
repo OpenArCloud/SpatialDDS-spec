@@ -15,6 +15,11 @@ gate 2.
 - `gen.py` — the generator (IDL AST → JSON Schema + serializer tables). *Pending (next step; builds against the environment below).*
 - `gate_regen.py` — gate 1, regenerate-and-diff. *Pending.*
 - `gate_roundtrip.py` — gate 2, CDR↔JSON round-trip against `golden/`. *Pending.*
+- `gate_names.py` — gate 3, published member names are the IDL's and not the
+  code generator's. **Authored**, after the binding's second implementation
+  found `_global` and `_from` in eleven published schemas. The assertion is
+  necessary because `additionalProperties: true` makes a renamed field silent
+  in both directions, so a tolerant reader cannot detect it.
 - `schemas/` — generated JSON Schemas (committed; gate 1 diffs against them). *Pending.*
 
 ## Build/validate environment (recorded per brief ruling — for CI and the next machine)

@@ -127,9 +127,6 @@
     "spatial_disco_CoverageElement": {
       "additionalProperties": true,
       "properties": {
-        "_global": {
-          "type": "boolean"
-        },
         "aabb": {
           "$ref": "#/$defs/spatial_core_Aabb3"
         },
@@ -164,6 +161,9 @@
         "frame_ref": {
           "$ref": "#/$defs/spatial_common_FrameRef"
         },
+        "global": {
+          "type": "boolean"
+        },
         "has_aabb": {
           "type": "boolean"
         },
@@ -190,7 +190,7 @@
         "bbox",
         "has_aabb",
         "aabb",
-        "_global",
+        "global",
         "has_frame_ref",
         "frame_ref",
         "has_coverage_window",
@@ -205,7 +205,7 @@
     "spatial_disco_Transform": {
       "additionalProperties": true,
       "properties": {
-        "_from": {
+        "from": {
           "$ref": "#/$defs/spatial_common_FrameRef"
         },
         "has_validity": {
@@ -225,7 +225,7 @@
         }
       },
       "required": [
-        "_from",
+        "from",
         "to",
         "pose",
         "stamp",
@@ -237,7 +237,7 @@
     "spatial_disco_ValidityWindow": {
       "additionalProperties": true,
       "properties": {
-        "_from": {
+        "from": {
           "$ref": "#/$defs/builtin_Time"
         },
         "seconds": {
@@ -247,7 +247,7 @@
         }
       },
       "required": [
-        "_from",
+        "from",
         "seconds"
       ],
       "type": "object"

@@ -24,7 +24,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": true,
   "properties": {
-    "_from": {
+    "from": {
       "$ref": "#/$defs/builtin_Time"
     },
     "seconds": {
@@ -34,7 +34,7 @@
     }
   },
   "required": [
-    "_from",
+    "from",
     "seconds"
   ],
   "title": "spatial.disco.ValidityWindow",

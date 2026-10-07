@@ -3,9 +3,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": true,
   "properties": {
-    "_global": {
-      "type": "boolean"
-    },
     "az_max": {
       "type": "number"
     },
@@ -23,6 +20,9 @@
     },
     "el_min": {
       "type": "number"
+    },
+    "global": {
+      "type": "boolean"
     },
     "has_azimuth": {
       "type": "boolean"
@@ -84,7 +84,7 @@
     "v_min",
     "u_max",
     "v_max",
-    "_global"
+    "global"
   ],
   "title": "spatial.sensing.common.ROI",
   "type": "object"

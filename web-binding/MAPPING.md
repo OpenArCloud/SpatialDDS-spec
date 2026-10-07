@@ -69,6 +69,15 @@ irrelevant to the JSON because the name carries the identity.
 - **sequence\<T,N\>** → JSON array → `{"type":"array","items":<T>,"maxItems":N}`.
 - **T[N]** (fixed array) → JSON array → `{"type":"array","items":<T>,
   "minItems":N,"maxItems":N}`.
+
+  The two produce the same JSON shape, and the schema separates them by
+  `minItems`. The **serializer tables must separate them too**: a fixed array
+  carries `"length": N`, a bounded sequence carries `"bound": N`. The
+  distinction is not cosmetic for anything that reads the wire, where a
+  sequence is length-prefixed and a fixed array is not, and a table that
+  erased it could not be used as a decoder's type model. Same for an octet
+  payload, where base64 hides the difference entirely: `{"t":"base64",
+  "length":N}` against `{"t":"base64","bound":N}`.
 - **typedef/alias** → resolves to the aliased type's mapping. So `Vec3`
   (`double[3]`) → 3-number array; `Aabb3D` (`double[6]`) → 6-number flat array
   (the §2.10 flat form); `Mat3x3` (`double[9]`) → 9-number array.

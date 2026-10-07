@@ -101,7 +101,7 @@
     "spatial_disco_ValidityWindow": {
       "additionalProperties": true,
       "properties": {
-        "_from": {
+        "from": {
           "$ref": "#/$defs/builtin_Time"
         },
         "seconds": {
@@ -111,7 +111,7 @@
         }
       },
       "required": [
-        "_from",
+        "from",
         "seconds"
       ],
       "type": "object"
@@ -121,7 +121,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": true,
   "properties": {
-    "_from": {
+    "from": {
       "$ref": "#/$defs/spatial_common_FrameRef"
     },
     "has_validity": {
@@ -141,7 +141,7 @@
     }
   },
   "required": [
-    "_from",
+    "from",
     "to",
     "pose",
     "stamp",
