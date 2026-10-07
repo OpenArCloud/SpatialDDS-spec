@@ -1,57 +1,38 @@
-# SpatialDDS Specification (Concept)
+# SpatialDDS Specification
 
-SpatialDDS is a concept protocol for real-world spatial computing that defines a shared bus for spatial data, AI world models, and digital twins. You can browse the live specification at [spatialdds.org](https://spatialdds.org).
+SpatialDDS is an open protocol for real-world spatial computing: a shared, typed bus for spatial data, world models, and digital twins across devices and operators. It builds on standard DDS concepts and carries uncertainty, frames, and attribution as first-class citizens. Browse the live specification at [spatialdds.org](https://spatialdds.org).
 
-It's released to spark discussion—explore the spec, experiment, and join the conversation through issues or pull requests to help shape future iterations.
-
-This repository hosts the published 1.3, 1.4, and 1.5 specifications alongside a work-in-progress 1.6 draft. See the [CHANGELOG](CHANGELOG.md) for version history.
-
+The current version is **1.8 (Draft)**. It is validated the way prior releases were and then some: conformance gates run in CI, the type system has been exercised by a working adapter that translated more than 50,000 messages from an unmodified production vision system into typed 1.8 samples, and recordings decode in third-party readers from the embedded schemas alone. As a draft under the pre-adoption policy (§3.1), the 1.x series may still change before formal adoption, and amendments remain welcome as review lands. The most recent stamped release is 1.7; earlier versions back to 1.2 are kept in the tree. See the [CHANGELOG](CHANGELOG.md) for history.
 
 ## Repository structure
 
-- `SpatialDDS-1.2.md` / `SpatialDDS-1.3.md` / `SpatialDDS-1.4.md` / `SpatialDDS-1.5.md` / `SpatialDDS-1.6.md` – entry points that link to the specification's sections for each release.
-- `SpatialDDS-1.2-full.md` / `SpatialDDS-1.3-full.md` / `SpatialDDS-1.4-full.md` / `SpatialDDS-1.5-full.md` / `SpatialDDS-1.6-full.md` – combined specifications generated from all sections.
-- `sections/v*/` – markdown files containing each section of the specification, appendices, glossary, and references for a given version.
-- `idl/v*/` – Interface Definition Language files for core, discovery, anchors, and other profiles as well as example IDL definitions, versioned with the spec.
-- `manifests/v*/` – example JSON manifests illustrating how services, anchors, and content can advertise themselves within SpatialDDS, versioned alongside the spec.
-- `scripts/` – helper scripts such as `build-spec.sh` for assembling the specification.
+- `sections/v*/` – the specification sections, appendices, glossary, and references for each version.
+- `idl/v*/` – the canonical IDL for each version: core, discovery, anchors, events, semantics, sensing, and the provisional modules.
+- `manifests/v*/` – example JSON manifests for services, anchors, and content.
+- `web-binding/` – the web binding toolchain: the canonical JSON mapping contract, the generator that derives JSON Schemas from the IDL, golden vectors, and the conformance definition.
+- `SpatialDDS-<version>.md` / `SpatialDDS-<version>-full.md` – per-version entry points and the combined documents built from the sections.
+- `scripts/` – build helpers, including `build-spec.sh`.
 
-## Building the full specification
+## Building and browsing
 
-All IDL files in `idl/v*/` and manifest examples in `manifests/v*/` are treated as canonical. Markdown sections reference them with `{{include:...}}` placeholders. Regenerate the combined specification after modifying any of those files by running:
+IDL and manifest files are canonical; markdown sections reference them with `{{include:...}}` placeholders. Rebuild the combined specification after changing any of them:
 
 ```bash
-./scripts/build-spec.sh            # defaults to version 1.3
-./scripts/build-spec.sh 1.6        # builds the 1.6 draft
+./scripts/build-spec.sh 1.8
 ```
 
-The script injects the referenced IDL and manifest sources and writes `SpatialDDS-<version>-full.md` to the repository root, providing a convenient reference to the complete spec.
-
-## Browsing the spec locally
-
-The repository includes a lightweight [MkDocs](https://www.mkdocs.org/) configuration so you can explore the spec with built-in navigation and search:
-
-1. Install MkDocs and the required extensions (e.g. `pip install mkdocs mkdocs-mermaid2-plugin pymdown-extensions`).
-2. Generate the MkDocs sources with `./scripts/prepare_mkdocs.py` (also invoked by `build-spec.sh`). This expands all `{{include:...}}` blocks and writes the result to `mkdocs_docs/`.
-3. Launch a local preview with `mkdocs serve` or render static files with `mkdocs build` (output goes to `site/`).
-
-MkDocs reads from the generated `mkdocs_docs/` tree, so updating any section and re-running the helper script keeps the browsing experience current.
-
-### Automatic publishing
-
-Changes pushed to `main` automatically rebuild and publish the MkDocs site via `.github/workflows/docs.yml`. After the initial deploy, configure GitHub Pages to serve from the `gh-pages` branch to make updates live.
+For local browsing with navigation and search, the repository carries an MkDocs setup: install MkDocs with the listed extensions, run `./scripts/prepare_mkdocs.py`, then `mkdocs serve`. Pushes to `main` rebuild and publish the site automatically.
 
 ## Implementations
 
 [spatialdds-scenescape](https://github.com/OpenArCloud/spatialdds-scenescape) is the first adapter for a third-party production system: it publishes an unmodified Intel SceneScape deployment's scene analytics as typed SpatialDDS 1.8 samples, was exercised against more than 50,000 real messages from a running deployment, and ships recordings that decode without any of its own code.
 
+The companion [SpatialDDS demo](https://github.com/OpenArCloud/SpatialDDS-demo) is the running reference deployment: live publishers, the Open World Model surface, and bridges you can stand up yourself.
+
 ## Contributing
 
-Issues and pull requests are welcome. Please open an issue to discuss large changes or questions about the specification. See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
-
-For a practical illustration of the concepts, explore the companion [SpatialDDS demo](https://github.com/OpenArCloud/SpatialDDS-demo).
+Issues and pull requests are welcome. Open an issue to discuss large changes. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-This work is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
-See the [LICENSE](LICENSE) file for details.
+Licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). See [LICENSE](LICENSE).
