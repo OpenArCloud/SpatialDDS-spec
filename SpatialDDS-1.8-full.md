@@ -8110,12 +8110,18 @@ All under the single `/.well-known/spatialdds` namespace registered per RFC 8615
 | `/.well-known/spatialdds/bootstrap` | `GET` | bootstrap manifest, where offered |
 | `/.well-known/spatialdds/resolver` | `GET` | resolver metadata, where offered |
 
-**`bootstrap` and `resolver` are REQUIRED only of an endpoint that offers DDS
-access.** Both exist to hand a client the parameters for joining a domain. A
-web-native endpoint has no domain, no peers and no partitions, and MUST return
-`404` rather than fabricate them; a `404` from these two paths is conformant and
-a conformance suite MUST accept it. A fabricated `domain_id` is worse than an
-absence, because a client acts on it.
+**`bootstrap` is REQUIRED only of an endpoint that offers DDS access.** It exists
+to hand a client the parameters for joining a domain. A web-native endpoint has
+no domain, no peers and no partitions, and MUST return `404` rather than
+fabricate them; a `404` from `bootstrap` is conformant and a conformance suite
+MUST accept it. A fabricated `domain_id` is worse than an absence, because a
+client acts on it.
+
+**`resolver` is REQUIRED of an endpoint that is an authority for the
+`spatialdds://` URIs it can resolve** (§7.5.2) — it exposes that authority's
+`authority` / `https_base` / `cache_ttl_sec` metadata. A `404` is conformant from
+an endpoint that is not such an authority, which includes every endpoint that
+holds no manifests, and a conformance suite MUST accept it.
 
 The schema index is a JSON array, one entry per published type:
 
@@ -8182,6 +8188,12 @@ Every resource an endpoint serves MUST declare exactly one access class, in the
 NOT be served with any cache lifetime, in either direction, authenticated or
 not. A bearer-gated body carrying `max-age` sits in a shared cache where the
 next unauthenticated request can be served it, which defeats the gate entirely.
+
+Where a public-cacheable resource is a manifest carrying its own `ttl_sec`, that
+document-level lifetime (§7.5.2) governs its `max-age` in place of the access
+class's default: where both speak, the document's content wins. This grants no
+lifetime to an `operator-scoped` resource, which stays `no-store` whatever
+`ttl_sec` it carries.
 
 A credential MUST NOT be accepted in a URL query parameter. Credentials belong
 in the `Authorization` header, for both `GET` and the WebSocket handshake; a
