@@ -22,6 +22,30 @@ matching the gates):
 python3 web-binding/conformance/run.py --endpoint https://host/… [--token T]
 ```
 
+### Origin independence — the `--connect` substitution
+
+An endpoint advertises an origin: the authority in the URLs it puts in its own
+manifests. Before DNS and TLS are in front of it, that origin is not yet where
+the process can be reached. `--connect <base>` maps the advertised origin to a
+connect address: a request for a URL under the advertised origin is sent to
+`<base>` with the advertised `Host` preserved, and a URL under any other origin
+is followed verbatim (N.7 — the endpoint's claim is not ours to rewrite). It is
+URL-structured routing, never string arithmetic on a prefix.
+
+```sh
+# certify a deployment advertising demo.spatialdds.org while it runs on loopback
+python3 web-binding/conformance/run.py \
+    --endpoint https://demo.spatialdds.org --connect http://127.0.0.1:8802 --token T
+```
+
+This is a substitution **a harness may make and a client may not**. It exists so
+a deployment can be certified before DNS and TLS are in front of it, it maps
+origin to address and reveals nothing about what implements the endpoint (so it
+does not relax backend-blindness), and **a run that used it says so in its
+output header**. The WebSocket handshake `Host` is left to the client, derived
+from the connect address: a path-routed gateway does not vhost, and overriding
+it breaks the handshake.
+
 ## Pinned wire surface — now **Appendix N** of the specification
 
 **This section is historical.** Step 7 moved the surface into the specification
@@ -261,6 +285,41 @@ A green run against one shape is not certification. The same suite, unchanged,
 passing against a bridged DDS deployment is the other half, and that half is
 unexercised: there is no bridged endpoint yet. `§8.3` therefore verifies the
 invariant structurally — that no check branches on the backend, and that the
-runner takes nothing but an endpoint and a token — because that is a property of
-the suite rather than of any one endpoint, and a second endpoint would exercise
-it without proving it.
+runner takes nothing but an endpoint, a token, and the origin-routing
+`--connect` (which maps origin to address and reveals no backend) — because that
+is a property of the suite rather than of any one endpoint, and a second
+endpoint would exercise it without proving it.
+
+## Findings addressed (demo-agent reports, closed in this batch)
+
+Both are instrument defects in this suite, created by erratum 169fabd making the
+resolver a path an endpoint can be *required* to serve — the suite was written
+when nobody served it. Origin is the demo agent's reports against
+`spatialdds-web`.
+
+- **Finding 22 — origin independence.** The suite derived paths by string
+  arithmetic on the advertised base (`url[len(ep.base):]`), so an endpoint
+  advertising one origin while reachable at another produced six failures that
+  were the suite's, not the endpoint's (`Port could not be cast to integer value
+  as '8812ds.org'`). All URL handling is now `urllib.parse`-structured, and the
+  `--connect` substitution (above) certifies such a deployment before DNS/TLS.
+  Closed.
+- **Finding 21 — the resolver is a checked surface.** The suite accepted a
+  resolver `200` and validated nothing inside; `https_base` appeared nowhere. The
+  resolver is now first-class: metadata validation, an end-to-end resolve of a
+  URI discovered in the endpoint's own served instances, the N.4 `ttl_sec`
+  precedence observed on the wire, the constructed error branches (no-uri → 400,
+  non-`spatialdds` → 400, foreign-authority → 404, N.8 problem-details), and
+  authority consistency. A `404` metadata is conformant (not an authority,
+  169fabd) and the resolve surface is then UNEXERCISED, not passed. Every leg is
+  fault-injected — missing `https_base`, no integrity signal, `max-age` pinned
+  against a document `ttl_sec`, a foreign-authority `200` — and each produces the
+  FAIL it should. Closed.
+
+**Totals, both reference shapes** (`spatialdds-web` at `cc881b5`, fountain-anchors
+with `--manifests`): **14 checks — 13 passed, 0 failed, 1 skipped**, identical in
+plain loopback and in advertise-`demo.spatialdds.org` + `--connect`-loopback.
+This supersedes the earlier "13 checks, 12 passed, 1 skipped" as the deploy
+checklist's acceptance line. The resolver check is UNEXERCISED on loopback (not
+an authority) and fully exercised under `--connect`; it passes in both shapes,
+never passing in one and failing in the other.

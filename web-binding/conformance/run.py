@@ -14,6 +14,7 @@ The suite is backend-blind: it takes only an endpoint and a token, and no code
 path branches on whether a DDS bus or a web-native server is behind it.
 """
 import argparse, glob, hashlib, json, os, re, sys, urllib.request, urllib.error
+from urllib.parse import urlsplit, urlunsplit, quote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMAS_DIR = os.path.join(os.path.dirname(HERE), "schemas")
@@ -40,21 +41,39 @@ def load_schemas(schemas_dir):
 
 
 class Endpoint:
-    """Backend-blind HTTP(S) client: base URL + optional bearer token, nothing
-    that reveals or depends on what implements the endpoint. Network checks use
-    this; it makes no call until one is invoked."""
-    def __init__(self, base, token=None):
+    """Backend-blind HTTP(S) client, origin-independent.
+
+    `base` is the origin the endpoint *advertises* (the authority in the URLs it
+    puts in its own manifests). `connect` is where requests are actually sent;
+    it defaults to `base`. When they differ — a deployment certified before DNS
+    and TLS are in front of it — a request for a URL under the advertised origin
+    is sent to `connect` with the advertised `Host` preserved. This is a
+    substitution a *harness* may make and a *client* may not; it never rewrites
+    a manifest URL (N.7) beyond this one mapping, and a URL under any other
+    origin is followed verbatim — the endpoint's claim to stand behind.
+
+    Targets are absolute URLs or leading-slash paths under `base`. Nothing here
+    derives a path by string arithmetic on a prefix: a URL is structured data,
+    parsed with urllib.parse.
+    """
+    def __init__(self, base, token=None, connect=None):
         self.base = base.rstrip("/")
+        self.connect = (connect or base).rstrip("/")
         self.token = token
+        self._b = urlsplit(self.base)
+        self._c = urlsplit(self.connect)
 
-    def get(self, path):
-        req = urllib.request.Request(self.base + path)
-        if self.token:
-            req.add_header("Authorization", f"Bearer {self.token}")
-        with urllib.request.urlopen(req) as r:   # noqa: S310 (https endpoint)
-            return r.status, dict(r.headers), r.read()
+    def _route(self, target):
+        """Return (send_url, host_header) for a target URL or path."""
+        u = urlsplit(self.base + target if target.startswith("/") else target)
+        if (u.scheme, u.netloc) == (self._b.scheme, self._b.netloc):
+            send = urlunsplit((self._c.scheme, self._c.netloc, u.path, u.query, ""))
+            host = self._b.netloc if self._b.netloc != self._c.netloc else None
+            return send, host
+        # A different origin than the advertised one: follow it verbatim.
+        return urlunsplit((u.scheme, u.netloc, u.path, u.query, "")), None
 
-    def raw(self, path, token=None, headers=None, method="GET", body=None):
+    def raw(self, target, token=None, headers=None, method="GET", body=None):
         """A request that reports its status instead of raising on it.
 
         The binding uses status codes as part of its contract -- 401 for an
@@ -62,8 +81,10 @@ class Endpoint:
         not support, 304 for a validated cache entry -- so a client that
         raises on all of them cannot check any of them.
         """
-        req = urllib.request.Request(self.base + path, data=body,
-                                     method=method)
+        send, host = self._route(target)
+        req = urllib.request.Request(send, data=body, method=method)
+        if host:
+            req.add_header("Host", host)
         if token:
             req.add_header("Authorization", f"Bearer {token}")
         for k, v in (headers or {}).items():
@@ -74,15 +95,19 @@ class Endpoint:
         except urllib.error.HTTPError as e:
             return e.code, dict(e.headers), e.read()
 
-    def json(self, path, token=None):
-        code, hdr, body = self.raw(path, token=token)
+    def json(self, target, token=None):
+        code, hdr, body = self.raw(target, token=token)
         if code != 200:
-            raise AssertionError(f"GET {path} returned {code}, expected 200")
+            raise AssertionError(f"GET {target} returned {code}, expected 200")
         return json.loads(body)
 
-    def ws_url(self, path):
-        return self.base.replace("https://", "wss://").replace(
-            "http://", "ws://") + path
+    def ws_target(self, target):
+        """The routed WebSocket URL for a target; the --connect origin
+        substitution applies exactly as for raw(). The handshake Host is left to
+        the WebSocket client (derived from the connect address); a path-routed
+        gateway does not vhost, and overriding it breaks the handshake."""
+        send, _host = self._route(target)
+        return send.replace("https://", "wss://").replace("http://", "ws://")
 
 
 def self_check(schemas):
@@ -118,9 +143,11 @@ def discover(ep):
     for man in doc.get("results", []):
         for t in man.get("service", {}).get("topics", []):
             url = t.get("url")
-            if not url or not url.startswith(ep.base):
+            if not url:
                 continue
-            out.append({"path": url[len(ep.base):], **t})
+            u = urlsplit(url)
+            path = u.path + (f"?{u.query}" if u.query else "")
+            out.append({"path": path, "url": url, **t})
     return out
 
 
@@ -150,9 +177,7 @@ def check_schemas_endpoint(ep, schemas):
     # Each schema fetches, and its digest matches what the index claims.
     sample = index[:8] + index[-8:]
     for row in sample:
-        path = row["url"][len(ep.base):] if row["url"].startswith(ep.base) \
-            else row["url"]
-        code, hdr, body = ep.raw(path)
+        code, hdr, body = ep.raw(row["url"])
         assert code == 200, f"schema {row['type']} returned {code}"
         want = row["digest"]
         got = "sha256:" + hashlib.sha256(canon(json.loads(body)).encode()
@@ -439,6 +464,151 @@ def check_qos_subset(ep, schemas):
 
 
 
+def _uri_authority(uri):
+    """The DNS authority of a `spatialdds://` URI, or "" if it is not one."""
+    return urlsplit(uri).netloc if isinstance(uri, str) and \
+        uri.startswith("spatialdds://") else ""
+
+
+def _manifest_uris(ep):
+    """Every `spatialdds://` manifest_uri the endpoint publishes in its own
+    served instances. Backend-blind: the URIs to resolve come from the endpoint,
+    not from the suite. Content announces carry them today."""
+    uris = set()
+    for t in discover(ep):
+        code, _h, body = ep.raw(t["path"], token=ep.token)
+        if code != 200:
+            continue
+        try:
+            docs = json.loads(body)
+        except Exception:
+            continue
+        for d in (docs if isinstance(docs, list) else [docs]):
+            mu = d.get("manifest_uri") if isinstance(d, dict) else None
+            if _uri_authority(mu):
+                uris.add(mu)
+    return uris
+
+
+def _max_age(headers):
+    m = re.search(r"max-age=(\d+)", (headers.get("Cache-Control") or "").lower())
+    return int(m.group(1)) if m else None
+
+
+def _resolve_url(https_base, uri):
+    sep = "&" if urlsplit(https_base).query else "?"
+    return f"{https_base}{sep}uri={quote(uri, safe='')}"
+
+
+def _has_integrity(headers, doc):
+    """§7.5.2 integrity: an ETag or Digest header, or a checksum in the body."""
+    if headers.get("ETag") or headers.get("Digest"):
+        return True
+    blob = json.dumps(doc)
+    return "sha256:" in blob or '"hash"' in blob or '"checksum"' in blob
+
+
+def check_resolver(ep, schemas):
+    """§7.5.2 resolver, as a first-class surface (erratum 169fabd).
+
+    404 from the metadata path is conformant — the endpoint is not an authority
+    (169fabd) — and the resolve surface is then UNEXERCISED, not passed and not
+    failed. A 200 commits the endpoint to metadata validation, an end-to-end
+    resolve of a URI discovered in its own served instances, the N.4 ttl_sec
+    precedence, and the constructed error branches.
+    """
+    code, hdr, body = ep.raw(f"{WK}/resolver")
+    assert code in (200, 404), \
+        f"{WK}/resolver returned {code}; expected metadata (200) or 404"
+    if code == 404:
+        return ("resolver 404 — the endpoint is not an authority (169fabd); "
+                "the resolve surface is UNEXERCISED (zero observations)")
+
+    # Metadata validation.
+    meta = json.loads(body)
+    for k in ("authority", "https_base", "cache_ttl_sec"):
+        assert k in meta, f"resolver metadata is missing {k!r}"
+    hb = urlsplit(meta["https_base"])
+    assert hb.scheme == "https" and hb.netloc, \
+        f"https_base must be an absolute https URL, got {meta['https_base']!r}"
+    # The metadata resource is public-cacheable: it takes the N.4 public checks.
+    cc = (hdr.get("Cache-Control") or "").lower()
+    assert "max-age" in cc, "resolver metadata is public-cacheable but has no max-age"
+    assert hdr.get("ETag"), "resolver metadata must carry an ETag"
+    assert hdr.get("Access-Control-Allow-Origin") == "*", \
+        "a public-cacheable resource must be CORS-open (Access-Control-Allow-Origin: *)"
+
+    # Authority consistency: the authority it claims must be the authority of the
+    # URIs it itself publishes. Claiming one and announcing another is the N.2
+    # fabrication in reverse.
+    published = _manifest_uris(ep)
+    auths = {_uri_authority(u) for u in published}
+    if auths:
+        assert meta["authority"] in auths, \
+            f"resolver authority {meta['authority']!r} is not among the authorities " \
+            f"this endpoint publishes ({sorted(auths)})"
+
+    # Resolve, end to end, with discovered data.
+    mine = sorted(u for u in published if _uri_authority(u) == meta["authority"])[:4]
+    detail = f"resolver 200 (authority {meta['authority']})"
+    if not mine:
+        return detail + "; resolve UNEXERCISED — no served instance carries a " \
+                        "manifest_uri under this authority (zero observations)"
+    hb_url = meta["https_base"]
+    resolved = not_held = ttl_doc = ttl_default = 0
+    for u in mine:
+        rc, rh, rb = ep.raw(_resolve_url(hb_url, u))
+        if rc == 404:
+            # 404 is not-found, as §7.5.3 defines it: an endpoint may be the
+            # authority for a URI's namespace yet hold no manifest for that exact
+            # URI — a discovery Announce names its service URI, which the
+            # authority need not expose as a resolvable manifest. This is
+            # conformant because the ruling makes 404 the not-found response, not
+            # because any particular reference endpoint answered that way.
+            not_held += 1
+            continue
+        assert rc == 200, f"resolve {u} returned {rc}, expected 200 or a 404 not-held"
+        assert "json" in (rh.get("Content-Type") or "").lower(), \
+            f"resolve {u}: Content-Type {rh.get('Content-Type')!r} is not JSON"
+        doc = json.loads(rb)
+        assert _has_integrity(rh, doc), \
+            f"resolve {u}: no integrity signal (ETag, Digest, or a body checksum) per §7.5.2"
+        # N.4 ttl precedence (169fabd's second half, observed on the wire).
+        if isinstance(doc.get("ttl_sec"), int):
+            assert _max_age(rh) == doc["ttl_sec"], \
+                f"resolve {u}: ttl_sec={doc['ttl_sec']} but max-age={_max_age(rh)} " \
+                f"— the document's lifetime must govern (169fabd)"
+            ttl_doc += 1
+        else:
+            ttl_default += 1
+        resolved += 1
+    if resolved == 0:
+        return (f"{detail}; resolve UNEXERCISED — {not_held} discovered URI(s) under "
+                "this authority are announced but not held (404, conformant §7.5.3)")
+
+    # Error branches, constructed — no fixture needed.
+    c1, _h1, b1 = ep.raw(hb_url)
+    assert c1 == 400, f"resolve with no uri returned {c1}, expected 400"
+    c2, _h2, _b2 = ep.raw(_resolve_url(hb_url, "http://not-a-spatialdds-uri"))
+    assert c2 == 400, f"resolve of a non-spatialdds URI returned {c2}, expected 400"
+    c3, h3, b3 = ep.raw(_resolve_url(hb_url, "spatialdds://example.invalid/z/content/x"))
+    assert c3 == 404, \
+        f"resolve of a foreign-authority URI returned {c3}, expected 404"
+    # N.8 problem-details where an error carries a body.
+    for cde, hh, bb in ((c1, _h1, b1), (c3, h3, b3)):
+        if bb and "json" in (hh.get("Content-Type") or "").lower():
+            pd = json.loads(bb)
+            assert "title" in pd, f"an error body must be problem-details (N.8): {sorted(pd)}"
+
+    legs = f"{ttl_doc} doc-governed / {ttl_default} class-default"
+    if not ttl_doc or not ttl_default:
+        legs += " (one TTL leg UNEXERCISED: " + \
+            ("no resolved manifest carries ttl_sec" if not ttl_doc
+             else "no resolved manifest omits ttl_sec") + ")"
+    return (f"{detail}; {resolved} resolved, {not_held} announced-but-not-held(404); "
+            f"ttl {legs}; error branches 400/400/404")
+
+
 # ---- the four §8 scenarios -------------------------------------------------
 
 class Skip(Exception):
@@ -500,7 +670,7 @@ def scenario_hello_spatial(ep, schemas):
                if t.get("durability") == "TRANSIENT_LOCAL"]
     assert latched, "no latched topic to subscribe to"
     topic = latched[0]
-    msgs = _ws_collect(ep.ws_url(topic["url"][len(ep.base):]), ep.token)
+    msgs = _ws_collect(ep.ws_target(topic["url"]), ep.token)
     assert msgs, "the subscription yielded nothing"
     markers = [i for i, m in enumerate(msgs)
                if m.get("event") == "end_of_replay"]
@@ -555,7 +725,11 @@ def scenario_backend_blind(ep, schemas):
     import argparse as _a
     assert "--endpoint" in src and "--token" in src
     extra = re.findall(r'add_argument\("--(\w+)"', src)
-    allowed = {"endpoint", "token", "expect"}
+    # `--connect` is an origin→address substitution (certify before DNS/TLS), not
+    # a backend selector: it maps the advertised origin to where requests are
+    # sent and reveals nothing about what implements the endpoint. It is allowed
+    # exactly because it does not relax backend-blindness.
+    allowed = {"endpoint", "token", "connect", "expect"}
     assert set(extra) <= allowed, \
         f"the runner takes inputs beyond an endpoint and a token: {sorted(set(extra) - allowed)}"
     return f"no backend branch; runner inputs {sorted(set(extra))}"
@@ -614,6 +788,7 @@ NETWORK_CHECKS = [
     ("latched state is GET with ETag, Cache-Control and 304", check_latched_get),
     ("access classes, both directions", check_access_classes),
     ("DDS-join material optional-and-validated", check_dds_join_optional),
+    ("resolver is a checked surface (§7.5.2)", check_resolver),
     ("service manifests match §8.2.3", check_manifest_shape),
     ("commands are POST, or cleanly absent", check_commands_post),
     ("the carried QoS subset is observable, the rest absent", check_qos_subset),
@@ -628,6 +803,12 @@ def main():
     ap = argparse.ArgumentParser(description="Web Binding backend-blind conformance suite")
     ap.add_argument("--endpoint", help="base URL of a binding endpoint (bridged or standalone)")
     ap.add_argument("--token", help="bearer token for operator-scoped resources")
+    ap.add_argument("--connect", help="where to send requests for URLs under the "
+                    "endpoint's advertised origin, when that differs from the "
+                    "address it is reachable at (certify before DNS/TLS). A "
+                    "harness substitution a client may not make; the advertised "
+                    "Host is preserved and manifest URLs are otherwise followed "
+                    "verbatim (N.7).")
     a = ap.parse_args()
 
     schemas = load_schemas(SCHEMAS_DIR)
@@ -649,7 +830,10 @@ def main():
               "yet — this is pending, not a pass.")
         return 0
 
-    ep = Endpoint(a.endpoint, a.token)
+    ep = Endpoint(a.endpoint, a.token, connect=a.connect)
+    if a.connect:
+        print(f"  connect: URLs under {ep.base} are sent to {ep.connect} with "
+              f"Host: {urlsplit(ep.base).netloc} preserved (harness substitution).")
     failures, skipped = [], []
     for name, fn in NETWORK_CHECKS:
         try:
@@ -663,8 +847,18 @@ def main():
             failures.append(f"{name}: {e}")
             print(f"  FAIL     {name}: {e}")
     npass = len(NETWORK_CHECKS) - len(failures) - len(skipped)
-    print(f"\n{len(NETWORK_CHECKS)} checks: {npass} passed, "
-          f"{len(failures)} failed, {len(skipped)} skipped")
+    # Name the skipped (and any failed) checks on the totals line: this line is
+    # quoted as the deploy's acceptance record, so it must say *which* check the
+    # skip is, not merely that there is one.
+    skip_names = ", ".join(s.split(":", 1)[0] for s in skipped)
+    fail_names = ", ".join(f.split(":", 1)[0] for f in failures)
+    line = (f"\n{len(NETWORK_CHECKS)} checks: {npass} passed, "
+            f"{len(failures)} failed, {len(skipped)} skipped")
+    if skip_names:
+        line += f" (skipped: {skip_names})"
+    if fail_names:
+        line += f" (failed: {fail_names})"
+    print(line)
     if failures:
         return 1
     return 0
