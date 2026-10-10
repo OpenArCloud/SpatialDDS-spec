@@ -21,6 +21,7 @@ Exit status:
 import glob
 import importlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,8 +33,25 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def _have_idlc_py():
     if not shutil.which("idlc"):
         return False
-    out = subprocess.run(["idlc", "-h"], capture_output=True, text=True)
-    return "py" in (out.stdout + out.stderr)
+    # The Python backend is NOT advertised in `idlc -h`; it is provided by the
+    # cyclonedds Python package the active interpreter exposes (idlc shells out
+    # to that interpreter). Sniffing `idlc -h` for "py" therefore reported a
+    # false negative and the gate habitually skipped even where `idlc -l py`
+    # works. Probe the only reliable way — a trial generation — so the gate runs
+    # whenever it is invoked under the documented interpreter that carries
+    # cyclonedds (see web-binding/README.md), and still skips cleanly where the
+    # backend is genuinely absent.
+    d = tempfile.mkdtemp(prefix="idlc_py_probe_")
+    try:
+        src = os.path.join(d, "_probe.idl")
+        with open(src, "w") as fh:
+            fh.write("module _probe { struct S { long x; }; };\n")
+        r = subprocess.run(["idlc", "-l", "py", src], cwd=d,
+                           capture_output=True, text=True)
+        return r.returncode == 0 and bool(
+            glob.glob(os.path.join(d, "**", "*.py"), recursive=True))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
 
 
 def _have_cyclonedds():
@@ -71,12 +89,35 @@ def main():
     generated_pkgs = set()
     try:
         for f in idl_files:
+            # idlc writes its package tree into the working directory and does
+            # not honour -o; run it with cwd=workdir so the tree lands where the
+            # walk below looks (an -o that was silently ignored is why this gate
+            # used to construct zero types once it stopped skipping).
             r = subprocess.run(
-                ["idlc", "-l", "py", "-I", idl_dir, "-o", workdir, f],
-                capture_output=True, text=True)
+                ["idlc", "-l", "py", "-I", idl_dir, f],
+                cwd=workdir, capture_output=True, text=True)
             if r.returncode != 0:
                 failures.append(f"{os.path.basename(f)}: idlc -l py failed: "
                                 f"{r.stderr.strip()[:200]}")
+        # idlc emits union discriminators as bare names, so a union-bearing
+        # module (e.g. core's CovMatrix on CovarianceType) fails to import until
+        # the missing import is added — the same fixup the binding generator
+        # applies. Index class -> module, then inject the imports.
+        classdef = re.compile(r"^class (\w+)", re.M)
+        index = {}
+        for p in glob.glob(os.path.join(workdir, "**", "*.py"), recursive=True):
+            mod = os.path.relpath(p, workdir)[:-3].replace(os.sep, ".")
+            for name in classdef.findall(open(p).read()):
+                index.setdefault(name, mod)
+        for p in glob.glob(os.path.join(workdir, "**", "*.py"), recursive=True):
+            src = open(p).read()
+            defined = set(classdef.findall(src))
+            missing = [d for d in set(re.findall(r"discriminator=(\w+)", src))
+                       if d not in defined and d in index]
+            anchor = "import cyclonedds.idl.types as types\n"
+            if missing and anchor in src:
+                inj = "".join(f"from {index[d]} import {d}\n" for d in sorted(missing))
+                open(p, "w").write(src.replace(anchor, anchor + inj, 1))
         # The Python backend emits a top-level 'spatial' (and 'builtin')
         # package tree. Import every generated module and construct a Topic for
         # each IdlStruct subclass.
@@ -112,6 +153,11 @@ def main():
     finally:
         sys.path.remove(workdir)
         shutil.rmtree(workdir, ignore_errors=True)
+
+    if constructed == 0 and not failures:
+        failures.append(
+            "gate constructed 0 Topics — nothing was exercised (idlc produced no "
+            "importable IdlStruct types); a zero-construction run is not a pass")
 
     if failures:
         print(f"Topic-construction gate FAILED for v{version} "

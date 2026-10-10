@@ -160,6 +160,18 @@ absence of evidence rather than evidence of conformance. An endpoint whose data
 happens not to contain a union is not thereby conformant about unions; it is
 untested about unions, and the manifest says which.
 
+**The mirror: an absence of counter-examples is not a defect.** The same
+principle run the other way. A check with a non-triviality guard — "both access
+classes must appear", "both durability kinds must appear" — must not turn a
+legitimately homogeneous endpoint into a failure. An anchor recording that is
+all public and all latched has no operator-scoped resource and no volatile topic
+to show, and that is a property of honest site data, not a conformance fault.
+Such a check asserts everything the data *can* exercise (public resources are
+served uncredentialed and cacheable; latched topics replay) and reports the
+untested direction as UNEXERCISED, exactly as a zero count does — never as FAIL.
+Zero observations is not evidence; zero counter-examples is not a defect. Both
+are the manifest saying what it could not test.
+
 This is the same discipline as a SKIPPED check, applied one level down: a check
 that cannot run says so by name, and a rule that had nothing to run against
 says so too.

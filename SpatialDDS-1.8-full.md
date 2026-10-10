@@ -8143,8 +8143,20 @@ spatialdds/<domain>/<stream>/<type>/<version>   on the bus
      {base}/<domain>/<stream>/<type>/<version>/<key>  one instance
 ```
 
-`<key>` is the value of the member the IDL marks `@key`. The collection returns
+`<key>` is the value of the member the IDL marks `@key`, and it occupies exactly
+one path segment: it MUST be percent-encoded, with `/` the case that matters —
+the spec's own `GeoAnchor.anchor_id` example is `"anchor/4th-and-main"`, which
+unencoded gains a path segment and is unroutable (`404`). The collection returns
 a JSON array of instances; the instance path returns one object, or `404`.
+
+A topic with fewer than five segments does not fit the mapping above: the
+well-known discovery topics (`spatialdds/discovery/announce/v1`,
+`spatialdds/discovery/depart/v1`) carry no `<domain>`. Such a topic is served in
+the well-known namespace (N.2) instead, at
+`{base}/.well-known/spatialdds/<stream>/<type>/<version>` — so
+`spatialdds/discovery/announce/v1` is `{base}/.well-known/spatialdds/discovery/announce/v1`.
+A domain-scoped announce (`spatialdds/<domain>/discovery/announce/v1`) has the
+full five segments and follows the one-to-one mapping.
 
 Every such response MUST carry an `ETag` whose value is the digest of the
 canonical form of the body's content, and a `Cache-Control` consistent with the

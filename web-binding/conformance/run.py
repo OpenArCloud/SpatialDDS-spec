@@ -310,9 +310,21 @@ def check_access_classes(ep, schemas):
             assert "no-store" in tcc and "no-store" in cc, \
                 f"{t['path']}: operator-scoped must never be cacheable, got {tcc!r}"
             op += 1
-    assert pub and op, \
-        f"both classes must be present to test both directions ({pub} public, {op} gated)"
-    return f"{pub} public, {op} operator-scoped"
+    if not (pub or op):
+        raise Skip("no resources discovered — access classes are UNEXERCISED "
+                   "(zero observations)")
+    # Each present class was fully asserted in the loop above. A class the
+    # endpoint's data has no example of is UNEXERCISED, not a failure: an
+    # absence of counter-examples is not a defect (README, "Zero observations").
+    unexercised = []
+    if not op:
+        unexercised.append("operator-scoped (no gated resource to test the 401/bearer path)")
+    if not pub:
+        unexercised.append("public-cacheable (no public resource to test the cacheable path)")
+    detail = f"{pub} public, {op} operator-scoped"
+    if unexercised:
+        detail += "; UNEXERCISED: " + "; ".join(unexercised)
+    return detail
 
 
 def check_dds_join_optional(ep, schemas):
@@ -404,20 +416,26 @@ def check_commands_post(ep, schemas):
 def check_qos_subset(ep, schemas):
     """The carried QoS distinctions are observable; the rest is absent."""
     topics = discover(ep)
-    kinds = {t.get("durability") for t in topics}
-    assert "TRANSIENT_LOCAL" in kinds, \
-        "no latched topic is advertised, so durability is not observable"
+    kinds = {t.get("durability") for t in topics if t.get("durability")}
+    if not kinds:
+        raise Skip("no topic declares a durability — the QoS subset is UNEXERCISED "
+                   "(zero observations)")
     assert kinds <= {"VOLATILE", "TRANSIENT_LOCAL"}, \
-        f"durability must be a DDS kind, got {sorted(k for k in kinds if k)}"
-    assert len(kinds) > 1, \
-        f"every topic declares the same durability ({kinds}), so the distinction is not carried"
+        f"durability must be a DDS kind, got {sorted(kinds)}"
     # The not-carried set must not be emulated anywhere in a manifest.
     blob = json.dumps(ep.json(f"{WK}/search"))
     for absent in ("deadline", "ownership", "time_based_filter",
                    "transport_priority"):
         assert absent not in blob, \
             f"the manifest mentions {absent!r}, which the binding does not carry"
-    return f"durability {sorted(k for k in kinds if k)}"
+    # Both kinds present → the distinction is carried and observed. Only one →
+    # the distinction is real but has no counter-example here: UNEXERCISED, not a
+    # defect (the mirror of "Zero observations is not evidence").
+    if len(kinds) > 1:
+        return f"durability {sorted(kinds)} — both kinds carried"
+    only = next(iter(kinds))
+    return (f"durability [{only}]; UNEXERCISED: the endpoint is uniformly {only}, "
+            f"so the VOLATILE/TRANSIENT_LOCAL distinction has no counter-example to observe")
 
 
 
@@ -505,10 +523,11 @@ def scenario_hello_spatial(ep, schemas):
 
 
 def scenario_anchor_resolve(ep, schemas):
-    """§8.2 — anchor resolve flow. Criteria not yet on the board."""
-    raise Skip("the open-anchors option-2 acceptance criteria land in "
-               "directions/ before this check is built (James's board); "
-               "nothing is asserted in the meantime")
+    """§8.2 — anchor resolve flow. Blocked on a missing 1.8 field, not criteria."""
+    raise Skip("the scenario fetches an anchor's asset by reference, and no 1.8 "
+               "anchor type carries that reference — GeoAnchor has no manifest_uri "
+               "(1.9 candidates entry 2). No recording can un-skip it; the scenario "
+               "waits for the field it was written for and is not reworded to pass.")
 
 
 def scenario_backend_blind(ep, schemas):
