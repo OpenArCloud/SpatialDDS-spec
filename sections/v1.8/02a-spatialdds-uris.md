@@ -94,7 +94,15 @@ On success, servers **MUST** return:
 - HTTP `200 OK`
 - The resolved resource body
 - A correct `Content-Type`
-- At least one integrity signal (`ETag`, `Digest`, or a checksum field in the body)
+- At least one integrity signal a receiver can act on. An `ETag` or a `Digest`
+  response header **always** qualifies. A checksum field carried in the resource
+  body qualifies **only where its computation is defined** — the digest subject
+  and form are specified — **and is reproducible by the receiver** from what was
+  served; a digest over an unspecified subject, which a receiver cannot recompute
+  and compare, does not satisfy this requirement. (For example, a manifest's
+  `assets[].hash` is defined as `<algorithm>:<hex>` over the referenced bytes and
+  qualifies; `GeoAnchor.checksum`'s digest subject is not defined in this
+  revision — see Future Directions — and does not qualify on its own.)
 
 #### 7.5.3 Error Handling (Normative)
 

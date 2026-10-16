@@ -527,11 +527,15 @@ def _resolve_url(https_base, uri):
 
 
 def _has_integrity(headers, doc):
-    """§7.5.2 integrity: an ETag or Digest header, or a checksum in the body."""
+    """§7.5.2 integrity, as the erratum tightened it: an `ETag` or `Digest`
+    header always qualifies; a body checksum qualifies only where its
+    computation is defined and receiver-recomputable. A manifest's
+    `assets[].hash` (defined `<algorithm>:<hex>` over the referenced bytes)
+    qualifies; a bare `checksum` string of unspecified form does not."""
     if headers.get("ETag") or headers.get("Digest"):
         return True
     blob = json.dumps(doc)
-    return "sha256:" in blob or '"hash"' in blob or '"checksum"' in blob
+    return "sha256:" in blob or '"hash"' in blob
 
 
 def check_resolver(ep, schemas):

@@ -65,6 +65,35 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Finding 31 (`GeoAnchor.checksum`), 2026-10-16
+
+Resolves the finding held for a ruling in the 25–33 editorial batch. Two parts,
+answered separately.
+
+- **§7.5.2 integrity signals — erratum.** The resolve-response list counted "a
+  checksum field in the body" as a sufficient integrity signal with no condition
+  on whether a receiver could check it, so an endpoint could satisfy an integrity
+  requirement with a string that integrity-checks nothing. The list now reads: an
+  `ETag` or `Digest` header always qualifies; a body checksum qualifies **only
+  where its computation is defined and reproducible by the receiver** from what
+  was served. A manifest's `assets[].hash` (defined `<algorithm>:<hex>`)
+  qualifies; an undefined digest does not. This is a correction, not a feature:
+  it removes an over-promise from the list. `web-binding/conformance/run.py`'s
+  `_has_integrity` is tightened to match (a bare `checksum` substring no longer
+  counts; `ETag`/`Digest` and defined asset hashes still do).
+- **What `checksum` digests — deferred to 1.9.** Defining the digest subject and
+  form is recorded as a 1.9 problem statement in Future Directions, with the
+  proposed semantics named: the `sha256:` of the canonical N.1 JSON of the record
+  with `checksum` itself omitted (the record-builder convention, recomputable by
+  any receiver; the only non-self-referential, APPENDABLE-stable choice). Not
+  landed in 1.8: assigning the required field a meaning it never had would
+  retroactively make records computed under any other convention nonconformant,
+  which is a feature decision, not an erratum. Evidence it cannot be left as-is:
+  two conventions already ship in SpatialDDS-web (authoring-input vs
+  record-canonical), both correct and mutually incompatible.
+
+Origin: demo-agent report ad94aea (finding 31); rulings from James.
+
 ## Version 1.8 — Finding 39 (conformance runner), 2026-10-16
 
 A reporting fix in the web-binding conformance runner; no normative text and no

@@ -43,6 +43,33 @@ the SpatialDDS-web publish work; the service-side reading gap it travelled with
 over the web binding — is already resolved by N.3's short-topic rule and is not
 part of this item.)
 
+### Anchor Integrity Digest (`GeoAnchor.checksum`)
+
+`GeoAnchor.checksum` is REQUIRED on the wire and its comment reads
+`integrity/versioning`, but 1.8 defines **what it digests or in what form**
+nowhere — not the IDL, not Appendix C, not the conformance suite. So no receiver
+can verify it and no two publishers agree: a digest over the canonical JSON or
+the XCDR2 bytes, including the checksum member or excluding it, before or after
+the revision's appended members, are all equally "the checksum of the anchor
+data". Two conventions already exist in deployed code — SpatialDDS-web's
+authoring tool digests its input entry (recorded anchors), its record builders
+digest the record's own canonical form with `checksum` emptied (published
+anchors) — both correct, mutually incompatible, which is the evidence that the
+field as specified cannot interoperate. The §7.5.2 erratum (this revision) stops
+an undefined `checksum` from counting as an integrity signal until a digest is
+defined.
+
+A future revision should define the digest. The **proposed semantics**: the
+`sha256:` digest of the **canonical N.1 JSON form of the record with the
+`checksum` member itself omitted** — the record-builder convention above. It is
+recomputable by any receiver from exactly what was served, and it is the only
+non-self-referential, APPENDABLE-stable choice: a digest over XCDR2 bytes shifts
+when the type appends a member, and one that includes `checksum` cannot be
+checked without already knowing it. This is not landed in 1.8 — assigning the
+field a meaning it never had would retroactively make every record computed
+under any other convention nonconformant, which is a feature decision, not an
+erratum.
+
 ### Wire-Level Interop Testing
 
 Appendix I validates schema expressiveness through static conformance checks. Future revisions will add wire-level interoperability tests across at least two DDS implementations (CycloneDDS and Fast DDS minimum) to validate end-to-end publish/subscribe fidelity, QoS enforcement, and CDR encoding compatibility.
