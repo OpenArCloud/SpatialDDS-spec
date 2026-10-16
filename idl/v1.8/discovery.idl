@@ -54,6 +54,13 @@ module spatial {
       // optional advisory hints (topic-level, not per-message)
       float target_rate_hz;
       uint32  max_chunk_bytes;
+      // Topic durability (added in the 1.8 revision; 1.9 candidates entry 3).
+      // The DDS durability kind, "VOLATILE" or "TRANSIENT_LOCAL", so a bridged
+      // gateway can populate the N.7-required manifest `durability` from the bus
+      // type instead of inventing it (finding 17). Empty when absent; appended
+      // under APPENDABLE, so existing TopicMeta producers are unchanged in
+      // meaning and on the wire.
+      string  durability;
     };
 
     enum ServiceKind {

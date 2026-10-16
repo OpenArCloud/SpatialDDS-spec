@@ -1,0 +1,26 @@
+{
+  "type": "spatial::disco::TopicMeta",
+  "description": "TopicMeta with no durability declared (empty). The byte-identical-to-pre-revision case: a producer predating the revision carries the empty string, which is how every existing TopicMeta (e.g. the fountain recording's discovery announce) reads under APPENDABLE.",
+  "sample": {
+    "name": "spatialdds/south-mall/perception/cam_front/video_frame/v1",
+    "type": "video_frame",
+    "version": "v1",
+    "qos_profile": "VIDEO_LIVE",
+    "target_rate_hz": 30.0,
+    "max_chunk_bytes": 65536,
+    "durability": ""
+  },
+  "expected_json": {
+    "name": "spatialdds/south-mall/perception/cam_front/video_frame/v1",
+    "type": "video_frame",
+    "version": "v1",
+    "qos_profile": "VIDEO_LIVE",
+    "target_rate_hz": 30,
+    "max_chunk_bytes": 65536,
+    "durability": ""
+  },
+  "exercises": [
+    "1.8-revision TopicMeta.durability absent (empty string) — a pre-revision producer",
+    "the empty durability serializes and round-trips as an ordinary empty string"
+  ]
+}

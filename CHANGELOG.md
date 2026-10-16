@@ -2,7 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.8     | Draft      | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. **Revision 2026-10-15:** optional `manifest_uri` on `GeoAnchor`, a §7.5-resolvable content reference (APPENDABLE, wire-compatible). |
+| 1.8     | Draft      | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. **Revision 2026-10-15:** optional `manifest_uri` on `GeoAnchor` (a §7.5-resolvable content reference) and optional `durability` on `TopicMeta` (the DDS kind for N.7 manifest entries), both APPENDABLE and wire-compatible. |
 | 1.7     | 2026-08-23 | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. Findings batch 2 (draft rev): breaking sequence-bound reductions (`BlobChunk.data`, `KeyframeFeatures.descriptors` → 65535); additive fields across discovery/semantics/vision/vio/events/common; new QoS profiles and registry rows. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
@@ -11,11 +11,14 @@
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
 
-## Version 1.8 Revision 2026-10-15: GeoAnchor content reference
+## Version 1.8 Revision 2026-10-15
 
 This is a revision to 1.8, not an erratum. An erratum fixes a contradiction;
-this adds a feature. 1.8 was opened for one bounded revision window to land it,
-and this entry names it. After this window the spec is locked again.
+these add features. 1.8 was opened for one bounded revision window, and this
+entry is its full and final contents: two additive members. After this window
+the spec is locked again; everything else goes to 1.9.
+
+### GeoAnchor content reference
 
 `GeoAnchor` gains an optional `manifest_uri`. An anchor MAY name a content
 manifest, resolvable per §7.5, so durable world-locked content can be bound to
@@ -37,6 +40,30 @@ Origin: 1.9 candidates entry 2, raised by the anchor-bearing sample work in
 spatialdds-web where an anchor carrying a content reference could not be
 expressed in 1.8. The fountain-anchors sample and its publish path are the
 evidence.
+
+### TopicMeta durability
+
+`TopicMeta` gains an optional `durability`, carrying the DDS kind `VOLATILE` or
+`TRANSIENT_LOCAL`. A gateway bridging a DDS bus can now populate the `durability`
+that Appendix N.7 requires on a manifest topic entry from the bus type, instead
+of having no source for it. It is appended under APPENDABLE, so a `TopicMeta`
+producer that omits it is unchanged in meaning and on the wire, and existing
+recordings decode unchanged. This closes finding 17: N.7 required a field the bus
+type could not supply.
+
+Census of the cost. `TopicMeta` is embedded in `Announce.topics`, so every
+discovery announce carries it. The committed fountain-anchors recording's
+announce, and any sidecar or demo producer that publishes an `Announce`, carry
+`TopicMeta` without `durability` until they regenerate. On the wire this is
+invisible, APPENDABLE keeps it byte-identical. In the web binding, where a served
+announce validates against the regenerated schema, it reads as the one-revision
+binding lag exactly as an anchor without `manifest_uri` does, and clears on the
+same web re-author. The queuing-retail recording carries no announce and is
+unaffected.
+
+Origin: 1.9 candidates entry 3, raised while adding a service announce to the
+fountain-anchors recording, the bridged shape's first concrete blocker found
+before anyone built one.
 
 ## Version 1.8 (Draft) — Batch 2
 

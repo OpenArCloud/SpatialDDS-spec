@@ -1,0 +1,27 @@
+{
+  "type": "spatial::disco::TopicMeta",
+  "description": "TopicMeta carrying the 1.8-revision durability member (present), the DDS kind a bridged gateway reads to populate the N.7-required manifest durability. Flat struct: strings, a float32 rate, a uint32 chunk bound, and the new durability string.",
+  "sample": {
+    "name": "spatialdds/south-mall/perception/cam_front/video_frame/v1",
+    "type": "video_frame",
+    "version": "v1",
+    "qos_profile": "VIDEO_LIVE",
+    "target_rate_hz": 30.0,
+    "max_chunk_bytes": 65536,
+    "durability": "VOLATILE"
+  },
+  "expected_json": {
+    "name": "spatialdds/south-mall/perception/cam_front/video_frame/v1",
+    "type": "video_frame",
+    "version": "v1",
+    "qos_profile": "VIDEO_LIVE",
+    "target_rate_hz": 30,
+    "max_chunk_bytes": 65536,
+    "durability": "VOLATILE"
+  },
+  "exercises": [
+    "1.8-revision TopicMeta.durability present, a DDS kind string (VOLATILE)",
+    "float32 target_rate_hz 30.0 -> 30 (ECMA-262); uint32 max_chunk_bytes stays a number",
+    "strings verbatim"
+  ]
+}

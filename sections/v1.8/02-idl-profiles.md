@@ -516,7 +516,7 @@ GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
 // Message shapes shown for orientation only
 @extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; }
 @extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
-@extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
+@extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; string durability; }
 
 @extensibility(APPENDABLE) struct Announce {
   // ... node identity, endpoints ...

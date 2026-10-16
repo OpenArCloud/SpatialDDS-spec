@@ -283,6 +283,9 @@
     "spatial_disco_TopicMeta": {
       "additionalProperties": true,
       "properties": {
+        "durability": {
+          "type": "string"
+        },
         "max_chunk_bytes": {
           "maximum": 4294967295,
           "minimum": 0,
@@ -310,7 +313,8 @@
         "version",
         "qos_profile",
         "target_rate_hz",
-        "max_chunk_bytes"
+        "max_chunk_bytes",
+        "durability"
       ],
       "type": "object"
     },

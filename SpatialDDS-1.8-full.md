@@ -1210,7 +1210,7 @@ GPS Fix               Geo DNS-SD            HTTP Discovery         DDS Domain
 // Message shapes shown for orientation only
 @extensibility(APPENDABLE) struct ProfileSupport { string name; uint32 major; uint32 min_minor; uint32 max_minor; }
 @extensibility(APPENDABLE) struct Capabilities   { sequence<ProfileSupport,64> supported_profiles; sequence<string,32> preferred_profiles; sequence<string,64> features; }
-@extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; }
+@extensibility(APPENDABLE) struct TopicMeta      { string name; string type; string version; string qos_profile; float32 target_rate_hz; uint32 max_chunk_bytes; string durability; }
 
 @extensibility(APPENDABLE) struct Announce {
   // ... node identity, endpoints ...
@@ -2777,6 +2777,13 @@ module spatial {
       // optional advisory hints (topic-level, not per-message)
       float target_rate_hz;
       uint32  max_chunk_bytes;
+      // Topic durability (added in the 1.8 revision; 1.9 candidates entry 3).
+      // The DDS durability kind, "VOLATILE" or "TRANSIENT_LOCAL", so a bridged
+      // gateway can populate the N.7-required manifest `durability` from the bus
+      // type instead of inventing it (finding 17). Empty when absent; appended
+      // under APPENDABLE, so existing TopicMeta producers are unchanged in
+      // meaning and on the wire.
+      string  durability;
     };
 
     enum ServiceKind {

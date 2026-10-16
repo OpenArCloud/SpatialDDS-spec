@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": true,
   "properties": {
+    "durability": {
+      "type": "string"
+    },
     "max_chunk_bytes": {
       "maximum": 4294967295,
       "minimum": 0,
@@ -30,7 +33,8 @@
     "version",
     "qos_profile",
     "target_rate_hz",
-    "max_chunk_bytes"
+    "max_chunk_bytes",
+    "durability"
   ],
   "title": "spatial.disco.TopicMeta",
   "type": "object"

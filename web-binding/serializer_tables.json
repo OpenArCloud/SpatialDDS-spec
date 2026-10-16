@@ -2524,6 +2524,12 @@
         {
           "t": "int"
         }
+      ],
+      [
+        "durability",
+        {
+          "t": "str"
+        }
       ]
     ],
     "kind": "struct"
