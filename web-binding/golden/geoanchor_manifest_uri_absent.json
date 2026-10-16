@@ -1,0 +1,63 @@
+{
+  "type": "spatial::core::GeoAnchor",
+  "description": "GeoAnchor with no content reference (manifest_uri empty). This is the byte-identical-to-pre-revision case: the member is present in the type but carries the empty string, meaning the anchor references no content. Confirms the absent case serializes and round-trips as an ordinary empty SpatialUri.",
+  "sample": {
+    "anchor_id": "survey-pillar",
+    "map_id": "museum/hall1/map",
+    "frame_ref": {
+      "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+      "fqn": "museum/hall1/map",
+      "has_coord_convention": false,
+      "coord_convention": "ENU",
+      "has_scale": true,
+      "scale_status": "SCALE_DECLARED",
+      "meters_per_unit": 1.0,
+      "display_unit": "m"
+    },
+    "geopose": {
+      "lat_deg": 37.7934,
+      "lon_deg": -122.3941,
+      "alt_m": 12.6,
+      "q": [0.0, 0.0, 0.0, 1.0],
+      "stamp": {"sec": 1714070400, "nanosec": 0},
+      "cov": {"_discriminator": "COV_NONE"}
+    },
+    "method": "Surveyed",
+    "confidence": 0.98,
+    "checksum": "sha256:abc",
+    "cov": {"_discriminator": "COV_NONE"},
+    "manifest_uri": ""
+  },
+  "expected_json": {
+    "anchor_id": "survey-pillar",
+    "map_id": "museum/hall1/map",
+    "frame_ref": {
+      "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+      "fqn": "museum/hall1/map",
+      "has_coord_convention": false,
+      "coord_convention": "ENU",
+      "has_scale": true,
+      "scale_status": "SCALE_DECLARED",
+      "meters_per_unit": 1,
+      "display_unit": "m"
+    },
+    "geopose": {
+      "lat_deg": 37.7934,
+      "lon_deg": -122.3941,
+      "alt_m": 12.6,
+      "q": [0, 0, 0, 1],
+      "stamp": {"sec": "1714070400", "nanosec": 0},
+      "cov": {"type": "COV_NONE"}
+    },
+    "method": "Surveyed",
+    "confidence": 0.98,
+    "checksum": "sha256:abc",
+    "cov": {"type": "COV_NONE"},
+    "manifest_uri": ""
+  },
+  "exercises": [
+    "1.8-revision GeoAnchor.manifest_uri absent (empty string) — references no content",
+    "the empty SpatialUri serializes and round-trips as an ordinary empty string",
+    "anchor cov COV_NONE union as {\"type\":\"COV_NONE\"} with no member"
+  ]
+}

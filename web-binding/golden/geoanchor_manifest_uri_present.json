@@ -1,0 +1,64 @@
+{
+  "type": "spatial::core::GeoAnchor",
+  "description": "GeoAnchor carrying the 1.8-revision manifest_uri content reference (present). Exercises the new member alongside the full anchor: nested FrameRef (enums, guards literal), GeoPose (Time int64->string, COV_NONE union), the anchor's own COV_POS3 union, and manifest_uri as a non-empty SpatialUri string.",
+  "sample": {
+    "anchor_id": "main-entrance",
+    "map_id": "museum/hall1/map",
+    "frame_ref": {
+      "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+      "fqn": "museum/hall1/map",
+      "has_coord_convention": false,
+      "coord_convention": "ENU",
+      "has_scale": true,
+      "scale_status": "SCALE_DECLARED",
+      "meters_per_unit": 1.0,
+      "display_unit": "m"
+    },
+    "geopose": {
+      "lat_deg": 37.7934,
+      "lon_deg": -122.3941,
+      "alt_m": 12.6,
+      "q": [0.0, 0.0, 0.0, 1.0],
+      "stamp": {"sec": 1714070400, "nanosec": 0},
+      "cov": {"_discriminator": "COV_NONE"}
+    },
+    "method": "Surveyed",
+    "confidence": 0.98,
+    "checksum": "sha256:abc",
+    "cov": {"_discriminator": "COV_POS3", "pos": [0.04, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.09]},
+    "manifest_uri": "spatialdds://museum.example.org/hall1/content/entrance-sign"
+  },
+  "expected_json": {
+    "anchor_id": "main-entrance",
+    "map_id": "museum/hall1/map",
+    "frame_ref": {
+      "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
+      "fqn": "museum/hall1/map",
+      "has_coord_convention": false,
+      "coord_convention": "ENU",
+      "has_scale": true,
+      "scale_status": "SCALE_DECLARED",
+      "meters_per_unit": 1,
+      "display_unit": "m"
+    },
+    "geopose": {
+      "lat_deg": 37.7934,
+      "lon_deg": -122.3941,
+      "alt_m": 12.6,
+      "q": [0, 0, 0, 1],
+      "stamp": {"sec": "1714070400", "nanosec": 0},
+      "cov": {"type": "COV_NONE"}
+    },
+    "method": "Surveyed",
+    "confidence": 0.98,
+    "checksum": "sha256:abc",
+    "cov": {"type": "COV_POS3", "pos": [0.04, 0, 0, 0, 0.25, 0, 0, 0, 0.09]},
+    "manifest_uri": "spatialdds://museum.example.org/hall1/content/entrance-sign"
+  },
+  "exercises": [
+    "1.8-revision GeoAnchor.manifest_uri present, as a non-empty SpatialUri string",
+    "nested FrameRef: literal has_* guards, enums by name",
+    "nested GeoPose: Time.sec int64 -> decimal string, COV_NONE union as {\"type\":\"COV_NONE\"}",
+    "anchor cov COV_POS3 union tagged; integer-valued doubles -> 0; meters_per_unit 1.0 -> 1"
+  ]
+}

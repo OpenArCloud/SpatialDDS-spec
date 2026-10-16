@@ -14,6 +14,7 @@ module spatial {
     // ---------- Utility ----------
     // Expose builtin Time under spatial::core
     typedef builtin::Time Time;
+    typedef spatial::common::SpatialUri SpatialUri;
 
     @extensibility(APPENDABLE) struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
@@ -302,6 +303,15 @@ module spatial {
       // monotone summary of cov (e.g. from its largest eigenvalue) so the two
       // never contradict. Appended at struct end per APPENDABLE rules.
       CovMatrix cov;
+      // Content reference (added in the 1.8 revision; 1.9 candidates entry 2).
+      // An anchor MAY name a content manifest, resolvable per §7.5; empty when
+      // absent, so existing anchors are unchanged in meaning and on the wire.
+      // Mirrors ContentAnnounce.manifest_uri exactly: same SpatialUri type, same
+      // name, same empty-is-absent mechanism (no has_ guard). The reference
+      // binds content to this anchor's frame and precision — the anchor's method
+      // and cov are the claim level the binding inherits. Appended at struct end
+      // per APPENDABLE rules.
+      SpatialUri manifest_uri;
     };
 
     @extensibility(APPENDABLE) struct FrameTransform {

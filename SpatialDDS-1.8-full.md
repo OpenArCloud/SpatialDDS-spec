@@ -1923,6 +1923,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 | `anchor.cov` | object | OPTIONAL | Directional uncertainty (added 1.8): the JSON projection of `GeoAnchor.cov`, `{ "type": <CovarianceType>, "<member>": [ row-major … ] }` as in Appendix D (`COV_NONE` when absent). Expressed in the anchor's local ENU tangent frame at the GeoPose position (§3.2). When present, `anchor.confidence` SHOULD be a monotone summary of it. |
 | `anchor.frame_ref` | object | REQUIRED | `FrameRef` for the anchor's local frame. |
 | `anchor.checksum` | string | OPTIONAL | Integrity hash for the anchor data. |
+| `anchor.manifest_uri` | string | OPTIONAL | Content reference (added in the 1.8 revision): the JSON projection of `GeoAnchor.manifest_uri`. A `spatialdds://` URI naming a content manifest resolvable per §7.5; empty or absent when the anchor references no content. |
 
 ```json
 {
@@ -1940,6 +1941,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
     "method": "Surveyed",
     "confidence": 0.98,
     "cov": { "type": "COV_POS3", "pos": [0.04, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.09] },
+    "manifest_uri": "spatialdds://museum.example.org/hall1/content/entrance-sign",
     "frame_ref": {
       "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
       "fqn": "museum/hall1/map"
@@ -2231,6 +2233,10 @@ module spatial {
     typedef double Mat6x6[36];
     typedef double Mat12x12[144];
     typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+    // Canonical manifest reference: a spatialdds:// URI, empty when absent.
+    // Defined here in common so every profile shares one spelling (core's
+    // GeoAnchor and disco's announce types both carry it).
+    typedef string SpatialUri;
 
     // 2D point/vector; used by polygon zone rings and crossing-line paths
     // (added 1.8). A struct rather than `typedef double Vec2[2]`, which is
@@ -2381,6 +2387,7 @@ module spatial {
     // ---------- Utility ----------
     // Expose builtin Time under spatial::core
     typedef builtin::Time Time;
+    typedef spatial::common::SpatialUri SpatialUri;
 
     @extensibility(APPENDABLE) struct PoseSE3 {
       spatial::common::Vec3 t;               // translation (x,y,z)
@@ -2669,6 +2676,15 @@ module spatial {
       // monotone summary of cov (e.g. from its largest eigenvalue) so the two
       // never contradict. Appended at struct end per APPENDABLE rules.
       CovMatrix cov;
+      // Content reference (added in the 1.8 revision; 1.9 candidates entry 2).
+      // An anchor MAY name a content manifest, resolvable per §7.5; empty when
+      // absent, so existing anchors are unchanged in meaning and on the wire.
+      // Mirrors ContentAnnounce.manifest_uri exactly: same SpatialUri type, same
+      // name, same empty-is-absent mechanism (no has_ guard). The reference
+      // binds content to this anchor's frame and precision — the anchor's method
+      // and cov are the claim level the binding inherits. Appended at struct end
+      // per APPENDABLE rules.
+      SpatialUri manifest_uri;
     };
 
     @extensibility(APPENDABLE) struct FrameTransform {
@@ -2728,8 +2744,10 @@ module spatial {
     typedef spatial::core::Aabb3 Aabb3;
     typedef spatial::core::FrameRef FrameRef;
     typedef spatial::core::PoseSE3 PoseSE3;
-    // Canonical manifest references use the spatialdds:// URI scheme.
-    typedef string SpatialUri;
+    // Canonical manifest references use the spatialdds:// URI scheme. The type
+    // is defined once in spatial::common so core::GeoAnchor and the announce
+    // types share one spelling (1.8 revision).
+    typedef spatial::common::SpatialUri SpatialUri;
 
     // --- Profile version advertisement (additive) ---
     // Each row declares a module family plus a contiguous range of MINORs
@@ -3012,6 +3030,15 @@ module spatial {
 };
 
 ```
+
+**Anchor content references (Normative).** A `GeoAnchor` MAY carry a
+`manifest_uri` (added in the 1.8 revision) naming a content manifest, resolvable
+per §7.5. The reference binds that content to the anchor's frame and precision:
+content reached through it is positioned by the anchor's `geopose` in its
+`frame_ref`, and the anchor's `method` and `cov` are the claim level the binding
+inherits — content is no better localized than the anchor that places it. An
+empty `manifest_uri` means the anchor references no content, and such an anchor
+is unchanged in meaning and on the wire from a pre-revision one.
 
 ## **Appendix D: Extension Profiles**
 

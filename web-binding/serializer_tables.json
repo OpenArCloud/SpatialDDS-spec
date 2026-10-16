@@ -1089,6 +1089,12 @@
           "fqn": "spatial.core.CovMatrix",
           "t": "union"
         }
+      ],
+      [
+        "manifest_uri",
+        {
+          "t": "str"
+        }
       ]
     ],
     "kind": "struct"

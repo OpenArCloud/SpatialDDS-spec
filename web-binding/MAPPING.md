@@ -138,3 +138,27 @@ numbers by the ECMA-262 rule above; strings minimally escaped per JSON; no
 insignificant whitespace. Wire JSON is **not** required to be canonical — only
 the digest input is. Schemas are published beside the IDL, content-digest pinned,
 and served at a well-known path so an endpoint is self-describing.
+
+## Open questions
+
+**Wire-level APPENDABLE compatibility does not extend to the JSON binding under
+the literal rule.** On the wire, APPENDABLE lets a reader tolerate a producer
+that omits a trailing member: the type can evolve and old producers and readers
+keep interoperating. The literal rule does not carry that to JSON. Every declared
+member is `required`, so each revision that appends a member (`cov` in Batch 1,
+`observer_*` and `scale_ratio` in Batch 2, `keypoints` in Batch 3,
+`GeoAnchor.manifest_uri` in the 1.8 revision) makes the regenerated schema reject
+a producer that predates it — a validator watching an older, still-conformant
+endpoint reports a failure the wire would not. The reference gateway showed this:
+one revision behind, it failed `validates against its published schema` on the
+one member it had not regenerated to carry.
+
+This is consistent and intended today — the schema is the current contract and
+endpoints regenerate to meet it — but whether the mapping should instead define
+*older-producer acceptance* (a member appended after a stated baseline is
+non-`required`, so the JSON binding tolerates its absence exactly as the wire
+does) is a **1.9-scale MAPPING decision**, not an erratum. It needs a mechanism
+the generator can act on (a per-member baseline or `@since`-style annotation; the
+IDL carries no such signal today) and a ruling on whether "conformant" tracks the
+latest revision or the type's whole APPENDABLE history. Recorded here so the
+question lives where the rules live, not only in a batch report.

@@ -55,6 +55,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
 | `anchor.cov` | object | OPTIONAL | Directional uncertainty (added 1.8): the JSON projection of `GeoAnchor.cov`, `{ "type": <CovarianceType>, "<member>": [ row-major … ] }` as in Appendix D (`COV_NONE` when absent). Expressed in the anchor's local ENU tangent frame at the GeoPose position (§3.2). When present, `anchor.confidence` SHOULD be a monotone summary of it. |
 | `anchor.frame_ref` | object | REQUIRED | `FrameRef` for the anchor's local frame. |
 | `anchor.checksum` | string | OPTIONAL | Integrity hash for the anchor data. |
+| `anchor.manifest_uri` | string | OPTIONAL | Content reference (added in the 1.8 revision): the JSON projection of `GeoAnchor.manifest_uri`. A `spatialdds://` URI naming a content manifest resolvable per §7.5; empty or absent when the anchor references no content. |
 
 ```json
 {
@@ -72,6 +73,7 @@ Each `rtype` value requires a corresponding top-level object with type-specific 
     "method": "Surveyed",
     "confidence": 0.98,
     "cov": { "type": "COV_POS3", "pos": [0.04, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.09] },
+    "manifest_uri": "spatialdds://museum.example.org/hall1/content/entrance-sign",
     "frame_ref": {
       "uuid": "6c2333a0-8bfa-4b43-9ad9-7f22ee4b0001",
       "fqn": "museum/hall1/map"

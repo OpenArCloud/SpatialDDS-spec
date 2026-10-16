@@ -141,11 +141,16 @@ class RT:
         return self.cls(fqn)(**kwargs)
 
     def build_union(self, fqn, d):
+        # The discriminator is `_discriminator` in a logical sample and `type` in
+        # the wire/expected-json form; accept either.
+        disc = d.get("_discriminator") or d.get("type")
         for label, member, rule in self.t[fqn]["cases"]:
-            if label in d.get("type", "") or member in d:
-                if member in d and rule is not None:
+            if (disc is not None and disc == label) or (disc is None and member in d):
+                if rule is not None and member in d:
                     return self.cls(fqn)(**{member: self.build(rule, d[member])})
-                return self.cls(fqn)()
+                # A value-less branch (e.g. COV_NONE: a uint8 `none`): set the
+                # branch member to its zero so the discriminator is pinned.
+                return self.cls(fqn)(**{member: 0})
         raise ValueError(f"no union case for {d}")
 
     def encode(self, rule, val):

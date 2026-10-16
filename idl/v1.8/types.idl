@@ -24,6 +24,10 @@ module spatial {
     typedef double Mat6x6[36];
     typedef double Mat12x12[144];
     typedef double QuaternionXYZW[4];  // GeoPose order (x, y, z, w)
+    // Canonical manifest reference: a spatialdds:// URI, empty when absent.
+    // Defined here in common so every profile shares one spelling (core's
+    // GeoAnchor and disco's announce types both carry it).
+    typedef string SpatialUri;
 
     // 2D point/vector; used by polygon zone rings and crossing-line paths
     // (added 1.8). A struct rather than `typedef double Vec2[2]`, which is

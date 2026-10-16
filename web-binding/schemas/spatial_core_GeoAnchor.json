@@ -228,6 +228,9 @@
     "geopose": {
       "$ref": "#/$defs/spatial_core_GeoPose"
     },
+    "manifest_uri": {
+      "type": "string"
+    },
     "map_id": {
       "type": "string"
     },
@@ -243,7 +246,8 @@
     "method",
     "confidence",
     "checksum",
-    "cov"
+    "cov",
+    "manifest_uri"
   ],
   "title": "spatial.core.GeoAnchor",
   "type": "object"

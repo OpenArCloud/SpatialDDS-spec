@@ -693,11 +693,53 @@ def scenario_hello_spatial(ep, schemas):
 
 
 def scenario_anchor_resolve(ep, schemas):
-    """§8.2 — anchor resolve flow. Blocked on a missing 1.8 field, not criteria."""
-    raise Skip("the scenario fetches an anchor's asset by reference, and no 1.8 "
-               "anchor type carries that reference — GeoAnchor has no manifest_uri "
-               "(1.9 candidates entry 2). No recording can un-skip it; the scenario "
-               "waits for the field it was written for and is not reworded to pass.")
+    """§8.2 — anchor resolve flow (1.8 revision: GeoAnchor.manifest_uri).
+
+    A GeoAnchor that names a content manifest resolves it per §7.5.2, and the
+    manifest's refs are fetchable. UNEXERCISED, not failed and not silently
+    passed, where no served anchor carries a manifest_uri.
+    """
+    anchor_uris = []
+    for t in discover(ep):
+        ty = (t.get("type") or "").replace("_", "").lower()
+        if "geoanchor" not in ty:
+            continue
+        code, _h, body = ep.raw(t["path"], token=ep.token)
+        if code != 200:
+            continue
+        for d in json.loads(body):
+            mu = d.get("manifest_uri") if isinstance(d, dict) else None
+            if isinstance(mu, str) and mu.startswith("spatialdds://"):
+                anchor_uris.append(mu)
+    if not anchor_uris:
+        raise Skip("no served GeoAnchor carries a manifest_uri (the 1.8-revision "
+                   "field). UNEXERCISED: the anchor-resolve flow needs an "
+                   "anchor-referenced manifest to follow, and none is present. The "
+                   "reference gateway gains one when spatialdds-web re-authors the "
+                   "fountain with an anchor-referenced duck.")
+    rc, _rh, rb = ep.raw(f"{WK}/resolver")
+    if rc == 404:
+        raise Skip("served anchors carry a manifest_uri, but the endpoint is not an "
+                   "authority (resolver 404), so the references cannot be resolved "
+                   "here. UNEXERCISED (the resolve belongs to the authority).")
+    hb = json.loads(rb)["https_base"]
+    resolved = refs = 0
+    for mu in sorted(set(anchor_uris))[:4]:
+        rc2, rh2, rb2 = ep.raw(_resolve_url(hb, mu))
+        assert rc2 == 200, \
+            f"anchor manifest_uri {mu} did not resolve ({rc2}, expected 200)"
+        doc = json.loads(rb2)
+        assert _has_integrity(rh2, doc), \
+            f"resolve {mu}: no integrity signal (ETag, Digest, or a body checksum) per §7.5.2"
+        for a in (doc.get("assets") or []):
+            u = a.get("uri")
+            if not u:
+                continue
+            ac, _ah, _ab = ep.raw(_resolve_url(hb, u) if u.startswith("spatialdds://") else u)
+            assert ac == 200, f"anchor manifest ref {u} is not fetchable ({ac})"
+            refs += 1
+        resolved += 1
+    return f"{resolved} anchor-referenced manifest(s) resolved, {refs} ref(s) fetchable"
 
 
 def scenario_backend_blind(ep, schemas):

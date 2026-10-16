@@ -196,6 +196,36 @@ untested direction as UNEXERCISED, exactly as a zero count does — never as FAI
 Zero observations is not evidence; zero counter-examples is not a defect. Both
 are the manifest saying what it could not test.
 
+## Instrument classes
+
+"Zero observations" is one instance of a wider hazard: a check that reports on
+something other than the endpoint, and so passes or fails for a reason that is
+not the endpoint's. The suite has met three classes of it, each caught and
+named; they are listed here so a new check can be measured against them. (Origin
+of the individual findings: the web repo's `WEB-BINDING-FINDINGS.md`;
+cross-referenced here rather than copied.)
+
+- **Self-observing** — the instrument's subject includes itself, so it reports on
+  its own machinery. `§8.3 backend-blind` scans the suite's source for
+  backend-branch tokens and had to remove *its own function* from the scan first,
+  or it finds its own vocabulary and fails always. The topic-construct gate's
+  "OK (0 types)" was the same shape: it ran, asserted nothing, and said OK —
+  observing its own silence as success.
+- **Composition-blind** — the instrument never descends through composition, so
+  it reports a rule satisfied that it never reached. The canonical-form check sat
+  at `union_tagged = 0` because it did not resolve `$ref` into the `CovMatrix`
+  inside a `GeoPose`; a green row would have certified a rule it never looked at.
+- **Fragment-blind** — the instrument accepts that a response exists without
+  checking what is in it. The resolver check once accepted a `200` and validated
+  nothing inside (`https_base` appeared nowhere); the surface was "present" and
+  wholly unchecked.
+
+The defense is the same in all three: a check asserts against the endpoint's own
+data, descends into whatever that data composes, and treats an absence as
+UNEXERCISED rather than as either a pass or a fail. A new check that cannot be
+made to fail against a doctored serving belongs to one of these classes and does
+not count until it is fixed.
+
 This is the same discipline as a SKIPPED check, applied one level down: a check
 that cannot run says so by name, and a rule that had nothing to run against
 says so too.
