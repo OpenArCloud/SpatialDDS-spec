@@ -82,6 +82,32 @@ web-binding contract/gates are the only things touched.
   in SpatialDDS-web carries no `schema_version` and is not the template. §8.1
   already mandates `id`, so finding 28's suggested extra sentence in §7.5.2 is
   redundant and was not added. Origin: demo-agent report e87758e.
+- **Mapping inverse documented (finding 26).** `web-binding/MAPPING.md` gains an
+  "Inverse — the lift direction" section: the mapping is bidirectional, a lifter
+  applies exactly three rules that differ from the naive inverse
+  (`int64`/`uint64` decimal strings, base64 octet runs, `"type"` tag versus the
+  discriminator member) and everything else round-trips naively, with one worked
+  `int64` example both directions. A publishing client needs this and the
+  projection documented only the forward direction. Origin: demo-agent report
+  d2e9c50/9252b8c.
+- **Octet-run golden vector (finding 33 sweep).** Confirmed `gen.py` decides
+  octet-ness on `inner == "types.uint8"` — the spelling idlc renders from
+  `sequence<uint8, N>`, the spelling the IDL actually uses — and carries no dead
+  `"octet"` branch, so the generator is right for the right reason. Added
+  `golden/blobchunk_octet_run.json` so the rule has a spec-side exercise
+  independent of the web repo's authored BlobChunk; `gate_roundtrip` now verifies
+  9 golden vectors. Origin: demo-agent report 3f00af3.
+- **Content withdrawal (finding 25, feature-gap half).** The absence of a typed
+  dispose for content (`Depart` covers services only) is recorded as a 1.9
+  problem statement in Future Directions, citing the SpatialDDS-web endpoint's
+  out-of-band `spatialdds-web:dispose` MCAP record as evidence. The reading-side
+  half (addressing the four-segment `spatialdds/discovery/depart/v1` topic over
+  the web binding) was already resolved by N.3's short-topic rule in finding 16
+  (68cf1f7) and needed no new erratum. Origin: demo-agent report d2e9c50/9252b8c.
+- **`GeoAnchor.checksum` (finding 31).** Characterized, no change landed: whether
+  to define what `checksum` digests and whether §7.5.2's integrity-signal list
+  should require verifiability are held for a ruling, since either would change
+  what existing records mean. Origin: demo-agent report ad94aea.
 
 ## Version 1.8 (Draft) — Batch 2
 

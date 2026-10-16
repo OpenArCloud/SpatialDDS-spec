@@ -1,0 +1,23 @@
+{
+  "type": "spatial::core::BlobChunk",
+  "description": "BlobChunk with a non-empty octet run (`sequence<uint8, 65535> data`). The spec-side exercise of Appendix N.1's octet-run rule (finding 33): an octet run MUST project to a base64 string, not to a JSON array of integers. Before this vector the rule's only exercise was the web repo's authored BlobChunk; every vector here carried an empty or absent octet field, so a generator that had decided octet-ness on the wrong test would still have passed. The bytes are b'hello' = [104, 101, 108, 108, 111]; their base64 is \"aGVsbG8=\".",
+  "sample": {
+    "blob_id": "blob-42",
+    "index": 0,
+    "total_chunks": 1,
+    "crc32": 907060870,
+    "data": "aGVsbG8="
+  },
+  "expected_json": {
+    "blob_id": "blob-42",
+    "index": 0,
+    "total_chunks": 1,
+    "crc32": 907060870,
+    "data": "aGVsbG8="
+  },
+  "exercises": [
+    "octet run (sequence<uint8,N>) projects to a base64 string per Appendix N.1, not a JSON array of integers",
+    "the base64 string round-trips CDR<->JSON byte-identically (five raw bytes <-> \"aGVsbG8=\")",
+    "a uint32 member (crc32) carries as a plain JSON number alongside the octet run"
+  ]
+}

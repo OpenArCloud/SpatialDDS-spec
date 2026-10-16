@@ -131,6 +131,37 @@ wire*. Rejected. The overload of `has_*` is now a documented spec-side fact (see
 the alignment findings note); making it machine-readable is a possible future
 editorial item, and the binding waits on none of it.
 
+## Inverse — the lift direction
+
+The mapping is **bidirectional**, and a client that *publishes* needs the
+inverse: canonical N.1 JSON back into the decoded values a writer encodes. The
+lift is not a general JSON parser — it is this projection run backwards, and
+exactly **three** rules differ from the naive inverse, the same three the
+forward rules call out as non-identity. Everything else — enumerator names,
+floats, booleans, nested structs and sequences — is already in the form the
+writer wants and round-trips by reading the value as written. The three:
+
+1. **`int64`/`uint64`:** the JSON value is a decimal **string** (the one
+   divergence from DDS-JSON); the lifter parses it to the integer the wire
+   carries. (Smaller ints are JSON numbers and need no conversion.)
+2. **Octet runs** (`sequence<octet,N>` / `octet[N]`): the JSON value is a
+   **base64 string**; the lifter base64-decodes it to the byte payload, never
+   reading it as a string or an array of integers.
+3. **Unions:** the JSON object is tagged on `"type"` (the enumerator name of the
+   discriminator); the lifter selects the branch by that name and sets the
+   discriminator member accordingly — not the `_discriminator` spelling the
+   decoder exposes.
+
+A lifter that applies these three and otherwise copies values through produces a
+body a writer re-encodes to the same wire bytes — the property that makes a
+published instance indistinguishable from a replayed one. **Worked example, an
+`int64` member both directions.** `Time.sec` is `int64`. Forward: a wire value
+of `1714070400` projects to the JSON string `"1714070400"` (unconditional
+decimal string, per Integers). Inverse: the lifter reads `"1714070400"`, parses
+it to the integer `1714070400`, and the writer encodes that back to the same
+wire value — so `lift(project(x)) == x` for the member, and the string is never
+left as a string nor widened to a JSON number.
+
 ## Canonical serialization (digest only)
 
 For content-digest pinning (brief §5, §6): object keys sorted lexicographically;
