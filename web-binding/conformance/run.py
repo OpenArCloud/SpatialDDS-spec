@@ -192,8 +192,13 @@ def check_schemas_endpoint(ep, schemas):
 def check_schema_validity(ep, schemas):
     """Every resource the endpoint returns validates against its own schema."""
     index = ep.json(f"{WK}/schemas")
+    topics = discover(ep)
+    if not topics:
+        raise Skip("the endpoint advertises no resource — schema validity is "
+                   "UNEXERCISED (zero observations). An endpoint that holds nothing "
+                   "yet is conformant, not failing (finding 39).")
     n = 0
-    for t in discover(ep):
+    for t in topics:
         code, hdr, body = ep.raw(t["path"], token=ep.token)
         if code == 401:
             continue
@@ -203,7 +208,11 @@ def check_schema_validity(ep, schemas):
         for doc in json.loads(body):
             _validate(doc, schema)
             n += 1
-    assert n > 0, "no instance was validated; the endpoint served nothing"
+    if n == 0:
+        raise Skip("every advertised resource was gated (401, no token) or empty, so "
+                   "no instance was validated — UNEXERCISED (zero observations), not a "
+                   "failure. A resource advertised and served still validates here, and "
+                   "a non-200 on an advertised path still fails above.")
     return f"{n} instance(s)"
 
 
@@ -254,7 +263,13 @@ def check_canonical_form(ep, schemas):
                     f"{k}: non-finite double"
 
     index = ep.json(f"{WK}/schemas")
-    for t in discover(ep):
+    topics = discover(ep)
+    if not topics:
+        raise Skip("the endpoint advertises no resource — the canonical-form rules "
+                   "have nothing to observe on the wire. UNEXERCISED (zero "
+                   "observations), not a failure (finding 39).")
+    observed = 0
+    for t in topics:
         code, _h, body = ep.raw(t["path"], token=ep.token)
         if code != 200:
             continue
@@ -263,6 +278,12 @@ def check_canonical_form(ep, schemas):
             continue
         for doc in json.loads(body):
             walk(doc, schema)
+            observed += 1
+    if observed == 0:
+        raise Skip("every advertised resource was gated or empty, so no instance was "
+                   "observed — the canonical-form rules are UNEXERCISED (zero "
+                   "observations), not failed. A served instance that broke a rule "
+                   "still fails in walk() above.")
     assert seen["int64_string"] > 0, \
         "no 64-bit integer was observed, so the string rule was not exercised"
     assert seen["enum_name"] > 0, "no enum was observed"
@@ -279,7 +300,10 @@ def check_latched_get(ep, schemas):
     """TRANSIENT_LOCAL resources are GET with ETag, Cache-Control, and 304."""
     latched = [t for t in discover(ep)
                if t.get("durability") == "TRANSIENT_LOCAL"]
-    assert latched, "the endpoint advertises no latched resource"
+    if not latched:
+        raise Skip("the endpoint advertises no latched (TRANSIENT_LOCAL) resource — "
+                   "the latched-GET contract is UNEXERCISED (zero observations), not "
+                   "failed (finding 39).")
     checked = 0
     for t in latched:
         code, hdr, body = ep.raw(t["path"], token=ep.token)
@@ -300,7 +324,9 @@ def check_latched_get(ep, schemas):
         assert code3 == 200, \
             f"{t['path']}: a stale If-None-Match gave {code3}, expected 200"
         checked += 1
-    assert checked, "every latched resource was refused, so none was checked"
+    if checked == 0:
+        raise Skip("every advertised latched resource was gated (401 without a token), "
+                   "so none was checked — UNEXERCISED, not a failure.")
     return f"{checked} latched resource(s)"
 
 
@@ -665,10 +691,16 @@ def scenario_hello_spatial(ep, schemas):
         f"the scenario needs {len(client)} lines, which is a finding about the binding"
 
     doc = ep.json(f"{WK}/search")
+    if not doc.get("results"):
+        raise Skip("the endpoint advertises no service, so there is nothing to "
+                   "subscribe to — the hello-spatial scenario is UNEXERCISED (zero "
+                   "observations), not failed (finding 39).")
     svc = doc["results"][0]["service"]
     latched = [t for t in svc["topics"]
                if t.get("durability") == "TRANSIENT_LOCAL"]
-    assert latched, "no latched topic to subscribe to"
+    if not latched:
+        raise Skip("the advertised service declares no latched (TRANSIENT_LOCAL) "
+                   "topic to subscribe to — UNEXERCISED, not a failure.")
     topic = latched[0]
     msgs = _ws_collect(ep.ws_target(topic["url"]), ep.token)
     assert msgs, "the subscription yielded nothing"
@@ -787,7 +819,10 @@ def scenario_third_party_reader(ep, schemas):
     index = ep.json(f"{WK}/schemas")
     latched = [t for t in discover(ep)
                if t.get("durability") == "TRANSIENT_LOCAL"]
-    assert latched, "no latched resource to read"
+    if not latched:
+        raise Skip("the endpoint advertises no latched resource to read — the "
+                   "third-party reader scenario is UNEXERCISED (zero observations), "
+                   "not failed (finding 39).")
     read = 0
     for t in latched:
         code, _h, body = ep.raw(t["path"], token=ep.token)
@@ -817,7 +852,10 @@ def scenario_third_party_reader(ep, schemas):
                 elif want == "array":
                     assert isinstance(doc[k], list), f"{k} is not an array"
             read += 1
-    assert read > 0, "nothing was read"
+    if read == 0:
+        raise Skip("every advertised latched resource was gated or empty, so nothing "
+                   "was read — UNEXERCISED, not a failure. A served instance missing a "
+                   "required field or carrying a wrong type still fails above.")
     return f"{read} instance(s) read from the published schemas alone"
 
 # Registered in the order the README's build list gives: the cross-cutting

@@ -65,6 +65,41 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Finding 39 (conformance runner), 2026-10-16
+
+A reporting fix in the web-binding conformance runner; no normative text and no
+IDL change. SpatialDDS-web 0.2.0 made an empty registry the normal starting
+state (`python -m spatialdds.serve --authority registry.example --publish` serves
+a conformant surface with no data in it, records arriving later). Against that
+shape the runner reported five data-dependent checks as **failures** —
+`every resource validates against its published schema`, `canonical form on the
+wire`, `latched state is GET with ETag, Cache-Control and 304`, `§8.1 hello
+spatial in ten lines`, `§8.4 third-party reader` — where its own UNEXERCISED
+vocabulary is the right answer, the same it already applies to the resolver,
+access classes, the QoS subset, and the §8.2 anchor-resolve flow. A check whose
+subject matter is absent is unexercised with the reason stated, not failed.
+
+- `web-binding/conformance/run.py`: the five checks now `raise Skip` (UNEXERCISED)
+  on genuine absence — no resource advertised, or every advertised resource gated
+  or empty — instead of asserting on an empty count. The **teeth are kept and
+  verified**: `schema_validity` and `latched_get` still assert `200` on every
+  advertised path, so an endpoint that *advertises* a resource and 404s it still
+  fails; the content checks still fail on a served-but-malformed instance. The
+  softening applies only to zero observations, never to a false claim.
+- `web-binding/conformance/empty_registry_probe.py` (new): drives all 14 checks
+  against a mocked endpoint — no DDS, no gateway — in three states and asserts
+  the empty registry certifies as 6 passed / 0 failed / 8 skipped, a 404 on an
+  advertised resource still fails, and a 200 missing a required field still
+  fails. The class is closed, not the instance.
+- **Acceptance record for a fresh (empty) deployment**, verbatim:
+  `14 checks: 6 passed, 0 failed, 8 skipped (skipped: every resource validates
+  against its published schema, canonical form on the wire, latched state is GET
+  with ETag, Cache-Control and 304, access classes, both directions, the carried
+  QoS subset is observable, the rest absent, §8.1 hello spatial in ten lines, §8.2
+  anchor resolve flow, §8.4 third-party reader, published schemas only)`. Both
+  populated shapes are unchanged (the new branches never fire when resources are
+  served). Origin: SpatialDDS-web 0.2.0 batch, finding 39.
+
 ## Version 1.8 — Findings 25–33 (editorial), 2026-10-15
 
 Editorial and documentation fixes closing a queue of findings raised by the
