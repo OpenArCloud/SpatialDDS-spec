@@ -65,6 +65,24 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Findings 25–33 (editorial), 2026-10-15
+
+Editorial and documentation fixes closing a queue of findings raised by the
+SpatialDDS-web publish work. No IDL changes, no normative prose changes, and the
+112 generated JSON Schemas are byte-identical. The example manifest files and the
+web-binding contract/gates are the only things touched.
+
+- **Example manifests (findings 27, 28).** All four `manifests/v1.8/*.json`
+  declared `"schema_version": "spatial.core/1.7"` — stale by a minor version and
+  under a key the prose never uses. Replaced with the `{id, profile, rtype}`
+  envelope §8.1 makes REQUIRED and §3.3.0's worked example carries: `profile` is
+  `spatial.manifest/1.8`, and each file now states the `spatialdds://` URI it
+  answers to so it is resolvable per §7.5.2 (previously none did). The fix
+  direction came from the prose, which is the authority; the derived VPS manifest
+  in SpatialDDS-web carries no `schema_version` and is not the template. §8.1
+  already mandates `id`, so finding 28's suggested extra sentence in §7.5.2 is
+  redundant and was not added. Origin: demo-agent report e87758e.
+
 ## Version 1.8 (Draft) — Batch 2
 
 Backward compatibility with 1.7 **and** with 1.8 Batch 1 is preserved. Every

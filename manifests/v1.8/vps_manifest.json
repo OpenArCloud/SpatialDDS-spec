@@ -1,5 +1,7 @@
 {
-  "schema_version": "spatial.core/1.7",
+  "id": "spatialdds://acme.example/sf-downtown/service/vps-downtown",
+  "profile": "spatial.manifest/1.8",
+  "rtype": "service",
   "service_id": "svc:vps:acme/sf-downtown",
   "profiles": [
     "Core",
