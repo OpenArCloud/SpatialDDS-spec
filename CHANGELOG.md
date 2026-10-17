@@ -65,6 +65,53 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Conformance: the volatile-lane blind spot (item 7.4), 2026-10-17
+
+`web-binding/conformance/run.py`: `every resource validates against its
+published schema` validated only each resource's **latched GET collection**,
+which is empty by construction for a VOLATILE lane — all its traffic lives on the
+N.5 stream the check never opened. The finding-39 zero-observation guard existed
+but was **endpoint-scoped**: one latched instance anywhere lifted the count and
+reported PASS for the whole endpoint, masking every silent volatile lane. Against
+the OWM migration's serving this left **504 of 581 payloads — 87%, and two of
+three types — unvalidated** while the suite passed. Kin to "an empty expected
+value is a check that cannot fail", one level up: the *subject* is empty, and the
+check reported on the subjects it found rather than the ones it was told about.
+
+- **Per-resource verdict.** `check_schema_validity` now reports the
+  zero-observation verdict per resource: a lane whose latched collection is empty
+  is named UNEXERCISED by name (with a pointer to the N.5 stream check) rather
+  than masked by another lane's instances.
+- **Streamed payloads validated.** New check `every streamed payload validates
+  against its published schema` subscribes to every advertised resource over the
+  N.5 socket `§8.1 hello spatial` already opens, and validates every payload it
+  carries — replay and live both — against the endpoint's published schema. The
+  read is bounded (a per-message silence timeout and a sample cap), so it
+  terminates against a live backend whose stream never goes quiet; a lane that
+  hits the cap has its count reported as a **floor**, not a total. The verdict is
+  per resource: a lane quiet in the window is UNEXERCISED by name, so "quiet" is
+  distinguishable from "unchecked". Validation core factored into the pure
+  `_validate_stream`, gated by new
+  `web-binding/conformance/stream_validity_probe.py` (valid stream counts; a
+  malformed streamed payload FAILs — the teeth; non-samples are not counted; the
+  cap reports a floor).
+- **Reuse, not new capability** — the socket, the replay and the `end_of_replay`
+  marker were already read by `§8.1`; what was missing was validating a streamed
+  payload against a schema.
+
+New totals (the check count is 14 → 15). Verified live against the OWM gateway
+(`owm-littlefield.mcap`, `entity` latched + `model_pose`/`model_command`
+VOLATILE): the stream check validates all **581** payloads where the old latched
+check saw 7, and the endpoint reports `15 checks: 14 passed, 0 failed, 1 skipped
+(skipped: §8.2 anchor resolve flow)`. A latched-only endpoint (`--demo`) reports
+the same line. The empty-registry acceptance record moves from `6 passed, 0
+failed, 8 skipped` to **`15 checks: 6 passed, 0 failed, 9 skipped`** (the stream
+check is UNEXERCISED on an empty registry); `empty_registry_probe.py` updated to
+assert it. The deploy checklist's acceptance lines move with this and get
+re-issued from the new HEAD. Origin: SpatialDDS-demo OWM migration,
+`conformance-volatile-lane-finding.md`; mechanism adapted from its
+`tools/validate_served_owm.py`.
+
 ## Version 1.8 — Conformance: commands check aims by property (item 8), 2026-10-17
 
 `web-binding/conformance/run.py`: `check_commands_post` selected its subject by

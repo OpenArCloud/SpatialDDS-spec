@@ -190,30 +190,127 @@ def check_schemas_endpoint(ep, schemas):
 
 
 def check_schema_validity(ep, schemas):
-    """Every resource the endpoint returns validates against its own schema."""
+    """Every latched instance the endpoint serves validates against its schema.
+
+    This is the latched collection only — the GET body. A VOLATILE lane's
+    latched collection is empty by construction, so what it carries lives not
+    here but on the N.5 stream, which `every streamed payload validates against
+    its published schema` checks. The zero-observation verdict is per *resource*,
+    not per endpoint: a lane whose latched collection is empty is named
+    UNEXERCISED here rather than masked by another lane's instances lifting one
+    endpoint-wide count — the masking that left 87% of a VOLATILE-heavy endpoint
+    unvalidated while the check reported PASS (the volatile-lane finding).
+    """
     index = ep.json(f"{WK}/schemas")
     topics = discover(ep)
     if not topics:
         raise Skip("the endpoint advertises no resource — schema validity is "
                    "UNEXERCISED (zero observations). An endpoint that holds nothing "
                    "yet is conformant, not failing (finding 39).")
-    n = 0
+    total = 0
+    exercised, empty, gated = [], [], []
     for t in topics:
-        code, hdr, body = ep.raw(t["path"], token=ep.token)
+        name = t.get("name") or t["path"]
+        code, _h, body = ep.raw(t["path"], token=ep.token)
         if code == 401:
+            gated.append(name)
             continue
         assert code == 200, f"GET {t['path']} returned {code}"
         schema = schema_for(schemas, t, index)
         assert schema is not None, f"no published schema for type {t['type']!r}"
+        n_res = 0
         for doc in json.loads(body):
             _validate(doc, schema)
-            n += 1
-    if n == 0:
-        raise Skip("every advertised resource was gated (401, no token) or empty, so "
-                   "no instance was validated — UNEXERCISED (zero observations), not a "
-                   "failure. A resource advertised and served still validates here, and "
-                   "a non-200 on an advertised path still fails above.")
-    return f"{n} instance(s)"
+            n_res += 1
+        total += n_res
+        if n_res:
+            exercised.append(f"{name}={n_res}")
+        else:
+            empty.append(name)
+    if total == 0:
+        raise Skip("every advertised resource was gated (401, no token) or served an "
+                   "empty latched collection, so no latched instance was validated — "
+                   "UNEXERCISED (zero observations), not a failure. A non-200 on an "
+                   "advertised path still fails above; streamed payloads are checked "
+                   "separately over N.5.")
+    detail = f"{total} latched instance(s) across {len(exercised)} lane(s)"
+    if empty:
+        detail += ("; UNEXERCISED latched (empty collection — streamed data checked "
+                   f"over N.5): {empty}")
+    if gated:
+        detail += f"; gated (no token): {gated}"
+    return detail
+
+
+def _validate_stream(messages, schema, cap):
+    """Validate every `data` payload in a collected N.5 message list against
+    `schema`; return (validated_count, hit_cap).
+
+    `messages` is what `_ws_collect` returns — the replay, the `end_of_replay`
+    marker, then the live events. Markers, disposes and liveliness carry no
+    `data` and are not counted. A payload that does not validate raises, exactly
+    as a latched instance does: a streamed payload is held to its published
+    schema too. Pure function of its inputs, so the rule is exercisable without
+    a socket.
+    """
+    n = 0
+    for m in messages:
+        payload = m.get("data")
+        if payload is None:            # marker, dispose, liveliness
+            continue
+        _validate(payload, schema)
+        n += 1
+    return n, n >= cap
+
+
+def check_streamed_validity(ep, schemas):
+    """Every streamed payload validates against its published schema (N.5).
+
+    The latched check sees only a resource's GET collection, which is empty for
+    a VOLATILE lane, so an endpoint whose traffic is mostly VOLATILE can pass
+    `every resource validates against its published schema` having validated a
+    fraction of what it serves. This subscribes to every advertised resource
+    over the N.5 socket §8.1 already opens and validates every payload it
+    carries — replay and live both — against the schema the endpoint publishes
+    for its type. The zero-observation verdict is per resource: a lane that
+    carried nothing in the read window is UNEXERCISED by name, so `quiet` is
+    distinguishable from `unchecked`.
+
+    The read is bounded — a per-message silence timeout and a sample cap — so it
+    terminates against a live backend whose stream never goes quiet. A lane that
+    hits the cap has its count reported as a FLOOR, not a total.
+    """
+    index = ep.json(f"{WK}/schemas")
+    topics = discover(ep)
+    if not topics:
+        raise Skip("the endpoint advertises no resource — there is no stream to "
+                   "validate. UNEXERCISED (zero observations), not a failure.")
+    cap = 500
+    total = 0
+    exercised, quiet, floored = [], [], []
+    for t in topics:
+        name = t.get("name") or t["path"]
+        schema = schema_for(schemas, t, index)
+        assert schema is not None, f"no published schema for type {t['type']!r}"
+        msgs = _ws_collect(ep.ws_target(t["path"]), ep.token, limit=cap, timeout=4)
+        n_res, hit_cap = _validate_stream(msgs, schema, cap)
+        total += n_res
+        if n_res:
+            exercised.append(f"{name}={n_res}" + ("+" if hit_cap else ""))
+        else:
+            quiet.append(name)
+        if hit_cap:
+            floored.append(name)
+    if total == 0:
+        raise Skip("every advertised resource carried no streamed payload in the read "
+                   "window — UNEXERCISED (zero observations), not a failure. A payload "
+                   "that failed its schema would still fail above.")
+    detail = f"{total} streamed payload(s) across {len(exercised)} lane(s)"
+    if quiet:
+        detail += f"; UNEXERCISED (no payload in window): {quiet}"
+    if floored:
+        detail += f"; count is a FLOOR — hit the {cap}-sample cap on: {floored}"
+    return detail
 
 
 def check_canonical_form(ep, schemas):
@@ -913,6 +1010,7 @@ def scenario_third_party_reader(ep, schemas):
 NETWORK_CHECKS = [
     ("schemas endpoint is self-describing", check_schemas_endpoint),
     ("every resource validates against its published schema", check_schema_validity),
+    ("every streamed payload validates against its published schema", check_streamed_validity),
     ("canonical form on the wire", check_canonical_form),
     ("latched state is GET with ETag, Cache-Control and 304", check_latched_get),
     ("access classes, both directions", check_access_classes),

@@ -14,7 +14,7 @@ This probe drives all 14 network checks against a *mocked* endpoint — no DDS, 
 gateway, no network — in three scripted states, and asserts:
 
   EMPTY             an authority that holds nothing yet → 6 passed, 0 failed,
-                    8 skipped. The acceptance record for a fresh deployment.
+                    9 skipped. The acceptance record for a fresh deployment.
   CLAIMS-BUT-404    an endpoint that advertises a resource and 404s it → still
                     FAILS (schema_validity and latched_get assert 200 on every
                     advertised path). UNEXERCISED must not swallow a broken
@@ -186,8 +186,8 @@ def main():
     line, npass, nfail, nskip = _totals_line(res)
     print("EMPTY REGISTRY:")
     print("  " + line)
-    if (npass, nfail, nskip) != (6, 0, 8):
-        bad.append(f"empty: expected 6/0/8, got {npass}/{nfail}/{nskip}")
+    if (npass, nfail, nskip) != (6, 0, 9):
+        bad.append(f"empty: expected 6/0/9, got {npass}/{nfail}/{nskip}")
     for n in FIVE:
         if res[n][0] != "SKIP":
             bad.append(f"empty: {n!r} should be SKIP, is {res[n][0]}")
@@ -216,7 +216,7 @@ def main():
             print("  - " + b)
         return 1
     print("empty_registry_probe OK — empty registry certifies as 6 passed, 0 "
-          "failed, 8 skipped; a false claim and malformed content still fail.")
+          "failed, 9 skipped; a false claim and malformed content still fail.")
     return 0
 
 
