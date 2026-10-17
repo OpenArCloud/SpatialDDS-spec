@@ -99,16 +99,33 @@ check reported on the subjects it found rather than the ones it was told about.
   marker were already read by `§8.1`; what was missing was validating a streamed
   payload against a schema.
 
-New totals (the check count is 14 → 15). Verified live against the OWM gateway
-(`owm-littlefield.mcap`, `entity` latched + `model_pose`/`model_command`
-VOLATILE): the stream check validates all **581** payloads where the old latched
-check saw 7, and the endpoint reports `15 checks: 14 passed, 0 failed, 1 skipped
-(skipped: §8.2 anchor resolve flow)`. A latched-only endpoint (`--demo`) reports
-the same line. The empty-registry acceptance record moves from `6 passed, 0
-failed, 8 skipped` to **`15 checks: 6 passed, 0 failed, 9 skipped`** (the stream
-check is UNEXERCISED on an empty registry); `empty_registry_probe.py` updated to
-assert it. The deploy checklist's acceptance lines move with this and get
-re-issued from the new HEAD. Origin: SpatialDDS-demo OWM migration,
+New totals: the check count is 14 → 15. Acceptance lines per served shape,
+verbatim, measured against spatialdds-web `1fb905c` (`spatialdds-v0.5.0-1`, the
+v0.5.0 tag plus the make_app command-registry fix) under the borrowed toolchain:
+
+- **Populated fountain (`serve --demo --authority demo.spatialdds.org`)** — the
+  shape the deploy checklist pins; anchors seeded, resolver live, §8.2 PASS:
+  `15 checks: 15 passed, 0 failed, 0 skipped` (was `14 checks, 14 passed, 0
+  failed, 0 skipped`; the +1 pass is this stream check validating the 8 replayed
+  instances).
+- **OWM recording (`owm-littlefield.mcap`, entity latched + model_pose /
+  model_command VOLATILE)** — the stream check validates all **581** payloads
+  where the old latched check saw 7; §8.2 is UNEXERCISED (no served GeoAnchor
+  names a manifest_uri here): `15 checks: 14 passed, 0 failed, 1 skipped
+  (skipped: §8.2 anchor resolve flow)`.
+- **Empty registry (`serve --publish --authority demo.spatialdds.org`, no
+  recording)** — the fresh-deployment acceptance record, up from `6 passed, 0
+  failed, 8 skipped` as the 15th check is UNEXERCISED on an empty registry:
+  `15 checks: 6 passed, 0 failed, 9 skipped (skipped: every resource validates
+  against its published schema, every streamed payload validates against its
+  published schema, canonical form on the wire, latched state is GET with ETag,
+  Cache-Control and 304, access classes, both directions, the carried QoS subset
+  is observable, the rest absent, §8.1 hello spatial in ten lines, §8.2 anchor
+  resolve flow, §8.4 third-party reader, published schemas only)`. The live run
+  matches `empty_registry_probe.py` exactly, confirming the probe faithful.
+
+The deploy checklist's acceptance lines move with this and get re-issued from the
+new HEAD. Origin: SpatialDDS-demo OWM migration,
 `conformance-volatile-lane-finding.md`; mechanism adapted from its
 `tools/validate_served_owm.py`.
 
@@ -131,10 +148,15 @@ gates it: advertise+accepts PASS, advertise+405 FAIL (the injection),
 advertise+wrong-outcome FAIL, none-advertised PASS. Instrument class for the
 ledger: **aim-by-position**.
 
-Totals unchanged on every served shape (the `--demo` gateway stays `14 checks: 13
-passed, 0 failed, 1 skipped` — the check now passes for the right reason). No
-normative text, no IDL change. Origin: the N.6 batch in spatialdds-web
-(`a55b6eb`), `gates/commands_n6.py`.
+Totals unchanged on every served shape — the check still PASSes, now for the
+right reason. At this commit the suite is 14 checks; the pinned fountain shape
+(`serve --demo --authority demo.spatialdds.org`, measured against spatialdds-web
+`1fb905c`) is `14 checks: 14 passed, 0 failed, 0 skipped`, with the command check
+reporting `1 advertised command lane(s), accept path exercised (202 accepted)`
+where it previously reported `POST -> 405 (no command lane advertised)` and
+passed blind. (Item 7.4 below adds the 15th check; the current line is `15 passed,
+0 failed, 0 skipped`.) No normative text, no IDL change. Origin: the N.6 batch in
+spatialdds-web (`a55b6eb`), `gates/commands_n6.py`.
 
 ## Version 1.8 — OWM-migration characterizations (Future Directions), 2026-10-17
 
