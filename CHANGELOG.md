@@ -65,6 +65,40 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — OWM-migration characterizations (Future Directions), 2026-10-17
+
+Forward-looking characterizations from the SpatialDDS-demo OWM migration, the
+third independent consumer of the 1.8 types. All non-normative — Future
+Directions text only, no IDL and no conformance change; the 112 schemas are
+byte-identical.
+
+- **Content withdrawal, evidence widened (finding 25).** The content-dispose
+  note now records what the 1.9 record must be: three independent removal
+  mechanisms now ship across two repositories for the one absent type (infer
+  from a `RETIRED` tombstone; read a `spatialdds-web:dispose` metadata record;
+  emit an `oarc.model_entity_disposed` message), none interoperable, and a
+  tombstone-less removal of a non-publishable type is learnable by none. The
+  direction is a typed removal record carrying **intent and reason** — not a
+  blessed convention (blessing one makes the other two retroactively wrong), and
+  carrying intent because the transport cannot: DDS autodispose makes a wire
+  dispose indistinguishable between a deliberate removal and a writer exiting.
+- **OWM `ModelPose` has no frame reference (item 7.1).** On DDS the frame is a
+  free join to the latched `Entity`; the web binding makes the two lanes
+  independent resources, so a pose-only client gets positions in an unnamed
+  frame with no error. Recommended fix: a normative statement binding a pose
+  consumer to resolve `frame_ref` through the entity of the same key and
+  requiring a binding that serves the pose lane to make the entity lane
+  reachable — preferred over a `frame_ref` member on the busiest lane. Held for
+  a ruling (adds a normative MUST).
+- **OWM `ModelCommand.subject_id` encodes kind in a string prefix (item 7.2).**
+  A kind is a contract carried as author-supplied id data; a mis-prefixed
+  command validates and is silently ignored. 1.9 material: an explicit
+  `subject_kind` discriminator when a second subject kind lands; until then one
+  sentence of normative text (prefix grammar normative and checkable, or field
+  opaque and not to be branched on).
+
+Origin: SpatialDDS-demo `removal-two-doors-finding.md`, `owm-1.8-spec-queue.md`.
+
 ## Version 1.8 — Finding 31 (`GeoAnchor.checksum`), 2026-10-16
 
 Resolves the finding held for a ruling in the 25–33 editorial batch. Two parts,

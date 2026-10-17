@@ -43,6 +43,23 @@ the SpatialDDS-web publish work; the service-side reading gap it travelled with
 over the web binding — is already resolved by N.3's short-topic rule and is not
 part of this item.)
 
+The evidence has since grown to show what the 1.9 record must be. Three
+*independent* removal mechanisms now ship across two repositories for this one
+absent type — a recording loader that infers removal from a `RETIRED` terminal
+tombstone; a journal that reads its own `spatialdds-web:dispose` metadata
+records; and a web bridge that emits an `oarc.model_entity_disposed` WebSocket
+message — each locally correct, mutually unintelligible, and blind to the
+others. A tombstone-less removal of a non-publishable type is learnable by
+*none* of them. Two forces decide the shape of the fix. First, blessing any one
+convention makes the other two retroactively wrong, where **a typed removal
+record makes all three unnecessary** — so the answer is a type, not an official
+favourite. Second, the record MUST carry **intent and reason**, because the
+transport cannot: DDS autodispose means a dispose on the wire is
+indistinguishable between a deliberate removal and a writer merely exiting, so
+no convention over raw disposes can ever recover what was meant. The 1.9
+direction is therefore a typed removal record carrying intent and reason, not a
+blessed convention. (Evidence: the SpatialDDS-demo OWM migration, `removal-two-doors-finding.md`.)
+
 ### Anchor Integrity Digest (`GeoAnchor.checksum`)
 
 `GeoAnchor.checksum` is REQUIRED on the wire and its comment reads
@@ -69,6 +86,50 @@ checked without already knowing it. This is not landed in 1.8 — assigning the
 field a meaning it never had would retroactively make every record computed
 under any other convention nonconformant, which is a feature decision, not an
 erratum.
+
+### OWM `ModelPose` Frame Reference
+
+`spatial.owm/0.1`'s `ModelPose` (`@key entity_id`, `pose`, `source_id`, `stamp`)
+carries no frame. On DDS the frame is learned by joining a pose to the latched
+`Entity` of the same `entity_id`, which carries `frame_ref`; the join is free
+because the middleware hands a pose subscriber the latched entity set whether it
+asked or not, which is why the fast lane was allowed to be lean. Under Appendix N
+the two lanes become independent HTTP resources with independent URLs and access
+classes — a client may subscribe to the pose lane and never fetch the entity
+lane, receiving a stream of positions in an unnamed frame with no error
+anywhere. The DDS shape made the join free, so the type never had to state the
+dependency; the web shape makes the join a request a client can skip, and the
+dependency is now stated nowhere a machine can read.
+
+Recommended fix (the OWM module is provisional, which is the window for this): a
+normative statement that a `ModelPose` consumer MUST resolve `frame_ref` through
+the `Entity` of the same key, and that a binding serving the pose lane MUST make
+the entity lane reachable — so the entity lane's access class cannot be stricter
+than the pose lane's. This looks right over a `frame_ref` member on `ModelPose`,
+which would cost bytes on the busiest lane and add a second place for the frame
+to be wrong: the dependency is real and it is the *statement* of it that is
+missing, not the data. A member remains the 1.9 fallback if the statement proves
+insufficient. Held for a ruling (it adds a normative MUST). Origin:
+SpatialDDS-demo OWM migration, `owm-1.8-spec-queue.md` item 1.
+
+### OWM `ModelCommand.subject_id` Kind Encoding
+
+`ModelCommand.subject_id` is one `string` whose prefix (`"ent:"`) carries the
+subject's *kind*, with the grammar living in a module comment. A kind is a
+contract; an id is author-supplied data. A publisher that mints
+`entity:duck:east` instead of `ent:duck:east` produces a well-formed
+`ModelCommand` that validates against its schema, names a real subject, and
+carries a defined verb — and is silently ignored by every consumer that branches
+on the prefix, with nothing for a conformance check to catch because nothing is
+violated. It reads as working until two implementations prefix differently.
+
+1.9 material. When a second subject kind lands (relationships), the fix is an
+explicit discriminator — an enum `subject_kind`, or a keyed union — rather than a
+widened prefix vocabulary. Until then the asking price is one sentence of
+normative text: either the prefix grammar is normative and conformance can check
+it, or the field is opaque and consumers MUST NOT branch on its shape. Right now
+it is a convention doing a type's job. Origin: SpatialDDS-demo OWM migration,
+`owm-1.8-spec-queue.md` item 2.
 
 ### Wire-Level Interop Testing
 
