@@ -448,20 +448,65 @@ def check_manifest_shape(ep, schemas):
     return f"{len(doc['results'])} manifest(s)"
 
 
-def check_commands_post(ep, schemas):
-    """Commands are POST, and an endpoint with no command lane says so.
+COMMAND_ADVERTISEMENT = "accepts_commands"
 
-    Northbound-only endpoints have no verb to accept. The check is that a
-    command POST is either served with decline semantics or refused cleanly --
-    never a 500, and never silently accepted by something that cannot act.
+
+def check_commands_post(ep, schemas):
+    """Commands are POST, and the check aims by advertisement, not by position.
+
+    A lane advertises a command surface with the `accepts_commands` manifest
+    extension (the reference implementation's; N.7 has no field for it yet —
+    filed as 1.9 entry 7, the extension standing as evidence of one shape that
+    works). The check exercises the N.6 *accept* path against every lane that
+    advertises one, and an advertised lane that refuses a valid command FAILs:
+    advertisement and behaviour must agree. Where nothing advertises a command
+    surface, a POST to a served lane is refused cleanly (405 per N.6) and that
+    branch is conformant.
+
+    This replaces aiming at `discover(ep)[0]` — the first advertised topic by
+    *position* — which passed on the 405 branch against a working command
+    surface sitting elsewhere in the manifest, and would pass identically for an
+    endpoint that advertised a lane and then refused it. The returned detail
+    names which branch ran, because aim-by-position hid behind a green that said
+    nothing about which clause it exercised.
     """
-    paths = [t["path"] for t in discover(ep)]
-    target = paths[0] if paths else "/"
-    code, _h, _b = ep.raw(target, token=ep.token, method="POST",
-                          body=b'{"verb":"NOOP"}')
-    assert code in (200, 202, 400, 401, 403, 404, 405, 409), \
-        f"a command POST returned {code}, which is neither a response nor a clean refusal"
-    return f"POST -> {code} (no command lane advertised)"
+    topics = discover(ep)
+    advertised = [t for t in topics if t.get(COMMAND_ADVERTISEMENT)]
+    if not advertised:
+        # No command lane. A POST to any served lane (or `/`) must refuse
+        # cleanly — never a 500, never a silent accept by something that cannot
+        # act. This is the conformant no-command-lane branch.
+        target = topics[0]["path"] if topics else "/"
+        code, _h, _b = ep.raw(target, token=ep.token, method="POST",
+                              body=b'{"verb":"NOOP"}')
+        assert code in (400, 401, 403, 404, 405, 409), \
+            f"a command POST to a non-command lane returned {code}; expected a " \
+            f"clean refusal (405 per N.6), not a response and not a 500"
+        return (f"no lane advertises {COMMAND_ADVERTISEMENT}; POST -> {code} "
+                f"(refuse branch, conformant)")
+    # At least one lane advertises a command surface: exercise the accept path
+    # against each, with a real served record as the body so it is one the
+    # binding would serve. An advertised lane that refuses a valid command is
+    # the advertise-but-refuse drift this check exists to catch.
+    accepted = 0
+    for t in advertised:
+        gc, _gh, body = ep.raw(t["path"], token=ep.token)
+        assert gc == 200, f"advertised command lane {t['path']} GET -> {gc}"
+        docs = json.loads(body)
+        assert docs, (f"advertised command lane {t['path']} served no record to "
+                      f"use as a valid command body")
+        rec = json.dumps(docs[0]).encode()
+        pc, _ph, pb = ep.raw(t["path"], token=ep.token, method="POST", body=rec)
+        assert pc == 202, (
+            f"lane {t['path']} advertises {COMMAND_ADVERTISEMENT} but refused a "
+            f"valid command ({pc}, expected 202 accepted) — advertisement and "
+            f"behaviour disagree")
+        out = json.loads(pb) if pb else {}
+        assert out.get("outcome") == "accepted", \
+            f"{t['path']}: a 202 must name outcome 'accepted', got {out.get('outcome')!r}"
+        accepted += 1
+    return (f"{accepted} advertised command lane(s), accept path exercised "
+            f"(202 accepted); selected by {COMMAND_ADVERTISEMENT}, not by position")
 
 
 def check_qos_subset(ep, schemas):

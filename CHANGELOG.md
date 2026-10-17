@@ -65,6 +65,30 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Conformance: commands check aims by property (item 8), 2026-10-17
+
+`web-binding/conformance/run.py`: `check_commands_post` selected its subject by
+*position* — `discover(ep)[0]`, the first advertised topic — not by the property
+under test. Against the reference N.6 surface (the `--demo` gateway advertises
+`accepts_commands` on `geo_anchor`, which is not first) it reported `POST -> 405
+(no command lane advertised)` and passed, while a working handler sat on another
+lane; an endpoint that advertised a lane then refused it would pass identically.
+The check now selects every lane carrying the `accepts_commands` advertisement
+(the reference implementation's manifest extension; N.7 has no field for it,
+filed as 1.9 entry 7, the extension standing as evidence of one shape that works)
+and exercises the N.6 accept path against each — an advertised lane that refuses
+a valid command FAILs (advertisement and behaviour must agree), and where nothing
+advertises, a POST is refused `405` and that branch is conformant. The returned
+detail names which branch ran. New `web-binding/conformance/commands_aim_probe.py`
+gates it: advertise+accepts PASS, advertise+405 FAIL (the injection),
+advertise+wrong-outcome FAIL, none-advertised PASS. Instrument class for the
+ledger: **aim-by-position**.
+
+Totals unchanged on every served shape (the `--demo` gateway stays `14 checks: 13
+passed, 0 failed, 1 skipped` — the check now passes for the right reason). No
+normative text, no IDL change. Origin: the N.6 batch in spatialdds-web
+(`a55b6eb`), `gates/commands_n6.py`.
+
 ## Version 1.8 — OWM-migration characterizations (Future Directions), 2026-10-17
 
 Forward-looking characterizations from the SpatialDDS-demo OWM migration, the
