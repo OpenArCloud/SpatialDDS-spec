@@ -65,6 +65,38 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Browser reachability characterizations (Future Directions), 2026-10-18
+
+Two 1.9 characterizations from the SpatialDDS-demo web bridge's browser lane, the
+first browser client to meet the binding. Non-normative; Future Directions text
+only, no IDL and no conformance change.
+
+- **Browser credential carriage (blocker A).** N.4 requires the bearer in the
+  `Authorization` header for the GET and the WebSocket handshake and forbids a
+  query parameter; the browser WebSocket API can set no header, so an
+  operator-scoped N.5 stream is reachable by every client except a browser
+  (measured: header GET 200, header WS connects, subprotocol-only WS 401). Not an
+  erratum — N.4 is consistent, just browser-hostile. Recommended 1.9 answer:
+  subprotocol carriage (`Sec-WebSocket-Protocol: bearer.<token>`, a header that
+  breaches neither N.4's letter nor its reasoning); a single-use URL ticket is
+  named and argued against; reclassification helps only genuinely-public lanes.
+  Held for a ruling.
+- **Browser-facing preflight/CORS must be stated (the third routing).** A
+  conforming gateway can omit all CORS/preflight behavior and still pass every
+  check, so browser reachability is implementation luck: a cross-origin `fetch`
+  carrying `Authorization` preflights, an unanswered `OPTIONS` 405s before the
+  request, and an authorized response with no `Access-Control-Allow-Origin` is
+  unreadable. Recommended as a 1.9 implementation-requirements note (answer
+  `OPTIONS`, allow `Authorization`/`Content-Type`, echo `Origin` with
+  `Vary: Origin` on authorized responses; a client SHOULD NOT volunteer a
+  credential to a public lane) — a gap, not a contradiction, and a tightening of
+  conformance, so 1.9 not erratum. Held for a ruling. The gateway-side fix itself
+  belongs to SpatialDDS-web; this item is only the requirement that the behavior
+  be stated.
+
+Origin: SpatialDDS-demo `browser-credential-finding.md` (blockers A and the third
+routing; blocker B is the gateway's and is queued in SpatialDDS-web).
+
 ## Version 1.8 — VPS result example aligned to the registry (editorial), 2026-10-18
 
 §3.3.0's VPS service example advertised `spatialdds/vps/result/v1` with
