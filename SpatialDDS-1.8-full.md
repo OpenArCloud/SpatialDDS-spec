@@ -1878,50 +1878,28 @@ only the requirement that such behavior be *stated*, which is why a defect-free
 gateway could omit it and still conform. Origin: SpatialDDS-demo web bridge,
 `browser-credential-finding.md` (the third routing).
 
-### Short-Topic Serving in the Well-Known Namespace
+### Short-Topic Lanes: Which Deserve a Resource
 
 §3.3.2 registers four-segment topic names — `spatialdds/<stream>/<type>/<version>`
 with no `<domain>` (the discovery announce/depart lanes, and the VPS and blob
-lanes). N.3 maps such a sub-five-segment topic into the well-known namespace: it
-"is served in the well-known namespace (N.2) at
-`{base}/.well-known/spatialdds/<stream>/<type>/<version>`," naming the announce
-topic as its example. The path template is stated; the resource *semantics* at
-that path are **not**. N.2's well-known table enumerates
-`search`/`schemas`/`bootstrap`/`resolver` and does not list these per-topic
-short-topic paths, and the N.3 sentence does not say whether a short topic served
-there behaves as the §N.3 latched collection it would be at a domain-scoped path
-— GET of the latched set, ETag and 304, an instance at `…/<key>`, an access
-class, the N.5 stream on upgrade — or as something narrower. For the announce
-lane (latched, keyed, public) the natural reading is that it is exactly the §N.3
-collection resource rooted at the well-known path instead of at
-`{base}/<domain>/…`; a clarifying sentence saying so is the completeness gap, and
-is likely an erratum (it resolves an under-specified cross-reference rather than
-changing a stated behavior). Recommended, held for a ruling in case the intended
-semantics are narrower than the latched-collection reading.
+lanes). N.3 maps such a sub-five-segment topic into the well-known namespace and,
+as of the short-topic erratum, specifies that the resource served there behaves
+as the §N.3 latched collection rooted at the well-known path — `GET`/`ETag`/`304`,
+instance keys, access class, and the N.5 stream. That settles *where* a short
+topic maps and *how* its resource behaves.
 
-The backend-blind suite is already correct here, and that is worth stating
-because the measurement looks alarming. The suite discovers by following the
-`url` a manifest advertises and never splits a topic name, so a four-segment
-topic served at its well-known path is exercised exactly like a five-segment one,
-and an endpoint serving none reports UNEXERCISED honestly. (Measured: a reference
-gateway that drops sub-five-segment topics served zero resources and the suite
-reported `6 passed, 0 failed, 9 skipped`, all downstream of the gateway's drop; a
-five-segment control of identical payloads gave 14 passed.)
-`web-binding/conformance/four_segment_probe.py` guards the property. The
-gateway-side drop — a `split_topic` requiring five segments, and the well-known
-path that 404s — is the reference implementation's and is queued in SpatialDDS-web,
-not here.
-
-Which lanes deserve a resource is a separate question from the path mapping. N.3
-says *where* a short topic maps, not *which* short topics are latched state a GET
-resource suits. The announce lane is latched, keyed, and public. A VPS
-request/reply lane (`vps_query` → `vps_response`) and a blob lane (`blob/chunk`)
-are not latched state and do not fit the latched-collection model: a
-request/reply localization lane belongs to the **1.9 GeoPose-Protocol-successor
-service profile** — a localization service *over* the binding, with a single-shot
-`POST` and a continuous-session WebSocket — not to the latched resource model in
-it. A pointer, not a new design. Origin: the OpenVPS 1.8 migration,
-`openvps-18-spec-queue.md` item 2.
+What remains open is *which* short topics are latched state a GET resource suits.
+The announce lane is latched, keyed, and public. A VPS request/reply lane
+(`vps_query` → `vps_response`) and a blob lane (`blob/chunk`) are not latched
+state and do not fit the latched-collection model: a request/reply localization
+lane belongs to the **1.9 GeoPose-Protocol-successor service profile** — a
+localization service *over* the binding, with a single-shot `POST` and a
+continuous-session WebSocket — not to the latched resource model in it. A
+pointer, not a new design. (The backend-blind suite is already segment-count
+agnostic: it follows the advertised `url` and never splits a topic name, so a
+short topic served at its well-known path is exercised exactly as a
+domain-scoped one — guarded by `web-binding/conformance/four_segment_probe.py`.)
+Origin: the OpenVPS 1.8 migration, `openvps-18-spec-queue.md` item 2.
 
 ### Wire-Level Interop Testing
 
@@ -8424,6 +8402,16 @@ the well-known namespace (N.2) instead, at
 `spatialdds/discovery/announce/v1` is `{base}/.well-known/spatialdds/discovery/announce/v1`.
 A domain-scoped announce (`spatialdds/<domain>/discovery/announce/v1`) has the
 full five segments and follows the one-to-one mapping.
+
+The resource served at the well-known path behaves exactly as the §N.3 collection
+it would be at a domain-scoped path; only its root differs. A `GET` returns the
+latched set with an `ETag` and `304` on revalidation (per the rules below), an
+instance is addressed at
+`{base}/.well-known/spatialdds/<stream>/<type>/<version>/<key>` with the same
+percent-encoding, the access class and `Cache-Control` rules of N.4 apply
+unchanged, and the N.5 stream is reached by upgrading the same path. A short
+topic is a §N.3 resource rooted in the well-known namespace, not a resource of a
+different kind.
 
 Every such response MUST carry an `ETag` whose value is the digest of the
 canonical form of the body's content, and a `Cache-Control` consistent with the

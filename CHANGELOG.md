@@ -65,6 +65,29 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — N.3 short-topic resource semantics (erratum), 2026-10-18
+
+N.3 already serves a sub-five-segment topic in the well-known namespace at
+`{base}/.well-known/spatialdds/<stream>/<type>/<version>` and names the announce
+lane as its example, but stated only the path template — not the resource
+semantics there. Added one sentence: the resource served at the well-known path
+behaves exactly as the §N.3 latched collection it would be at a domain-scoped
+path — a `GET` of the latched set with `ETag`/`304`, an instance at `…/<key>`
+with the same percent-encoding, the N.4 access-class and `Cache-Control` rules,
+and the N.5 stream on upgrade; only its root differs. A short topic is a §N.3
+resource rooted in the well-known namespace, not a resource of a different kind.
+This resolves an under-specified cross-reference rather than adding capability —
+an erratum per the discipline.
+
+The Future Directions "short-topic" note is slimmed to the one question the
+erratum leaves open: *which* short lanes are latched state a GET resource suits
+(the VPS request/reply and blob lanes are not, and point to the 1.9
+GeoPose-Protocol-successor service profile). Census: the conformance suite is
+url-based and never splits a topic name (guarded by `four_segment_probe.py`), and
+`gen.py` has no topic-path logic — no dependence on the short-topic assumption,
+nil impact. No IDL change; the 112 schemas are byte-identical. Origin: OpenVPS
+`openvps-18-spec-queue.md` item 2; ruling from James.
+
 ## Version 1.8 — Four-segment (short) topics: well-known serving + suite honesty (Future Directions), 2026-10-18
 
 Characterization from the OpenVPS 1.8 migration. §3.3.2 registers four-segment

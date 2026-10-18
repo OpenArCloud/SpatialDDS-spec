@@ -168,6 +168,16 @@ the well-known namespace (N.2) instead, at
 A domain-scoped announce (`spatialdds/<domain>/discovery/announce/v1`) has the
 full five segments and follows the one-to-one mapping.
 
+The resource served at the well-known path behaves exactly as the §N.3 collection
+it would be at a domain-scoped path; only its root differs. A `GET` returns the
+latched set with an `ETag` and `304` on revalidation (per the rules below), an
+instance is addressed at
+`{base}/.well-known/spatialdds/<stream>/<type>/<version>/<key>` with the same
+percent-encoding, the access class and `Cache-Control` rules of N.4 apply
+unchanged, and the N.5 stream is reached by upgrading the same path. A short
+topic is a §N.3 resource rooted in the well-known namespace, not a resource of a
+different kind.
+
 Every such response MUST carry an `ETag` whose value is the digest of the
 canonical form of the body's content, and a `Cache-Control` consistent with the
 resource's access class (N.4). An endpoint MUST honour `If-None-Match` with
