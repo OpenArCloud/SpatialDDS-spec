@@ -129,7 +129,11 @@ Origin: OpenVPS `openvps-18-spec-queue.md` item 2.
 
 Two 1.9 characterizations from the SpatialDDS-demo web bridge's browser lane, the
 first browser client to meet the binding. Non-normative; Future Directions text
-only, no IDL and no conformance change.
+only, no IDL and no conformance change. **Ruled 1.9 by James (2026-10-18), both
+in one combined candidates entry** ("a browser can actually use the binding"):
+the two Future Directions entries were subsequently merged into one
+("Making the Binding Usable from a Browser"), since the preflight half gets lost
+beside the credential half rather than within it. No normative change in 1.8.
 
 - **Browser credential carriage (blocker A).** N.4 requires the bearer in the
   `Authorization` header for the GET and the WebSocket handshake and forbids a
@@ -140,7 +144,7 @@ only, no IDL and no conformance change.
   subprotocol carriage (`Sec-WebSocket-Protocol: bearer.<token>`, a header that
   breaches neither N.4's letter nor its reasoning); a single-use URL ticket is
   named and argued against; reclassification helps only genuinely-public lanes.
-  Held for a ruling.
+  Ruled 1.9 (James, 2026-10-18).
 - **Browser-facing preflight/CORS must be stated (the third routing).** A
   conforming gateway can omit all CORS/preflight behavior and still pass every
   check, so browser reachability is implementation luck: a cross-origin `fetch`
@@ -150,7 +154,7 @@ only, no IDL and no conformance change.
   `OPTIONS`, allow `Authorization`/`Content-Type`, echo `Origin` with
   `Vary: Origin` on authorized responses; a client SHOULD NOT volunteer a
   credential to a public lane) — a gap, not a contradiction, and a tightening of
-  conformance, so 1.9 not erratum. Held for a ruling. The gateway-side fix itself
+  conformance, so 1.9 not erratum. Ruled 1.9 (James, 2026-10-18). The gateway-side fix itself
   belongs to SpatialDDS-web; this item is only the requirement that the behavior
   be stated.
 

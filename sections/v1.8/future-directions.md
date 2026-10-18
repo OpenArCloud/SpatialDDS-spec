@@ -131,71 +131,59 @@ it, or the field is opaque and consumers MUST NOT branch on its shape. Right now
 it is a convention doing a type's job. Origin: SpatialDDS-demo OWM migration,
 `owm-1.8-spec-queue.md` item 2.
 
-### Browser Credential Carriage for Operator-Scoped N.5 Streams
+### Making the Binding Usable from a Browser (1.9)
 
-N.4 requires a bearer credential in the `Authorization` header for both the GET
-and the WebSocket handshake, and forbids it in a URL query parameter (a query
-parameter writes the credential into proxy logs and `Referer` headers). The
-reasoning is sound. But the browser WebSocket API cannot set any request header,
-`Authorization` included — a platform constraint, not an implementation gap — so
-an operator-scoped N.5 subscription is reachable by every client except the
-browser, the client Appendix N most obviously exists for. Measured against the
-reference gateway: a header GET returns 200, a header WebSocket connects, and a
-subprotocol-only WebSocket (all a browser can do) gets 401.
+Two halves of one claim — *a browser can actually use the binding* — kept in one
+entry because splitting them loses the second, which already read as a footnote
+once. Both are **ruled 1.9** (not errata): the normative text lands in 1.9, and
+nothing changes in 1.8. From the SpatialDDS-demo web bridge's browser lane
+(`browser-credential-finding.md`); the gateway-side CORS *fix* is the reference
+implementation's and is queued in SpatialDDS-web.
 
-This is **not an erratum**: N.4 is not self-contradictory, it is browser-hostile,
-which is a different and more interesting problem. The likely 1.9 answer is
-**subprotocol carriage** — blessing `Sec-WebSocket-Protocol: bearer.<token>`, the
-one credential channel the WebSocket API exposes. It is a header, so it breaches
-neither N.4's letter nor its reasoning: it appears in no URL, proxy log, or
-`Referer`. N.4 would gain a sentence permitting it and naming the form, and a
-gateway would read it. A **single-use ticket** (GET a short-lived ticket, present
-it in the subscription URL) is named and argued against: it puts a secret-shaped
-string in a URL for exactly the duration the rule exists to prevent, and costs a
-new endpoint, a lifetime, and a revocation story. Reclassifying an over-gated
-lane to `public-cacheable` dissolves the problem only where the data is genuinely
-public (N.4's own guidance: configured geometry is ordinarily public,
-observations of people are not) and cannot help a lane that must stay gated. Held
-for a ruling (it adds N.4 normative text). Origin: SpatialDDS-demo web bridge,
-`browser-credential-finding.md` (blocker A).
+**Credential carriage for the WebSocket handshake (blocker A).** N.4 requires the
+bearer in the `Authorization` header for both the GET and the WebSocket handshake
+and forbids a URL query parameter (which writes the credential into proxy logs
+and `Referer` headers). The reasoning is sound, but the browser WebSocket API can
+set no request header — a platform constraint — so an operator-scoped N.5
+subscription is reachable by every client except the browser, the client Appendix
+N most obviously exists for (measured: a header GET 200, a header WebSocket
+connects, a subprotocol-only WebSocket 401). Not an erratum — N.4 is not
+self-contradictory, it is browser-hostile. The likely answer is **subprotocol
+carriage**: blessing `Sec-WebSocket-Protocol: bearer.<token>`, the one credential
+channel the WebSocket API exposes — a header that appears in no URL, proxy log,
+or `Referer`, so it breaches neither N.4's letter nor its reasoning. A
+**single-use ticket** (GET a short-lived ticket, present it in the subscription
+URL) is named and argued against: it puts a secret-shaped string in a URL for
+exactly the duration the rule exists to prevent. Reclassifying an over-gated lane
+to `public-cacheable` helps only where the data is genuinely public (N.4's
+guidance: configured geometry is ordinarily public, observations of people are
+not) and cannot help a lane that must stay gated.
 
-### Browser-Facing Preflight/CORS Must Be Stated
+**A browser-facing endpoint must state its preflight behavior.** Even with a
+credential the browser can carry, a conforming gateway can omit every part of the
+CORS/preflight behavior a browser needs and still pass every check — making
+browser reachability implementation luck. An `Authorization` header is not
+CORS-safelisted, so a cross-origin `fetch` carrying one preflights with `OPTIONS`;
+a gateway that routes no `OPTIONS` refuses the preflight (405) before the request,
+and a response carrying no `Access-Control-Allow-Origin` is unreadable even when
+authorized. Measured from a page on another origin: N.6 commands are unreachable
+for *every* access class (a command always carries a credential, so it always
+preflights), and a `public-cacheable` GET fails outright if the client volunteers
+a credential it does not need. The lesson is not "permit this" (nothing forbids
+it) but **require it to be stated**, most naturally as an implementation-
+requirements note: a browser-facing endpoint answers `OPTIONS` for every resource
+and allows `Authorization`/`Content-Type` where accepted; carries
+`Access-Control-Allow-Origin` on an authorized response, echoing the requesting
+`Origin` with `Vary: Origin` when the response is not cacheable (else a credential
+N.4 requires buys a response the client cannot read); and a client SHOULD NOT send
+a credential to a resource whose access class does not require one. It is a gap,
+not a contradiction, and the substance is new conformance requirements — a
+tightening — so 1.9, not an erratum.
 
-Appendix N's flagship consumer is a browser, yet a conforming gateway can omit
-every part of the CORS/preflight behavior a browser needs and still pass every
-check — making browser reachability implementation luck. An `Authorization`
-header is not CORS-safelisted, so a cross-origin `fetch` carrying one preflights
-with `OPTIONS`; a gateway that routes no `OPTIONS` refuses the preflight (405)
-before the request is attempted, and an operator-scoped response carrying no
-`Access-Control-Allow-Origin` cannot be read even when authorized. Measured from
-a page on another origin: N.6 commands are unreachable for *every* access class
-(a command always carries a credential, so it always preflights), and a
-`public-cacheable` GET that answers a plain cross-origin request fails outright
-if the client volunteers a credential it does not need.
-
-The lesson is not "permit this" — nothing forbids it — but **require it to be
-stated**: a web binding whose transport is `fetch` and `WebSocket` from a page
-needs its CORS behavior specified, most naturally as an implementation-
-requirements note. The substance, for a browser-facing endpoint: answer `OPTIONS`
-for every resource served and allow `Authorization` and `Content-Type` among the
-request headers wherever accepted; carry `Access-Control-Allow-Origin` on an
-authorized response, echoing the requesting `Origin` with `Vary: Origin` when the
-response is not cacheable (otherwise a credential N.4 requires buys a response the
-client cannot read); and a client SHOULD NOT send a credential to a resource
-whose access class does not require one, because a volunteered credential turns a
-readable response into an unreadable one.
-
-**Characterization — a 1.9 note, not an erratum.** It is a gap rather than a
-contradiction, and the substance is new conformance requirements (answer
-`OPTIONS`, carry `Access-Control-Allow-Origin`) that no 1.8 gateway was obliged
-to meet; landing them would retroactively make a conforming-but-browser-
-unreachable gateway non-conforming, which is a tightening — a feature decision
-for 1.9. Recommended as a 1.9 implementation-requirements note; held for a
-ruling. The gateway-side fix itself (answering the preflight) is the reference
-implementation's to make and is queued in SpatialDDS-web, not here; this item is
-only the requirement that such behavior be *stated*, which is why a defect-free
-gateway could omit it and still conform. Origin: SpatialDDS-demo web bridge,
-`browser-credential-finding.md` (the third routing).
+The 1.9 work lands both together: N.4's subprotocol-carriage sentence and the
+implementation-requirements preflight note. Origin: SpatialDDS-demo
+`browser-credential-finding.md` (blocker A and the third routing; blocker B, the
+gateway's CORS fix, is SpatialDDS-web's).
 
 ### Short-Topic Lanes: Which Deserve a Resource
 
