@@ -65,6 +65,43 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Four-segment (short) topics: well-known serving + suite honesty (Future Directions), 2026-10-18
+
+Characterization from the OpenVPS 1.8 migration. §3.3.2 registers four-segment
+topic names (`spatialdds/<stream>/<type>/<version>`, no `<domain>`); N.3 serves a
+sub-five-segment topic in the well-known namespace at
+`{base}/.well-known/spatialdds/<stream>/<type>/<version>`. Non-normative;
+Future Directions text plus one conformance probe, no IDL and no conformance-pass
+change.
+
+- **Is N's well-known text complete enough to implement from?** It states the
+  path template but not the resource *semantics* there — N.2's table lists only
+  search/schemas/bootstrap/resolver, and N.3 does not say whether a short topic
+  behaves as the §N.3 latched collection (GET of the latched set, ETag/304,
+  instance at `…/<key>`, access class, N.5 stream) or something narrower. For the
+  announce lane the natural reading is the §N.3 collection rooted at the
+  well-known path; a clarifying sentence is the gap, likely an **erratum**
+  (resolves an under-specified cross-reference). Recommended, held for a ruling.
+- **The suite's verdict is honest, and proven so.** The backend-blind suite
+  discovers by the advertised `url` and never splits a topic name, so a
+  four-segment topic served at its well-known path is exercised exactly like a
+  five-segment one, and an endpoint serving none is UNEXERCISED honestly. Measured:
+  a reference gateway dropping sub-five-segment topics served zero resources and
+  the suite reported `15 checks: 6 passed, 0 failed, 9 skipped` (all downstream of
+  the gateway's drop); a five-segment control of identical payloads gave
+  `14 passed`. New `web-binding/conformance/four_segment_probe.py` guards it
+  (four-segment served → validated and counted; five-segment control identical;
+  absent → UNEXERCISED). The gateway-side drop (a `split_topic` requiring five
+  segments; the well-known path that 404s) is the reference implementation's and
+  is queued in SpatialDDS-web, not here.
+- **Where a request/reply lane belongs.** N.3 maps paths, not which lanes are
+  latched state. The announce lane is latched/keyed/public; a VPS request/reply
+  lane (`vps_query`→`vps_response`) and a blob lane (`blob/chunk`) are not, and
+  belong to the 1.9 GeoPose-Protocol-successor service profile (a localization
+  service over the binding), not the latched resource model — a pointer there.
+
+Origin: OpenVPS `openvps-18-spec-queue.md` item 2.
+
 ## Version 1.8 — Browser reachability characterizations (Future Directions), 2026-10-18
 
 Two 1.9 characterizations from the SpatialDDS-demo web bridge's browser lane, the
