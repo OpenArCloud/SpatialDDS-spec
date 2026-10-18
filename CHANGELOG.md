@@ -65,6 +65,22 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — VPS result example aligned to the registry (editorial), 2026-10-18
+
+§3.3.0's VPS service example advertised `spatialdds/vps/result/v1` with
+`"type": "geopose"` and QoS `VPS_RESP`, and the paired search query filtered
+`type_in: ["geopose"]`. The registry (§3.3.2) pairs `vps_response`
+(`argeo::VpsResponse`) with QoS `VPS_RESP`, and `geopose` (`core::GeoPose`) with
+QoS `POSE_RT` — so the example mixed one type's name with the other's QoS, and a
+client filtering on the registered response type would not have found the
+service. The `geopose` predates the batch-3 `vps_response` registry row and was
+never swept. Fixed both the advertised type and the query filter to
+`vps_response` (findings 27/28 shape: the registry and prose are the authority;
+fix the example). Two implementations had already deviated from the example with
+comments — SpatialDDS-demo (`spatialdds_catalog_server.py`) and OpenVPS
+(`announce.py`). No IDL change; the 112 schemas are byte-identical. Origin:
+SpatialDDS-demo / OpenVPS announce census.
+
 ## Version 1.8 — Conformance: command body synthesized from schema (item 8 rider), 2026-10-17
 
 The item-8 command check sourced its POST body from the command lane's own GET
