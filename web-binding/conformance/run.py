@@ -548,25 +548,73 @@ def check_manifest_shape(ep, schemas):
 COMMAND_ADVERTISEMENT = "accepts_commands"
 
 
+def _synth_instance(schema, defs):
+    """A minimal instance that validates against `schema`.
+
+    A command lane is VOLATILE — its latched collection is empty by nature, so
+    there is no served record to use as a command body. The body a command check
+    POSTs must come from somewhere that exists on *any* conforming endpoint, and
+    the published schema is exactly that. This walks the gen.py schema
+    vocabulary: required object members (the literal rule makes every member
+    required, so this fills them all), enumerators (first value), tagged unions
+    (first `oneOf` branch, which carries its `type` const), fixed-size arrays
+    (`minItems` copies), `int64`/`uint64` decimal-string patterns, base64 and
+    plain strings, and `$defs` refs. The caller validates the result against the
+    schema before sending it, so a `400` from the endpoint is the endpoint's
+    finding — its validation stricter than its published schema — not ours.
+    """
+    if "$ref" in schema:
+        return _synth_instance(defs[schema["$ref"].split("/")[-1]], defs)
+    if "const" in schema:
+        return schema["const"]
+    if "enum" in schema:
+        return schema["enum"][0]
+    if "oneOf" in schema:
+        return _synth_instance(schema["oneOf"][0], defs)
+    t = schema.get("type")
+    if t == "object":
+        props = schema.get("properties", {})
+        req = schema.get("required", list(props))
+        return {k: _synth_instance(props[k], defs) for k in req if k in props}
+    if t == "array":
+        item = schema.get("items", {})
+        return [_synth_instance(item, defs) for _ in range(schema.get("minItems", 0))]
+    if t == "boolean":
+        return False
+    if t == "integer":
+        return schema.get("minimum", 0)
+    if t == "number":
+        return float(schema.get("minimum", 0))
+    if t == "string":
+        if schema.get("pattern") in (r"^-?\d+$", r"^\d+$"):
+            return "0"           # int64/uint64 decimal string
+        return ""                # plain or base64 (empty is valid base64)
+    return None
+
+
 def check_commands_post(ep, schemas):
     """Commands are POST, and the check aims by advertisement, not by position.
 
     A lane advertises a command surface with the `accepts_commands` manifest
     extension (the reference implementation's; N.7 has no field for it yet —
     filed as 1.9 entry 7, the extension standing as evidence of one shape that
-    works). The check exercises the N.6 *accept* path against every lane that
-    advertises one, and an advertised lane that refuses a valid command FAILs:
-    advertisement and behaviour must agree. Where nothing advertises a command
-    surface, a POST to a served lane is refused cleanly (405 per N.6) and that
-    branch is conformant.
+    works). The check exercises the N.6 accept path against every lane that
+    advertises one; an advertised lane that refuses a valid command as
+    not-a-command-lane (405) FAILs — advertisement and behaviour must agree.
+    Where nothing advertises a command surface, a POST to a served lane is
+    refused cleanly (405 per N.6) and that branch is conformant.
 
     This replaces aiming at `discover(ep)[0]` — the first advertised topic by
-    *position* — which passed on the 405 branch against a working command
-    surface sitting elsewhere in the manifest, and would pass identically for an
-    endpoint that advertised a lane and then refused it. The returned detail
-    names which branch ran, because aim-by-position hid behind a green that said
-    nothing about which clause it exercised.
+    position — which passed on the 405 branch against a working command surface
+    sitting elsewhere in the manifest. The command body is **synthesized from the
+    lane's published schema**, not read from its collection: a command lane is
+    VOLATILE, so its latched collection is empty by nature and sampling it
+    false-negatives a live command surface (a bridge that returns two 202s was
+    failed for serving no record to sample). The body is validated against the
+    schema before sending, so a 400 is the endpoint's finding, not the check's.
+    The returned detail names which branch ran and where the body came from.
     """
+    index = ep.json(f"{WK}/schemas")
     topics = discover(ep)
     advertised = [t for t in topics if t.get(COMMAND_ADVERTISEMENT)]
     if not advertised:
@@ -582,28 +630,38 @@ def check_commands_post(ep, schemas):
         return (f"no lane advertises {COMMAND_ADVERTISEMENT}; POST -> {code} "
                 f"(refuse branch, conformant)")
     # At least one lane advertises a command surface: exercise the accept path
-    # against each, with a real served record as the body so it is one the
-    # binding would serve. An advertised lane that refuses a valid command is
-    # the advertise-but-refuse drift this check exists to catch.
-    accepted = 0
+    # against each, with a body synthesized from the lane's published schema (its
+    # VOLATILE collection carries none). An advertised lane that refuses a valid
+    # command as not-a-command-lane is the advertise-but-refuse drift this check
+    # exists to catch.
+    outcomes = []
     for t in advertised:
-        gc, _gh, body = ep.raw(t["path"], token=ep.token)
-        assert gc == 200, f"advertised command lane {t['path']} GET -> {gc}"
-        docs = json.loads(body)
-        assert docs, (f"advertised command lane {t['path']} served no record to "
-                      f"use as a valid command body")
-        rec = json.dumps(docs[0]).encode()
-        pc, _ph, pb = ep.raw(t["path"], token=ep.token, method="POST", body=rec)
-        assert pc == 202, (
-            f"lane {t['path']} advertises {COMMAND_ADVERTISEMENT} but refused a "
-            f"valid command ({pc}, expected 202 accepted) — advertisement and "
-            f"behaviour disagree")
+        schema = schema_for(schemas, t, index)
+        assert schema is not None, \
+            f"advertised command lane {t['path']}: no published schema for type {t['type']!r}"
+        body = _synth_instance(schema, schema.get("$defs", {}))
+        _validate(body, schema)   # our body is valid, so a 400 below is the endpoint's
+        pc, _ph, pb = ep.raw(t["path"], token=ep.token, method="POST",
+                             body=json.dumps(body).encode())
+        assert pc != 405, (
+            f"lane {t['path']} advertises {COMMAND_ADVERTISEMENT} but refused a valid "
+            f"command as not-a-command-lane (405) — advertisement and behaviour disagree")
+        assert pc != 400, (
+            f"lane {t['path']}: a schema-valid synthesized command was rejected (400) "
+            f"— the endpoint's validation is stricter than its published schema")
+        assert pc in (202, 409), (
+            f"lane {t['path']}: command POST -> {pc}, expected 202 accepted or 409 "
+            f"declined (N.6 / M.1)")
         out = json.loads(pb) if pb else {}
-        assert out.get("outcome") == "accepted", \
-            f"{t['path']}: a 202 must name outcome 'accepted', got {out.get('outcome')!r}"
-        accepted += 1
-    return (f"{accepted} advertised command lane(s), accept path exercised "
-            f"(202 accepted); selected by {COMMAND_ADVERTISEMENT}, not by position")
+        if pc == 202:
+            assert out.get("outcome") == "accepted", \
+                f"{t['path']}: a 202 must name outcome 'accepted', got {out.get('outcome')!r}"
+            outcomes.append(f"{t['type']}=202 accepted")
+        else:
+            outcomes.append(f"{t['type']}=409 declined (M.1 reason)")
+    return (f"{len(advertised)} advertised command lane(s), body synthesized from "
+            f"published schema: {outcomes}; selected by {COMMAND_ADVERTISEMENT}, "
+            f"not by position")
 
 
 def check_qos_subset(ep, schemas):

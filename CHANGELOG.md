@@ -65,6 +65,41 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Conformance: command body synthesized from schema (item 8 rider), 2026-10-17
+
+The item-8 command check sourced its POST body from the command lane's own GET
+collection — which is empty by nature, because command lanes are VOLATILE and
+carry no latched state. The `--demo` fountain passed only because its `geo_anchor`
+lane happens to be TRANSIENT_LOCAL; a live VOLATILE command lane — the demo
+bridge, which returns two 202s with reasons — was false-negatived, `assert docs`
+firing on the empty collection. Found by the bridge's end-to-end acceptance.
+
+Fix: `check_commands_post` synthesizes a minimal valid instance from the lane's
+**published schema** (`_synth_instance`, walking the gen.py vocabulary — required
+members, enumerators, tagged unions, fixed-size arrays, int64/uint64 decimal
+strings, base64), validates it against that schema before sending (so a `400` is
+the endpoint's finding — its validation stricter than its published schema — not
+the check's), and POSTs it. A lane that accepts (`202`) or declines with an M.1
+reason (`409`) is a live command surface and passes; an advertised lane that
+refuses as not-a-command-lane (`405`) or rejects the valid body (`400`) FAILs.
+The detail reports the body source. `commands_aim_probe.py` updated: the command
+lane is now VOLATILE with an empty collection, and the states cover 202-accept,
+409-decline, 405-refuse (the injection), 400-reject, and wrong-outcome.
+
+Totals unchanged on every shape — the fix removes a false negative, it does not
+move any pass/fail on the shapes measured. Verified live against spatialdds 0.5.1
+(`1fb905c`); the `--demo` command lane reports `geo_anchor=202 accepted` on the
+synthesized body. Acceptance lines, verbatim:
+
+- fountain (`serve --demo --authority demo.spatialdds.org`): `15 checks: 15
+  passed, 0 failed, 0 skipped`
+- OWM (`owm-littlefield.mcap`): `15 checks: 14 passed, 0 failed, 1 skipped
+  (skipped: §8.2 anchor resolve flow)`
+- empty registry (`serve --publish --authority demo.spatialdds.org`): `15 checks:
+  6 passed, 0 failed, 9 skipped`
+
+Origin: the bridge's end-to-end acceptance, SpatialDDS-demo.
+
 ## Version 1.8 — Conformance: the volatile-lane blind spot (item 7.4), 2026-10-17
 
 `web-binding/conformance/run.py`: `every resource validates against its

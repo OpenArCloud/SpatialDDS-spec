@@ -11,12 +11,20 @@ aimed by position, not by the property under test, so an endpoint that
 advertised a lane and then refused it would have passed identically.
 
 The fix selects lanes by the `accepts_commands` advertisement and exercises the
-N.6 accept path against each. This probe drives the fixed check against a mocked
-endpoint — no gateway — in four states and asserts:
+N.6 accept path against each, with a command body **synthesized from the lane's
+published schema** — because a command lane is VOLATILE and its latched
+collection is empty by nature, so sampling it false-negatived a live command
+surface (a bridge returning two 202s was failed for serving no record to
+sample). This probe drives the fixed check against a mocked endpoint — no
+gateway, the command lane VOLATILE with an empty collection — and asserts:
 
-  ADVERTISED + ACCEPTS    an advertised lane that returns 202 accepted → PASS.
-  ADVERTISED + REFUSES    an advertised lane that returns 405 → FAIL. The
+  ADVERTISED + ACCEPTS    202 accepted on the synthesized body → PASS.
+  ADVERTISED + DECLINED   409 (declined with an M.1 reason) → PASS: a live
+                          command lane, advertisement and behaviour agree.
+  ADVERTISED + REFUSES    405 (refused as not-a-command-lane) → FAIL. The
                           injection: advertisement and behaviour must agree.
+  ADVERTISED + 400        a schema-valid synthesized body rejected 400 → FAIL:
+                          the endpoint's validation is stricter than its schema.
   ADVERTISED + WRONG      a 202 that does not name outcome "accepted" → FAIL.
   NONE ADVERTISED         no lane advertises a command surface; a POST is
                           refused 405 and the branch is conformant → PASS.
@@ -37,9 +45,6 @@ BASE = "https://registry.example"
 WK = "/.well-known/spatialdds"
 LANE = "/z/anchors/geo_anchor/v1"
 QUIET = "/z/anchors/announce/v1"
-
-# A real-enough GeoAnchor record to POST back as a command body.
-RECORD = {"anchor_id": "a1", "map_id": "m", "method": "Surveyed"}
 
 
 class MockEndpoint:
@@ -66,14 +71,23 @@ class MockEndpoint:
         return json.loads(body)
 
 
+# A schemas index naming the command lane's type, so the check resolves its
+# published schema and synthesizes a body from it. `geo_anchor` -> GeoAnchor.
+SCHEMAS_INDEX = [{"type": "spatial.core.GeoAnchor",
+                  "url": BASE + "/schemas/spatial_core_GeoAnchor",
+                  "digest": "sha256:x"}]
+
+
 def _manifest(advertise_command_lane):
+    # The command lane is VOLATILE — its latched collection is empty by nature,
+    # which is exactly the shape that false-negatived the old check.
     topics = [
         {"name": "spatialdds/z/anchors/announce/v1", "type": "announce",
          "version": "v1", "url": BASE + QUIET, "access": "public-cacheable",
          "durability": "TRANSIENT_LOCAL"},
         {"name": "spatialdds/z/anchors/geo_anchor/v1", "type": "geo_anchor",
-         "version": "v1", "url": BASE + LANE, "access": "public-cacheable",
-         "durability": "TRANSIENT_LOCAL"},
+         "version": "v1", "url": BASE + LANE, "access": "operator-scoped",
+         "durability": "VOLATILE"},
     ]
     if advertise_command_lane:
         topics[1][COMMAND_ADVERTISEMENT] = True
@@ -87,7 +101,9 @@ def _manifest(advertise_command_lane):
 def _routes(advertise, post_code, outcome):
     r = {
         ("GET", f"{WK}/search"): (200, {}, json.dumps(_manifest(advertise)).encode()),
-        ("GET", LANE): (200, {}, json.dumps([RECORD]).encode()),
+        ("GET", f"{WK}/schemas"): (200, {}, json.dumps(SCHEMAS_INDEX).encode()),
+        # The command lane's collection is empty — VOLATILE, no latched state.
+        ("GET", LANE): (200, {}, json.dumps([]).encode()),
         ("GET", QUIET): (200, {}, json.dumps([{"service_id": "s"}]).encode()),
     }
     if post_code is not None:
@@ -112,23 +128,36 @@ def main():
     schemas = load_schemas(SCHEMAS_DIR)
     bad = []
 
+    # The command lane is VOLATILE with an empty collection; the body is
+    # synthesized from the published schema. This is the shape the bridge finding
+    # exposed — the old check sampled the empty collection and false-negatived.
     v, info = _verdict(_routes(True, 202, "accepted"), schemas)
-    print(f"ADVERTISED + ACCEPTS   : {v}  {info}")
+    print(f"ADVERTISED + ACCEPTS (empty volatile lane) : {v}  {info}")
     if v != "PASS":
         bad.append(f"advertised+accepts should PASS, got {v}")
 
+    v, info = _verdict(_routes(True, 409, None), schemas)
+    print(f"ADVERTISED + DECLINED (409, M.1 reason)     : {v}  {info}")
+    if v != "PASS":
+        bad.append(f"advertised+409-declined should PASS (live lane), got {v}")
+
     v, info = _verdict(_routes(True, 405, None), schemas)
-    print(f"ADVERTISED + REFUSES   : {v}  {info}")
+    print(f"ADVERTISED + REFUSES (405)                  : {v}  {info}")
     if v != "FAIL":
         bad.append(f"advertised+405 should FAIL (injection), got {v}")
 
+    v, info = _verdict(_routes(True, 400, None), schemas)
+    print(f"ADVERTISED + 400 (valid body rejected)      : {v}  {info}")
+    if v != "FAIL":
+        bad.append(f"advertised+400 should FAIL (stricter than published), got {v}")
+
     v, info = _verdict(_routes(True, 202, "queued"), schemas)
-    print(f"ADVERTISED + WRONG OUT : {v}  {info}")
+    print(f"ADVERTISED + WRONG OUTCOME (202 not accepted): {v}  {info}")
     if v != "FAIL":
         bad.append(f"advertised+202-wrong-outcome should FAIL, got {v}")
 
     v, info = _verdict(_routes(False, None, None), schemas)
-    print(f"NONE ADVERTISED        : {v}  {info}")
+    print(f"NONE ADVERTISED                             : {v}  {info}")
     if v != "PASS":
         bad.append(f"none-advertised should PASS (refuse branch), got {v}")
 
@@ -138,9 +167,10 @@ def main():
         for b in bad:
             print("  - " + b)
         return 1
-    print("commands_aim_probe OK — the check aims by advertisement; an "
-          "advertised lane that refuses fails, and no-command-lane stays "
-          "conformant.")
+    print("commands_aim_probe OK — body synthesized from the published schema, so "
+          "a VOLATILE command lane with an empty collection is exercised; an "
+          "advertised lane that refuses (405) or rejects a valid body (400) fails, "
+          "and no-command-lane stays conformant.")
     return 0
 
 
