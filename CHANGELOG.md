@@ -65,6 +65,22 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — A `ServiceKind` for agents (Future Directions, 1.9 candidate), 2026-10-19
+
+`ServiceKind` has no member for an agent — a robot that publishes its own pose
+and accepts `ModelCommand` goals is discoverable like any service, but
+`Announce.kind` cannot say what it is. Each near-fit is wrong: `SENSING` invites
+a consumer to look for data lanes the robot does not publish; `INFRASTRUCTURE`
+suggests fixed plant; `FUSION` is combining others' claims, which the agent's
+`OBSERVED` basis says it is not doing. Recorded as a 1.9 enum candidate — an
+`AGENT` member (robots, but also a tracked person, vehicle, drone, AMR; the shape
+`spatial.owm` already models as a `FAST`-layer entity). The interim answer is
+`OTHER`, chosen deliberately over the nearest fit (stretching an enum member
+makes every robot advertise a capability it lacks, invisibly); a small
+publishable-now alternative is a prose sentence stating `OTHER` is the correct
+answer for an agent so implementations converge. Non-normative; Future Directions
+text only. Origin: spatialdds-ros `docs/spec-queue.md` item 1.
+
 ## Version 1.8 — BBox2D element order stated on the type (erratum), 2026-10-19
 
 `typedef double BBox2D[4]` carried no element order of its own — the order lived

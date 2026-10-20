@@ -1889,6 +1889,37 @@ short topic served at its well-known path is exercised exactly as a
 domain-scoped one — guarded by `web-binding/conformance/four_segment_probe.py`.)
 Origin: the OpenVPS 1.8 migration, `openvps-18-spec-queue.md` item 2.
 
+### A `ServiceKind` for Agents
+
+A robot that publishes its own pose and accepts `ModelCommand` goals is
+discoverable the way a VPS or a content catalogue is — something that wants to
+drive it should find it on the discovery lane without being told its topic names
+— so `Announce.kind` has to name what it is. 1.8's `ServiceKind` (`VPS`,
+`MAPPING`, `RELOCAL`, `SEMANTICS`, `STORAGE`, `CONTENT`, `ANCHOR_REGISTRY`,
+`SENSING`, `INFRASTRUCTURE`, `FUSION`, `OTHER`) has no member for an agent, and
+each near-fit is wrong in a way that only surfaces later:
+
+- `SENSING` reads as a service offering sensor feeds — point clouds, images,
+  detections. A robot announcing it invites a consumer to look for data lanes it
+  does not publish; close enough to be tempting, which is exactly the problem.
+- `INFRASTRUCTURE` suggests fixed plant — the opposite of the one property that
+  matters about a robot.
+- `FUSION` is about combining other people's claims, precisely what the agent's
+  `OBSERVED` basis says it is *not* doing.
+
+The 1.9 candidate is an **`AGENT`** member — something that occupies space,
+reports where it is, and may accept commands about where to go. Not only robots:
+a tracked person, a vehicle, a drone, and an AMR all share the shape, and
+`spatial.owm` already models them as entities with a `FAST` layer while discovery
+has no corresponding vocabulary. Until then an agent announces `OTHER`, chosen
+deliberately over the nearest fit: stretching an enum member makes every robot on
+the bus advertise a capability it does not have and leaves the next reader no way
+to know the enum had been stretched. A smaller alternative worth weighing
+alongside the member, and publishable even though 1.8 is locked: a prose sentence
+stating `OTHER` is the correct answer for an agent, so implementations converge
+rather than each picking a different nearest-fit — worth having even if `AGENT`
+lands later. Origin: spatialdds-ros `docs/spec-queue.md` item 1.
+
 ### Wire-Level Interop Testing
 
 Appendix I validates schema expressiveness through static conformance checks. Future revisions will add wire-level interoperability tests across at least two DDS implementations (CycloneDDS and Fast DDS minimum) to validate end-to-end publish/subscribe fidelity, QoS enforcement, and CDR encoding compatibility.
