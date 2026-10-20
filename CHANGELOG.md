@@ -65,6 +65,20 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — BBox2D element order stated on the type (erratum), 2026-10-19
+
+`typedef double BBox2D[4]` carried no element order of its own — the order lived
+only in use-site comments (`[west, south, east, north]` in discovery, `[u_min,
+v_min, u_max, v_max]` in semantics). The two are the same min-min-max-max layout
+labeled per domain, not a contradiction, but a reader who learned one order at
+one use site and applied it at another could transpose a pair silently: a
+well-formed box in the wrong place that nothing downstream detects. Stated the
+canonical order once on the typedef — `[min_x, min_y, max_x, max_y]`, the two
+axis-minima then the two axis-maxima, axes in the field's coordinate order —
+consistent with §2's GeoJSON ordering and the `Aabb3` flat-array comment beside
+it. Comment-only: no wire change, idlc validates, and the 112 generated schemas
+are byte-identical. Origin: spatialdds-ros `docs/spec-queue.md` item 2.
+
 ## Version 1.8 — N.3 short-topic resource semantics (erratum), 2026-10-18
 
 N.3 already serves a sub-five-segment topic in the well-known namespace at

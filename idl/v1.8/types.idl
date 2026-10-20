@@ -14,6 +14,12 @@ module builtin {
 module spatial {
   module common {
     typedef double BBox2D[4];
+    // Flat 2D box, [min_x, min_y, max_x, max_y] — the two axis-minima then the two
+    // axis-maxima, axes in the field's coordinate order. The order is the type's,
+    // not the use-site's: a geographic bbox is [west, south, east, north] (GeoJSON
+    // ordering, §2) and an image bbox is [u_min, v_min, u_max, v_max]; both are
+    // this same min-min-max-max layout. A transposed pair is a well-formed box in
+    // the wrong place that nothing downstream can detect, so the order is fixed here.
     // Flat 3D AABB, [min_x, min_y, min_z, max_x, max_y, max_z], for JSON/HTTP
     // payloads (see §2.10). This is the array form; the on-bus volumetric type
     // is the core::Aabb3 struct (min_xyz/max_xyz), NOT this typedef. The two are
