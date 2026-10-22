@@ -86,6 +86,8 @@
   .demo a { color: var(--blue); font-weight: 600; font-size: 14.5px; text-decoration: none; }
   .demo h3 a { color: var(--blue); font-size: inherit; font-weight: inherit; }
   .demo h3 a:hover, .demo p a:hover { text-decoration: underline; }
+  .demo-kicker { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; margin-bottom: 6px; }
+  .demo-meta { font-size: 12.5px; color: var(--ink-2); margin-top: 10px; }
 
   /* ecosystem strip */
   .eco { margin-top: 72px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 26px 0; text-align: center; font-size: 14px; color: var(--ink-2); }
@@ -136,18 +138,23 @@
 
 <section id="see-it-running">
   <h2>See it running</h2>
+  <p class="sec-sub">Three independent systems on one bus, none of them aware of the others' code.</p>
   <div class="demo-grid">
     <div class="demo">
+      <div class="demo-kicker">Venue demo</div>
       <h3><a href="https://github.com/OpenArCloud/SpatialDDS-demo">The reference demo</a></h3>
       <p>A venue as a live model: robots, ducks, declared water and a browser, all on one bus. Shown at ISMAR 2026 (<a href="https://youtu.be/WHcwNF5Grcc?si=fDaag-O8eROennOr" target="_blank" rel="noopener">watch the clip</a>).</p>
     </div>
     <div class="demo">
+      <div class="demo-kicker">Positioning service</div>
       <h3><a href="https://github.com/OpenArCloud/openvps/tree/spatialdds">OpenVPS</a></h3>
-      <p>An open visual positioning service that speaks SpatialDDS natively. It announces its coverage on the bus and answers localization queries with computed poses. A browser or robot discovers it and localizes against it with no configured endpoint and no per-service client code. The SpatialDDS face is on the spatialdds branch.</p>
+      <p>An open visual positioning service on the same bus: coverage announced, localization queries answered with computed poses, discovered with no configured endpoint.</p>
+      <p class="demo-meta">SpatialDDS support lives on the <code>spatialdds</code> branch.</p>
     </div>
     <div class="demo">
+      <div class="demo-kicker">Perception adapter</div>
       <h3><a href="https://github.com/OpenArCloud/spatialdds-scenescape">SceneScape sidecar</a></h3>
-      <p>A stock Intel SceneScape deployment publishing its scene analytics as typed SpatialDDS samples: tracks, detections, zones and a georeference.</p>
+      <p>A stock Intel SceneScape deployment publishing its scene analytics as typed samples: tracks, detections, zones and a georeference.</p>
     </div>
   </div>
 </section>
