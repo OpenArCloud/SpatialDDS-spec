@@ -65,6 +65,36 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — OWM entity topic world/entity/v1 + registry-topic gate, 2026-10-21
+
+The §3.3.2 registry declared the Open World Model entity topic as
+`spatialdds/<scene>/model/entity/v0`, but every certified artifact — the demo,
+both PyPI releases of spatialdds-ros, the SceneScape sidecar, and all validated
+recordings — speaks `spatialdds/<scene>/world/entity/v1`. The registry line was
+never executed by anything; the implementations are the ground truth, so the
+registry moves to them.
+
+- The registry row's topic is now `spatialdds/<scene>/world/entity/v1`. The topic
+  version `v1` and the module version `spatial.owm/0.1` are **different axes**:
+  `v1` is the topic-name version, independent of the module's 0.1, so it coexists
+  with the provisional module cleanly. Compatibility is still carried by the
+  module's pinned IDL content digest, not the topic name. The sweep found the
+  `model/entity` spelling only in this one row.
+- The drift survived because no gate checked registry topic strings against
+  anything that runs. New `scripts/check_registry_topics.py` closes that: it
+  cross-checks every §3.3.2 topic string against every `spatialdds/.../v<N>`
+  string elsewhere in the spec — a topic family carries one version, and a type
+  segment the registry pins to a single stream and IDL type (like `entity` →
+  `world` → `spatial::owm::Entity`) may not appear under another stream. Segments
+  backed by more than one registry row (`event` under `events` and `mapping`,
+  `query` under `discovery` and `vps`) are exempt because the multiplicity is
+  itself registered. Wired into `build-spec.sh`, and demonstrably failable:
+  `--selftest` plants the exact historical `model/entity/v0` drift and confirms
+  the gate catches it.
+
+No IDL change. Origin: the entity topic-name conflict (spatialdds-ros awareness
+census).
+
 ## Version 1.8 — Appendix I honesty pass (Fork A), 2026-10-21
 
 An audit of Appendix I (dataset conformance) found that all five validations were

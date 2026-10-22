@@ -91,6 +91,13 @@ if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_registry.py
   "$ROOT_DIR/scripts/check_registry.py" "$VERSION"
 fi
 
+# Registry-topic cross-check: every §3.3.2 topic string agrees with the spec's
+# examples on stream and version (no registry-string drift). See
+# scripts/check_registry_topics.py.
+if [[ "$VERSION" == "$ACTIVE_VERSION" && -x "$ROOT_DIR/scripts/check_registry_topics.py" ]]; then
+  "$ROOT_DIR/scripts/check_registry_topics.py" "$VERSION"
+fi
+
 # Topic-construction gate (optional): constructs a CycloneDDS Topic for every
 # generated Python type — catches binding-incompatible sequence bounds. Skips
 # cleanly when idlc -l py / cyclonedds-python are unavailable.
