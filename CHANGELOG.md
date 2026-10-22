@@ -65,6 +65,19 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — PixFormat GRAY8 (additive), 2026-10-21
+
+`sensing::vision::PixFormat` gains `@value(6) GRAY8` — 8-bit single-channel
+grayscale. PixFormat previously had nothing lossless below `RAW10`, so an 8-bit
+grayscale camera had no pixel format of its own. The Appendix I LaMAR conformance
+pass (check LH-02) hit this against HoloLens VGA tracking cameras, and it is not a
+LaMAR quirk — HoloLens tracking cameras, industrial cameras, and event cameras
+all emit 8-bit grayscale. Appended under APPENDABLE with a new ordinal and no
+renumbering, so the change is wire-compatible and pre-stamp evolution holds. The
+three PixFormat-bearing JSON Schemas (`VisionMeta`, `VisionFrame`, `CamIntrinsics`)
+are regenerated; Appendix I LH-02 is now a true PASS. Origin: Appendix I LaMAR
+conformance, LH-02.
+
 ## Version 1.8 — A `ServiceKind` for agents (Future Directions, 1.9 candidate), 2026-10-19
 
 `ServiceKind` has no member for an agent — a robot that publishes its own pose

@@ -3721,6 +3721,10 @@ module spatial { module sensing { module vision {
     @value(3)  BGR8,
     @value(4)  RGBA8,
     @value(5)  DEPTH16,           // 16-bit unsigned depth image (mm)
+    @value(6)  GRAY8,             // 8-bit single-channel grayscale (HoloLens
+                                  // tracking cameras, industrial/event cameras);
+                                  // appended for LaMAR LH-02. Appendable: new
+                                  // ordinal, no renumber.
     @value(10) RAW10,
     @value(12) RAW12,
     @value(16) RAW16

@@ -171,6 +171,7 @@
             "BGR8",
             "RGBA8",
             "DEPTH16",
+            "GRAY8",
             "RAW10",
             "RAW12",
             "RAW16"
@@ -253,6 +254,7 @@
         "BGR8",
         "RGBA8",
         "DEPTH16",
+        "GRAY8",
         "RAW10",
         "RAW12",
         "RAW16"
