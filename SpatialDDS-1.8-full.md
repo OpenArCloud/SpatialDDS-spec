@@ -1920,6 +1920,25 @@ stating `OTHER` is the correct answer for an agent, so implementations converge
 rather than each picking a different nearest-fit — worth having even if `AGENT`
 lands later. Origin: spatialdds-ros `docs/spec-queue.md` item 1.
 
+### Typed Metadata on Sensor Meta
+
+Appendix I's LaMAR pass surfaced two checks (LH-05, LP-02) that assumed camera
+shutter type — global vs rolling — could ride as a `MetaKV` on
+`VisionMeta.attributes`. But `VisionMeta` has no `attributes` field, and neither
+does its `StreamMeta` base: there is no typed home for sensor metadata the IDL
+does not already name as a field. The checks are left as GAPs rather than closed.
+
+The tempting fix is a generic `sequence<MetaKV> attributes` on `VisionMeta` (or
+`StreamMeta`), but a key-value bag is a one-way door: once it exists, fields stop
+being designed and start leaking into it, and two implementers key the same
+concept differently. The 1.9 question is which of three shapes to adopt: (a) a
+typed extension mechanism with rules for what may go in it; (b) specific typed
+fields for the concepts that have proven to recur — a shutter-type enum
+(`GLOBAL`/`ROLLING`) is probably worth being a field in its own right; or (c) a
+deliberate `attributes` member with normative constraints on namespacing and on
+when a field must be promoted out of it. This deserves design time, not a
+checklist rescue of a coverage figure. Origin: Appendix I LaMAR LH-05 / LP-02.
+
 ### Wire-Level Interop Testing
 
 Appendix I validates schema expressiveness through static conformance checks. Future revisions will add wire-level interoperability tests across at least two DDS implementations (CycloneDDS and Fast DDS minimum) to validate end-to-end publish/subscribe fidelity, QoS enforcement, and CDR encoding compatibility.
@@ -7118,7 +7137,7 @@ world models, so they live with the other conventions: see §2.15 Payload Scope.
 
 ## **Appendix I: Dataset Conformance Testing (Informative)**
 
-*This appendix documents systematic conformance testing performed against five public reference datasets. The results validated the completeness and expressiveness of the SpatialDDS 1.8 sensing, mapping, coordination, and spatial events profiles and directly informed several normative additions to this specification.*
+*This appendix documents systematic conformance testing performed against five public reference datasets. Each validation was run against the SpatialDDS version noted in its section: nuScenes, DeepSense 6G, S3E, and ScanNet against **1.5**, and LaMAR against the **1.6-era** profiles. The results validated schema expressiveness and directly informed several normative additions carried forward into 1.8. These are schema-expressiveness analyses, not wire-interoperability tests, and the coverage figures below state their exceptions rather than claiming an unqualified 100%. A scripted re-validation against the 1.8 release — with each harness reading the IDL rather than mirroring it, so the record cannot drift silently — is planned (§6 Future Directions).*
 
 ### **Scope and Limitations**
 
@@ -7134,7 +7153,7 @@ Pass rates reported below reflect expressiveness coverage. A "pass" means the da
 
 ### **Motivation**
 
-Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS 1.8 profiles were validated against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
+Sensor-data specifications risk becoming disconnected from real-world workloads if they are designed in isolation. To guard against this, the SpatialDDS profiles were validated — at the versions noted above — against five complementary datasets that together exercise the full signal-to-semantics pipeline and multi-agent coordination:
 
 | Dataset | Focus | Modalities Stressed |
 |---|---|---|
@@ -7146,13 +7165,13 @@ Sensor-data specifications risk becoming disconnected from real-world workloads 
 
 nuScenes was chosen because it stresses sensor diversity, per-detection radar fields rarely found in other corpora (compensated velocity, dynamic property, RCS), and rich annotation metadata (visibility, attributes, evidence counts). DeepSense 6G was chosen because it stresses signal-level data (raw FMCW radar cubes, phased-array beam power vectors) and ISAC modalities absent from traditional perception datasets. S3E was chosen because it is the first collaborative SLAM dataset with UWB inter-robot ranging and exercises the multi-agent capabilities — map lifecycle, inter-map alignment, range-only constraints, and fleet discovery — that differentiate SpatialDDS from single-vehicle frameworks such as ROS 2. ScanNet was chosen because it is the definitive indoor RGB-D scene understanding benchmark, uniquely exercises depth sensing (`DEPTH16`) and the Spatial Events extension (room zones, object-in-room events, per-class occupancy counts), and validates the semantics profile's instance segmentation types against a rich 40-class indoor vocabulary. LaMAR was chosen because it is the first conformance dataset to exercise cross-device heterogeneity (HoloLens, iPhone/iPad, and NavVis scanner sharing a common reference frame), the Anchors profile (cross-session alignment, year-long persistence, geo-anchored reference frames), the Discovery profile in a multi-device context (heterogeneous device announcements with distinct sensor capabilities), and the `sensing.radio` profile in a production AR workflow (typed WiFi/BT scans replacing ad hoc JSON, driving +4.6–17.5% recall improvement in image retrieval).
 
-The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to SpatialDDS 1.8 IDL without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
+The goal was not to certify particular datasets but to answer two concrete questions: *Can every field, enum, and convention in each dataset's schema be losslessly mapped to the SpatialDDS IDL of the version under test without workarounds or out-of-band agreements?* And for multi-agent scenarios: *Can the full coordination lifecycle — from independent mapping through inter-map alignment — be expressed using the standard types?*
 
 ### **Methodology**
 
 For each dataset, a conformance harness was constructed as a self-contained Python 3 script that:
 
-1. **Mirrors the SpatialDDS 1.8 IDL** as Python data structures (enum values, struct field lists, normative prose flags).
+1. **Mirrors the SpatialDDS IDL** as Python data structures (enum values, struct field lists, normative prose flags). The nuScenes and DeepSense 6G harnesses mirror the **1.5** IDL (they were written against it, and their hand-typed copies have since drifted from 1.8 — see each section's validation note); re-pointing them at the 1.8 IDL by reading it directly is the planned re-validation.
 2. **Mirrors the dataset schema** as synthetic data (sensor names, field lists, data shapes).
 3. **Runs targeted checks**, each producing a verdict:
 
@@ -7164,11 +7183,13 @@ For each dataset, a conformance harness was constructed as a self-contained Pyth
 
 4. **Reports a per-modality scorecard.**
 
-Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E (§I.3) and ScanNet (§I.4) conformance sections were performed as manual schema analyses following the same check structure; scripted harnesses are planned for a future revision.
+Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E (§I.3), ScanNet (§I.4), and LaMAR (§I.5) conformance sections were performed as manual schema analyses following the same check structure; scripted harnesses are planned for a future revision. Every section below opens with a **validation record** stating the SpatialDDS version it was run against and whether it was scripted or manual.
 
 ---
 
 ### **I.1 nuScenes Conformance**
+
+**Validation record.** Version: **SpatialDDS 1.5**. Method: scripted (`scripts/nuscenes_harness_v2.py`). The harness reproduces **27** checks; C-06 (coord-convention) is a manual-only check not implemented in the script, so the documented total is 28 and the reproducible total is 27.
 
 #### Reference Dataset
 
@@ -7237,11 +7258,11 @@ Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime
 | C-03 | Local-frame coverage | §3.3.4 covers local-only deployments. |
 | C-04 | has_* pattern consistency | All new optional fields use the `has_*` guard pattern uniformly. |
 | C-05 | Sequence bounds | Standard bounds table: SZ_MEDIUM (2048), SZ_SMALL (256), SZ_XL (32768), SZ_LARGE (8192). |
-| C-06 | Coord convention | nuScenes ego frame is ENU; per-camera calibrated_sensor frames follow the OpenCV `CV` convention (X-right, Y-down, Z-forward). `FrameRef.coord_convention` (§2.12) captures the per-frame axis convention so cross-frame chains apply the correct axis-swap. |
+| C-06 | Coord convention (manual-only) | nuScenes ego frame is ENU; per-camera calibrated_sensor frames follow the OpenCV `CV` convention (X-right, Y-down, Z-forward). `FrameRef.coord_convention` (§2.12) captures the per-frame axis convention so cross-frame chains apply the correct axis-swap. **Manual-only: not implemented in `nuscenes_harness_v2.py`, which reproduces the other 27 checks.** |
 
 #### Results
 
-All 28 nuScenes checks pass.
+All 28 documented nuScenes checks pass, with no gaps and no deferrals. The harness reproduces 27 of them; C-06 (coord-convention) is a manual-only check.
 
 | Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
@@ -7249,14 +7270,16 @@ All 28 nuScenes checks pass.
 | Vision | 5 | 5 | 0 | 0 | — |
 | Lidar | 6 | 6 | 0 | 0 | — |
 | Semantics | 5 | 5 | 0 | 0 | — |
-| Common / Core | 6 | 6 | 0 | 0 | Includes C-06 coord-convention check |
-| **Total** | **28** | **28** | **0** | **0** | — |
+| Common / Core | 6 | 6 | 0 | 0 | Includes C-06, which is manual-only |
+| **Total** | **28** | **28** | **0** | **0** | 27 reproduced by the harness; C-06 manual-only |
 
 Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 ---
 
 ### **I.2 DeepSense 6G Conformance**
+
+**Validation record.** Version: **SpatialDDS 1.5**. Method: scripted (`scripts/deepsense6g_harness_v3.py`). The harness runs **48** checks (the GPS modality carries 10, DG-01 through DG-10); earlier drafts of this section cited 41 and then 44 before the four additional GPS checks (DG-07 through DG-10) were documented here.
 
 #### Reference Dataset
 
@@ -7276,7 +7299,7 @@ Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack 
 
 The dataset was chosen because it stresses signal-level data (raw FMCW radar cubes consumed directly by ML pipelines), 360° camera rigs, and ISAC modalities (beam power vectors, blockage state) absent from perception-focused datasets.
 
-#### Checks Performed (41)
+#### Checks Performed (48)
 
 ##### Radar — Tensor Path (8 checks)
 
@@ -7324,7 +7347,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DI-03 | Frame reference | `ImuInfo.frame_ref` for sensor-to-bus mounting. |
 | DI-04 | Timestamp + sequence | `ImuSample.stamp` + `.seq` for 100 Hz temporal ordering. |
 
-##### GPS (6 checks)
+##### GPS (10 checks)
 
 | ID | Check | Description |
 |---|---|---|
@@ -7334,6 +7357,10 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 | DG-04 | Covariance | `GeoPose.cov` for positional uncertainty (RTK ≤1 cm). |
 | DG-05 | GNSS quality | `NavSatStatus` provides DOP, fix type, and satellite count with `has_dop` guard. |
 | DG-06 | Speed over ground | `NavSatStatus.speed_mps` + `course_deg` with `has_velocity` guard. |
+| DG-07 | GNSS constellation bitmask | `NavSatStatus` service field covers the GPS/GLONASS/BEIDOU/GALILEO/QZSS/IRNSS/SBAS constellations in use. |
+| DG-08 | Differential correction age | `NavSatStatus` `diff_age` fields carry the RTK differential-correction age. |
+| DG-09 | Stream linkage | `NavSatStatus` ↔ `GeoPose` correlation via the shared GNSS stream key. |
+| DG-10 | RTK fix-type granularity | `GnssFixType` distinguishes RTK_FLOAT / RTK_FIXED (and DGPS, FIX_3D, etc.) for fix-quality granularity. |
 
 ##### mmWave Beam (8 checks)
 
@@ -7361,7 +7388,7 @@ The dataset was chosen because it stresses signal-level data (raw FMCW radar cub
 
 #### Results
 
-All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`, and mmWave Beam checks pass against the provisional `rf_beam` profile (Appendix E).
+All 48 DeepSense 6G checks pass, with no gaps and no deferrals. GNSS diagnostics are covered by `NavSatStatus`, and mmWave Beam checks pass against the provisional `rf_beam` profile (Appendix E).
 
 | Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
@@ -7369,10 +7396,10 @@ All 44 DeepSense 6G checks pass. GNSS diagnostics are covered by `NavSatStatus`,
 | Vision | 7 | 7 | 0 | 0 | Includes 360° rig roles |
 | Lidar | 7 | 7 | 0 | 0 | Includes sensor wavelength |
 | IMU | 4 | 4 | 0 | 0 | — |
-| GPS | 6 | 6 | 0 | 0 | NavSatStatus covers GNSS diagnostics |
+| GPS | 10 | 10 | 0 | 0 | NavSatStatus GNSS diagnostics (DG-01..10) |
 | mmWave Beam | 8 | 8 | 0 | 0 | Provisional rf_beam profile (K-B1) |
 | Semantics | 4 | 4 | 0 | 0 | Beam labels via rf_beam |
-| **Total** | **44** | **44** | **0** | **0** | **100% coverage** |
+| **Total** | **48** | **48** | **0** | **0** | 48/48 pass, 0 gaps |
 
 Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
@@ -7383,6 +7410,8 @@ DeepSense 6G conformance has no remaining schema gaps. Future ISAC extensions (e
 ---
 
 ### **I.3 S3E Conformance (Multi-Robot Collaborative SLAM)**
+
+**Validation record.** Version: **SpatialDDS 1.5**. Method: manual schema analysis (no script). Type and field names below have been corrected to their 1.8 spellings; the one substantive 1.5→1.8 change is `core::Node`'s compound key (SC-01).
 
 #### Reference Dataset
 
@@ -7408,18 +7437,18 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 | ID | Check | Description |
 |---|---|---|
-| SL-01 | LiDAR meta | `LidarMeta` with `sensor_type`, `rate_hz`, `point_layout` covers Velodyne VLP-16. |
+| SL-01 | LiDAR meta | `LidarMeta` with `type` (`LidarType`), `base.nominal_rate_hz`, and `layout` (`PointLayout`) covers Velodyne VLP-16. |
 | SL-02 | Point layout | `PointLayout.XYZ_I_R_T` carries x, y, z, intensity, ring, time — matches Velodyne binary format. |
 | SL-03 | Per-robot topic isolation | Topic template `spatialdds/<scene>/lidar/<sensor_id>/frame/v1` with per-robot `sensor_id` (e.g., `alpha/vlp16`). |
 | SL-04 | CloudEncoding | `BIN_INTERLEAVED` covers raw binary point cloud blobs. |
-| SL-05 | RigRole | `RigRole.TOP` covers single roof-mounted LiDAR. |
+| SL-05 | Sensor identity | A single roof-mounted LiDAR needs no rig role — `RigRole` is a Vision-rig enum and is not carried on `LidarMeta`; the sensor is identified by its per-robot `sensor_id` (SL-03). |
 
 ##### Per-Robot Sensing — Vision (4 checks)
 
 | ID | Check | Description |
 |---|---|---|
 | SV-01 | Stereo pair | Two `VisionFrame` streams per robot with `RigRole.LEFT` / `RigRole.RIGHT`. |
-| SV-02 | Camera intrinsics | `CameraMeta` with `fx`, `fy`, `cx`, `cy`, `dist_model`, `dist_coeffs` covers calibrated stereo cameras. |
+| SV-02 | Camera intrinsics | `VisionMeta.K` (`CamIntrinsics`) with `fx`, `fy`, `cx`, `cy`, `dist` (`Distortion`), and `dist_params` covers calibrated stereo cameras. |
 | SV-03 | Per-robot namespacing | Topic `spatialdds/<scene>/vision/<sensor_id>/frame/v1` isolates per-robot camera streams. |
 | SV-04 | Timestamp sync | `VisionFrame.stamp` synchronized to common timebase via hardware PPS trigger. |
 
@@ -7427,7 +7456,7 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 | ID | Check | Description |
 |---|---|---|
-| SI-01 | 9-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s) covers 6-axis; `MagSample` covers magnetometer. |
+| SI-01 | 9-axis sample | `ImuSample` with accel (Vec3, m/s²) + gyro (Vec3, rad/s) covers 6-axis; `MagnetometerSample` covers magnetometer. |
 | SI-02 | High-rate ordering | `ImuSample.seq` monotonic counter handles 100–200 Hz temporal ordering. |
 | SI-03 | Extrinsic calibration | Sensor-to-body transform publishable as `FrameTransform` (LiDAR-IMU, camera-IMU extrinsics). |
 
@@ -7452,7 +7481,7 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 | ID | Check | Description |
 |---|---|---|
-| SC-01 | Per-robot nodes | `core::Node` with `map_id` per robot (e.g., `alpha-map`, `blob-map`, `carol-map`), `@key node_id` unique per keyframe. |
+| SC-01 | Per-robot nodes | `core::Node` with `map_id` per robot (e.g., `alpha-map`, `blob-map`, `carol-map`); node identity is the **compound key `(map_id, node_id)`** — the 1.7 change that made both members `@key` — so the same `node_id` in two robots' maps is two distinct instances. |
 | SC-02 | Odometry edges | `core::Edge` with `type = ODOM` connects sequential keyframes within each robot's map. |
 | SC-03 | Intra-robot loop closures | `core::Edge` with `type = LOOP` for within-map loop closures (e.g., concentric circle paradigm). |
 | SC-04 | Versioning | `Node.seq` monotonic per source; `Node.graph_epoch` increments after global re-optimization. |
@@ -7462,14 +7491,14 @@ The dataset was chosen because it is the first C-SLAM dataset to include UWB int
 
 | ID | Check | Description |
 |---|---|---|
-| SM-01 | Map lifecycle | `MapMeta` per robot with `state` progressing: BUILDING → OPTIMIZING → STABLE. |
+| SM-01 | Map lifecycle | `MapMeta` per robot with `status` (`MapStatus`) progressing: BUILDING → OPTIMIZING → STABLE. |
 | SM-02 | Map kind | `MapMeta.kind = POSE_GRAPH` for each robot's SLAM output. |
 | SM-03 | Inter-robot loop closures | `mapping::Edge` with `type = INTER_MAP` and `has_from_map_id` / `has_to_map_id` populated. |
 | SM-04 | MapAlignment | `MapAlignment` with `T_from_to` expressing the inter-map transform after cross-robot alignment. |
 | SM-05 | Alignment revision | `MapAlignment.revision` increments as more inter-robot edges accumulate and the alignment refines. |
 | SM-06 | Evidence trail | `MapAlignment.evidence_edge_ids[]` references the specific cross-map edges supporting the alignment. |
-| SM-07 | MapEvent notifications | `MapEvent` with `MAP_ALIGNED` event when two robots' maps are first linked. |
-| SM-08 | Concurrent map builds | Three `MapMeta` samples simultaneously active (keyed by `map_id`), demonstrating multi-map lifecycle. |
+| SM-07 | MapEvent notifications | `MapEvent` with `event = ALIGNMENT_NEW` (`MapEventKind`) when two robots' maps are first linked. |
+| SM-08 | Concurrent map builds | Three `MapMeta` samples simultaneously active (keyed by the compound `(map_id, source_id)`), demonstrating multi-map lifecycle. |
 
 ##### Discovery & Coordination (3 checks)
 
@@ -7512,23 +7541,25 @@ The S3E "teaching building" outdoor sequence illustrates the full multi-agent li
 
 1. **Bootstrap.** Three robots (Alpha, Blob, Carol) power on and each publishes an `Announce` with `ServiceKind.MAPPING`, their sensor capabilities, and an initial coverage bounding box. Each begins publishing `core::Node` and `core::Edge` (ODOM) on the pose graph topics with distinct `source_id` and `map_id` values.
 
-2. **Independent mapping.** Each robot runs visual-inertial-lidar SLAM independently. `MapMeta` per robot shows `state = BUILDING`. Keyframes stream as `core::Node`; odometry constraints as `core::Edge` (ODOM); intra-robot loop closures as `core::Edge` (LOOP). `ImuSample`, `VisionFrame`, and `LidarFrame` are published on per-robot sensor topics.
+2. **Independent mapping.** Each robot runs visual-inertial-lidar SLAM independently. `MapMeta` per robot shows `status = BUILDING`. Keyframes stream as `core::Node`; odometry constraints as `core::Edge` (ODOM); intra-robot loop closures as `core::Edge` (LOOP). `ImuSample`, `VisionFrame`, and `LidarFrame` are published on per-robot sensor topics.
 
 3. **UWB ranging begins.** As robots come within UWB range (~50 m), pairwise distance measurements are published as `mapping::Edge` with `type = RANGE`, `range_m` carrying the measured distance, `has_from_map_id` / `has_to_map_id` identifying which robots' maps the linked nodes belong to.
 
 4. **Inter-robot loop closure.** When Alpha and Blob's LiDAR scans overlap, a cross-robot loop closure is detected. This is published as `mapping::Edge` with `type = INTER_MAP`, `match_score` carrying the ICP fitness, and `from_map_id = "alpha-map"`, `to_map_id = "blob-map"`.
 
-5. **Map alignment.** A `MapAlignment` is published linking Alpha's and Blob's maps, with `method = LIDAR_ICP` (or `MULTI_METHOD` if UWB ranges were fused), `T_from_to` carrying the inter-map transform, and `evidence_edge_ids[]` referencing the supporting cross-map edges. `MapEvent` with `MAP_ALIGNED` notifies all subscribers.
+5. **Map alignment.** A `MapAlignment` is published linking Alpha's and Blob's maps, with `method = LIDAR_ICP` (or `MULTI_METHOD` if UWB ranges were fused), `T_from_to` carrying the inter-map transform, and `evidence_edge_ids[]` referencing the supporting cross-map edges. `MapEvent` with `event = ALIGNMENT_NEW` notifies all subscribers.
 
 6. **Multi-frame localization.** Once the alignment exists, a geo-referencing service can publish `NodeGeo` with `poses[]` containing FramedPoses in both Alpha's and Blob's map frames simultaneously. Consumers (e.g., a planning service) can pick the frame they need.
 
-7. **Graph optimization.** After sufficient inter-robot constraints accumulate, a global optimizer runs. All robots' `MapMeta.state` transitions to `OPTIMIZING`, then `STABLE`. `graph_epoch` increments on all nodes and edges. `MapAlignment.revision` increments. Consumers watching `graph_epoch` know to re-fetch the entire graph.
+7. **Graph optimization.** After sufficient inter-robot constraints accumulate, a global optimizer runs. All robots' `MapMeta.status` transitions to `OPTIMIZING`, then `STABLE`. `graph_epoch` increments on all nodes and edges. `MapAlignment.revision` increments. Consumers watching `graph_epoch` know to re-fetch the entire graph.
 
 This end-to-end scenario is precisely what ROS 2's `nav_msgs` and `sensor_msgs` cannot express: there is no ROS 2 standard for map lifecycle, inter-map alignment, range-only constraints, or multi-agent discovery with spatial coverage.
 
 ---
 
 ### **I.4 ScanNet Conformance (Indoor Scene Understanding)**
+
+**Validation record.** Version: **SpatialDDS 1.5**. Method: manual schema analysis (no script). Type and field names below have been corrected to their 1.8 spellings.
 
 #### Reference Dataset
 
@@ -7558,7 +7589,7 @@ ScanNet was chosen because it is the definitive indoor RGB-D scene understanding
 | ID | Check | Description |
 |---|---|---|
 | NC-01 | Color meta | `VisionMeta` with `pix = RGB8`, `codec = JPEG`, `CamIntrinsics` (fx, fy, cx, cy at 1296×968). |
-| NC-02 | Color frame | `VisionFrame` per RGB image with `frame_seq`, `hdr.stamp`, blob reference to JPEG payload. |
+| NC-02 | Color frame | `VisionFrame` per RGB image with `frame_seq`, `hdr.t_start`/`hdr.t_end` (`FrameHeader` carries `t_start`/`t_end`, not a single `stamp`), blob reference to JPEG payload. |
 | NC-03 | Per-scene stream isolation | Topic `spatialdds/<scene_id>/vision/<stream_id>/frame/v1` with unique `stream_id` per scan. |
 | NC-04 | Rig linkage | `VisionMeta.rig_id` shared between color and depth streams for spatial association. |
 
@@ -7566,7 +7597,7 @@ ScanNet was chosen because it is the definitive indoor RGB-D scene understanding
 
 | ID | Check | Description |
 |---|---|---|
-| ND-01 | Depth meta | `VisionMeta` with `pix = DEPTH16`, `codec = NONE` (raw 16-bit), `CamIntrinsics` for depth camera. |
+| ND-01 | Depth meta | `VisionMeta` with `pix = DEPTH16`, `codec = CODEC_NONE` (raw 16-bit), `CamIntrinsics` for depth camera. |
 | ND-02 | Depth pixel format | `PixFormat.DEPTH16` explicitly identifies 16-bit millimeter depth. **Requires SN-1.** |
 | ND-03 | Depth frame | `VisionFrame` per depth image with `frame_seq` matching co-located color frame. |
 | ND-04 | Invalid depth convention | Zero-valued pixels denote no measurement, consistent with `DEPTH16` normative note. |
@@ -7593,7 +7624,7 @@ ScanNet was chosen because it is the definitive indoor RGB-D scene understanding
 | ID | Check | Description |
 |---|---|---|
 | NM-01 | Map kind | `MapMeta` with `kind = MESH` for BundleFusion surface reconstruction. |
-| NM-02 | Map lifecycle | `MapMeta.state` = STABLE for completed reconstructions (offline dataset; no BUILDING phase observed). |
+| NM-02 | Map lifecycle | `MapMeta.status` (`MapStatus`) = STABLE for completed reconstructions (offline dataset; no BUILDING phase observed). |
 | NM-03 | Mesh payload | `BlobRef` referencing PLY mesh file. SpatialDDS carries mesh references, not inline mesh data. |
 | NM-04 | Vertex count metadata | `MapMeta.attributes` carries vertex/face count as MetaKV for consumers to assess mesh complexity. |
 
@@ -7623,9 +7654,9 @@ ScanNet was chosen because it is the definitive indoor RGB-D scene understanding
 
 | ID | Check | Description |
 |---|---|---|
-| NE-01 | Zone entry | `SpatialEvent` with `event_type = ZONE_ENTRY` when a Detection3D instance is first observed within a SpatialZone's bounds. |
+| NE-01 | Zone entry | `SpatialEvent` with `type = ZONE_ENTRY` (`EventType`) when a Detection3D instance is first observed within a SpatialZone's bounds. |
 | NE-02 | Trigger linkage | `SpatialEvent.trigger_det_id` references the triggering `Detection3D.det_id`; `trigger_class_id` carries the NYU40 label. |
-| NE-03 | Zone state | `ZoneState` with `zone_occupancy` count reflecting the number of annotated object instances within the room. |
+| NE-03 | Zone state | `ZoneState` with `current_occupancy` count reflecting the number of annotated object instances within the room. (`zone_occupancy` is a `SpatialEvent` field, for `CAPACITY_BREACH`, not a `ZoneState` field.) |
 | NE-04 | Class counts | `ZoneState.class_counts` (sequence of MetaKV) carries per-class occupancy (e.g., `{"count": 4}` for class "chair"). |
 
 #### Results
@@ -7654,13 +7685,13 @@ The ScanNet "apartment" scan sequence illustrates how SpatialDDS types map to a 
 
 2. **Pose estimation.** BundleFusion produces per-frame camera poses, published as `FrameHeader.sensor_pose` on each VisionFrame. The per-scene axis-alignment matrix is published as a `FrameTransform` from the sensor coordinate system to a gravity-aligned room frame.
 
-3. **Mesh reconstruction.** The completed surface mesh is registered as `MapMeta` with `kind = MESH`, `state = STABLE`. The PLY file is referenced via `BlobRef`. Vertex/face counts are carried in `MapMeta.attributes`.
+3. **Mesh reconstruction.** The completed surface mesh is registered as `MapMeta` with `kind = MESH`, `status = STABLE`. The PLY file is referenced via `BlobRef`. Vertex/face counts are carried in `MapMeta.attributes`.
 
 4. **Zone definition.** The kitchen is defined as a `SpatialZone` with `kind = MONITORING`, `bounds` enclosing the room extent, and `attributes` carrying `scene_type = "kitchen"`. The `frame_ref` points to the gravity-aligned frame.
 
 5. **3D instance detection.** Crowdsourced annotations produce `Detection3D` instances for each labeled object: chairs with `class_id = "chair"`, tables with `class_id = "table"`, a refrigerator with `class_id = "refrigerator"` — each with an oriented bounding box in the aligned frame.
 
-6. **Spatial events.** A zone monitoring service evaluates which Detection3D instances fall within the kitchen SpatialZone's bounds and publishes `SpatialEvent` (ZONE_ENTRY) for each. `ZoneState` is published periodically with `zone_occupancy = 12` (total instances) and `class_counts` listing per-class breakdowns.
+6. **Spatial events.** A zone monitoring service evaluates which Detection3D instances fall within the kitchen SpatialZone's bounds and publishes `SpatialEvent` (ZONE_ENTRY) for each. `ZoneState` is published periodically with `current_occupancy = 12` (total instances) and `class_counts` listing per-class breakdowns.
 
 This pipeline exercises the Spatial Events extension end-to-end — from zone definition through detection to event generation — a capability path untested by nuScenes (no zones), DeepSense 6G (no zones), or S3E (no zones or semantics).
 
@@ -7673,6 +7704,8 @@ This pipeline exercises the Spatial Events extension end-to-end — from zone de
 ---
 
 ### **I.5 LaMAR Conformance (Multi-Device AR Localization & Mapping)**
+
+**Validation record.** Version: **SpatialDDS 1.6-era** (the pass predates 1.7/1.8; it relies on the 1.6 `FrameRef.coord_convention` patch and the provisional `sensing.radio` profile). Method: manual schema analysis (no script). Type and field names below are corrected to their 1.8 spellings. Two checks that leaned on a non-existent `VisionMeta.attributes` field are reclassified from PASS to GAP (LH-05, LP-02); the 8-bit grayscale pixel format LH-02 relied on was added to the IDL as `PixFormat.GRAY8`, so LH-02 is now a true PASS.
 
 #### Reference Dataset
 
@@ -7704,7 +7737,7 @@ LaMAR was chosen because it is the first conformance dataset to exercise **cross
 | LH-02 | Grayscale pixel format | `PixFormat.GRAY8` covers HoloLens VGA grayscale global-shutter cameras. |
 | LH-03 | Frame rate | `StreamMeta.nominal_rate_hz` = 30 for HoloLens camera streams. |
 | LH-04 | Rig extrinsics | Camera-to-rig transforms publishable as `FrameTransform` with `T_parent_child` (rig body → camera). |
-| LH-05 | Global shutter flag | `VisionMeta` attributes can carry `MetaKV` with shutter type (`global_shutter`). No dedicated field required — ScanNet conformance (NC-04) established `rig_id` pattern; shutter type is informational metadata. |
+| LH-05 | Global shutter flag | **GAP.** This check assumed shutter type could ride as `MetaKV` on `VisionMeta.attributes`, but `VisionMeta` (and its `base`) has **no `attributes` field** — there is no typed landing spot for shutter type in the Vision profile. Whether the metadata escape should be a typed `attributes` member, a dedicated shutter-type enum field, or a typed extension mechanism is a 1.9 design question (see Future Directions). |
 | LH-06 | Camera intrinsics | `CamIntrinsics` with `fx`, `fy`, `cx`, `cy` per camera. HoloLens provides per-frame calibration from on-device tracker — `CamModel.PINHOLE` for undistorted images. |
 
 ##### HoloLens 2 — Depth (4 checks)
@@ -7721,7 +7754,7 @@ LaMAR was chosen because it is the first conformance dataset to exercise **cross
 | ID | Check | Description |
 |---|---|---|
 | LP-01 | Single camera | `VisionMeta` with `pix = RGB8`, single `stream_id` per phone session. |
-| LP-02 | Rolling shutter | Rolling shutter metadata carriable as `MetaKV` in `VisionMeta.attributes`. |
+| LP-02 | Rolling shutter | **GAP.** Same as LH-05: rolling-shutter metadata has no landing spot — `VisionMeta` has no `attributes` field. Reclassified from PASS to GAP; the typed-metadata design question is deferred to 1.9 (see Future Directions). |
 | LP-03 | Auto-focus intrinsics | `CamIntrinsics` per frame accommodates changing focal length from auto-focus. HoloLens provides fixed calibration; phone provides per-frame — both map to same `CamIntrinsics` struct. |
 | LP-04 | Frame rate | `StreamMeta.nominal_rate_hz` = 10 for iPhone/iPad capture rate. |
 | LP-05 | JPEG compression | `Codec.JPEG` for phone image compression. |
@@ -7769,7 +7802,7 @@ LaMAR was chosen because it is the first conformance dataset to exercise **cross
 | LA-01 | Scan-to-scan alignment | Rigid transform aligning NavVis scan sessions publishable as `FrameTransform` with `T_parent_child` mapping one scan's origin to the GT world frame. |
 | LA-02 | Sequence-to-scan alignment | Per-AR-sequence rigid alignment (`wT_init_0` from voting) publishable as `FrameTransform` linking session-local tracking frame to GT reference frame. |
 | LA-03 | GeoAnchor for reference frame | The GT world frame origin publishable as `GeoAnchor` with `method = "Surveyed"` (laser scan derived), `confidence` from alignment error statistics. Bridges local map coordinates to global position. |
-| LA-04 | AnchorSet for scan landmarks | NavVis scan landmarks (e.g., QR codes detected by `run_qrcode_detection`) publishable as `AnchorSet` with per-anchor `AnchorEntry` containing `GeoAnchor` pose. `set_id` identifies the scan session's anchor collection. |
+| LA-04 | AnchorSet for scan landmarks | NavVis scan landmarks (e.g., QR codes detected by `run_qrcode_detection`) publishable as `AnchorSet` with per-anchor `AnchorEntry` carrying a `GeoPose` (`AnchorEntry.geopose`). `set_id` identifies the scan session's anchor collection. |
 | LA-05 | Cross-session alignment revision | `alignment_global.txt` records inter-session transforms with error statistics. Maps to `FrameTransform` with `CovMatrix` carrying alignment uncertainty. Multiple NavVis sessions → multiple `FrameTransform` instances with `transform_id` keyed per session pair. |
 | LA-06 | Alignment refinement lifecycle | LaMAR's GT pipeline progresses: initial localization → rigid alignment → pose graph optimization → bundle adjustment. Each stage improves accuracy. The final `FrameTransform` carries the refined transform; `CovMatrix` reflects reduced uncertainty at each stage. |
 | LA-07 | Year-long structural change | Scans captured over 1+ year with structural changes (construction, furniture rearrangement). Cross-session alignment still succeeds. Demonstrates `FrameTransform` stability across temporal changes — the anchor/reference frame persists even as scene content changes. |
@@ -7836,13 +7869,13 @@ The 22 radio checks in this and the next two sub-sections validate `sensing.radi
 
 #### Results
 
-All 71 LaMAR checks pass.
+Of the 71 LaMAR checks, **69 pass and 2 are gaps** (LH-05 and LP-02 — shutter-type metadata has no typed landing spot in the Vision profile, since `VisionMeta` has no `attributes` field; see Future Directions).
 
 | Modality | Checks | Pass | Gap | Deferred | Notes |
 |---|---|---|---|---|---|
-| HoloLens Vision | 6 | 6 | 0 | 1 | Rolling shutter / global shutter typed model deferred |
+| HoloLens Vision | 6 | 5 | 1 | 0 | LH-05 (global shutter) GAP: no `VisionMeta.attributes` |
 | HoloLens Depth | 4 | 4 | 0 | 0 | ToF depth, IR stream |
-| Phone Vision | 5 | 5 | 0 | 1 | Rolling shutter readout-direction model deferred |
+| Phone Vision | 5 | 4 | 1 | 0 | LP-02 (rolling shutter) GAP: no `VisionMeta.attributes` |
 | Phone Depth | 3 | 3 | 0 | 0 | iPad LiDAR depth |
 | NavVis Scanner | 5 | 5 | 0 | 0 | Multi-camera rig, lidar mesh, point cloud |
 | IMU | 3 | 3 | 0 | 1 | Per-frame gravity vector deferred |
@@ -7853,13 +7886,15 @@ All 71 LaMAR checks pass.
 | Radio Discovery + QoS | 5 | 5 | 0 | 0 | `radio_scan` + `RADIO_SCAN_RT` integrated |
 | Radio Interop + Privacy | 5 | 5 | 0 | 1 | Multi-band coexistence metadata deferred |
 | Cross-Device Localization | 6 | 6 | 0 | 1 | Includes LC-06 coord-convention check; visual-overlap edge attribute deferred |
-| **Total** | **71** | **71** | **0** | **6** | **100% coverage** |
+| **Total** | **71** | **69** | **2** | **4** | 69/71 pass, 2 gaps (LH-05, LP-02) |
 
 Deferred items are fields that CAN be carried (typically via `MetaKV` or `BlobRef`) but lack first-class typed support. They are tracked as future profile additions, not as conformance failures.
 
 #### Gap Analysis
 
-The original LaMAR conformance pass identified **LM-1: no first-class radio fingerprint type** as a gap, with WiFi and Bluetooth scans falling back to ad hoc `MetaKV` JSON payloads. **LM-1 is closed in 1.5+** by the provisional `sensing.radio` profile (Appendix E). The 22 radio checks in this section (Radio Profile Coverage / Discovery + QoS / Interop + Privacy) validate the closure.
+The original LaMAR conformance pass identified **LM-1: no first-class radio fingerprint type** as a gap, with WiFi and Bluetooth scans falling back to ad hoc `MetaKV` JSON payloads. **LM-1 is closed in 1.5+** by the provisional `sensing.radio` profile (Appendix E). The 22 radio checks (Radio Profile Coverage / Discovery + QoS / Interop + Privacy — 12 + 5 + 5) validate the closure; they are a subset of the 71 LaMAR checks, not the LaMAR total.
+
+Two gaps remain open after this re-audit. **LH-05 / LP-02 — shutter-type metadata has no typed landing spot:** both checks assumed camera shutter type (global vs rolling) could ride as `MetaKV` on `VisionMeta.attributes`, but `VisionMeta` has no `attributes` field. This is left as a GAP rather than closed by adding a generic key-value bag, because a metadata escape is a one-way door; the real design question — typed extension mechanism, a dedicated shutter-type enum field, or a ruled `attributes` member — is captured as a 1.9 candidate (Future Directions, "Typed metadata on sensor meta").
 
 #### LaMAR Scenario Narrative (Informative)
 
@@ -7909,13 +7944,13 @@ Mirrors the SpatialDDS 1.8 IDL structures as Python dictionaries and checks them
 python3 scripts/deepsense6g_harness_v3.py
 ```
 
-Validates 44 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file.
+Validates 48 checks across 7 modalities (radar tensor, vision, lidar, IMU, GPS, mmWave beam, semantics); GPS carries 10 checks (DG-01 through DG-10). The mmWave beam checks validate against the provisional `rf_beam` profile (Appendix E). Produces a plain-text report and a JSON results file (written to the current directory).
 
 **S3E conformance**: The 38 S3E checks documented in §I.3 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/s3e_harness_v1.py`) following the same pattern as the nuScenes and DeepSense 6G scripts is planned for a future revision.
 
 **ScanNet conformance**: The 35 ScanNet checks documented in §I.4 were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/scannet_harness_v1.py`) is planned for a future revision.
 
-**LaMAR conformance**: The 22 LaMAR checks documented in §I.5 were performed as a manual schema-vs-schema analysis against the published `wifi.txt` and `bt.txt` field layouts and the radio-assisted retrieval workflow described by the benchmark. A scripted harness (`scripts/lamar_harness_v1.py`) is planned for a future revision.
+**LaMAR conformance**: The 71 LaMAR checks documented in §I.5 — of which 22 are the `sensing.radio` checks validated against the published `wifi.txt` / `bt.txt` field layouts and the radio-assisted retrieval workflow described by the benchmark — were performed as a manual schema-vs-schema analysis. A scripted harness (`scripts/lamar_harness_v1.py`) is planned for a future revision.
 
 No harness requires network access, a DDS runtime, or a dataset download. Implementers are encouraged to adapt the harnesses for additional reference datasets (e.g., Waymo Open, KITTI, Argoverse 2, RADIal, SubT-MRS, ScanNet, LaMAR) to validate coverage for sensor configurations or multi-agent scenarios not already covered.
 

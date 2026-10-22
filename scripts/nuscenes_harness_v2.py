@@ -502,8 +502,9 @@ def print_report():
 
 results = print_report()
 
-# Write JSON results
-with open("/home/claude/harness_v2_results.json","w") as fp:
+# Write JSON results to the current directory (matches the DeepSense harness;
+# the previous hard-coded /home/claude/ path crashed outside its original sandbox).
+with open("nuscenes_harness_v2_results.json","w") as fp:
     json.dump({
         "version": "v2",
         "spec_version": "SpatialDDS 1.5 (updated, post-recommendations)",

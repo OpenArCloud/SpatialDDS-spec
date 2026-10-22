@@ -65,6 +65,45 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Appendix I honesty pass (Fork A), 2026-10-21
+
+An audit of Appendix I (dataset conformance) found that all five validations were
+run or authored against **1.5** (LaMAR 1.6-era), not 1.8 as the appendix claimed,
+and that several check rows referenced type/field/enum names that exist in no
+version. Fork A makes the appendix honest; a scripted re-validation against the
+1.8 release — with each harness reading the IDL instead of hand-mirroring it, so
+the record cannot drift silently — is planned for the stamp (Fork B).
+
+- **Per-dataset validation records.** Each section states its version and method:
+  nuScenes 1.5 (scripted), DeepSense 6G 1.5 (scripted), S3E 1.5 (manual), ScanNet
+  1.5 (manual), LaMAR 1.6-era (manual). Methodology and "Reproducing" corrected;
+  the "Mirrors the SpatialDDS 1.8 IDL" claim fixed.
+- **Counts reconciled, harness as authority.** DeepSense 6G is **48** (GPS carries
+  DG-01..10; the stale "41" header and "44" body are corrected). LaMAR total is
+  **71**, with 22 scoped to the radio subset (the "Reproducing" line that called
+  22 the LaMAR total is fixed). nuScenes documents 28 with C-06 marked manual-only,
+  so the reproducible count is 27.
+- **I.3–I.5 names fixed to real 1.8 spellings:** `MapMeta.state`→`status`,
+  `MapEventKind.MAP_ALIGNED`→`ALIGNMENT_NEW`, `SpatialEvent.event_type`→`type`,
+  `ZoneState.zone_occupancy`→`current_occupancy`, `MagSample`→`MagnetometerSample`,
+  `CameraMeta`→`VisionMeta.K`/`CamIntrinsics` (`dist`/`dist_params`), `RigRole.TOP`
+  removed (not on `LidarMeta`), `AnchorEntry` carries a `GeoPose`, `FrameHeader`
+  has `t_start`/`t_end` not `stamp`, `codec = NONE`→`CODEC_NONE`, `LidarMeta`
+  `type`/`base.nominal_rate_hz`/`layout`. SC-01 rewritten for the 1.7 compound key
+  `(map_id, node_id)` — the one genuine 1.5→1.8 drift.
+- **The two genuine gaps, split per the ruling.** `PixFormat.GRAY8` was added to
+  the IDL (separate commit) so LH-02 is now a true PASS. `VisionMeta.attributes`
+  does not exist: LH-05 and LP-02 are reclassified **PASS → GAP** (LaMAR is now
+  69/71 pass, 2 gaps), and the typed-metadata design question is filed as a 1.9
+  candidate (Future Directions, "Typed Metadata on Sensor Meta").
+- **Coverage claims state their exceptions** — every "100%" is replaced by the
+  count with its named gaps.
+- **`nuscenes_harness_v2.py`** no longer hard-codes `/home/claude/` (it crashed
+  outside its original sandbox); it writes a relative results file like the
+  DeepSense harness.
+
+No IDL change in this commit (GRAY8 is separate). Origin: the Appendix I audit.
+
 ## Version 1.8 — PixFormat GRAY8 (additive), 2026-10-21
 
 `sensing::vision::PixFormat` gains `@value(6) GRAY8` — 8-bit single-channel

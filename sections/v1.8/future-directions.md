@@ -239,6 +239,25 @@ stating `OTHER` is the correct answer for an agent, so implementations converge
 rather than each picking a different nearest-fit — worth having even if `AGENT`
 lands later. Origin: spatialdds-ros `docs/spec-queue.md` item 1.
 
+### Typed Metadata on Sensor Meta
+
+Appendix I's LaMAR pass surfaced two checks (LH-05, LP-02) that assumed camera
+shutter type — global vs rolling — could ride as a `MetaKV` on
+`VisionMeta.attributes`. But `VisionMeta` has no `attributes` field, and neither
+does its `StreamMeta` base: there is no typed home for sensor metadata the IDL
+does not already name as a field. The checks are left as GAPs rather than closed.
+
+The tempting fix is a generic `sequence<MetaKV> attributes` on `VisionMeta` (or
+`StreamMeta`), but a key-value bag is a one-way door: once it exists, fields stop
+being designed and start leaking into it, and two implementers key the same
+concept differently. The 1.9 question is which of three shapes to adopt: (a) a
+typed extension mechanism with rules for what may go in it; (b) specific typed
+fields for the concepts that have proven to recur — a shutter-type enum
+(`GLOBAL`/`ROLLING`) is probably worth being a field in its own right; or (c) a
+deliberate `attributes` member with normative constraints on namespacing and on
+when a field must be promoted out of it. This deserves design time, not a
+checklist rescue of a coverage figure. Origin: Appendix I LaMAR LH-05 / LP-02.
+
 ### Wire-Level Interop Testing
 
 Appendix I validates schema expressiveness through static conformance checks. Future revisions will add wire-level interoperability tests across at least two DDS implementations (CycloneDDS and Fast DDS minimum) to validate end-to-end publish/subscribe fidelity, QoS enforcement, and CDR encoding compatibility.
