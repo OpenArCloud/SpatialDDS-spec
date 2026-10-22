@@ -65,6 +65,20 @@ Origin: 1.9 candidates entry 3, raised while adding a service announce to the
 fountain-anchors recording, the bridged shape's first concrete blocker found
 before anyone built one.
 
+## Version 1.8 — Register ModelPose and ModelCommand (completeness), 2026-10-22
+
+`spatial::owm::ModelPose` and `spatial::owm::ModelCommand` are topic-bearing spec
+types with no §3.3.2 registry row — a completeness-rule gap the demo's new topic
+gate caught. Registered both with the deployed topic strings carried by the
+certified artifacts' `topics.py`, per the same ruling as the entity topic:
+`spatialdds/<scene>/world/model_pose/v1` (VOLATILE fast lane, KEEP_LAST(1) per
+key) and `spatialdds/<scene>/world/model_command/v1` (VOLATILE, keyed on
+`command_id`, keyed-command-with-declines per M.1). The §3.3.2 normative registry
+is now 37 rows. The registry-topic cross-check gate now covers both new rows (each
+pinned to stream `world` and one IDL type, so a stray stream or version would
+fail); its self-test still confirms the gate failable. No IDL change; the 112
+schemas are byte-identical. Origin: the demo's new topic gate.
+
 ## Version 1.8 — OWM entity topic world/entity/v1 + registry-topic gate, 2026-10-21
 
 The §3.3.2 registry declared the Open World Model entity topic as
