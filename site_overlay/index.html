@@ -89,6 +89,19 @@
   .demo-kicker { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; margin-bottom: 6px; }
   .demo-meta { font-size: 12.5px; color: var(--ink-2); margin-top: 10px; }
 
+  /* proof band: the "See it running" panel, in the stats-row idiom */
+  .proof { background: var(--wash); border-radius: 14px; padding: 48px 30px; }
+  .proof h2 { text-align: center; }
+  .proof .sec-sub { text-align: center; max-width: 44em; margin: 6px auto 38px; }
+  .proof-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+  .proof-col .demo-kicker { letter-spacing: .07em; white-space: nowrap; }
+  .proof-col h3 { font-size: 17px; font-weight: 700; margin: 2px 0 8px; }
+  .proof-col h3 a { color: var(--blue); text-decoration: none; }
+  .proof-col h3 a:hover, .proof-col p a:hover { text-decoration: underline; }
+  .proof-col p { font-size: 14.5px; color: var(--ink-2); }
+  .proof-col p a { color: var(--blue); font-weight: 600; text-decoration: none; }
+  .proof-numbers { display: flex; flex-wrap: wrap; justify-content: center; gap: 48px; text-align: center; border-top: 1px solid var(--line); margin-top: 44px; padding-top: 40px; }
+
   /* ecosystem strip */
   .eco { margin-top: 72px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 26px 0; text-align: center; font-size: 14px; color: var(--ink-2); }
   .eco b { color: var(--ink); font-weight: 600; }
@@ -105,6 +118,9 @@
     .nav-links { gap: 16px 18px; flex-wrap: wrap; justify-content: flex-end; }
     header { padding: 48px 0 32px; }
     section { padding: 52px 0 0; }
+    .proof { padding: 36px 22px; }
+    .proof-cols { grid-template-columns: 1fr; gap: 30px; }
+    .proof-numbers { gap: 32px; margin-top: 36px; padding-top: 32px; }
   }
 </style>
 </head>
@@ -136,29 +152,6 @@
   <img class="hero-img" src="assets/hero.jpg" alt="A city waterfront where a delivery robot, an autonomous car, a drone, sensor poles, and people with phones are all connected by one shared stream of spatial data.">
 </header>
 
-<section id="see-it-running">
-  <h2>See it running</h2>
-  <p class="sec-sub">Three independent systems on one bus, none of them aware of the others' code.</p>
-  <div class="demo-grid">
-    <div class="demo">
-      <div class="demo-kicker">Venue demo</div>
-      <h3><a href="https://github.com/OpenArCloud/SpatialDDS-demo">The reference demo</a></h3>
-      <p>A venue as a live model: robots, ducks, declared water and a browser, all on one bus. Shown at ISMAR 2026 (<a href="https://youtu.be/WHcwNF5Grcc?si=fDaag-O8eROennOr" target="_blank" rel="noopener">watch the clip</a>).</p>
-    </div>
-    <div class="demo">
-      <div class="demo-kicker">Positioning service</div>
-      <h3><a href="https://github.com/OpenArCloud/openvps/tree/spatialdds">OpenVPS</a></h3>
-      <p>An open visual positioning service on the same bus: coverage announced, localization queries answered with computed poses, discovered with no configured endpoint.</p>
-      <p class="demo-meta">SpatialDDS support lives on the <code>spatialdds</code> branch.</p>
-    </div>
-    <div class="demo">
-      <div class="demo-kicker">Perception adapter</div>
-      <h3><a href="https://github.com/OpenArCloud/spatialdds-scenescape">SceneScape sidecar</a></h3>
-      <p>A stock Intel SceneScape deployment publishing its scene analytics as typed samples: tracks, detections, zones and a georeference.</p>
-    </div>
-  </div>
-</section>
-
 <section id="what">
   <div class="grid">
     <div class="card">
@@ -185,13 +178,36 @@
       deployments you can visit &mdash; every claim in the spec is one someone can re-run.</p>
     </div>
   </div>
+</section>
 
-  <div class="numbers">
-    <div class="num"><b>14</b><span>IDL profiles</span></div>
-    <div class="num"><b>216</b><span>conformance checks</span></div>
-    <div class="num"><b>5</b><span>public datasets validated</span></div>
-    <div class="num"><b>4</b><span>protocol bridges</span></div>
-    <div class="num"><b>2</b><span>live reference demos</span></div>
+<section id="see-it-running">
+  <div class="proof">
+    <h2>See it running</h2>
+    <p class="sec-sub">Three independent systems on one bus, none of them aware of the others' code.</p>
+    <div class="proof-cols">
+      <div class="proof-col">
+        <div class="demo-kicker">Venue demo</div>
+        <h3><a href="https://github.com/OpenArCloud/SpatialDDS-demo">The reference demo</a></h3>
+        <p>A venue as a live model: robots, ducks, declared water and a browser, all on one bus. Shown at ISMAR 2026 (<a href="https://youtu.be/WHcwNF5Grcc?si=fDaag-O8eROennOr" target="_blank" rel="noopener">watch the clip</a>).</p>
+      </div>
+      <div class="proof-col">
+        <div class="demo-kicker">Positioning service &middot; spatialdds branch</div>
+        <h3><a href="https://github.com/OpenArCloud/openvps/tree/spatialdds">OpenVPS</a></h3>
+        <p>An open visual positioning service on the same bus. It announces its coverage and answers localization queries with computed poses; clients discover it, no configured endpoint.</p>
+      </div>
+      <div class="proof-col">
+        <div class="demo-kicker">Perception adapter</div>
+        <h3><a href="https://github.com/OpenArCloud/spatialdds-scenescape">SceneScape sidecar</a></h3>
+        <p>A stock Intel SceneScape deployment publishing its scene analytics as typed samples: tracks, detections, zones and a georeference.</p>
+      </div>
+    </div>
+    <div class="proof-numbers">
+      <div class="num"><b>14</b><span>IDL profiles</span></div>
+      <div class="num"><b>216</b><span>conformance checks</span></div>
+      <div class="num"><b>5</b><span>public datasets validated</span></div>
+      <div class="num"><b>4</b><span>protocol bridges</span></div>
+      <div class="num"><b>2</b><span>live reference demos</span></div>
+    </div>
   </div>
 </section>
 
