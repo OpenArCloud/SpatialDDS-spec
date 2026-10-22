@@ -84,6 +84,8 @@
   .demo h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
   .demo p { font-size: 14.5px; color: var(--ink-2); }
   .demo a { color: var(--blue); font-weight: 600; font-size: 14.5px; text-decoration: none; }
+  .demo h3 a { color: var(--blue); font-size: inherit; font-weight: inherit; }
+  .demo h3 a:hover, .demo p a:hover { text-decoration: underline; }
 
   /* ecosystem strip */
   .eco { margin-top: 72px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 26px 0; text-align: center; font-size: 14px; color: var(--ink-2); }
@@ -126,16 +128,29 @@
   spatial data &mdash; poses, detections, anchors, zones, maps &mdash; on one shared bus.</p>
   <div class="ctas">
     <a class="btn btn-primary" href="https://spatialdds.org/spec/">Read the specification</a>
-    <a class="btn btn-ghost" href="https://github.com/OpenArCloud/SpatialDDS-demo">See it running</a>
-    <a class="btn btn-ghost" href="https://github.com/OpenArCloud/spatialdds-scenescape">Use it with SceneScape</a>
     <a class="btn btn-ghost" href="https://pypi.org/project/spatialdds/">Try the web binding</a>
     <a class="btn btn-ghost" href="https://pypi.org/project/spatialdds-ros/">Connect a ROS 2 robot</a>
   </div>
-  <div class="latest">
-    <span class="latest-item">ISMAR 2026 &middot; the SpatialDDS part of Open AR Cloud's session &middot; <a href="https://youtu.be/WHcwNF5Grcc?si=fDaag-O8eROennOr" target="_blank" rel="noopener">Watch the clip</a></span>
-  </div>
   <img class="hero-img" src="assets/hero.jpg" alt="A city waterfront where a delivery robot, an autonomous car, a drone, sensor poles, and people with phones are all connected by one shared stream of spatial data.">
 </header>
+
+<section id="see-it-running">
+  <h2>See it running</h2>
+  <div class="demo-grid">
+    <div class="demo">
+      <h3><a href="https://github.com/OpenArCloud/SpatialDDS-demo">The reference demo</a></h3>
+      <p>A venue as a live model: robots, ducks, declared water and a browser, all on one bus. Shown at ISMAR 2026 (<a href="https://youtu.be/WHcwNF5Grcc?si=fDaag-O8eROennOr" target="_blank" rel="noopener">watch the clip</a>).</p>
+    </div>
+    <div class="demo">
+      <h3><a href="https://github.com/OpenArCloud/openvps/tree/spatialdds">OpenVPS</a></h3>
+      <p>An open visual positioning service that speaks SpatialDDS natively. It announces its coverage on the bus and answers localization queries with computed poses. A browser or robot discovers it and localizes against it with no configured endpoint and no per-service client code. The SpatialDDS face is on the spatialdds branch.</p>
+    </div>
+    <div class="demo">
+      <h3><a href="https://github.com/OpenArCloud/spatialdds-scenescape">SceneScape sidecar</a></h3>
+      <p>A stock Intel SceneScape deployment publishing its scene analytics as typed SpatialDDS samples: tracks, detections, zones and a georeference.</p>
+    </div>
+  </div>
+</section>
 
 <section id="what">
   <div class="grid">
