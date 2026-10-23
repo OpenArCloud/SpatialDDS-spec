@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-DeepSense 6G → SpatialDDS 1.5 Conformance Harness v3
-Validates SpatialDDS 1.5 IDL field-level coverage against the DeepSense 6G
+DeepSense 6G → SpatialDDS 1.8 Conformance Harness v3
+Validates SpatialDDS 1.8 IDL field-level coverage (read directly from idl/v1.8/) against the DeepSense 6G
 multi-modal sensing and communication dataset.
 
 v3 changes (from v2):
@@ -25,10 +25,14 @@ Multi-Modal Sensing and Communication Dataset," IEEE Comm. Mag., 2023.
 
 No external dependencies. No network access. No dataset download required.
 """
-import json, textwrap
+import json, textwrap, os, sys
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
+
+# Type shapes are read from the canonical idl/v1.8/ tree, never hand-mirrored.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from idl_introspect import enum_values as E, struct_fields as S, module_consts as C
 
 # ── Severity / Status ──────────────────────────────────────────────
 class Sev(Enum):
@@ -46,183 +50,88 @@ class Finding:
     detail: str
 
 # ═══════════════════════════════════════════════════════════════════
-# SpatialDDS 1.5 IDL mirrors (from updated full spec)
+# SpatialDDS 1.8 type shapes — read directly from idl/v1.8/ via
+# idl_introspect (enum_values/struct_fields/module_consts). No hand-mirror:
+# these lists are parsed from the canonical .idl at import, so they cannot drift
+# from the spec. See scripts/idl_introspect.py.
 # ═══════════════════════════════════════════════════════════════════
 
 # ── Sensing Common ────────────────────────────────────────────
 COMMON_STRUCTS = {
-    "SampleType": ["U8_MAG","F16_MAG","CF16","CF32","MAGPHASE_S8"],
-    "Codec": ["CODEC_NONE","LZ4","ZSTD","GZIP","DRACO","JPEG","H264","H265","AV1","FP8Q","FP4Q","AE_V1"],
-    "PayloadKind": ["DENSE_TILES","SPARSE_COO","LATENT","BLOB_GEOMETRY","BLOB_RASTER"],
-    "StreamMeta_fields": ["stream_id","frame_ref","T_bus_sensor","nominal_rate_hz","schema_version"],
-    "FrameHeader_fields": ["stream_id","frame_seq","t_start","t_end","has_sensor_pose","sensor_pose","blobs"],
-    "Axis_fields": ["name","unit","spec"],
-    "ROI_fields": [
-        "has_range","range_min","range_max",
-        "has_azimuth","az_min","az_max",
-        "has_elevation","el_min","el_max",
-        "has_doppler","dop_min","dop_max",
-        "has_image_roi","u_min","v_min","u_max","v_max",
-        "global",
-    ],
+    "SampleType": E("SampleType"),
+    "Codec": E("Codec"),
+    "PayloadKind": E("PayloadKind"),
+    "StreamMeta_fields": S("StreamMeta"),
+    "FrameHeader_fields": S("FrameHeader"),
+    "Axis_fields": S("Axis"),
+    "ROI_fields": S("ROI"),
 }
 
 # ── Radar (detection-centric, for completeness) ──────────────
 RADAR_DETECTION_STRUCTS = {
-    "RadSensorType": ["SHORT_RANGE","MEDIUM_RANGE","LONG_RANGE","IMAGING_4D","SAR","OTHER"],
-    "RadSensorMeta_fields": [
-        "stream_id","base","sensor_type",
-        "has_range_limits","min_range_m","max_range_m",
-        "has_azimuth_fov","az_fov_min_deg","az_fov_max_deg",
-        "has_elevation_fov","el_fov_min_deg","el_fov_max_deg",
-        "has_velocity_limits","v_min_mps","v_max_mps",
-        "max_detections_per_frame","proc_chain","schema_version",
-    ],
+    "RadSensorType": E("RadSensorType"),
+    "RadSensorMeta_fields": S("RadSensorMeta"),
 }
 
 # ── Radar (tensor path — for DeepSense raw I/Q) ──────────────
 RADAR_TENSOR_STRUCTS = {
-    "RadTensorLayout": ["RA_D","R_AZ_EL_D","CH_FAST_SLOW","CH_R_D","CUSTOM"],
-    "RadTensorMeta_fields": [
-        "stream_id","base","sensor_type",
-        "layout","axes","voxel_type","physical_meaning",
-        "has_antenna_config","num_tx","num_rx","num_virtual_channels",
-        "has_waveform_params","bandwidth_hz","center_freq_hz",
-        "chirp_duration_s","samples_per_chirp","chirps_per_frame",
-        "payload_kind","codec","has_quant_scale","quant_scale",
-        "tile_size","schema_version",
-    ],
-    "RadTensorFrame_fields": [
-        "stream_id","frame_seq","hdr",
-        "payload_kind","codec","voxel_type_after_decode",
-        "has_quant_scale","quant_scale",
-        "quality","proc_chain",
-    ],
+    "RadTensorLayout": E("RadTensorLayout"),
+    "RadTensorMeta_fields": S("RadTensorMeta"),
+    "RadTensorFrame_fields": S("RadTensorFrame"),
 }
 
 # ── Vision ────────────────────────────────────────────────────
 VISION_STRUCTS = {
-    "PixFormat": ["UNKNOWN","YUV420","RGB8","BGR8","RGBA8","RAW10","RAW12","RAW16"],
-    "Distortion": ["NONE","RADTAN","KANNALA_BRANDT"],
-    "CamModel": ["PINHOLE","FISHEYE","EQUIDISTANT","OMNI"],
-    "RigRole": ["LEFT","RIGHT","CENTER","FRONT","FRONT_LEFT","FRONT_RIGHT",
-                "BACK","BACK_LEFT","BACK_RIGHT","AUX",
-                "PANORAMIC","EQUIRECTANGULAR"],  # K-V1 additions
-    "CamIntrinsics_fields": [
-        "model","width","height","fx","fy","cx","cy",
-        "dist","dist_params","shutter_us","readout_us","pix","color","calib_version",
-    ],
-    "VisionMeta_fields": [
-        "stream_id","base","K","role","rig_id","codec","pix","color","schema_version",
-    ],
-    "VisionFrame_fields": [
-        "stream_id","frame_seq","hdr","codec","pix","color",
-        "has_line_readout_us","line_readout_us","rectified","is_key_frame","quality",
-    ],
+    "PixFormat": E("PixFormat"),
+    "Distortion": E("Distortion"),
+    "CamModel": E("CamModel"),
+    "RigRole": E("RigRole"),
+    "CamIntrinsics_fields": S("CamIntrinsics"),
+    "VisionMeta_fields": S("VisionMeta"),
+    "VisionFrame_fields": S("VisionFrame"),
 }
 
 # ── Lidar ─────────────────────────────────────────────────────
 LIDAR_STRUCTS = {
-    "LidarType": ["SPINNING_2D","MULTI_BEAM_3D","SOLID_STATE"],
-    "CloudEncoding": ["PCD","PLY","LAS","LAZ","BIN_INTERLEAVED","GLTF_DRACO","MPEG_PCC","CUSTOM_BIN"],
-    "PointLayout": ["XYZ_I","XYZ_I_R","XYZ_I_R_N","XYZ_I_R_T","XYZ_I_R_T_N"],
-    "LidarMeta_fields": [
-        "stream_id","base","type","n_rings",
-        "has_range_limits","min_range_m","max_range_m",
-        "has_horiz_fov","horiz_fov_deg_min","horiz_fov_deg_max",
-        "has_vert_fov","vert_fov_deg_min","vert_fov_deg_max",
-        "has_wavelength","wavelength_nm",  # K-L1 addition
-        "encoding","codec","layout","schema_version",
-    ],
-    "LidarFrame_fields": [
-        "stream_id","frame_seq","hdr","encoding","codec","layout",
-        "has_per_point_timestamps",
-        "has_average_range_m","average_range_m",
-        "has_percent_valid","percent_valid",
-        "has_quality","quality",
-    ],
+    "LidarType": E("LidarType"),
+    "CloudEncoding": E("CloudEncoding"),
+    "PointLayout": E("PointLayout"),
+    "LidarMeta_fields": S("LidarMeta"),
+    "LidarFrame_fields": S("LidarFrame"),
 }
 
 # ── VIO / IMU ─────────────────────────────────────────────────
 VIO_STRUCTS = {
-    "ImuInfo_fields": [
-        "imu_id","frame_ref",
-        "accel_noise_density","gyro_noise_density",
-        "accel_random_walk","gyro_random_walk","stamp",
-    ],
-    "ImuSample_fields": [
-        "imu_id","accel","gyro","stamp","source_id","seq",
-    ],
+    "ImuInfo_fields": S("ImuInfo"),
+    "ImuSample_fields": S("ImuSample"),
 }
 
 # ── Core / Geo ────────────────────────────────────────────────
 CORE_STRUCTS = {
-    "GeoPose_fields": [
-        "lat_deg","lon_deg","alt_m","q","frame_kind","frame_ref","stamp","cov",
-    ],
-    "GeoFrameKind": ["ECEF","ENU","NED"],
-    "PoseSE3_fields": ["t","q","frame_ref","stamp"],
+    "GeoPose_fields": S("GeoPose"),
+    "PoseSE3_fields": S("PoseSE3"),
 }
 
-# ── GNSS Receiver Diagnostics (K-G1) ─────────────────────────
+# ── GNSS Receiver Diagnostics ─────────────────────────────────
 GNSS_STRUCTS = {
-    "GnssFixType": ["NO_FIX","FIX_2D","FIX_3D","DGPS","RTK_FLOAT","RTK_FIXED",
-                     "SBAS","DEAD_RECKONING","UNKNOWN_FIX"],
-    "GnssService_constants": ["GPS","GLONASS","BEIDOU","GALILEO","QZSS","IRNSS","SBAS_SV"],
-    "NavSatStatus_fields": [
-        "gnss_id","fix_type","service","num_satellites",
-        "has_dop","pdop","hdop","vdop",
-        "has_velocity","speed_mps","course_deg",
-        "has_diff_age","diff_age_s","diff_station_id",
-        "stamp","schema_version",
-    ],
+    "GnssFixType": E("GnssFixType"),
+    "GnssService_constants": C("GnssService"),
+    "NavSatStatus_fields": S("NavSatStatus"),
 }
 
 # ── Semantics ─────────────────────────────────────────────────
 SEMANTICS_STRUCTS = {
-    "Detection2D_fields": [
-        "det_id","class_id","score","bbox","stamp","source_id",
-    ],
-    "Detection3D_fields": [
-        "det_id","frame_ref","has_tile","tile_key",
-        "class_id","score","center","size","q",
-        "has_covariance","cov_pos","cov_rot",
-        "has_track_id","track_id","stamp","source_id",
-        "has_attributes","attributes",
-        "has_visibility","visibility",
-        "has_num_pts","num_lidar_pts","num_radar_pts",
-    ],
+    "Detection2D_fields": S("Detection2D"),
+    "Detection3D_fields": S("Detection3D"),
 }
 
-# ── RF Beam Sensing (Provisional — K-B1) ─────────────────────
+# ── RF Beam Sensing (Provisional) ────────────────────────────
 RF_BEAM_STRUCTS = {
-    "BeamSweepType": ["EXHAUSTIVE","HIERARCHICAL","TRACKING","PARTIAL","OTHER"],
-    "PowerUnit": ["DBM","LINEAR_MW","RSRP","OTHER_UNIT"],
-    "RfBeamMeta_fields": [
-        "stream_id","base",
-        "center_freq_ghz","has_bandwidth","bandwidth_ghz",
-        "n_elements","n_beams",
-        "fov_az_deg","has_fov_el","fov_el_deg",
-        "has_array_index","array_index","array_label",
-        "codebook_type",
-        "has_mimo_config","n_tx","n_rx",
-        "power_unit","schema_version",
-    ],
-    "RfBeamFrame_fields": [
-        "stream_id","frame_seq","hdr",
-        "sweep_type",
-        "power","beam_indices",
-        "has_best_beam","best_beam_idx","best_beam_power",
-        "has_blockage_state","is_blocked","blockage_confidence",
-        "has_snr_db","snr_db",
-        "has_quality","quality",
-    ],
-    "RfBeamArraySet_fields": [
-        "set_id","frame_seq","stamp",
-        "arrays",
-        "has_overall_best","overall_best_array_idx",
-        "overall_best_beam_idx","overall_best_power",
-    ],
+    "BeamSweepType": E("BeamSweepType"),
+    "PowerUnit": E("PowerUnit"),
+    "RfBeamMeta_fields": S("RfBeamMeta"),
+    "RfBeamFrame_fields": S("RfBeamFrame"),
+    "RfBeamArraySet_fields": S("RfBeamArraySet"),
 }
 
 # ═══════════════════════════════════════════════════════════════════

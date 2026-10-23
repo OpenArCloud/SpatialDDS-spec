@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-nuScenes → SpatialDDS 1.5 Conformance Harness v2
-Re-validates against the UPDATED spec (post-recommendation changes).
-Compares results with the original 29-gap baseline.
+nuScenes → SpatialDDS 1.8 Conformance Harness v2
+Validates nuScenes coverage against the SpatialDDS 1.8 IDL, read directly from
+idl/v1.8/ (no hand-mirror). Compares results with the original 29-gap baseline.
 """
-import json, textwrap
+import json, textwrap, os, sys
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
+
+# Type shapes are read from the canonical idl/v1.8/ tree, never hand-mirrored.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from idl_introspect import enum_values as E, struct_fields as S
 
 # ── Severity / Status ──────────────────────────────────────────────
 class Sev(Enum):
@@ -27,90 +31,39 @@ class Finding:
     v1_severity: Optional[Sev] = None   # severity in original harness run
 
 # ═══════════════════════════════════════════════════════════════════
-# Updated SpatialDDS 1.5 IDL mirrors  (from full spec + GitHub IDL)
+# SpatialDDS 1.8 type shapes — read directly from idl/v1.8/ via
+# idl_introspect (enum_values/struct_fields). No hand-mirror: these lists are
+# parsed from the canonical .idl at import, so they cannot drift from the spec.
 # ═══════════════════════════════════════════════════════════════════
 
-# ── Radar (COMPLETELY REPLACED – detection-centric) ────────────
+# ── Radar (detection-centric) ──────────────────────────────────
 RADAR_STRUCTS = {
-    "RadSensorType": ["SHORT_RANGE","MEDIUM_RANGE","LONG_RANGE","IMAGING_4D","SAR","OTHER"],
-    "RadDynProp": ["UNKNOWN","MOVING","STATIONARY","ONCOMING","CROSSING_LEFT","CROSSING_RIGHT","STOPPED"],
-    "RadSensorMeta_fields": [
-        "stream_id","base","sensor_type",
-        "has_range_limits","min_range_m","max_range_m",
-        "has_azimuth_fov","az_fov_min_deg","az_fov_max_deg",
-        "has_elevation_fov","el_fov_min_deg","el_fov_max_deg",
-        "has_velocity_limits","v_min_mps","v_max_mps",
-        "max_detections_per_frame","proc_chain","schema_version",
-    ],
-    "RadDetection_fields": [
-        "xyz_m",
-        "has_velocity_xyz","velocity_xyz",
-        "has_v_r_mps","v_r_mps",
-        "has_velocity_comp_xyz","velocity_comp_xyz",
-        "has_rcs_dbm2","rcs_dbm2",
-        "intensity","quality",
-        "has_dyn_prop","dyn_prop",
-        "has_pos_rms","x_rms_m","y_rms_m","z_rms_m",
-        "has_vel_rms","vx_rms_mps","vy_rms_mps","vz_rms_mps",
-        "has_ambig_state","ambig_state",
-        "has_false_alarm_prob","false_alarm_prob",
-        "has_sensor_track_id","sensor_track_id",
-    ],
-    "RadDetectionSet_fields": [
-        "stream_id","frame_seq","frame_ref","dets",
-        "stamp","source_id","seq","proc_chain",
-        "has_quality","quality",
-    ],
+    "RadSensorType": E("RadSensorType"),
+    "RadDynProp": E("RadDynProp"),
+    "RadSensorMeta_fields": S("RadSensorMeta"),
+    "RadDetection_fields": S("RadDetection"),
+    "RadDetectionSet_fields": S("RadDetectionSet"),
 }
 
-# ── Vision (updated) ───────────────────────────────────────────
+# ── Vision ─────────────────────────────────────────────────────
 VISION_STRUCTS = {
-    "RigRole": ["LEFT","RIGHT","CENTER","FRONT","FRONT_LEFT","FRONT_RIGHT",
-                "BACK","BACK_LEFT","BACK_RIGHT","AUX",
-                "PANORAMIC","EQUIRECTANGULAR"],
-    "Distortion": ["NONE","RADTAN","KANNALA_BRANDT"],
-    "CamIntrinsics_fields": [
-        "model","width","height","fx","fy","cx","cy",
-        "dist","dist_params","shutter_us","readout_us","pix","color","calib_version",
-    ],
-    "VisionFrame_fields": [
-        "stream_id","frame_seq","hdr","codec","pix","color",
-        "has_line_readout_us","line_readout_us","rectified","is_key_frame","quality",
-    ],
+    "RigRole": E("RigRole"),
+    "Distortion": E("Distortion"),
+    "CamIntrinsics_fields": S("CamIntrinsics"),
+    "VisionFrame_fields": S("VisionFrame"),
 }
 
-# ── Lidar (updated) ───────────────────────────────────────────
+# ── Lidar ──────────────────────────────────────────────────────
 LIDAR_STRUCTS = {
-    "CloudEncoding": ["PCD","PLY","LAS","LAZ","BIN_INTERLEAVED","GLTF_DRACO","MPEG_PCC","CUSTOM_BIN"],
-    "PointLayout": ["XYZ_I","XYZ_I_R","XYZ_I_R_N","XYZ_I_R_T","XYZ_I_R_T_N"],
-    "LidarMeta_fields": [
-        "stream_id","base","type","n_rings",
-        "has_range_limits","min_range_m","max_range_m",
-        "has_horiz_fov","horiz_fov_deg_min","horiz_fov_deg_max",
-        "has_vert_fov","vert_fov_deg_min","vert_fov_deg_max",
-        "has_wavelength","wavelength_nm",
-        "encoding","codec","layout","schema_version",
-    ],
-    "LidarFrame_fields": [
-        "stream_id","frame_seq","hdr","encoding","codec","layout",
-        "has_per_point_timestamps",
-        "has_average_range_m","average_range_m",
-        "has_percent_valid","percent_valid",
-        "has_quality","quality",
-    ],
+    "CloudEncoding": E("CloudEncoding"),
+    "PointLayout": E("PointLayout"),
+    "LidarMeta_fields": S("LidarMeta"),
+    "LidarFrame_fields": S("LidarFrame"),
 }
 
-# ── Semantics (updated) ──────────────────────────────────────
+# ── Semantics ──────────────────────────────────────────────────
 SEMANTICS_STRUCTS = {
-    "Detection3D_fields": [
-        "det_id","frame_ref","has_tile","tile_key",
-        "class_id","score","center","size","q",
-        "has_covariance","cov_pos","cov_rot",
-        "has_track_id","track_id","stamp","source_id",
-        "has_attributes","attributes",
-        "has_visibility","visibility",
-        "has_num_pts","num_lidar_pts","num_radar_pts",
-    ],
+    "Detection3D_fields": S("Detection3D"),
 }
 
 # ── Conventions §2 (updated) ─────────────────────────────────
@@ -422,7 +375,7 @@ def severity_icon(s):
 
 def print_report():
     print("=" * 80)
-    print("nuScenes → SpatialDDS 1.5 Conformance Report v2 (Updated Spec)")
+    print("nuScenes → SpatialDDS 1.8 Conformance Report v2 (read from idl/v1.8/)")
     print("=" * 80)
 
     # Group by modality
@@ -507,7 +460,7 @@ results = print_report()
 with open("nuscenes_harness_v2_results.json","w") as fp:
     json.dump({
         "version": "v2",
-        "spec_version": "SpatialDDS 1.5 (updated, post-recommendations)",
+        "spec_version": "SpatialDDS 1.8 (read from idl/v1.8/)",
         "total_checks": results["total_checks"],
         "passes": results["passes"],
         "remaining_gaps": results["remaining_gaps"],
