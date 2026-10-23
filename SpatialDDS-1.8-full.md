@@ -7173,7 +7173,7 @@ The goal was not to certify particular datasets but to answer two concrete quest
 
 For each dataset, a conformance harness was constructed as a self-contained Python 3 script that:
 
-1. **Mirrors the SpatialDDS IDL** as Python data structures (enum values, struct field lists, normative prose flags). The nuScenes and DeepSense 6G harnesses mirror the **1.5** IDL (they were written against it, and their hand-typed copies have since drifted from 1.8 — see each section's validation note); re-pointing them at the 1.8 IDL by reading it directly is the planned re-validation.
+1. **Reads the SpatialDDS IDL** as the source of type truth. The nuScenes and DeepSense 6G harnesses parse `idl/v1.8/*.idl` directly through `scripts/idl_introspect.py` (enum values, struct field lists, const modules); the few normative facts not expressible in IDL (prose conventions) remain inline flags. Because the type shapes are read from the canonical tree at run time, they cannot drift from the spec — the hand-typed 1.5 mirrors that the audit of this appendix found drifting have been removed.
 2. **Mirrors the dataset schema** as synthetic data (sensor names, field lists, data shapes).
 3. **Runs targeted checks**, each producing a verdict:
 
@@ -7185,13 +7185,13 @@ For each dataset, a conformance harness was constructed as a self-contained Pyth
 
 4. **Reports a per-modality scorecard.**
 
-Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E (§I.3), ScanNet (§I.4), and LaMAR (§I.5) conformance sections were performed as manual schema analyses following the same check structure; scripted harnesses are planned for a future revision. Every section below opens with a **validation record** stating the SpatialDDS version it was run against and whether it was scripted or manual.
+Neither nuScenes nor DeepSense 6G harness requires network access, a DDS runtime, or a dataset download. Both operate as static schema-vs-schema dry runs, reproducible in any CI environment. The S3E (§I.3), ScanNet (§I.4), and LaMAR (§I.5) conformance sections were performed as manual schema analyses following the same check structure; scripted harnesses are planned for a future revision. Every section below opens with a **validation record** in a fixed format — the SpatialDDS version validated against, the date, the method (scripted harness and its commit, or manual analysis), and the verbatim pass totals.
 
 ---
 
 ### **I.1 nuScenes Conformance**
 
-**Validation record.** Version: **SpatialDDS 1.5**. Method: scripted (`scripts/nuscenes_harness_v2.py`). The harness reproduces **27** checks; C-06 (coord-convention) is a manual-only check not implemented in the script, so the documented total is 28 and the reproducible total is 27.
+**Validation record.** Validated against SpatialDDS **1.8** (`idl/v1.8/`) · 2026-10-22 · Method: scripted — `scripts/nuscenes_harness_v2.py` reads the IDL through `scripts/idl_introspect.py` (no hand-mirror), harness at spec commit `b557ea6` · Result: **27/27 reproducible checks PASS**. C-06 (coord-convention) is a manual-only check not implemented in the script, so the documented total is 28 and the reproducible total is 27.
 
 #### Reference Dataset
 
@@ -7281,7 +7281,7 @@ Deferred items are fields that CAN be carried (typically via `MetaKV`) but lack 
 
 ### **I.2 DeepSense 6G Conformance**
 
-**Validation record.** Version: **SpatialDDS 1.5**. Method: scripted (`scripts/deepsense6g_harness_v3.py`). The harness runs **48** checks (the GPS modality carries 10, DG-01 through DG-10); earlier drafts of this section cited 41 and then 44 before the four additional GPS checks (DG-07 through DG-10) were documented here.
+**Validation record.** Validated against SpatialDDS **1.8** (`idl/v1.8/`) · 2026-10-22 · Method: scripted — `scripts/deepsense6g_harness_v3.py` reads the IDL through `scripts/idl_introspect.py` (no hand-mirror), harness at spec commit `b557ea6` · Result: **48/48 checks PASS** (the GPS modality carries 10, DG-01 through DG-10). Earlier drafts of this section cited 41 and then 44 before the four additional GPS checks (DG-07 through DG-10) were documented here.
 
 #### Reference Dataset
 
@@ -7413,7 +7413,7 @@ DeepSense 6G conformance has no remaining schema gaps. Future ISAC extensions (e
 
 ### **I.3 S3E Conformance (Multi-Robot Collaborative SLAM)**
 
-**Validation record.** Version: **SpatialDDS 1.5**. Method: manual schema analysis (no script). Type and field names below have been corrected to their 1.8 spellings; the one substantive 1.5→1.8 change is `core::Node`'s compound key (SC-01).
+**Validation record.** Validated against SpatialDDS **1.8** (`idl/v1.8/`) · 2026-10-22 · Method: manual schema analysis (no script), re-confirmed against 1.8 scoped by the audit diff — not re-run · Result: **38/38 checks PASS**. Type and field names below are the 1.8 spellings; the one substantive 1.5→1.8 change is `core::Node`'s compound key (SC-01).
 
 #### Reference Dataset
 
@@ -7561,7 +7561,7 @@ This end-to-end scenario is precisely what ROS 2's `nav_msgs` and `sensor_msgs` 
 
 ### **I.4 ScanNet Conformance (Indoor Scene Understanding)**
 
-**Validation record.** Version: **SpatialDDS 1.5**. Method: manual schema analysis (no script). Type and field names below have been corrected to their 1.8 spellings.
+**Validation record.** Validated against SpatialDDS **1.8** (`idl/v1.8/`) · 2026-10-22 · Method: manual schema analysis (no script), re-confirmed against 1.8 scoped by the audit diff — not re-run · Result: **35/35 checks PASS** (3 deferred items). Type and field names below are the 1.8 spellings.
 
 #### Reference Dataset
 
@@ -7707,7 +7707,7 @@ This pipeline exercises the Spatial Events extension end-to-end — from zone de
 
 ### **I.5 LaMAR Conformance (Multi-Device AR Localization & Mapping)**
 
-**Validation record.** Version: **SpatialDDS 1.6-era** (the pass predates 1.7/1.8; it relies on the 1.6 `FrameRef.coord_convention` patch and the provisional `sensing.radio` profile). Method: manual schema analysis (no script). Type and field names below are corrected to their 1.8 spellings. Two checks that leaned on a non-existent `VisionMeta.attributes` field are reclassified from PASS to GAP (LH-05, LP-02); the 8-bit grayscale pixel format LH-02 relied on was added to the IDL as `PixFormat.GRAY8`, so LH-02 is now a true PASS.
+**Validation record.** Validated against SpatialDDS **1.8** (`idl/v1.8/`) · 2026-10-22 · Method: manual schema analysis (no script), re-confirmed against 1.8 scoped by the audit diff — not re-run · Result: **69/71 checks PASS, 2 gaps** (LH-05, LP-02 — no typed shutter-type field on `VisionMeta`). The pass relies on the `FrameRef.coord_convention` field (added 1.6) and the provisional `sensing.radio` profile, both carried in 1.8; 22 of the 71 checks are the radio subset. Type and field names below are the 1.8 spellings. Two checks that leaned on a non-existent `VisionMeta.attributes` field are reclassified from PASS to GAP (LH-05, LP-02); the 8-bit grayscale pixel format LH-02 relied on was added to the IDL as `PixFormat.GRAY8`, so LH-02 is now a true PASS.
 
 #### Reference Dataset
 
@@ -7930,7 +7930,7 @@ This end-to-end pipeline exercises the **Anchors profile** (`GeoAnchor`, `FrameT
 
 ### **Reproducing the Tests**
 
-The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 scripts with no external dependencies.
+The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 scripts with no external dependencies; both read the SpatialDDS 1.8 type shapes from `idl/v1.8/` through `scripts/idl_introspect.py`, so neither carries a hand-typed copy of the IDL.
 
 **nuScenes harness** (`scripts/nuscenes_harness_v2.py`):
 
@@ -7938,7 +7938,7 @@ The nuScenes and DeepSense 6G conformance harnesses are self-contained Python 3 
 python3 scripts/nuscenes_harness_v2.py
 ```
 
-Mirrors the SpatialDDS 1.8 IDL structures as Python dictionaries and checks them against the nuScenes schema. Produces a plain-text report and a JSON results file.
+Reads the SpatialDDS 1.8 IDL type shapes directly from `idl/v1.8/` (via `scripts/idl_introspect.py`) and checks them against the nuScenes schema — no hand-mirror, so the harness cannot drift from the spec. Produces a plain-text report and a JSON results file.
 
 **DeepSense 6G harness** (`scripts/deepsense6g_harness_v3.py`):
 
