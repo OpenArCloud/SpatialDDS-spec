@@ -2,7 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
-| 1.8     | Draft      | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. **Revision 2026-10-15:** optional `manifest_uri` on `GeoAnchor` (a §7.5-resolvable content reference) and optional `durability` on `TopicMeta` (the DDS kind for N.7 manifest entries), both APPENDABLE and wire-compatible. |
+| 1.8     | 2026-10-22 | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. **Revision 2026-10-15:** optional `manifest_uri` on `GeoAnchor` (a §7.5-resolvable content reference) and optional `durability` on `TopicMeta` (the DDS kind for N.7 manifest entries), both APPENDABLE and wire-compatible. |
 | 1.7     | 2026-08-23 | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. Findings batch 2 (draft rev): breaking sequence-bound reductions (`BlobChunk.data`, `KeyframeFeatures.descriptors` → 65535); additive fields across discovery/semantics/vision/vio/events/common; new QoS profiles and registry rows. |
 | 1.6     | 2026-07-23 | Added PlannedTrajectory and EntityBinding to core; extended CovKind (POSE6_TWIST6, ROT3); coverage_window in CoverageElement; new conventions for enum serialization, time semantics, bbox ordering, schema stability, topic version stability, spatial privacy; expr deprecation sunset for 2.0; DNS authority lifecycle and resolution-failure fallback chain; demoted Neural and Agent to informative examples; reframed Appendix H as a world-model grounding narrative; new Appendix K (IDL package layout); selective per-profile minor bumps. |
 | 1.5     | 2026-04-29 | Finalized 1.5: added FramedPose/NodeGeo redesign, Mapping and Spatial Events extensions, geospatial DNS-SD discovery, restored HTTP discovery binding, four-dataset conformance suite (nuScenes/DeepSense 6G/S3E/ScanNet), and provisional rf_beam profile. |
@@ -10,6 +10,42 @@
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
+
+## Version 1.8 — Stamped (release), 2026-10-22
+
+SpatialDDS 1.8 is stamped. The `(Draft)` marker is dropped from the version page
+and the release is dated 2026-10-22; §3.1's pre-adoption instability clause now
+reads that **1.8 is a stamped release and subsequent breaking changes land in 1.9
+or later, not in revisions to this document** (the 1.x series stays pre-adoption).
+
+The stamp is backed by a conformance roll-up assembled at the candidate:
+
+- **Web-binding conformance suite — `15 checks: 15 passed, 0 failed, 0 skipped`,
+  §8.2 anchor resolve PASS — in two independent configurations**, the same suite
+  from this stamp byte-for-byte against both (the §8.3 backend-blind invariant):
+  (1) the published `spatialdds==0.5.4` package serving `--demo` (advertise
+  `demo.spatialdds.org`, `--connect` loopback); (2) the `spatialdds-web` gateway at
+  `67f0629` serving `samples/fountain-anchors.mcap` with `--publish`. In config (2)
+  four checks pass on unexercised legs (commands-accept branch, operator bearer
+  path, VOLATILE counter-example, no-ttl manifest), reported UNEXERCISED per the
+  suite's "zero observations is not evidence" discipline — not passes earned. The
+  full-stack demo run — which exercises the commands-accept branch through the robot
+  — is a recorded follow-up in the demo's pin-move batch, run against the tag with
+  the suite from the tag.
+- **Dataset conformance (Appendix I)** — nuScenes 27/27 reproducible (28 documented,
+  C-06 manual-only); DeepSense 6G 48/48; S3E 38/38; ScanNet 35/35 (3 deferred);
+  LaMAR 69/71 with the two named shutter-type gaps (LH-05, LP-02). The nuScenes and
+  DeepSense harnesses now read `idl/v1.8/` directly via `scripts/idl_introspect.py`
+  (Fork B) — no hand-mirror, so drift is impossible by construction — and every
+  §I.1–§I.5 section carries a fixed-format validation record.
+- **Spec gates** — spec-consistency; registry 37 rows; registry-topic cross-check;
+  topic-construct 112 types; gen 112 schemas; roundtrip 9 golden vectors. All green.
+- **Consumer pin-spread** recorded (`scripts/check_pin_spread.py`): demo/ros/web at
+  `9c3e1f2`, scenescape `424a8b3`, openvps `5ee5f96` — a reporting instrument, not a
+  gate; resyncs to the tag are follow-up batches.
+- **Homepage stats re-derived** (`site_overlay/stats-derivation.md`): conformance
+  checks 216 → 220 (the Appendix I LaMAR reconciliation 67 → 71); 14 IDL profiles,
+  5 datasets, 4 bridges, 2 live demos each now cite their source.
 
 ## Version 1.8 Revision 2026-10-15
 

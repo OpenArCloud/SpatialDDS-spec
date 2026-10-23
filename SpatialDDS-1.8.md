@@ -2,9 +2,9 @@
 
 *An open invitation to build a shared bus for spatial data, AI world models, and digital twins.*
 
-**Version**: 1.8 (Draft)
+**Version**: 1.8
 
-**Date**: 2026-XX-XX
+**Date**: 2026-10-22
 
 **Author**: James Jackson [Open AR Cloud] – james.jackson [at] openarcloud [dot] org
 
