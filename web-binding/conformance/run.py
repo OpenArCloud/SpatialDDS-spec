@@ -118,6 +118,13 @@ class Endpoint:
         """
         send, host = self._route(target)
         req = urllib.request.Request(send, data=body, method=method)
+        if body is not None:
+            # Label the body. urllib otherwise defaults to
+            # application/x-www-form-urlencoded, which a hardened endpoint refuses
+            # with 415 (measured on demo.spatialdds.org). Every body the suite
+            # sends is JSON; a caller-supplied Content-Type in `headers` still
+            # wins, since it is applied after.
+            req.add_header("Content-Type", "application/json")
         if host:
             req.add_header("Host", host)
         if token:

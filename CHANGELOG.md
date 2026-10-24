@@ -2,6 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
+| 1.8.2   | 2026-10-23 | **Tooling-only point release — no spec text, no IDL.** Fixes the web-binding conformance suite (`web-binding/conformance/run.py`): POSTs set no `Content-Type`, so urllib defaulted to `application/x-www-form-urlencoded`, which a hardened endpoint refuses with 415 — the commands check then failed a conformant endpoint (measured at `demo.spatialdds.org`). `raw()` now labels every body it sends `application/json`; all probes route through it. The specification, the IDL, and the published schemas are unchanged. |
 | 1.8.1   | 2026-10-23 | **Tooling-only point release — no spec text, no IDL.** Fixes the web-binding conformance suite (`web-binding/conformance/run.py`): `raw()` flattened response headers with `dict(...)`, making lookups case-sensitive, so the latched-state and resolver ETag checks failed any conformant endpoint whose server emits a different header case (Go/Caddy writes `Etag`, not `ETag`). Headers are now read through a case-insensitive view. The specification, the IDL, and the published schemas are unchanged. |
 | 1.8     | 2026-10-22 | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. **Revision 2026-10-15:** optional `manifest_uri` on `GeoAnchor` (a §7.5-resolvable content reference) and optional `durability` on `TopicMeta` (the DDS kind for N.7 manifest entries), both APPENDABLE and wire-compatible. |
 | 1.7     | 2026-08-23 | **Breaking** (pre-adoption instability clause, §3.1): `Time.sec` widened to int64; compound `@key` on `Node`/`Edge` and `mapping::Edge`; `GeoPose` orientation fixed to the local ENU tangent frame (removed `frame_kind`/`frame_ref`, `GeoFrameKind`); `TileMeta` uses a single `Aabb3 aabb` (removed `min_xyz`/`max_xyz`/`lod`); removed `BlobChunk.last`; `CoverageResponse` returns compact `ServiceSummary` rows; `caps.features` is now `sequence<string>` (removed `FeatureFlag`); removed `ProfileSupport.preferred`, `CoverageElement.type`, `CoverageQuery.expr` (and Appendix F.X). Policy: single-identifier syntax `spatial.<profile>/MAJOR.MINOR`; all modules unified to `/1.7`; consolidated `/.well-known/spatialdds/{bootstrap,resolver,search}` namespace; bootstrap auth via `auth_hint`; Appendix G promoted to Normative. Findings batch 2 (draft rev): breaking sequence-bound reductions (`BlobChunk.data`, `KeyframeFeatures.descriptors` → 65535); additive fields across discovery/semantics/vision/vio/events/common; new QoS profiles and registry rows. |
@@ -11,6 +12,34 @@
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
+
+## Version 1.8.2 — Tooling-only point release, 2026-10-23
+
+**No spec text, no IDL — a conformance-tooling fix only**, named so deployment
+checklists can pin it. The specification, the IDL, and the published schemas are
+byte-identical to 1.8/1.8.1.
+
+The web-binding conformance suite (`web-binding/conformance/run.py`) sent command
+POSTs with no `Content-Type`, so urllib defaulted the body to
+`application/x-www-form-urlencoded`. A hardened endpoint refuses an unlabeled or
+mislabeled body with 415 (measured on `demo.spatialdds.org`), so the commands
+check failed a conformant endpoint. `raw()` now sets `Content-Type:
+application/json` on every request it sends with a body (a caller-supplied value
+still wins); the suite was swept, and every request with a body routes through
+`raw()` — the probes drive the checks through a mock `raw()` and send no real
+body of their own.
+
+Failable both ways, demonstrated against the live hardened `demo.spatialdds.org`:
+with the label the commands POST clears 415 (it then reaches the operator-token
+gate — 401 without the token, 202/409 with it, the author's measured 15/15); strip
+the label and the commands check fails with 415 again. A non-hardened local
+`--demo` with its token reads `15 checks: 15 passed, 0 failed, 0 skipped`, so the
+fix does not change the normal case.
+
+The spec's silence on request-body media type is the root cause and is filed as a
+1.9 candidate (Future Directions): the binding should state that request bodies
+are `application/json` and that endpoints MAY refuse unlabeled or mislabeled
+bodies with 415.
 
 ## Version 1.8.1 — Tooling-only point release, 2026-10-23
 
