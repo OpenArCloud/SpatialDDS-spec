@@ -40,6 +40,41 @@ def load_schemas(schemas_dir):
     return schemas
 
 
+class CaseInsensitiveHeaders:
+    """HTTP response headers, looked up case-insensitively.
+
+    HTTP field names are case-insensitive (RFC 9110 §5.1), so a check must read
+    `ETag` regardless of the case the server happened to emit. urllib already
+    hands back a case-insensitive object; the suite used to flatten it with
+    `dict(...)`, which made lookups case-sensitive and silently failed any
+    conformant endpoint whose server writes a different case. Go servers (Caddy
+    fronting demo.spatialdds.org) write `Etag`, so `.get("ETag")` returned None
+    and the latched-state and resolver ETag checks failed a conformant endpoint.
+    Keeping a case-insensitive view is the fix — and it is the header object a
+    check should always be handed, so `raw()` returns this, never a plain dict.
+
+    `.get`/`[]`/`in` all fold the lookup key; `.items()` yields the server's
+    original casing, so a check that iterates still sees the wire form.
+    """
+    def __init__(self, items):
+        self._store = {}
+        for k, v in items:
+            self._store[k.lower()] = (k, v)
+
+    def get(self, key, default=None):
+        found = self._store.get(key.lower())
+        return found[1] if found is not None else default
+
+    def __getitem__(self, key):
+        return self._store[key.lower()][1]
+
+    def __contains__(self, key):
+        return key.lower() in self._store
+
+    def items(self):
+        return [(k, v) for (k, v) in self._store.values()]
+
+
 class Endpoint:
     """Backend-blind HTTP(S) client, origin-independent.
 
@@ -91,9 +126,9 @@ class Endpoint:
             req.add_header(k, v)
         try:
             with urllib.request.urlopen(req) as r:   # noqa: S310
-                return r.status, dict(r.headers), r.read()
+                return r.status, CaseInsensitiveHeaders(r.headers.items()), r.read()
         except urllib.error.HTTPError as e:
-            return e.code, dict(e.headers), e.read()
+            return e.code, CaseInsensitiveHeaders(e.headers.items()), e.read()
 
     def json(self, target, token=None):
         code, hdr, body = self.raw(target, token=token)
