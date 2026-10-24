@@ -1868,6 +1868,22 @@ implementation-requirements preflight note. Origin: SpatialDDS-demo
 `browser-credential-finding.md` (blocker A and the third routing; blocker B, the
 gateway's CORS fix, is SpatialDDS-web's).
 
+### Request-Body Media Type (`application/json`)
+
+Appendix N says command and discovery requests are POSTs with JSON bodies, but it
+never states the request `Content-Type`, nor what an endpoint may do with a body
+that arrives unlabeled or mislabeled. That silence let two implementations each
+believe they were conformant while disagreeing on the wire: the conformance suite
+sent command POSTs with no `Content-Type` (its HTTP client defaulted the body to
+`application/x-www-form-urlencoded`), and a hardened gateway refused the
+unlabeled body with 415 — each correct by its own reading, neither wrong against
+the text. The 1.9 addition is one sentence in the binding: request bodies are
+`application/json`, and an endpoint MAY refuse a request whose body is unlabeled
+or carries a different media type with `415 Unsupported Media Type`. (The suite
+was corrected tooling-side in 1.8.2 to send the label; this entry closes the
+spec gap that made the correction necessary.) Origin: measured on the first
+production deployment at `demo.spatialdds.org`.
+
 ### Short-Topic Lanes: Which Deserve a Resource
 
 §3.3.2 registers four-segment topic names — `spatialdds/<stream>/<type>/<version>`
