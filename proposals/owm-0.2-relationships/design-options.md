@@ -66,7 +66,8 @@ Relationship {
   basis         // observed | declared | authored | derived
   asserter      // grounded in the authenticated publisher
   confidence    // optional; in [0,1], comparable only within one asserter
-  derived_from  // optional refs to member claims, for fused views
+  derived_from  // optional refs to the evidence records read, claims or
+                //   entities, each (topic, key, stamp)
   stamp         // assertion time
   valid_from    // optional: the world time the claim is about
   valid_until   // optional; unset means "while asserted"
@@ -80,7 +81,7 @@ Four decisions are built into that shape rather than left to readers:
 1. **Two clocks, kept apart.** `stamp` and `lifecycle` record when the assertion was made, revised, or withdrawn; `valid_from` and `valid_until` record the world time the claim is about. Without the second clock, a retirement cannot distinguish "the relationship ended" from "I no longer stand behind this claim", and consumers of occupancy or containment need that distinction daily. Transitions (entered, exited) derive from validity intervals and lifecycle together, so no second mechanism is needed for events.
 2. **Qualifiers have a home.** The namespaced `meta` slot carries what bare triples cannot: a role on a membership, a quantity on an occupancy, units. Same escape-hatch pattern the module already uses on assets; it keeps the predicate vocabulary small instead of letting enrichment multiply predicates.
 3. **Confidence is scoped honestly.** A scalar in [0,1], comparable only within a single asserter. Cross-asserter weighting is a consumer's model, never wire semantics; decades of fusion literature say calibrated cross-source confidence does not come for free, so the wire does not pretend it does.
-4. **Retirement carries its reason in the type.** The claims type is exactly where a reason field must exist rather than ride an envelope.
+4. **Retirement carries its reason in the type.** The claims type is exactly where a reason field must exist rather than ride an envelope. The reason distinguishes at least three causes: the relationship no longer holds; the subject went unobserved, so the asserter can no longer say; and the asserter stopped. "Subject unobserved" is neither "left the zone" nor the asserter's exit.
 
 **Proposition identity, the one convention publishers must follow:** one asserter holding one opinion about one (subject, predicate, object) revises the same edge id; it does not mint a new edge per update. A different asserter's opinion is always a new edge. Agreement between parties is then countable, and an asserter changing its mind is visible as history on one key.
 
@@ -91,6 +92,7 @@ Same-as is one predicate among others, carried by the same type.
 The wire shape is a third of the design; what consumers do with claims is the rest, and same-as is where it matters most:
 
 - Claims coexist. A consumer filters by asserter, basis, validity, and confidence; nothing on the bus resolves disagreement for it.
+- Silence is not a contrary claim. An asserter that publishes no edge has not asserted the negation: of two near asserters at 6 m and 15 m, between 6 and 15 m one asserts and the other is silent, and the silent one has not said "not near".
 - **Same-as is non-transitive by default.** No consumer implicitly computes global closure; the linked-data experience with transitive identity is the cautionary tale, since closure propagates every mistake to everything it touches.
 - Closure, where wanted, is a **derived view**: a fuser publishes derived claims (basis derived, `derived_from` naming the member claims) asserting the merged identity or the fused edge. The dangerous computation is then itself an attributable, revisable, retractable claim, and consumers choose whose fusion to trust exactly as they choose any other asserter.
 - Dangling endpoints: an edge whose subject or object has retired stays readable as history; whether it stays drawn is a consumer policy, with the edge's own validity interval as the default guide.
@@ -106,6 +108,7 @@ Federation across venues and vocabulary governance remain named horizons, as in 
 3. Topic shape: one relationship topic per scene, mirroring the entity topic's durability split.
 4. Whether validity intervals are required on observed-basis claims or stay optional everywhere.
 5. N-ary relations: the shape above is deliberately binary; cases needing three or more participants (between, handoffs, role-bearing membership) use an intermediate entity or wait for evidence that they deserve more.
+6. Parameterized predicates or identity-bearing qualifiers. Proposition identity is (subject, predicate, object), so a parameter carried only in `meta` (a nearness threshold) puts two propositions under one predicate: "near at 15 m" and "near at 6 m" would revise one edge id. Either the parameter is part of the predicate URI, or `meta` qualifiers can bear identity. The prototype puts it in the URI fragment (`near#15m`), and in `meta` for machine reading.
 
 ## Sequencing
 
