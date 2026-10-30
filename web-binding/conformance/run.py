@@ -193,13 +193,58 @@ def discover(ep):
     return out
 
 
-def schema_for(schemas, topic_entry, index):
-    """The published schema for a topic, via the schemas index."""
-    for row in index:
-        if row["type"].split(".")[-1].lower() == \
-                topic_entry["type"].replace("_", "").lower():
-            return schemas.get(row["type"])
-    return None
+def _fold(name):
+    """A type name folded for matching: its last dotted segment, without `_`,
+    lower-cased. `geo_anchor` and `spatial.core.GeoAnchor` both fold to
+    `geoanchor`; `oarc.relationship` and `oarc_owm.Relationship` both fold to
+    `relationship`."""
+    return name.split(".")[-1].replace("_", "").lower()
+
+
+def extension_rows(index, schemas):
+    """The index rows for types the binding does not define: a deployment's
+    own types (§3.3.2), each published by the endpoint under N.2."""
+    return [row for row in index if row["type"] not in schemas]
+
+
+def extension_schema(ep, row):
+    """The schema the endpoint publishes for one of its own types, fetched
+    once per run. None if it does not fetch or parse; the self-describing
+    check names why."""
+    cache = ep.__dict__.setdefault("_extension_schemas", {})
+    if row["type"] not in cache:
+        code, _hdr, body = ep.raw(row["url"])
+        try:
+            cache[row["type"]] = json.loads(body) if code == 200 else None
+        except ValueError:
+            cache[row["type"]] = None
+    return cache[row["type"]]
+
+
+def schema_for(schemas, topic_entry, index, ep=None):
+    """The schema a topic's payloads are held to, via the schemas index.
+
+    A specification type (an unqualified §3.3.2 name: `geo_anchor`) is held to
+    the binding's own schema, and matches only rows the binding defines, so a
+    deployment type cannot stand in for it. A deployment's own type (a
+    namespaced name: `oarc.relationship`) is held to the schema the endpoint
+    publishes for it -- N.2 requires one for every type it serves -- and
+    matches only rows the binding does not define. Two candidates for one
+    topic is a failure: the endpoint has not said which contract applies.
+    """
+    want = _fold(topic_entry["type"])
+    if "." not in topic_entry["type"]:
+        for row in index:
+            if row["type"] in schemas and _fold(row["type"]) == want:
+                return schemas[row["type"]]
+        return None
+    hits = [row for row in extension_rows(index, schemas)
+            if _fold(row["type"]) == want]
+    assert len(hits) <= 1, (f"topic type {topic_entry['type']!r} matches more than "
+                            f"one published schema: {[r['type'] for r in hits]}")
+    if not hits or ep is None:
+        return None
+    return extension_schema(ep, hits[0])
 
 
 def _validate(doc, schema):
@@ -226,9 +271,34 @@ def check_schemas_endpoint(ep, schemas):
                                          ).hexdigest()
         assert got == want, \
             f"{row['type']}: index digest {want}, body digests to {got}"
-    # And every type it publishes is one the binding defines.
-    unknown = [r["type"] for r in index if r["type"] not in schemas]
-    assert not unknown, f"endpoint publishes types the binding does not define: {unknown[:4]}"
+    # Every type it publishes is either one the binding defines, or the
+    # endpoint's own (§3.3.2), and then the endpoint's schema is the contract
+    # its lanes are held to, so each one is checked whole rather than sampled:
+    # it fetches, its digest is the index's, its basename is N.2's, its title
+    # is its type, and it is a well-formed JSON Schema.
+    ext = extension_rows(index, schemas)
+    for row in ext:
+        ty = row["type"]
+        code, _hdr, body = ep.raw(row["url"])
+        assert code == 200, f"extension schema {ty} returned {code}"
+        doc = json.loads(body)
+        got = "sha256:" + hashlib.sha256(canon(doc).encode()).hexdigest()
+        assert got == row["digest"], \
+            f"{ty}: index digest {row['digest']}, body digests to {got}"
+        base = urlsplit(row["url"]).path.rsplit("/", 1)[-1]
+        assert base == ty.replace(".", "_"), \
+            f"{ty}: published at {base!r}, N.2 names it {ty.replace('.', '_')!r}"
+        assert doc.get("title") == ty, f"{ty}: schema title is {doc.get('title')!r}"
+        assert doc.get("$schema") == "https://json-schema.org/draft/2020-12/schema", \
+            f"{ty}: not a JSON Schema 2020-12 document"
+        import jsonschema
+        try:
+            jsonschema.Draft202012Validator.check_schema(doc)
+        except jsonschema.SchemaError as e:
+            raise AssertionError(f"{ty}: not a well-formed JSON Schema: {e.message}")
+    if ext:
+        return (f"{len(index) - len(ext)} binding type(s); {len(ext)} deployment "
+                f"type(s), each self-described: {[r['type'] for r in ext]}")
 
 
 def check_schema_validity(ep, schemas):
@@ -258,7 +328,7 @@ def check_schema_validity(ep, schemas):
             gated.append(name)
             continue
         assert code == 200, f"GET {t['path']} returned {code}"
-        schema = schema_for(schemas, t, index)
+        schema = schema_for(schemas, t, index, ep)
         assert schema is not None, f"no published schema for type {t['type']!r}"
         n_res = 0
         for doc in json.loads(body):
@@ -332,7 +402,7 @@ def check_streamed_validity(ep, schemas):
     exercised, quiet, floored = [], [], []
     for t in topics:
         name = t.get("name") or t["path"]
-        schema = schema_for(schemas, t, index)
+        schema = schema_for(schemas, t, index, ep)
         assert schema is not None, f"no published schema for type {t['type']!r}"
         msgs = _ws_collect(ep.ws_target(t["path"]), ep.token, limit=cap, timeout=4)
         n_res, hit_cap = _validate_stream(msgs, schema, cap)
@@ -412,7 +482,7 @@ def check_canonical_form(ep, schemas):
         code, _h, body = ep.raw(t["path"], token=ep.token)
         if code != 200:
             continue
-        schema = schema_for(schemas, t, index)
+        schema = schema_for(schemas, t, index, ep)
         if schema is None:
             continue
         for doc in json.loads(body):
@@ -678,7 +748,7 @@ def check_commands_post(ep, schemas):
     # exists to catch.
     outcomes = []
     for t in advertised:
-        schema = schema_for(schemas, t, index)
+        schema = schema_for(schemas, t, index, ep)
         assert schema is not None, \
             f"advertised command lane {t['path']}: no published schema for type {t['type']!r}"
         body = _synth_instance(schema, schema.get("$defs", {}))
@@ -963,7 +1033,7 @@ def scenario_hello_spatial(ep, schemas):
 
     # The replayed samples must be schema-valid typed data, not opaque blobs.
     index = ep.json(f"{WK}/schemas")
-    schema = schema_for(schemas, topic, index)
+    schema = schema_for(schemas, topic, index, ep)
     assert schema is not None, f"no published schema for {topic['type']!r}"
     for m in msgs[:at]:
         _validate(m["data"], schema)
@@ -1074,7 +1144,7 @@ def scenario_third_party_reader(ep, schemas):
         code, _h, body = ep.raw(t["path"], token=ep.token)
         if code != 200:
             continue
-        schema = schema_for(schemas, t, index)
+        schema = schema_for(schemas, t, index, ep)
         assert schema is not None
         required = schema.get("required") or []
         for doc in json.loads(body):

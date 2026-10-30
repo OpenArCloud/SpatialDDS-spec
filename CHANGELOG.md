@@ -2,6 +2,7 @@
 
 | Version | Date       | Key Changes |
 |---------|------------|-------------|
+| 1.8.3   | 2026-10-29 | **Tooling-only change to the conformance suite** (extension lanes validated against the endpoint's published schema); also carries non-normative documents (the OWM 0.2 proposal and a 1.9 Future Directions note); no normative spec text or IDL change. The suite validated lanes against the binding's own schema set only, so an endpoint serving a deployment's own type (§3.3.2), with the schema N.2 requires it to publish, failed four checks once a tenant published valid data on that lane (measured on spatialdds 0.8.1: 11 passed, 4 failed; 15/15 with this fix). A namespaced topic type is now held to the schema the endpoint publishes for it, checked whole; a specification type is held to the binding's, as before, and cannot be shadowed. The published schemas are unchanged. |
 | 1.8.2   | 2026-10-23 | **Tooling-only point release — no spec text, no IDL.** Fixes the web-binding conformance suite (`web-binding/conformance/run.py`): POSTs set no `Content-Type`, so urllib defaulted to `application/x-www-form-urlencoded`, which a hardened endpoint refuses with 415 — the commands check then failed a conformant endpoint (measured at `demo.spatialdds.org`). `raw()` now labels every body it sends `application/json`; all probes route through it. The specification, the IDL, and the published schemas are unchanged. |
 | 1.8.1   | 2026-10-23 | **Tooling-only point release — no spec text, no IDL.** Fixes the web-binding conformance suite (`web-binding/conformance/run.py`): `raw()` flattened response headers with `dict(...)`, making lookups case-sensitive, so the latched-state and resolver ETag checks failed any conformant endpoint whose server emits a different header case (Go/Caddy writes `Etag`, not `ETag`). Headers are now read through a case-insensitive view. The specification, the IDL, and the published schemas are unchanged. |
 | 1.8     | 2026-10-22 | **Additive only** (no breaking changes; 1.7 samples remain valid): frame metric scale on `FrameRef` (`ScaleStatus` + `has_scale`/`scale_status`/`meters_per_unit`/`display_unit`, §2.13); directional uncertainty `CovMatrix cov` on `GeoAnchor` plus the `anchor.cov` manifest mirror; polygon/prism geometry on `SpatialZone` (`has_polygon`/`polygon`/`z_min`/`z_max`) and a new `Vec2` primitive; normative keyed-instance removal convention (§2.14); clarified that vertical coverage extent rides the 3D `aabb` (§3.3.4); new Appendix L (Resolution Quality Conformance, Normative) and Appendix M (Documented Operational Conventions, Informative); Gaussian-splat content note. Manifest minor floor unchanged at ≥ 7. All modules swept to `/1.8`; gates repointed to 1.8 (1.7 remains buildable, ungated). **Batch 2:** observer pose covariance on `Detection3D`/`FusedTrack` (Intel SceneScape) with a `CovScope` composition-scope guard; `MapAlignment.scale_ratio` similarity member. **Revision 2026-10-15:** optional `manifest_uri` on `GeoAnchor` (a §7.5-resolvable content reference) and optional `durability` on `TopicMeta` (the DDS kind for N.7 manifest entries), both APPENDABLE and wire-compatible. |
@@ -12,6 +13,57 @@
 | 1.3     | 2025-10-03 | Documented SpatialDDS URIs and ABNF; added frame transforms (#30) and bounding volumes (#29); new HTTP-capable discovery model; general restructuring. |
 | 1.2     | 2025-09-14 | Added anchor manifest example, refined schema, and standardized bounding-box arrays. |
 | 1.1     | 2025-07-01 | Initial concept release of the SpatialDDS specification. |
+
+## Version 1.8.3 — Tooling-only point release, 2026-10-29
+
+**A conformance-tooling fix, with no normative spec text and no IDL change**,
+named so deployment checklists can pin it. The IDL and the published schemas are
+byte-identical to 1.8.2. The tag also carries the non-normative documents
+committed since 1.8.2: the OWM 0.2 relationships proposal (`proposals/`) and a
+1.9 Future Directions note on request-body media type in
+`SpatialDDS-1.8-full.md`. No normative section changed.
+
+The suite validated every lane against the binding's own schema set
+(`web-binding/schemas/`). §3.3.2 allows a deployment its own types, and N.2
+requires an endpoint to publish a schema for every type it serves "so that a
+consumer can decode everything it receives from the published contract alone";
+spatialdds has done so since 0.7.4. An endpoint serving such a type therefore
+failed four checks the moment a tenant published valid data on its lane —
+"endpoint publishes types the binding does not define", and "no published schema
+for type" in both validity checks and the §8.4 reader. Measured on spatialdds
+0.8.1 serving the OWM 0.2 relationship prototype (`oarc.relationship`) with one
+claim published: `15 checks: 11 passed, 4 failed, 0 skipped`. The suite was
+measuring its own closed-type assumption, not the specification.
+
+Now:
+
+- **A namespaced topic type** (`oarc.relationship`) is held to the schema the
+  endpoint publishes for it, found in the endpoint's index by the same name fold
+  the suite already applies to specification types (`oarc_owm.Relationship`).
+  Its instances, latched and streamed, are validated against that schema, and
+  the §8.4 reader reads them from it.
+- **The self-describing check** accepts a type the binding does not define only
+  as a contract it can check whole: the schema fetches, digests to the index's
+  value, is published at N.2's basename, carries its type as `title`, and is a
+  well-formed JSON Schema 2020-12. Every such row is checked, not sampled.
+- **A specification type** (`geo_anchor`) is held to the binding's schema, as
+  before, and matches only rows the binding defines, so a deployment type named
+  like one cannot stand in for it. Two extension rows that both fit one topic
+  fail: the endpoint has not said which contract applies.
+
+`extension_lane_probe.py` drives the real checks against a mocked endpoint: a
+valid extension lane passes and is counted; an instance that violates its own
+published schema, a wrong digest, title or basename, a document that is not
+JSON Schema, a missing schema, and an ambiguous match each fail; and
+`geo_anchor` stays held to the binding. Run against the 1.8.2 suite, the probe
+fails on its first case. The four existing probes pass unchanged.
+
+Failable both ways, against spatialdds 0.8.1 serving `oarc.relationship`:
+with a claim and an entity published, 1.8.2 reads `15 checks: 11 passed, 4
+failed, 0 skipped` and 1.8.3 reads `15 checks: 15 passed, 0 failed, 0 skipped`,
+validating 10 latched instances across 5 lanes, the claim among them; with the
+claim lane emptied by its DELETE, 1.8.2 still fails 4 and 1.8.3 passes 15. An
+endpoint serving no extension reads 15/15 under both.
 
 ## Version 1.8.2 — Tooling-only point release, 2026-10-23
 
