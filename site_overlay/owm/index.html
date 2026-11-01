@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open World Model · SpatialDDS</title>
+<meta name="description" content="The Open World Model: how many independent parties share one model of a real place without sharing a database. A live model of a place, built from claims.">
+<meta property="og:title" content="Open World Model · SpatialDDS">
+<meta property="og:description" content="A live model of a place, built from claims.">
+<meta property="og:url" content="https://spatialdds.org/owm/">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+<!--
+  The Open World Model page. The viz is the crossing replay viewer from
+  SpatialDDS-demo (web/crossing/), adapted to the site: it replays one static
+  asset, crossing-replay.json beside this file (owm-replay/2, pinned and
+  checked by scripts/check_owm_replay.py). three.js comes pinned from cdnjs;
+  nothing else is loaded but the site's font. URL parameters, for review:
+  t (session seconds), paused, claims=off, card=<claim name or gate-9>,
+  theme=light|dark, speed.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Site palette (site_overlay/index.html) plus a dark counterpart, and the
+   viewer's basis hues. The viewer reads these tokens for its 3D scene. */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --wash:#f6f9fc;
+  --ink:#16202b; --muted:#4a5866; --line:#cdd4db; --faint:#e6eaef;
+  --blue:#1f6fc4; --blue-dark:#174f8c;
+  --observed:#1f6fc4; --declared:#157a52; --authored:#a8761c; --derived:#7a44c0; --danger:#b23232;
+  --display:"Inter",-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --max:1080px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1218; --surface:#111820; --wash:#16202a;
+    --ink:#e2e8ee; --muted:#98a5b2; --line:#36424d; --faint:#1f2831;
+    --blue:#5b9ae6; --blue-dark:#7fb1ec;
+    --observed:#5b9ae6; --declared:#3fae82; --authored:#cf9c3f; --derived:#a47fe0; --danger:#e06a6a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1218; --surface:#111820; --wash:#16202a;
+  --ink:#e2e8ee; --muted:#98a5b2; --line:#36424d; --faint:#1f2831;
+  --blue:#5b9ae6; --blue-dark:#7fb1ec;
+  --observed:#5b9ae6; --declared:#3fae82; --authored:#cf9c3f; --derived:#a47fe0; --danger:#e06a6a;
+  color-scheme: dark;
+}
+*{box-sizing:border-box; margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--display); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+a{color:var(--blue); text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:var(--max); margin:0 auto; padding:0 24px}
+
+/* nav and footer: the site's */
+nav{border-bottom:1px solid var(--faint)}
+.nav-in{display:flex; align-items:center; justify-content:space-between; padding:18px 0}
+.brand{font-weight:800; font-size:18px; letter-spacing:-0.01em; color:var(--ink); text-decoration:none}
+.brand span{color:var(--blue)}
+.brand:hover{text-decoration:none}
+.nav-links{display:flex; gap:28px}
+.nav-links a{color:var(--muted); text-decoration:none; font-size:14.5px; font-weight:500}
+.nav-links a:hover, .nav-links a[aria-current="page"]{color:var(--ink)}
+footer{padding:44px 0 56px; text-align:center; font-size:13.5px; color:var(--muted)}
+
+/* page header */
+.page-head{text-align:center; padding:64px 0 32px}
+.kicker{font-size:13px; font-weight:700; letter-spacing:.22em; color:var(--blue); text-transform:uppercase; margin-bottom:16px}
+h1{font-size:clamp(34px,5.2vw,52px); font-weight:800; letter-spacing:-0.03em; line-height:1.08}
+.tagline{font-size:clamp(17px,2.1vw,20px); color:var(--muted); margin:14px auto 0; font-style:italic}
+.intro{max-width:42em; margin:22px auto 0; font-size:16.5px; color:var(--ink)}
+
+/* prose sections */
+.prose{max-width:44em; margin:0 auto}
+.prose section{padding:52px 0 0}
+.prose h2{font-size:24px; font-weight:800; letter-spacing:-0.02em; margin-bottom:10px}
+.prose p{color:var(--ink)}
+.prose p + p{margin-top:12px}
+.prose code{font-family:var(--mono); font-size:.88em; background:var(--wash); border:1px solid var(--faint); padding:1px 5px; border-radius:3px}
+.prose pre{font-family:var(--mono); font-size:13px; line-height:1.55; background:var(--wash); border:1px solid var(--faint); border-radius:3px; padding:12px 14px; margin-top:12px; overflow-x:auto}
+
+/* ---------- the viz: an instrument, not a product tour ---------- */
+figure.viz{margin:8px 0 0}
+.viz-head{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; margin-bottom:10px}
+.honesty{font-family:var(--mono); font-size:12.5px; color:var(--muted); max-width:78ch; line-height:1.5}
+.controls{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px}
+.switch{display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none}
+.switch input{position:absolute; opacity:0; width:0; height:0}
+.track{width:34px; height:18px; border-radius:2px; background:var(--ink); position:relative; transition:background .15s; flex:none; border:1px solid var(--ink)}
+.track::after{content:""; position:absolute; top:2px; left:18px; width:12px; height:12px; background:var(--surface); transition:left .15s}
+.switch input:not(:checked)+.track{background:var(--surface); border-color:var(--line)}
+.switch input:not(:checked)+.track::after{left:2px; background:var(--line)}
+.switch input:focus-visible+.track{outline:2px solid var(--observed); outline-offset:2px}
+button.ctl{font-family:var(--mono); font-size:13px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:2px; padding:4px 12px; cursor:pointer}
+button.ctl:hover{border-color:var(--muted)}
+button.ctl:focus-visible{outline:2px solid var(--observed); outline-offset:2px}
+
+.stage{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:3px; overflow:hidden}
+#view{display:block; width:100%; height:560px}
+.badge{position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); background:var(--surface); border:1px solid var(--line); padding:3px 8px; pointer-events:none}
+.clock{position:absolute; top:10px; left:10px; font-family:var(--mono); font-size:12px; color:var(--ink); background:var(--surface); border:1px solid var(--line); padding:2px 8px; pointer-events:none; font-variant-numeric:tabular-nums}
+#labels{position:absolute; inset:0; pointer-events:none; overflow:hidden}
+.lab{position:absolute; font-family:var(--mono); font-size:10.5px; white-space:nowrap; transform:translate(-50%,-100%); padding:1px 5px; background:color-mix(in srgb, var(--surface) 84%, transparent); border:1px solid var(--line); color:var(--muted)}
+.lab.claim{pointer-events:auto; cursor:pointer}
+.lab.claim:hover{border-color:currentColor}
+.lab.claim:focus-visible{outline:2px solid currentColor; outline-offset:1px}
+.lab.OBSERVED{color:var(--observed)} .lab.DECLARED{color:var(--declared)} .lab.DERIVED{color:var(--derived)} .lab.AUTHORED{color:var(--authored)} .lab.danger{color:var(--danger)}
+.lab.actor{color:var(--ink)}
+#toasts{position:absolute; left:12px; bottom:12px; max-width:min(600px,86%); display:flex; flex-direction:column; gap:4px; pointer-events:none}
+.toast{font-family:var(--mono); font-size:12px; color:var(--ink); background:var(--surface); border:1px solid var(--line); padding:5px 10px; animation:fade .25s ease-out}
+.toast .tt{color:var(--muted); margin-right:10px; font-variant-numeric:tabular-nums}
+@keyframes fade{from{opacity:0} to{opacity:1}}
+
+#panel{position:absolute; top:12px; right:12px; width:min(420px,calc(100% - 24px)); max-height:calc(100% - 24px); overflow:auto; background:var(--surface); border:1px solid var(--ink); border-radius:3px; padding:10px 12px 12px; display:none}
+#panel.open{display:block}
+#panel h3{margin:0 0 2px; font-family:var(--mono); font-size:12px; font-weight:500; display:flex; align-items:center; gap:8px; padding-right:26px}
+#panel .dot{width:8px; height:8px; flex:none}
+#panel .sub{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin:0 0 8px; word-break:break-all}
+#panel pre{margin:0; font-family:var(--mono); font-size:10.5px; line-height:1.5; background:var(--wash); border:1px solid var(--line); padding:8px 10px; overflow-x:auto; white-space:pre}
+#panel details{margin-top:8px; font-family:var(--mono); font-size:10.5px}
+#panel summary{cursor:pointer; color:var(--muted)}
+#panel details pre{margin-top:4px}
+#panel .note{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin:8px 0 0}
+#panel-close{position:absolute; top:6px; right:6px; width:24px; height:24px; border:none; background:transparent; color:var(--muted); cursor:pointer; font-size:15px; line-height:1}
+#panel-close:hover{color:var(--ink)}
+#panel-close:focus-visible{outline:2px solid var(--observed)}
+
+.strip{margin-top:12px; background:var(--surface); border:1px solid var(--line); border-radius:3px; padding:14px 16px 10px; position:relative}
+.strip h2{margin:0 0 8px; font-family:var(--mono); font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.strip-scroll{overflow-x:auto}
+#timeline{display:block; min-width:680px; width:100%; height:auto; cursor:crosshair; touch-action:none}
+.strip .hidden-note{position:absolute; inset:42px 16px 10px; display:none; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; color:var(--muted)}
+svg text{font-family:var(--mono); user-select:none}
+.row-hit{cursor:pointer}
+.row-hit:focus-visible{outline:2px solid var(--observed)}
+
+/* toggle off: no claim element anywhere, only the simulated street */
+body.claims-off #toasts, body.claims-off #panel, body.claims-off .lab.claim, body.claims-off .lab.danger{display:none}
+body.claims-off #timeline, body.claims-off #timeline *{visibility:hidden}  /* children too: ticks and leads carry their own visibility attribute */
+body.claims-off .strip .hidden-note{display:flex}
+body.claims-off .legend{opacity:.35}
+
+.legend{display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:12px; font-family:var(--mono); font-size:11.5px; color:var(--muted); align-items:center}
+.legend .item{display:inline-flex; align-items:center; gap:7px}
+.legend .sw{width:16px; height:2px; flex:none}
+.legend .cap{width:8px; height:8px; border-radius:50%; flex:none}
+.legend .dim{opacity:.55}
+figcaption{margin-top:16px; max-width:76ch; font-size:15px; color:var(--ink)}
+.provenance{margin-top:10px; max-width:96ch; font-family:var(--mono); font-size:11.5px; line-height:1.55; color:var(--muted)}
+.provenance code{font-family:var(--mono); word-break:break-all}
+#error{display:none; padding:24px; font-family:var(--mono); font-size:13px; color:var(--danger)}
+@media (prefers-reduced-motion: reduce){ .track::after{transition:none} .toast{animation:none} }
+@media (max-width:640px){
+  .nav-links{gap:10px 16px; flex-wrap:wrap; justify-content:flex-end}
+  .page-head{padding:44px 0 26px}
+  .prose section{padding:40px 0 0}
+}
+@media (max-width:480px){ #view{height:420px} .toast{font-size:11px; padding:4px 8px} .controls{width:100%; justify-content:space-between} .lab{font-size:9.5px} }
+</style>
+</head>
+<body>
+<nav><div class="wrap nav-in">
+  <a class="brand" href="/">Spatial<span>DDS</span></a>
+  <div class="nav-links">
+    <a href="https://spatialdds.org/spec/">Specification</a>
+    <a href="/owm/" aria-current="page">Open World Model</a>
+    <a href="https://github.com/OpenArCloud/SpatialDDS-demo">Demos</a>
+    <a href="https://github.com/OpenArCloud/SpatialDDS-spec">GitHub</a>
+    <a href="https://www.openarcloud.org">Open AR Cloud</a>
+  </div>
+</div></nav>
+
+<div class="wrap">
+
+<header class="page-head">
+  <div class="kicker">spatial.owm</div>
+  <h1>Open World Model</h1>
+  <p class="tagline">A live model of a place, built from claims.</p>
+  <p class="intro">The Open World Model is how many independent parties share one model of a real place without sharing a database. Entities carry how they are known: observed, declared, authored, or derived. Relationships are claims: somebody asserts them, on some basis, at some time. Claims from different parties coexist, and when an assertion ends, it ends with a reason.</p>
+</header>
+
+<figure class="viz" aria-label="Replay of a recorded crossing session">
+  <div class="viz-head">
+    <p class="honesty" id="honesty">Replaying a recorded session. The world is simulated (Eclipse SUMO); every claim is a real record from a live SpatialDDS bus.</p>
+    <div class="controls">
+      <label class="switch">
+        <input type="checkbox" id="toggle" checked>
+        <span class="track" aria-hidden="true"></span>
+        <span>claims</span>
+      </label>
+      <button class="ctl" id="playpause">pause</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="view" aria-label="Three-dimensional replay of a street with a bus stop, a crosswalk and a level crossing; claims appear pinned to what they are about."></canvas>
+    <div id="labels"></div>
+    <span class="clock" id="clock"></span>
+    <span class="badge">simulated world · recorded claims</span>
+    <div id="toasts" role="status" aria-live="polite"></div>
+    <aside id="panel" aria-label="record provenance">
+      <button id="panel-close" aria-label="close">&#215;</button>
+      <div id="panel-body"></div>
+    </aside>
+    <div id="error"></div>
+  </div>
+
+  <div class="strip">
+    <h2>Claim record · one trace per edge, high while asserted</h2>
+    <div class="strip-scroll">
+      <svg id="timeline" viewBox="0 0 960 196" aria-label="Chart-recorder traces: each row is a claim, high while asserted, coloured by its basis, with a mark at each revision and a cap where it ends. Click or drag to scrub."></svg>
+    </div>
+    <div class="hidden-note">claims hidden: this is only the simulated street</div>
+  </div>
+
+  <div class="legend">
+    <span class="item basis"><span class="sw" style="background:var(--observed)"></span>observed</span>
+    <span class="item basis"><span class="sw" style="background:var(--declared)"></span>declared</span>
+    <span class="item basis"><span class="sw" style="background:var(--derived)"></span>derived</span>
+    <span class="item basis"><span class="sw" style="background:var(--authored)"></span>authored (the map)</span>
+    <span class="item basis"><span class="sw" style="background:var(--danger)"></span>line of sight, blocked</span>
+    <span class="item"><span class="cap" style="background:var(--muted)"></span>ends: no longer holds</span>
+    <span class="item" id="legend-stopped"><span class="cap" style="background:var(--surface); border:1.5px solid var(--muted)"></span>ends: asserter stopped</span>
+  </div>
+
+  <figcaption>A bus blocks a car's view of a pedestrian; a roadside sensor asserts what it sees and the car brakes on the claim. A rail gate declares its own future and traffic queues before anything moves. The world is simulated; every claim is a real record from a live SpatialDDS bus, replayed here. Flip the toggle to see the same scene without the model.</figcaption>
+  <p class="provenance" id="provenance"></p>
+</figure>
+
+<div class="prose">
+  <section id="claim">
+    <h2>What a claim is</h2>
+    <p>A claim names its subject, predicate, and object, who asserts it, on what basis, and when it holds. Spatial predicates cite GeoSPARQL. Two asserters can hold claims about the same proposition and neither wins; a consumer filters by asserter and basis and builds its own view. Identity across publishers works the same way: same-as is a claim, revisable and retirable, never a global merge. Assertion time and world time are kept apart, so a retirement can say whether the relationship ended or the asserter withdrew.</p>
+  </section>
+
+  <section id="status">
+    <h2>Where it stands</h2>
+    <p><code>spatial.owm</code> 0.1 ships as a provisional module of SpatialDDS 1.8, stamped October 2026. Three independent implementations run it in three roles: a reference venue with a browser client, a ROS&nbsp;2 library on PyPI, and a sidecar publishing Intel SceneScape analytics as typed records. The 0.2 design round covers relationships and identity as claims. Read <a href="https://github.com/OpenArCloud/SpatialDDS-spec/tree/main/proposals/owm-0.2-relationships">the proposal</a> and <a href="https://github.com/OpenArCloud/SpatialDDS-demo/blob/main/docs/owm-02-worked-example.md">the worked example</a>.</p>
+  </section>
+
+  <section id="object-models">
+    <h2>If you keep an object model</h2>
+    <p>An object model describes what one consumer holds in memory. OWM describes how many parties feed it over a network. The relationship is the one between the DOM and HTTP. Keep your object model as the consumer view, and let claims carry the interchange: who asserts what, on what basis, when, and how disagreement travels.</p>
+  </section>
+
+  <section id="try">
+    <h2>Try it</h2>
+    <p>A public endpoint serves discovery and content at <code>demo.spatialdds.org</code>, with the full API at <a href="https://demo.spatialdds.org/.well-known/spatialdds/openapi.html">/.well-known/spatialdds/openapi.html</a>. Publishing needs a token; ask for one. To run a venue of your own, install the <a href="https://pypi.org/project/spatialdds/">Python package</a> and start the gateway:</p>
+<pre>pip install "spatialdds[server]"
+python -m spatialdds.serve --demo --authority demo.spatialdds.org --token tok</pre>
+    <p><code>--demo</code> seeds a small sample scene; drop it for an empty registry of your own.</p>
+  </section>
+
+  <section id="carried">
+    <h2>Carried by SpatialDDS</h2>
+    <p>OWM rides SpatialDDS, an open protocol for discovering and sharing spatial data. Spec, registry, and conformance suite at <a href="https://spatialdds.org/">spatialdds.org</a>.</p>
+  </section>
+</div>
+
+<footer>
+  <p>SpatialDDS is an open specification from <a href="https://www.openarcloud.org">Open AR Cloud</a>.</p>
+  <p style="margin-top:6px"><a href="https://github.com/OpenArCloud/SpatialDDS-spec">Specification repo</a> &middot;
+  <a href="https://github.com/OpenArCloud/SpatialDDS-demo">Demo repo</a> &middot;
+  <a href="https://spatialdds.org/spec/">Read the spec</a> &middot;
+  <a href="/owm/">Open World Model</a></p>
+</footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- parameters ---------- */
+var Q = new URLSearchParams(location.search);
+if (Q.get("theme") === "light" || Q.get("theme") === "dark") document.documentElement.setAttribute("data-theme", Q.get("theme"));
+var SPEED = Math.max(0.1, Math.min(16, parseFloat(Q.get("speed") || "1") || 1));
+
+/* ---------- the source: a recorded asset. A live socket would be another
+   source yielding the same document shape; it is not built. ---------- */
+var ReplaySource = {
+  open: function(url){
+    return fetch(url).then(function(r){
+      if (!r.ok) throw new Error(url + ": HTTP " + r.status);
+      return r.json();
+    }).then(function(doc){
+      if (!doc || doc.schema !== "owm-replay/2") throw new Error("not an owm-replay/2 asset: " + (doc && doc.schema));
+      return doc;
+    });
+  }
+};
+
+ReplaySource.open(Q.get("asset") || "crossing-replay.json").then(start).catch(function(e){
+  var el = document.getElementById("error");
+  el.style.display = "block";
+  el.textContent = "The replay could not be loaded: " + e.message;
+  document.getElementById("view").style.display = "none";
+});
+
+function start(A){
+var $ = function(id){ return document.getElementById(id); };
+var M = A.meta, LOOP = M.loop_s, T0 = M.window.session_start;
+var session = function(t){ return T0 + t; };
+
+/* ---------- palette, re-read when the theme changes ---------- */
+var C = {};
+function readPalette(){
+  var css = getComputedStyle(document.documentElement);
+  ["bg","surface","ink","muted","line","faint","observed","declared","authored","derived","danger"].forEach(function(n){
+    C[n] = css.getPropertyValue("--" + n).trim();
+  });
+}
+readPalette();
+var themed = [];   /* [material, token] */
+function mat(token, dashed, opacity){
+  var m = dashed ? new THREE.LineDashedMaterial({ color: C[token], dashSize: 1.4, gapSize: 1.0 })
+                 : new THREE.LineBasicMaterial({ color: C[token] });
+  themed.push([m, token]);
+  return m;
+}
+function fillMat(token, opacity){
+  var m = new THREE.MeshBasicMaterial({ color: C[token], transparent: true, opacity: opacity, depthWrite: false });
+  themed.push([m, token]);
+  return m;
+}
+function retheme(){
+  readPalette();
+  themed.forEach(function(p){ p[0].color.set(C[p[1]]); });
+  scene.background = new THREE.Color(C.surface);
+}
+new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+
+/* ---------- three.js: x east, y up, z = -north ---------- */
+var canvas = $("view");
+var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(C.surface);
+var camera = new THREE.PerspectiveCamera(40, 2, 0.5, 1500);
+function V(x, y, up){ return new THREE.Vector3(x, up || 0, -y); }
+
+/* A long segment is split into short ones: a renderer may drop a whole
+   segment that runs far behind the camera (measured: the 440 m road edges
+   vanished in Chromium's software GL while the 4 m crosswalk stripes drew). */
+function densify(points, step){
+  var out = [points[0]];
+  for (var i = 1; i < points.length; i++){
+    var a = points[i-1], b = points[i], n = Math.ceil(a.distanceTo(b) / step);
+    for (var k = 1; k <= n; k++) out.push(a.clone().lerp(b, k / n));
+  }
+  return out;
+}
+function line(points, token, dashed){
+  var g = new THREE.BufferGeometry().setFromPoints(points.length > 2 || points[0].distanceTo(points[1]) > 12 ? densify(points, 8) : points);
+  var l = new THREE.Line(g, mat(token, dashed));
+  if (dashed) l.computeLineDistances();
+  return l;
+}
+function boxGroup(l, w, h, token, fill){
+  var g = new THREE.Group();
+  var geo = new THREE.BoxGeometry(l, h, w);
+  if (fill > 0) g.add(new THREE.Mesh(geo, fillMat(token, fill)));
+  var e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), mat(token, false));
+  g.add(e); g.userData.edges = e;
+  return g;
+}
+function rectOutline(b, up, token, dashed){
+  return line([V(b[0],b[1],up), V(b[2],b[1],up), V(b[2],b[3],up), V(b[0],b[3],up), V(b[0],b[1],up)], token, dashed);
+}
+var VIEW_X = [-170, 270];
+
+/* map: ground, road, lanes, crosswalk, zones, rail, buildings, unit, gate */
+var map = A.map;
+scene.add(rectOutline([VIEW_X[0], -90, VIEW_X[1], 90], 0, "faint", false));
+var road = { y0: Infinity, y1: -Infinity };
+map.lanes.forEach(function(L){ road.y0 = Math.min(road.y0, L.box[1]); road.y1 = Math.max(road.y1, L.box[3]); });
+map.lanes.forEach(function(L){
+  [L.box[1], L.box[3]].forEach(function(y){
+    var edge = (y === road.y0 || y === road.y1);
+    var mid = Math.abs(y) < 0.01;
+    scene.add(line([V(VIEW_X[0], y, 0.01), V(VIEW_X[1], y, 0.01)], edge ? "ink" : (mid ? "muted" : "line"), !edge && !mid));
+  });
+});
+var ZONE = {};
+map.zones.forEach(function(z){ ZONE[z.id] = z; });
+var cw = ZONE["crosswalk"];
+if (cw){
+  for (var sy = cw.box[1] + 0.6; sy < cw.box[3]; sy += 1.2){
+    scene.add(line([V(cw.box[0], sy, 0.02), V(cw.box[2], sy, 0.02)], "authored", false));
+  }
+}
+if (ZONE["stop-zone"]) scene.add(rectOutline(ZONE["stop-zone"].box, 0.02, "authored", true));
+var cz = ZONE["crossing-zone"];
+if (cz) scene.add(rectOutline(cz.box, 0.02, "authored", false));
+var czFill = null;
+if (cz){
+  var cg = new THREE.PlaneGeometry(cz.box[2]-cz.box[0], cz.box[3]-cz.box[1]);
+  czFill = new THREE.Mesh(cg, fillMat("declared", 0.16));
+  czFill.rotation.x = -Math.PI/2;
+  czFill.position.set((cz.box[0]+cz.box[2])/2, 0.03, -(cz.box[1]+cz.box[3])/2);
+  czFill.visible = false; scene.add(czFill);
+}
+map.rail.forEach(function(R){
+  R.gauge_lines.forEach(function(gl){
+    scene.add(line([V(gl[0][0], Math.max(gl[0][1], -220), 0.02), V(gl[1][0], Math.min(gl[1][1], 220), 0.02)], "muted", false));
+  });
+});
+map.buildings.forEach(function(b){
+  var g = boxGroup(b.box[2]-b.box[0], b.box[3]-b.box[1], b.height, "ink", 0.045);
+  g.position.set((b.box[0]+b.box[2])/2, b.height/2, -(b.box[1]+b.box[3])/2);
+  scene.add(g);
+});
+var U = map.unit.at;
+scene.add(line([V(U[0], U[1], 0), V(U[0], U[1], U[2])], "muted", false));
+var sensor = boxGroup(1.2, 1.2, 0.8, "observed", 0.12); sensor.position.copy(V(U[0], U[1], U[2] + 0.4)); scene.add(sensor);
+
+/* the gate: two arms, each across its approach, pivoting at the road edge */
+var gb = map.gate.box, ARM_UP = Math.PI/2;
+function arm(x, yPivot, dir){
+  scene.add(line([V(x, yPivot, 0), V(x, yPivot, 1.1)], "ink", false));
+  var len = Math.abs(road.y1 - road.y0)/2 - 0.4;
+  var g = new THREE.Group();
+  var bar = boxGroup(0.22, len, 0.22, "ink", 0.9);
+  bar.position.set(0, 0, -dir*len/2);
+  g.add(bar);
+  g.position.copy(V(x, yPivot, 1.1));
+  scene.add(g);
+  var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), fillMat("danger", 1));
+  lamp.position.copy(V(x, yPivot, 1.5)); scene.add(lamp);
+  /* rotation about x lifts the arm's far end when its sign opposes the
+     arm's z direction: up is -sign(z) * pi/2, down is 0 */
+  return { g: g, lamp: lamp, sign: dir };
+}
+var arms = [arm(gb[0] - 0.6, road.y0, -1), arm(gb[2] + 0.6, road.y1, 1)];
+
+/* ---------- the moving world ---------- */
+var ACT = {};
+A.tracks.forEach(function(tr){
+  var s = tr.size, kind = tr.kind;
+  var prot = tr.role.indexOf("protagonist") === 0;
+  var g = boxGroup(s[0], s[1], s[2], "ink", kind === "pedestrian" ? 0.16 : (prot ? 0.14 : 0.05));
+  g.visible = false; scene.add(g);
+  ACT[tr.id] = { tr: tr, g: g, n: tr.x.length };
+});
+function sampleTrack(a, t){
+  var tr = a.tr, u = (t - tr.t0) / M.track_dt;
+  if (u < -0.001 || u > a.n - 1 + 0.001) return null;
+  var i = Math.max(0, Math.min(a.n - 2, Math.floor(u))), f = Math.max(0, Math.min(1, u - i));
+  if (a.n === 1){ i = 0; f = 0; }
+  var j = Math.min(a.n - 1, i + 1);
+  var h0 = tr.h[i], h1 = tr.h[j], dh = ((h1 - h0 + 540) % 360) - 180;
+  return { x: tr.x[i] + (tr.x[j]-tr.x[i])*f, y: tr.y[i] + (tr.y[j]-tr.y[i])*f, h: h0 + dh*f };
+}
+
+/* ---------- claims at a time ---------- */
+var CL = {};
+A.claims.forEach(function(c){ CL[c.name] = c; });
+function claimAt(c, t){
+  for (var i=0;i<c.segments.length;i++){
+    var s = c.segments[i];
+    if (t >= s.from && (s.to === null || t < s.to)){
+      var rev = s.revisions[0];
+      s.revisions.forEach(function(r){ if (r.t <= t) rev = r; });
+      return rev;
+    }
+  }
+  return null;
+}
+function recordAt(c, t){
+  var r = c.records[0];
+  c.records.forEach(function(x){ if (x.t <= t) r = x; });
+  return r;
+}
+function gateAt(t){
+  var s = A.gate[0];
+  A.gate.forEach(function(x){ if (x.t <= t) s = x; });
+  return s;
+}
+var GATE_NEXT = {};
+A.gate.forEach(function(x, i){ GATE_NEXT[i] = A.gate[i+1] || null; });
+
+/* overlay lines */
+var c1Line = line([new THREE.Vector3(), new THREE.Vector3(1,0,0)], "derived", false); scene.add(c1Line);
+var c4Line = line([new THREE.Vector3(), new THREE.Vector3(1,0,0)], "derived", false); scene.add(c4Line);
+var losLine = line([new THREE.Vector3(), new THREE.Vector3(1,0,0)], "danger", true); scene.add(losLine);
+function setLine(l, a, b, token){
+  var p = l.geometry.attributes.position;
+  p.setXYZ(0, a.x, a.y, a.z); p.setXYZ(1, b.x, b.y, b.z); p.needsUpdate = true;
+  l.geometry.computeBoundingSphere();
+  if (l.material.isLineDashedMaterial) l.computeLineDistances();
+  if (token){ l.material.color.set(C[token]); themedSet(l.material, token); }
+}
+function themedSet(m, token){ for (var i=0;i<themed.length;i++) if (themed[i][0] === m){ themed[i][1] = token; return; } }
+
+/* where a sight line from p to q first enters an actor's footprint (2D) */
+function cutAt(p, q, a, s){
+  var c = Math.cos(a.h*Math.PI/180), sn = Math.sin(a.h*Math.PI/180);
+  function loc(x, y){ var dx = x - a.x, dy = y - a.y; return [c*dx + sn*dy, -sn*dx + c*dy]; }
+  var P = loc(p[0], p[1]), Qp = loc(q[0], q[1]), lo = 0, hi = 1, hx = s[0]/2, hy = s[1]/2;
+  var ok = [[P[0], Qp[0], hx], [P[1], Qp[1], hy]].every(function(k){
+    var d = k[1] - k[0];
+    if (Math.abs(d) < 1e-9) return Math.abs(k[0]) <= k[2];
+    var t0 = (-k[2] - k[0]) / d, t1 = (k[2] - k[0]) / d;
+    if (t0 > t1){ var tmp = t0; t0 = t1; t1 = tmp; }
+    lo = Math.max(lo, t0); hi = Math.min(hi, t1);
+    return lo <= hi;
+  });
+  return ok ? lo : 1;
+}
+
+/* ---------- labels ---------- */
+var labelsDiv = $("labels");
+function mkLab(cls, text, claimKey){
+  var d = document.createElement("div");
+  d.className = "lab " + cls; d.textContent = text;
+  if (claimKey){
+    d.classList.add("claim");
+    d.tabIndex = 0; d.setAttribute("role", "button");
+    d.addEventListener("click", function(ev){ ev.stopPropagation(); openPanel(claimKey); });
+    d.addEventListener("keydown", function(ev){ if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openPanel(claimKey); } });
+  }
+  labelsDiv.appendChild(d); return d;
+}
+var actorLabs = {};
+["car-a1","car-b2","bus-3","ped-17","train-7"].forEach(function(id){
+  if (!ACT[id]) return;
+  var role = ACT[id].tr.role;
+  actorLabs[id] = mkLab("actor", role.indexOf("protagonist") === 0 ? id + " · " + role.split(" · ")[1] : id);
+});
+var unitLab = mkLab("", "mmwave-ut-04 · emulated roadside unit");
+var gateLab = mkLab("DECLARED", "gate-9", "gate-9");
+var claimLabs = {
+  C1: mkLab("DERIVED", "", "C1"), C2: mkLab("OBSERVED", "", "C2"), C3: mkLab("DECLARED", "", "C3"),
+  C4: mkLab("DERIVED", "", "C4"), C5: mkLab("DERIVED", "", "C5")
+};
+var losLab = mkLab("danger", "");
+function setBasis(el, basis){
+  ["OBSERVED","DECLARED","DERIVED","AUTHORED"].forEach(function(b){ el.classList.toggle(b, b === basis); });
+}
+var rect = { width: 1, height: 1 };
+function place(el, p3, show){
+  if (!show){ el.style.display = "none"; return; }
+  var p = p3.clone().project(camera);
+  if (p.z > 1 || p.x < -1.2 || p.x > 1.2 || p.y < -1.2 || p.y > 1.2){ el.style.display = "none"; return; }
+  el.style.display = "block";
+  el.style.left = ((p.x*0.5 + 0.5) * rect.width) + "px";
+  el.style.top = ((-p.y*0.5 + 0.5) * rect.height) + "px";
+}
+
+/* ---------- provenance card: records verbatim ---------- */
+var panel = $("panel"), panelBody = $("panel-body"), openKey = null;
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function pre(o){ return "<pre>" + esc(JSON.stringify(o, null, 2)) + "</pre>"; }
+var WORDS = { sfWithin: "within", sfIntersects: "intersects", closes: "closes", blockedBy: "blocked by" };
+function short(u){ var w = String(u).replace(/^.*[\/#:]/, ""); return WORDS[w] || w; }
+function says(c){ return short(c.subject) + " " + short(c.predicate) + " " + short(c.object); }
+function openPanel(key){
+  openKey = key; renderPanel(T); panel.classList.add("open");
+}
+function renderPanel(t){
+  if (!openKey) return;
+  var h = "";
+  if (openKey === "gate-9"){
+    var g = gateAt(t);
+    h += "<h3><span class='dot' style='background:var(--declared)'></span>gate-9 · " + esc(g.state) + "</h3>";
+    h += "<p class='sub'>DECLARED · " + esc(g.record.entity_id) + " · the record in force at t " + session(t).toFixed(1) + " s, as written</p>";
+    h += pre(g.record);
+    h += "<details><summary>every state change recorded (" + A.gate.length + ")</summary>";
+    A.gate.forEach(function(x){ h += "<p class='note'>t " + session(x.t).toFixed(1) + " s · " + esc(x.state) + "</p>" + pre(x.record); });
+    h += "</details>";
+  } else {
+    var c = CL[openKey], r = recordAt(c, t), d = r.record;
+    h += "<h3><span class='dot' style='background:var(--" + d.basis.toLowerCase() + ")'></span>" + esc(c.name) + " · " + esc(says(c)) + "</h3>";
+    h += "<p class='sub'>" + esc(d.basis) + " · " + esc(d.state) + " · asserted by " + esc(d.asserter) + " · lane " + esc(c.lane) + "</p>";
+    h += pre(d);
+    h += "<p class='note'>The sample in force at t " + session(t).toFixed(1) + " s, exactly as recorded. Stamps are seconds since 1970; this session's t 0 is " + (M.window.stamp_start - T0).toFixed(3) + ".</p>";
+    if (c.records.length > 1){
+      h += "<details><summary>all " + c.records.length + " samples of this edge id</summary>";
+      c.records.forEach(function(x){ h += "<p class='note'>t " + session(x.t).toFixed(2) + " s · " + esc(x.record.state) + " · " + esc(x.record.basis) + "</p>" + pre(x.record); });
+      h += "</details>";
+    }
+    if (c.disposed_with.length) h += "<p class='note'>Then disposed: “" + esc(c.disposed_with[0]) + "”.</p>";
+  }
+  panelBody.innerHTML = h;
+}
+$("panel-close").addEventListener("click", function(){ panel.classList.remove("open"); openKey = null; });
+
+/* ---------- the strip ---------- */
+var svg = $("timeline"), SVGNS = "http://www.w3.org/2000/svg";
+var ROWS = ["C1","C2","C3","C4","C5"].filter(function(k){ return CL[k]; });
+var TL = { left: 10, right: 950, top: 12, rowH: 30, labelW: 250, amp: 7 };
+var tx = function(t){ return TL.left + TL.labelW + (Math.max(0, Math.min(LOOP, t)) / LOOP) * (TL.right - TL.left - TL.labelW); };
+function mk(tag, attrs, parent){ var n = document.createElementNS(SVGNS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); (parent || svg).appendChild(n); return n; }
+var bottom = TL.top + ROWS.length * TL.rowH;
+for (var st = Math.ceil(T0/10)*10; st <= T0 + LOOP; st += 10){
+  var x = tx(st - T0);
+  mk("line", { x1: x, y1: TL.top, x2: x, y2: bottom, stroke: "var(--faint)", "stroke-width": 1 });
+  mk("text", { x: x, y: bottom + 16, "font-size": 10, fill: "var(--muted)", "text-anchor": "middle" }).textContent = st + " s";
+}
+var arrowsDrawn = [];
+var anyStopped = false;
+var rows = ROWS.map(function(k, i){
+  var c = CL[k], yMid = TL.top + i*TL.rowH + TL.rowH/2, yHi = yMid - TL.amp, yLo = yMid + TL.amp;
+  var lab = mk("text", { x: TL.left, y: yMid + 3.5, "font-size": 11, fill: "var(--muted)" });
+  lab.textContent = k + "  " + says(c);
+  var base = mk("path", { fill: "none", stroke: "var(--line)", "stroke-width": 1.2 });
+  var traces = [], marks = [], caps = [], leads = [];
+  c.segments.forEach(function(s){
+    s.revisions.forEach(function(r, j){
+      var t1 = (j + 1 < s.revisions.length) ? s.revisions[j+1].t : (s.to === null ? LOOP : s.to);
+      var col = "var(--" + r.basis.toLowerCase() + ")";
+      traces.push({ from: r.t, to: t1, el: mk("path", { fill: "none", stroke: col, "stroke-width": 1.8 }) });
+      if (j > 0) marks.push({ t: r.t, el: mk("line", { x1: tx(r.t), x2: tx(r.t), y1: yHi - 4, y2: yHi + 4, stroke: col, "stroke-width": 1.2, visibility: "hidden" }) });
+      if (r.valid_from !== null && r.valid_from > r.t + 0.05){
+        leads.push({ t: r.t, el: mk("line", { x1: tx(r.t), x2: tx(Math.min(r.valid_from, LOOP)), y1: yHi - 5, y2: yHi - 5, stroke: col, "stroke-width": 1, "stroke-dasharray": "1.5 2.5", visibility: "hidden" }) });
+      }
+    });
+    if (s.to !== null){
+      var last = s.revisions[s.revisions.length-1], col2 = "var(--" + last.basis.toLowerCase() + ")";
+      var stopped = s.ending === "asserter stopped";
+      if (stopped) anyStopped = true;
+      caps.push({ t: s.to, el: mk("circle", stopped
+        ? { cx: tx(s.to), cy: yMid, r: 3.6, fill: "var(--surface)", stroke: col2, "stroke-width": 1.6, visibility: "hidden" }
+        : { cx: tx(s.to), cy: yMid, r: 3.6, fill: col2, visibility: "hidden" }) });
+    }
+  });
+  var hit = mk("rect", { x: TL.left, y: yMid - TL.rowH/2, width: TL.labelW - 8, height: TL.rowH, fill: "transparent", "class": "row-hit", tabindex: 0, role: "button" });
+  hit.setAttribute("aria-label", k + ": open its records");
+  hit.addEventListener("pointerdown", function(ev){ ev.stopPropagation(); });
+  hit.addEventListener("click", function(ev){ ev.stopPropagation(); openPanel(k); });
+  hit.addEventListener("keydown", function(ev){ if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openPanel(k); } });
+  return { c: c, yHi: yHi, yLo: yLo, base: base, traces: traces, marks: marks, caps: caps, leads: leads };
+});
+if (!anyStopped) $("legend-stopped").classList.add("dim"), $("legend-stopped").lastChild.textContent = "ends: asserter stopped (none in this window)";
+var cursor = mk("line", { x1: tx(0), x2: tx(0), y1: TL.top - 2, y2: bottom + 2, stroke: "var(--ink)", "stroke-width": 1, opacity: .65 });
+function drawStrip(t){
+  rows.forEach(function(R){
+    R.base.setAttribute("d", "M " + tx(0) + " " + R.yLo + " L " + tx(t) + " " + R.yLo);
+    R.traces.forEach(function(s){
+      if (t <= s.from){ s.el.setAttribute("d", ""); return; }
+      var e = Math.min(t, s.to);
+      s.el.setAttribute("d", "M " + tx(s.from) + " " + R.yLo + " L " + tx(s.from) + " " + R.yHi + " L " + tx(e) + " " + R.yHi + (t >= s.to && s.to < LOOP ? " L " + tx(s.to) + " " + R.yLo : ""));
+    });
+    R.marks.forEach(function(m){ m.el.setAttribute("visibility", t >= m.t ? "visible" : "hidden"); });
+    R.leads.forEach(function(m){ m.el.setAttribute("visibility", t >= m.t ? "visible" : "hidden"); });
+    R.caps.forEach(function(m){ m.el.setAttribute("visibility", t >= m.t ? "visible" : "hidden"); });
+  });
+  cursor.setAttribute("x1", tx(t)); cursor.setAttribute("x2", tx(t));
+}
+var scrubbing = false;
+function seek(ev){
+  var r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * (960 / r.width);
+  var t = (x - TL.left - TL.labelW) / (TL.right - TL.left - TL.labelW) * LOOP;
+  if (t >= 0 && t <= LOOP) T = t;
+}
+svg.addEventListener("pointerdown", function(ev){ scrubbing = true; seek(ev); });
+window.addEventListener("pointermove", function(ev){ if (scrubbing) seek(ev); });
+window.addEventListener("pointerup", function(){ scrubbing = false; });
+
+/* ---------- toasts: the narration ---------- */
+var toastsEl = $("toasts"), shown = "";
+function drawToasts(t){
+  var now = A.events.filter(function(e){ return t >= e.t && t < e.t + 4.5; }).slice(rect.width < 560 ? -1 : -3);
+  var key = now.map(function(e){ return e.t + e.text; }).join("|");
+  if (key === shown) return;
+  shown = key;
+  toastsEl.innerHTML = now.map(function(e){
+    return "<div class='toast'><span class='tt'>t " + session(e.t).toFixed(1) + " s</span>" + esc(e.text) + "</div>";
+  }).join("");
+}
+
+/* ---------- controls ---------- */
+var toggle = $("toggle");
+function setClaims(on){ toggle.checked = on; document.body.classList.toggle("claims-off", !on); }
+toggle.addEventListener("change", function(){ setClaims(toggle.checked); });
+var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var paused = reduced || Q.has("paused");
+var pp = $("playpause");
+function setPaused(p){ paused = p; pp.textContent = paused ? "play" : "pause"; }
+setPaused(paused);
+pp.addEventListener("click", function(){ setPaused(!paused); });
+
+/* provenance, from the asset's meta: small print under the viz */
+var commitUrl = "https://github.com/OpenArCloud/SpatialDDS-demo/commit/" + encodeURIComponent(M.commit);
+$("provenance").innerHTML = "Recording <code>" + esc(M.recording) + "</code> (sha256 <code>" + esc(M.sha256.slice(0, 16)) + "…</code>), captured " + esc(M.captured_utc) +
+  ", SpatialDDS-demo commit <a href='" + commitUrl + "'><code>" + esc(M.commit.slice(0, 7)) + "</code></a>; driven by " + esc(M.driven_by) + ". " +
+  esc(M.honesty.world) + " " + esc(map.unit.emulation) + " " + esc(M.honesty.claims) +
+  " Click a claim, the gate, or a row of the strip for its records; click or drag the strip to scrub.";
+
+/* ---------- render ---------- */
+var T = Q.has("t") ? Math.max(0, Math.min(LOOP, parseFloat(Q.get("t")) - T0)) : 0;
+if (Q.get("claims") === "off") setClaims(false);
+function smooth(a){ a = Math.max(0, Math.min(1, a)); return a*a*(3-2*a); }
+function armAngle(t){
+  var g = gateAt(t), i = A.gate.indexOf(g), next = GATE_NEXT[i];
+  if (g.state === "closed") return ARM_UP * (1 - smooth((t - g.t) / 0.8));
+  if (g.state === "opening") return ARM_UP * smooth((t - g.t) / Math.max(0.1, (next ? next.t : g.t + 3) - g.t));
+  return ARM_UP;
+}
+function resize(){
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== Math.round(w*devicePixelRatio) || canvas.height !== Math.round(h*devicePixelRatio)){
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  rect = { width: w, height: h };
+}
+var focusA = -10, focusB = 108;
+function render(t, wall){
+  resize();
+  var claimsOn = toggle.checked;
+  /* actors */
+  var P = {};
+  for (var id in ACT){
+    var a = ACT[id], s = sampleTrack(a, t);
+    a.g.visible = !!s;
+    if (!s) continue;
+    P[id] = s;
+    a.g.position.copy(V(s.x, s.y, a.tr.size[2]/2));
+    a.g.rotation.y = s.h * Math.PI/180;
+  }
+  /* gate */
+  var ang = armAngle(t), gs = gateAt(t).state;
+  arms.forEach(function(A2){
+    A2.g.rotation.x = A2.sign * ang;   /* arm runs along z = -sign */
+    A2.lamp.visible = (gs === "warning" || gs === "closed" || gs === "opening") && (Math.floor(wall * 2.5) % 2 === 0 || reduced);
+  });
+  /* camera: a slow orbit, its focus on the beat */
+  var u = smooth((session(t) - 41.0) / 7.0);
+  var fx = focusA + (focusB - focusA) * u;
+  var th = reduced ? 0.9 : 0.9 + wall * 0.05;
+  var narrow = rect.width < 560;
+  var R = narrow ? 70 : 52, H = narrow ? 125 : 92;
+  camera.position.set(fx + Math.sin(th) * R, H, Math.cos(th) * R);
+  camera.lookAt(fx, 0, 0);
+
+  /* claims */
+  var c1 = CL.C1 ? claimAt(CL.C1, t) : null, c2 = CL.C2 ? claimAt(CL.C2, t) : null,
+      c3 = CL.C3 ? claimAt(CL.C3, t) : null, c4 = CL.C4 ? claimAt(CL.C4, t) : null,
+      c5 = CL.C5 ? claimAt(CL.C5, t) : null;
+  var sens = V(U[0], U[1], U[2] + 0.4);
+  c1Line.visible = claimsOn && !!c1 && !!P["ped-17"];
+  if (c1Line.visible) setLine(c1Line, sens, V(P["ped-17"].x, P["ped-17"].y, 0.9), c1.basis.toLowerCase());
+  c4Line.visible = claimsOn && !!c4 && !!P["train-7"];
+  if (c4Line.visible){
+    var tr = P["train-7"], ty = Math.max(tr.y - 60, Math.min(tr.y + 60, (cz.box[1] + cz.box[3]) / 2));
+    setLine(c4Line, sens, V(tr.x, ty, 2.0), c4.basis.toLowerCase());
+  }
+  if (czFill) czFill.visible = claimsOn && !!c3;
+  if (ACT["bus-3"]) ACT["bus-3"].g.userData.edges.material.color.set(claimsOn && c2 ? C.observed : C.ink);
+
+  /* line of sight */
+  var los = null;
+  A.sight.forEach(function(s){ if (t >= s.from && t <= s.to + 0.25) los = s; });
+  losLine.visible = claimsOn && !!los && !!P[los && los.observer] && !!P[los && los.target];
+  if (losLine.visible){
+    var o = P[los.observer], g2 = P[los.target], b = P[los.blocked_by], f = 1;
+    if (b) f = cutAt([o.x, o.y], [g2.x, g2.y], b, ACT[los.blocked_by].tr.size);
+    setLine(losLine, V(o.x, o.y, 1.2), V(o.x + (g2.x - o.x)*f, o.y + (g2.y - o.y)*f, 1.2));
+  }
+
+  renderer.render(scene, camera);
+
+  /* labels */
+  for (var k in actorLabs){ var p = P[k]; place(actorLabs[k], p ? V(p.x, p.y, ACT[k].tr.size[2] + 1.2) : V(0,0,0), !!p && (k !== "train-7" || Math.abs(p.y) < 140)); }
+  if (P["train-7"]) place(actorLabs["train-7"], V(P["train-7"].x, Math.max(-60, Math.min(60, P["train-7"].y)), 5.4), Math.abs(P["train-7"].y) < 200);
+  place(unitLab, V(U[0], U[1], U[2] + 2.0), true);
+  gateLab.textContent = "gate-9 · " + gs;
+  place(gateLab, V(gb[2] + 4, road.y0 - 2, 4.5), true);
+  function claimText(c, rev){
+    var vf = rev.valid_from !== null && rev.valid_from > t + 0.01 ? " · valid from " + session(rev.valid_from).toFixed(1) + " s" : "";
+    return says(c) + " [" + rev.basis.toLowerCase() + vf + "]";
+  }
+  [["C1", c1, P["ped-17"] && V(P["ped-17"].x, P["ped-17"].y, 9.5)],
+   ["C2", c2, P["bus-3"] && V(P["bus-3"].x, P["bus-3"].y, 12.5)],
+   ["C3", c3, V((gb[0] + gb[2]) / 2, road.y0 - 4, 11)],
+   ["C4", c4, P["train-7"] && V(P["train-7"].x, -20, 9)],
+   ["C5", c5, V((gb[0] + gb[2]) / 2, road.y1 + 6, 1.5)]].forEach(function(e){
+    var el = claimLabs[e[0]], rev = e[1];
+    if (!rev || !e[2]){ el.style.display = "none"; return; }
+    el.textContent = claimText(CL[e[0]], rev) + (e[0] === "C5" ? " ← C3" : "");
+    setBasis(el, rev.basis);
+    place(el, e[2], claimsOn);
+  });
+  if (losLine.visible){
+    var o2 = P[los.observer], g3 = P[los.target];
+    losLab.textContent = los.observer + " line of sight: blocked by " + los.blocked_by;
+    place(losLab, V((o2.x + g3.x) / 2, (o2.y + g3.y) / 2 + 4, 3), true);
+  } else losLab.style.display = "none";
+
+  $("clock").textContent = "t " + session(t).toFixed(1) + " s";
+  drawStrip(t);
+  if (claimsOn) drawToasts(t);
+  if (openKey) renderPanel(t);
+}
+var wall = 0, lastTs = null;
+function tick(ts){
+  if (lastTs == null) lastTs = ts;
+  var dt = Math.min(0.1, (ts - lastTs) / 1000);
+  lastTs = ts;
+  wall += dt;
+  if (!paused && !scrubbing) T = (T + dt * SPEED) % LOOP;
+  render(T, wall);
+  requestAnimationFrame(tick);
+}
+if (Q.get("card")) openPanel(Q.get("card"));
+render(T, 0);
+requestAnimationFrame(tick);
+window.__replay = { get t(){ return session(T); }, loops: function(){ return LOOP; }, scene: scene,
+  overlays: function(){ return { c1: c1Line.visible, c4: c4Line.visible, los: losLine.visible, zone: !!(czFill && czFill.visible) }; } };
+}
+})();
+</script>
+</body>
+</html>

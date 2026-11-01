@@ -39,6 +39,12 @@ jobs:
         # profile that does not resolve. See scripts/check_registry.py.
         run: ./scripts/check_registry.py 1.8
 
+      - name: Check the /owm/ replay asset
+        # Fails the build if site_overlay/owm/crossing-replay.json is not the
+        # pinned SpatialDDS-demo export, or if any claim the page draws does
+        # not trace to a recorded sample in it. See scripts/check_owm_replay.py.
+        run: python3 ./scripts/check_owm_replay.py
+
       - name: Install MkDocs
         run: pip install mkdocs mkdocs-mermaid2-plugin pymdown-extensions
 
