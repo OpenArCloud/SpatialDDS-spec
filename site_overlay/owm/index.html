@@ -140,7 +140,9 @@ svg text{font-family:var(--mono); user-select:none}
 .row-hit:focus-visible{outline:2px solid var(--observed)}
 
 /* toggle off: no claim element anywhere, only the simulated street */
-body.claims-off #toasts, body.claims-off #panel, body.claims-off .lab.claim, body.claims-off .lab.danger{display:none}
+/* !important: place() sets an inline display on every label it positions, which
+   would otherwise outrank this rule (the gate's DECLARED state label leaked) */
+body.claims-off #toasts, body.claims-off #panel, body.claims-off .lab.claim, body.claims-off .lab.danger{display:none !important}
 body.claims-off #timeline, body.claims-off #timeline *{visibility:hidden}  /* children too: ticks and leads carry their own visibility attribute */
 body.claims-off .strip .hidden-note{display:flex}
 body.claims-off .legend{opacity:.35}
