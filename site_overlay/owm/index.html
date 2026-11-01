@@ -80,7 +80,7 @@ h1{font-size:clamp(34px,5.2vw,52px); font-weight:800; letter-spacing:-0.03em; li
 .prose section{padding:52px 0 0}
 .prose h2{font-size:24px; font-weight:800; letter-spacing:-0.02em; margin-bottom:10px}
 .prose p{color:var(--ink)}
-.prose p + p{margin-top:12px}
+.prose p + p, .prose pre + p{margin-top:12px}
 .prose code{font-family:var(--mono); font-size:.88em; background:var(--wash); border:1px solid var(--faint); padding:1px 5px; border-radius:3px}
 .prose pre{font-family:var(--mono); font-size:13px; line-height:1.55; background:var(--wash); border:1px solid var(--faint); border-radius:3px; padding:12px 14px; margin-top:12px; overflow-x:auto}
 
@@ -250,10 +250,10 @@ figcaption{margin-top:16px; max-width:76ch; font-size:15px; color:var(--ink)}
 
   <section id="try">
     <h2>Try it</h2>
-    <p>A public endpoint serves discovery and content at <code>demo.spatialdds.org</code>, with the full API at <a href="https://demo.spatialdds.org/.well-known/spatialdds/openapi.html">/.well-known/spatialdds/openapi.html</a>. Publishing needs a token; ask for one. To run a venue of your own, install the <a href="https://pypi.org/project/spatialdds/">Python package</a> and start the gateway:</p>
+    <p>A public endpoint serves discovery and content at <code>demo.spatialdds.org</code>, with the full API at <a href="https://demo.spatialdds.org/.well-known/spatialdds/openapi.html">/.well-known/spatialdds/openapi.html</a>. Publishing needs a token; <a href="https://github.com/OpenArCloud/spatialdds-py/issues">ask for one</a>. To run a venue of your own, install the <a href="https://pypi.org/project/spatialdds/">Python package</a> and start the gateway:</p>
 <pre>pip install "spatialdds[server]"
-python -m spatialdds.serve --demo --authority demo.spatialdds.org --token tok</pre>
-    <p><code>--demo</code> seeds a small sample scene; drop it for an empty registry of your own.</p>
+python -m spatialdds.serve --demo --authority registry.mytown.example</pre>
+    <p>Replace <code>registry.mytown.example</code> with the DNS name your venue answers as. <code>--demo</code> seeds a small sample scene; drop it for an empty registry of your own. The registry mints a publishing token and prints it at startup.</p>
   </section>
 
   <section id="carried">
