@@ -420,7 +420,10 @@ var U = map.unit.at;
 scene.add(line([V(U[0], U[1], 0), V(U[0], U[1], U[2])], "muted", false));
 var sensor = boxGroup(1.2, 1.2, 0.8, "observed", 0.12); sensor.position.copy(V(U[0], U[1], U[2] + 0.4)); scene.add(sensor);
 
-/* the gate: two arms, each across its approach, pivoting at the road edge */
+/* the gate: two arms, each across its approach, pivoting at the road edge;
+   dir is the ENU y direction from the pivot into the road (+1 from the
+   south edge, -1 from the north), so down lays each arm over its own
+   lanes, tips meeting over the centre line */
 var gb = map.gate.box, ARM_UP = Math.PI/2;
 function arm(x, yPivot, dir){
   scene.add(line([V(x, yPivot, 0), V(x, yPivot, 1.1)], "ink", false));
@@ -433,11 +436,11 @@ function arm(x, yPivot, dir){
   scene.add(g);
   var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), fillMat("danger", 1));
   lamp.position.copy(V(x, yPivot, 1.5)); scene.add(lamp);
-  /* rotation about x lifts the arm's far end when its sign opposes the
-     arm's z direction: up is -sign(z) * pi/2, down is 0 */
+  /* the bar runs along three's z = -dir; rotation about x lifts its far
+     end when its sign opposes that: up is dir * pi/2, down is 0 */
   return { g: g, lamp: lamp, sign: dir };
 }
-var arms = [arm(gb[0] - 0.6, road.y0, -1), arm(gb[2] + 0.6, road.y1, 1)];
+var arms = [arm(gb[0] - 0.6, road.y0, 1), arm(gb[2] + 0.6, road.y1, -1)];
 
 /* ---------- the moving world ---------- */
 var ACT = {};
@@ -729,7 +732,7 @@ function render(t, wall){
   /* gate */
   var ang = armAngle(t), gs = gateAt(t).state;
   arms.forEach(function(A2){
-    A2.g.rotation.x = A2.sign * ang;   /* arm runs along z = -sign */
+    A2.g.rotation.x = A2.sign * ang;
     A2.lamp.visible = (gs === "warning" || gs === "closed" || gs === "opening") && (Math.floor(wall * 2.5) % 2 === 0 || reduced);
   });
   /* camera: a slow orbit, its focus on the beat */
@@ -814,7 +817,12 @@ if (Q.get("card")) openPanel(Q.get("card"));
 render(T, 0);
 requestAnimationFrame(tick);
 window.__replay = { get t(){ return session(T); }, loops: function(){ return LOOP; }, scene: scene,
-  overlays: function(){ return { c1: c1Line.visible, c4: c4Line.visible, los: losLine.visible, zone: !!(czFill && czFill.visible) }; } };
+  overlays: function(){ return { c1: c1Line.visible, c4: c4Line.visible, los: losLine.visible, zone: !!(czFill && czFill.visible) }; },
+  /* each arm's world bounds in ENU metres, read from the drawn geometry */
+  arms: function(){ return arms.map(function(A2){
+    var b = new THREE.Box3().setFromObject(A2.g);
+    return { x: [b.min.x, b.max.x], y: [-b.max.z, -b.min.z], up: [b.min.y, b.max.y] };
+  }); } };
 }
 })();
 </script>
