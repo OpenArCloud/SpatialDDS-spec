@@ -252,7 +252,7 @@ figcaption{margin-top:16px; max-width:76ch; font-size:15px; color:var(--ink)}
 
   <section id="try">
     <h2>Try it</h2>
-    <p>A public endpoint serves discovery and content at <code>demo.spatialdds.org</code>, with the full API at <a href="https://demo.spatialdds.org/.well-known/spatialdds/openapi.html">/.well-known/spatialdds/openapi.html</a>. Publishing needs a token; <a href="https://github.com/OpenArCloud/spatialdds-py/issues">ask for one</a>. To run a venue of your own, install the <a href="https://pypi.org/project/spatialdds/">Python package</a> and start the gateway:</p>
+    <p>A public endpoint serves discovery and content at <code>demo.spatialdds.org</code>, with the full API at <a href="https://demo.spatialdds.org/.well-known/spatialdds/openapi.html">/.well-known/spatialdds/openapi.html</a>. Publishing needs a token; <a href="https://openarcloud.org/about/#contact">contact Open AR Cloud</a>. To run a venue of your own, install the <a href="https://pypi.org/project/spatialdds/">Python package</a> and start the gateway:</p>
 <pre>pip install "spatialdds[server]"
 python -m spatialdds.serve --demo --authority registry.mytown.example</pre>
     <p>Replace <code>registry.mytown.example</code> with the DNS name your venue answers as. <code>--demo</code> seeds a small sample scene; drop it for an empty registry of your own. The registry mints a publishing token and prints it at startup.</p>
