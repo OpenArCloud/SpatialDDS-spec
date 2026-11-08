@@ -22,6 +22,8 @@ are not made.
 | E9 | A claim against a published extent is about the model | open |
 | E10 | Hysteresis | open |
 | E11 | A relationship lane carries liveliness | open |
+| E12 | Should a prediction carry a window? | open |
+| E13 | `derived_from` across a basis revision | open |
 
 ## E1. Silence is not a contrary claim
 
@@ -108,3 +110,68 @@ A binding that drops writer liveliness makes a killed asserter's edge
 indistinguishable from a live one. The web binding's event set already has
 `liveliness`; the design should require that a relationship lane carry it.
 *Origin:* §1.8, where the demo's pump dropped it until the prototype.
+
+## E12. Should a prediction carry a window?
+
+A DERIVED claim about the future revises freely. In the crossing recording
+one waiting pedestrian produced seven re-predictions in 6.6 s, each a full
+revision on the same edge id, each pushing `valid_from` a second on as the
+last one passed unconfirmed. Does a prediction carry an explicit validity
+window or horizon member, or is `valid_from` / `valid_until` on each
+revision sufficient, with the churn the honest behaviour of an asserter
+whose prediction has not come true rather than a defect? *Origin:* the
+demo's `docs/crossing-claims.md`, §4 tooth 3 and §5 P1 (its own finding
+E2). C1, `rel:svc:crossing:mmwave-ut-04:dd530c4a474956c8`, as the live
+subscriber received it (received, state, basis, `decided_t`, `valid_from`,
+confidence, how):
+
+    27.33  CREATED  DERIVED   27.3  27.65  0.9  constant velocity
+    27.71  REVISED  DERIVED   27.7  28.15  0.9  constant velocity
+    27.83  REVISED  DERIVED   27.8  28.8   0.5  at the kerb
+    28.83 … 33.82  six more   (one a second)    +1.0 s each, 0.5, at the kerb
+    34.03  REVISED  DERIVED   34.0  36.75  0.9  constant velocity
+    34.11  REVISED  DERIVED   34.1  35.2   0.9  constant velocity
+    34.32  REVISED  DERIVED   34.3  34.6   0.9  constant velocity
+    34.62  REVISED  OBSERVED  34.6  34.6   —    observed by the unit's own track
+    45.24  RETIRED  OBSERVED        valid_until 45.2
+           "no longer holds: ped-17 is no longer in crosswalk"
+    45.24  dispose  (same reason)
+
+## E13. What does `derived_from` mean across a basis revision?
+
+The crossing's P2 revised a claim from DERIVED to OBSERVED on the same edge
+id, and `derived_from` survived unchanged, still naming only the
+prediction's evidence: the observation cites evidence that never saw the
+event. The options, without a position:
+
+- on a basis revision, `derived_from` is restated to the evidence of the
+  current basis;
+- it is emptied where the new basis is direct observation;
+- the carried-forward meaning is defined explicitly.
+
+*Origin:* the demo's `docs/crossing-claims.md`, §4 tooth 3, the P2 record
+pair, and §5 P2 (its own finding E1). The same edge before and after,
+the members that bear on this (stamps are epoch 1793498681.653648 plus
+session seconds):
+
+```
+before:
+  "basis": "DERIVED",
+  "derived_from": [
+    {"topic": "spatialdds/crossing/world/model_pose/v1",
+     "key": "ent:mmwave-ut-04:ped-17",
+     "stamp": {"sec": "1793498708", "nanosec": 453647872}},
+    {"topic": "spatialdds/crossing/world/model_pose/v1",
+     "key": "ent:mmwave-ut-04:ped-17",
+     "stamp": {"sec": "1793498708", "nanosec": 953647872}}
+  ],
+  "stamp": {"sec": "1793498715", "nanosec": 959481088},
+after:
+  "basis": "OBSERVED",
+  "derived_from": [ the same two references ],
+  "stamp": {"sec": "1793498716", "nanosec": 259068928},
+```
+
+The document's reading: "the observation names the poses at 26.8 and 27.3,
+7.3 s before ped-17 was in the crosswalk, and no record that shows it there
+(the pose at 34.6 that did is not named)."
